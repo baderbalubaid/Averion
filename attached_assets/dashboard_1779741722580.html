@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Averion Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #09090F;
+    color: #E2E8F0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: #6366F1;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #34D399; animation: pulse 2s infinite;
+  }
+  .pulse.off { background: #64748B; animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .logo { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+  .price-display { font-size: 14px; font-weight: 600; color: #E2E8F0; }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+  .stat-card {
+    background: #13131F;
+    border: 1px solid #1E1E3A;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .green { color: #34D399; }
+  .red { color: #F87171; }
+  .blue { color: #38BDF8; }
+  .purple { color: #A78BFA; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .btn-start { background: #34D399; color: #09090F; }
+  .btn-stop { background: #F87171; color: #09090F; }
+  .btn-refresh { background: #1E1E3A; color: #E2E8F0; }
+
+  /* Positions table */
+  .section {
+    padding: 0 16px 16px;
+  }
+  .section-title {
+    font-size: 11px;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #13131F;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  th {
+    background: #1E1E3A;
+    color: #6366F1;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+  td {
+    padding: 10px 12px;
+    font-size: 12px;
+    border-bottom: 1px solid #1E1E3A;
+    color: #E2E8F0;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #0D0D1A; }
+
+  .badge {
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-open { background: #34D39920; color: #34D399; }
+  .badge-buy { background: #38BDF820; color: #38BDF8; }
+  .badge-sell { background: #F8717120; color: #F87171; }
+
+  .close-btn {
+    padding: 4px 10px;
+    background: #F8717120;
+    color: #F87171;
+    border: 1px solid #F87171;
+    border-radius: 6px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    background: #13131F;
+    border-top: 1px solid #1E1E3A;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: #64748B;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 16px;
+  }
+  .nav-item.active { color: #6366F1; }
+  .nav-icon { font-size: 20px; }
+
+  .content { padding-bottom: 80px; }
+
+  /* Loading */
+  .loading { color: #64748B; font-size: 12px; padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="pulse off" id="statusDot"></div>
+    <span class="logo">AVERION</span>
+  </div>
+  <div class="price-display" id="livePrice">Loading...</div>
+</div>
+
+<div class="content">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Bot Status</div>
+      <div class="stat-value" id="botStatus" style="color:#64748B">Stopped</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Open Positions</div>
+      <div class="stat-value blue" id="posCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Invested</div>
+      <div class="stat-value purple" id="totalInvested">$0.00</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unrealized P&L</div>
+      <div class="stat-value" id="totalPnl">$0.00</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-start" onclick="startBot()">▶ Start</button>
+    <button class="btn btn-stop" onclick="stopBot()">⬛ Stop</button>
+    <button class="btn btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <!-- Positions -->
+  <div class="section">
+    <div class="section-title">Open Positions</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Coin</th>
+          <th>Avg Cost</th>
+          <th>Qty</th>
+          <th>Invested</th>
+          <th>DCA#</th>
+          <th>P&L</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="positionsTable">
+        <tr><td colspan="7" class="loading">Loading positions...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Trades -->
+  <div class="section">
+    <div class="section-title">Recent Trades</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Amount</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody id="tradesTable">
+        <tr><td colspan="5" class="loading">Loading trades...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <span class="nav-icon">🏠</span>
+    <span>Home</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">🤖</span>
+    <span>Bots</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">📊</span>
+    <span>History</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </div>
+</div>
+
+<script>
+const API = 'http://0.0.0.0:8080';
+let currentPrice = 0;
+
+async function fetchStatus() {
+  try {
+    const res = await fetch(`${API}/status`);
+    const data = await res.json();
+    currentPrice = data.price;
+    document.getElementById('livePrice').textContent = `BTC $${data.price.toLocaleString()}`;
+    const dot = document.getElementById('statusDot');
+    const status = document.getElementById('botStatus');
+    if (data.running) {
+      dot.classList.remove('off');
+      status.textContent = 'Running';
+      status.style.color = '#34D399';
+    } else {
+      dot.classList.add('off');
+      status.textContent = 'Stopped';
+      status.style.color = '#64748B';
+    }
+  } catch(e) {
+    document.getElementById('livePrice').textContent = 'Offline';
+  }
+}
+
+async function fetchPositions() {
+  try {
+    const res = await fetch(`${API}/positions`);
+    const data = await res.json();
+    document.getElementById('posCount').textContent = data.length;
+    let totalInvested = 0;
+    let totalPnl = 0;
+    const tbody = document.getElementById('positionsTable');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">No open positions</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(pos => {
+      totalInvested += pos.total_invested;
+      const pnl = (currentPrice - pos.avg_cost) * pos.quantity;
+      const pnlPct = ((currentPrice - pos.avg_cost) / pos.avg_cost * 100).toFixed(2);
+      totalPnl += pnl;
+      const pnlColor = pnl >= 0 ? '#34D399' : '#F87171';
+      const pnlSign = pnl >= 0 ? '+' : '';
+      return `<tr>
+        <td>${pos.coin}</td>
+        <td>$${pos.avg_cost.toFixed(4)}</td>
+        <td>${pos.quantity.toFixed(6)}</td>
+        <td>$${pos.total_invested.toFixed(2)}</td>
+        <td><span class="badge badge-open">${pos.dca_count}</span></td>
+        <td style="color:${pnlColor}">${pnlSign}${pnlPct}%</td>
+        <td><button class="close-btn" onclick="closePosition(${pos.id})">Close</button></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('totalInvested').textContent = `$${totalInvested.toFixed(2)}`;
+    const pnlEl = document.getElementById('totalPnl');
+    pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(4)}`;
+    pnlEl.style.color = totalPnl >= 0 ? '#34D399' : '#F87171';
+  } catch(e) {
+    document.getElementById('positionsTable').innerHTML =
+      '<tr><td colspan="7" class="loading">Error loading positions</td></tr>';
+  }
+}
+
+async function fetchTrades() {
+  try {
+    const res = await fetch(`${API}/trades`);
+    const data = await res.json();
+    const tbody = document.getElementById('tradesTable');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="loading">No trades yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(t => {
+      const badgeClass = t.side === 'buy' ? 'badge-buy' : 'badge-sell';
+      const time = new Date(t.timestamp).toLocaleTimeString();
+      return `<tr>
+        <td>${time}</td>
+        <td><span class="badge ${badgeClass}">${t.side.toUpperCase()}</span></td>
+        <td>$${t.price.toFixed(2)}</td>
+        <td>$${t.usdt_amount.toFixed(2)}</td>
+        <td>${t.reason}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('tradesTable').innerHTML =
+      '<tr><td colspan="5" class="loading">Error loading trades</td></tr>';
+  }
+}
+
+async function startBot() {
+  await fetch(`${API}/start`, {method: 'POST'});
+  loadAll();
+}
+
+async function stopBot() {
+  await fetch(`${API}/stop`, {method: 'POST'});
+  loadAll();
+}
+
+async function closePosition(id) {
+  if (!confirm('Close this position?')) return;
+  await fetch(`${API}/positions/${id}/close`, {method: 'POST'});
+  loadAll();
+}
+
+async function loadAll() {
+  await fetchStatus();
+  await fetchPositions();
+  await fetchTrades();
+}
+
+// Load on start
+loadAll();
+
+// Auto refresh every 30 seconds
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
