@@ -71,7 +71,7 @@ def get_open_position():
     conn.close()
     return pos
 
-def run_bot():
+def run_bot(stop_event=None):
     init_db()
     print(f"Bot started! Coin: {COIN} | DCA: {DCA_PERCENT}% | TP: {TAKE_PROFIT_PERCENT}%")
     print(f"Mode: {'PAPER' if PAPER_MODE else 'LIVE'}")
@@ -79,7 +79,7 @@ def run_bot():
 
     trailing_high = None
 
-    while True:
+    while stop_event is None or not stop_event.is_set():
         try:
             price = get_price()
             print(f"[{datetime.now()}] Price: ${price}")
