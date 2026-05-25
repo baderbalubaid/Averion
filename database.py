@@ -2,7 +2,8 @@ import sqlite3
 from datetime import datetime
 
 def get_db():
-    conn = sqlite3.connect('dcabot.db')
+    conn = sqlite3.connect('averion.db')
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.row_factory = sqlite3.Row
     return conn
 
