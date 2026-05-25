@@ -1,7 +1,10 @@
 import threading
 import ccxt
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_db, init_db
 from config import COIN, DCA_PERCENT, TAKE_PROFIT_PERCENT, TRAILING_PERCENT, BASE_ORDER_USDT, CHECK_INTERVAL
@@ -164,6 +167,10 @@ def get_config():
         "check_interval": CHECK_INTERVAL,
     }
 
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse("dashboard.html")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
