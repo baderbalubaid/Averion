@@ -116,7 +116,8 @@
       </div>
     </div>
 
-    <div class="controls">
+    <input id="coinSearch" onkeyup="searchCoins()" placeholder="🔍 Search coin..." style="margin: 0 16px 12px; padding: 10px 16px; background: #13131F; border: 1px solid #1E1E3A; border-radius: 8px; color: #E2E8F0; font-size: 13px; width: calc(100% - 32px); outline: none;">
+  <div class="controls">
       <button class="btn btn-start" onclick="startBot()">▶ Start</button>
       <button class="btn btn-stop" onclick="stopBot()">⬛ Stop</button>
       <button class="btn btn-refresh" onclick="loadAll()">↻ Refresh</button>
@@ -489,7 +490,8 @@ function renderHistory(data) {
   }
   let totalProfit = 0, wins = 0;
   const tbody = document.getElementById('historyTable');
-  tbody.innerHTML = data.map(pos => {
+  const sorted = [...data].sort((a,b) => a.pnl_pct - b.pnl_pct);
+    tbody.innerHTML = sorted.map(pos => {
     const profit = pos.realized_pnl || 0;
     totalProfit += profit;
     if (profit > 0) wins++;
@@ -589,7 +591,16 @@ async function stopBot() {
 async function closePosition(id) {
   if (!confirm('Close this position?')) return;
   await fetch(`${API}/positions/${id}/close`, {method: 'POST'});
-  loadAll();
+  function searchCoins() {
+  const q = document.getElementById("coinSearch").value.toLowerCase();
+  const rows = document.querySelectorAll("#positionsTable tr");
+  rows.forEach(row => {
+    const coin = row.cells[0]?.textContent.toLowerCase() || "";
+    row.style.display = coin.includes(q) ? "" : "none";
+  });
+}
+
+loadAll();
 }
 
 // ── MAIN LOOP ─────────────────────────────────────────────────────────────
@@ -597,6 +608,15 @@ async function loadAll() {
   await fetchStatus();
   await fetchPositions();
   await fetchTrades();
+}
+
+function searchCoins() {
+  const q = document.getElementById("coinSearch").value.toLowerCase();
+  const rows = document.querySelectorAll("#positionsTable tr");
+  rows.forEach(row => {
+    const coin = row.cells[0]?.textContent.toLowerCase() || "";
+    row.style.display = coin.includes(q) ? "" : "none";
+  });
 }
 
 loadAll();
