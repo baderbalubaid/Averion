@@ -6,169 +6,85 @@
 <title>Averion Dashboard</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #09090F;
-    color: #E2E8F0;
-    font-family: 'Segoe UI', sans-serif;
-    min-height: 100vh;
-  }
-
-  /* Header */
-  .header {
-    background: #6366F1;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  body { background: #09090F; color: #E2E8F0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+  .header { background: #6366F1; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
   .header-left { display: flex; align-items: center; gap: 10px; }
-  .pulse {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #34D399; animation: pulse 2s infinite;
-  }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: #34D399; animation: pulse 2s infinite; }
   .pulse.off { background: #64748B; animation: none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .logo { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
-  .price-display { font-size: 14px; font-weight: 600; color: #E2E8F0; }
-
-  /* Stats row */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    padding: 16px;
-  }
-  .stat-card {
-    background: #13131F;
-    border: 1px solid #1E1E3A;
-    border-radius: 12px;
-    padding: 14px;
-  }
-  .stat-label {
-    font-size: 10px;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .stat-value {
-    font-size: 20px;
-    font-weight: 700;
-    margin-top: 4px;
-  }
-  .green { color: #34D399; }
-  .red { color: #F87171; }
-  .blue { color: #38BDF8; }
-  .purple { color: #A78BFA; }
-
-  /* Controls */
-  .controls {
-    display: flex;
-    gap: 10px;
-    padding: 0 16px 16px;
-  }
-  .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
+  .price-display { font-size: 14px; font-weight: 600; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+  .stat-card { background: #13131F; border: 1px solid #1E1E3A; border-radius: 12px; padding: 14px; }
+  .stat-label { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+  .green { color: #34D399; } .red { color: #F87171; }
+  .blue { color: #38BDF8; } .purple { color: #A78BFA; }
+  .controls { display: flex; gap: 10px; padding: 0 16px 16px; flex-wrap: wrap; }
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; }
   .btn-start { background: #34D399; color: #09090F; }
   .btn-stop { background: #F87171; color: #09090F; }
   .btn-refresh { background: #1E1E3A; color: #E2E8F0; }
-
-  /* Positions table */
-  .section {
-    padding: 0 16px 16px;
-  }
-  .section-title {
-    font-size: 11px;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #13131F;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  th {
-    background: #1E1E3A;
-    color: #6366F1;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 10px 12px;
-    text-align: left;
-  }
-  td {
-    padding: 10px 12px;
-    font-size: 12px;
-    border-bottom: 1px solid #1E1E3A;
-    color: #E2E8F0;
-  }
+  .section { padding: 0 16px 16px; }
+  .section-title { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .section-count { background: #1E1E3A; padding: 2px 8px; border-radius: 20px; font-size: 10px; color: #38BDF8; }
+  table { width: 100%; border-collapse: collapse; background: #13131F; border-radius: 12px; overflow: hidden; }
+  th { background: #1E1E3A; color: #6366F1; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px; text-align: left; cursor: pointer; }
+  th:hover { color: #38BDF8; }
+  td { padding: 10px 12px; font-size: 12px; border-bottom: 1px solid #1E1E3A; color: #E2E8F0; }
   tr:last-child td { border-bottom: none; }
   tr:nth-child(even) td { background: #0D0D1A; }
-
-  .badge {
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-  }
+  tr:hover td { background: #1E1E3A; }
+  .badge { padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
   .badge-open { background: #34D39920; color: #34D399; }
+  .badge-closed { background: #64748B20; color: #64748B; }
   .badge-buy { background: #38BDF820; color: #38BDF8; }
   .badge-sell { background: #F8717120; color: #F87171; }
-
-  .close-btn {
-    padding: 4px 10px;
-    background: #F8717120;
-    color: #F87171;
-    border: 1px solid #F87171;
-    border-radius: 6px;
-    font-size: 10px;
-    cursor: pointer;
-  }
-
-  /* Bottom nav */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0; right: 0;
-    background: #13131F;
-    border-top: 1px solid #1E1E3A;
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 0;
-  }
-  .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    color: #64748B;
-    font-size: 10px;
-    cursor: pointer;
-    padding: 4px 16px;
-  }
+  .badge-dca { background: #A78BFA20; color: #A78BFA; }
+  .badge-tp { background: #34D39920; color: #34D399; }
+  .close-btn { padding: 4px 10px; background: #F8717120; color: #F87171; border: 1px solid #F87171; border-radius: 6px; font-size: 10px; cursor: pointer; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #13131F; border-top: 1px solid #1E1E3A; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #64748B; font-size: 10px; cursor: pointer; padding: 4px 16px; transition: color 0.2s; }
   .nav-item.active { color: #6366F1; }
   .nav-icon { font-size: 20px; }
-
   .content { padding-bottom: 80px; }
-
-  /* Loading */
   .loading { color: #64748B; font-size: 12px; padding: 20px; text-align: center; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #1E1E3A; background: #13131F; color: #64748B; font-size: 11px; cursor: pointer; }
+  .filter-btn.active { background: #6366F1; color: white; border-color: #6366F1; }
+
+  /* Settings */
+  .settings-group { background: #13131F; border: 1px solid #1E1E3A; border-radius: 12px; margin: 0 16px 16px; overflow: hidden; }
+  .settings-title { padding: 12px 16px; font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #1E1E3A; background: #1E1E3A; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1E1E3A; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 13px; color: #E2E8F0; }
+  .settings-desc { font-size: 10px; color: #64748B; margin-top: 2px; }
+  .settings-input { background: #09090F; border: 1px solid #2D2D4A; border-radius: 8px; color: #E2E8F0; padding: 6px 12px; font-size: 13px; width: 100px; text-align: right; }
+  .settings-toggle { width: 44px; height: 24px; background: #1E1E3A; border-radius: 12px; cursor: pointer; position: relative; border: none; transition: background 0.2s; }
+  .settings-toggle.on { background: #6366F1; }
+  .settings-toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s; }
+  .settings-toggle.on::after { left: 23px; }
+  .save-btn { margin: 0 16px 16px; padding: 14px; background: #6366F1; color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; width: calc(100% - 32px); letter-spacing: 1px; }
+  .save-btn:hover { background: #5254CC; }
+
+  /* History stats */
+  .history-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; }
+  .hist-card { background: #13131F; border: 1px solid #1E1E3A; border-radius: 12px; padding: 12px; text-align: center; }
+  .hist-label { font-size: 10px; color: #64748B; text-transform: uppercase; }
+  .hist-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px 20px; color: #64748B; }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-text { font-size: 13px; }
 </style>
 </head>
 <body>
-
-<!-- Header -->
 <div class="header">
   <div class="header-left">
     <div class="pulse off" id="statusDot"></div>
@@ -179,105 +95,260 @@
 
 <div class="content">
 
-  <!-- Stats -->
-  <div class="stats">
-    <div class="stat-card">
-      <div class="stat-label">Bot Status</div>
-      <div class="stat-value" id="botStatus" style="color:#64748B">Stopped</div>
+  <!-- TAB: HOME -->
+  <div class="tab active" id="tab-home">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Bot Status</div>
+        <div class="stat-value" id="botStatus" style="color:#64748B">Stopped</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-value blue" id="posCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Invested</div>
+        <div class="stat-value purple" id="totalInvested">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unrealized P&L</div>
+        <div class="stat-value" id="totalPnl">$0.00</div>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Open Positions</div>
-      <div class="stat-value blue" id="posCount">0</div>
+
+    <div class="controls">
+      <button class="btn btn-start" onclick="startBot()">▶ Start</button>
+      <button class="btn btn-stop" onclick="stopBot()">⬛ Stop</button>
+      <button class="btn btn-refresh" onclick="loadAll()">↻ Refresh</button>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Total Invested</div>
-      <div class="stat-value purple" id="totalInvested">$0.00</div>
+
+    <!-- Position filters -->
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPositions('all', this)">All</button>
+      <button class="filter-btn" onclick="filterPositions('profit', this)">Profit</button>
+      <button class="filter-btn" onclick="filterPositions('loss', this)">Loss</button>
+      <button class="filter-btn" onclick="filterPositions('dca', this)">DCA'd</button>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Unrealized P&L</div>
-      <div class="stat-value" id="totalPnl">$0.00</div>
+
+    <div class="section">
+      <div class="section-title">
+        Open Positions
+        <span class="section-count" id="posCountBadge">0</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortPositions('coin')">Coin ↕</th>
+            <th>Avg Cost</th>
+            <th>Current</th>
+            <th>Invested</th>
+            <th onclick="sortPositions('dca_count')">DCA# ↕</th>
+            <th onclick="sortPositions('pnl_pct')">P&L% ↕</th>
+            <th>P&L$</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="positionsTable">
+          <tr><td colspan="8" class="loading">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Trades</div>
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Coin</th><th>Side</th><th>Price</th><th>Amount</th><th>Reason</th></tr>
+        </thead>
+        <tbody id="tradesTable">
+          <tr><td colspan="6" class="loading">Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Controls -->
-  <div class="controls">
-    <button class="btn btn-start" onclick="startBot()">▶ Start</button>
-    <button class="btn btn-stop" onclick="stopBot()">⬛ Stop</button>
-    <button class="btn btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  <!-- TAB: HISTORY -->
+  <div class="tab" id="tab-history">
+    <div class="history-stats">
+      <div class="hist-card">
+        <div class="hist-label">Closed Trades</div>
+        <div class="hist-value blue" id="histCount">0</div>
+      </div>
+      <div class="hist-card">
+        <div class="hist-label">Total Profit</div>
+        <div class="hist-value" id="histProfit">$0.00</div>
+      </div>
+      <div class="hist-card">
+        <div class="hist-label">Win Rate</div>
+        <div class="hist-value green" id="histWinRate">0%</div>
+      </div>
+    </div>
+
+    <!-- History filters -->
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterHistory('all', this)">All</button>
+      <button class="filter-btn" onclick="filterHistory('tp', this)">TP Hit</button>
+      <button class="filter-btn" onclick="filterHistory('manual', this)">Manual</button>
+      <button class="filter-btn" onclick="filterHistory('profit', this)">Profit</button>
+      <button class="filter-btn" onclick="filterHistory('loss', this)">Loss</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Closed Positions</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Coin</th>
+            <th>Entry Price</th>
+            <th>Exit Price</th>
+            <th>Invested</th>
+            <th>DCA#</th>
+            <th>P&L%</th>
+            <th>P&L$</th>
+            <th>Exit</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable">
+          <tr><td colspan="8" class="loading">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Positions -->
-  <div class="section">
-    <div class="section-title">Open Positions</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Coin</th>
-          <th>Avg Cost</th>
-          <th>Qty</th>
-          <th>Invested</th>
-          <th>DCA#</th>
-          <th>P&L</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="positionsTable">
-        <tr><td colspan="7" class="loading">Loading positions...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- TAB: SETTINGS -->
+  <div class="tab" id="tab-settings">
+    <div style="padding: 16px 16px 8px;">
+      <div style="font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 2px;">Bot Configuration</div>
+    </div>
 
-  <!-- Trades -->
-  <div class="section">
-    <div class="section-title">Recent Trades</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Side</th>
-          <th>Price</th>
-          <th>Amount</th>
-          <th>Reason</th>
-        </tr>
-      </thead>
-      <tbody id="tradesTable">
-        <tr><td colspan="5" class="loading">Loading trades...</td></tr>
-      </tbody>
-    </table>
+    <div class="settings-group">
+      <div class="settings-title">Trading Mode</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Paper Mode</div>
+          <div class="settings-desc">No real orders — safe for testing</div>
+        </div>
+        <button class="settings-toggle on" id="paperToggle" onclick="togglePaper()"></button>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-title">DCA Settings</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Base Order ($)</div>
+          <div class="settings-desc">Amount per position entry</div>
+        </div>
+        <input class="settings-input" id="cfg_base" type="number" value="1.0" step="0.5">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">DCA Trigger (%)</div>
+          <div class="settings-desc">% drop from last buy to DCA</div>
+        </div>
+        <input class="settings-input" id="cfg_dca" type="number" value="7.0" step="0.5">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Spacing Multiplier</div>
+          <div class="settings-desc">Widens each DCA level</div>
+        </div>
+        <input class="settings-input" id="cfg_spacing" type="number" value="1.4" step="0.1">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Size Multiplier</div>
+          <div class="settings-desc">Increases each DCA buy size</div>
+        </div>
+        <input class="settings-input" id="cfg_size" type="number" value="1.5" step="0.1">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Max DCA Orders</div>
+          <div class="settings-desc">0 = unlimited</div>
+        </div>
+        <input class="settings-input" id="cfg_maxdca" type="number" value="10" step="1">
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-title">Take Profit Settings</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Take Profit (%)</div>
+          <div class="settings-desc">% above avg cost to arm TP</div>
+        </div>
+        <input class="settings-input" id="cfg_tp" type="number" value="5.0" step="0.5">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Trailing (%)</div>
+          <div class="settings-desc">% pullback from peak to trigger</div>
+        </div>
+        <input class="settings-input" id="cfg_trail" type="number" value="2.0" step="0.5">
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-title">Bot Settings</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Check Interval (s)</div>
+          <div class="settings-desc">Seconds between price checks</div>
+        </div>
+        <input class="settings-input" id="cfg_interval" type="number" value="60" step="10">
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+
+    <div style="padding: 0 16px 16px;">
+      <div style="background: #13131F; border: 1px solid #F59E0B30; border-radius: 12px; padding: 14px;">
+        <div style="font-size: 11px; color: #F59E0B; margin-bottom: 6px;">⚠️ PAPER MODE ACTIVE</div>
+        <div style="font-size: 12px; color: #64748B;">All trades are simulated. No real money is used. Switch to Live Mode only after thorough testing.</div>
+      </div>
+    </div>
   </div>
 
 </div>
 
 <!-- Bottom Nav -->
 <div class="bottom-nav">
-  <div class="nav-item active">
-    <span class="nav-icon">🏠</span>
-    <span>Home</span>
+  <div class="nav-item active" onclick="showTab('home', this)">
+    <span class="nav-icon">🏠</span><span>Home</span>
   </div>
-  <div class="nav-item">
-    <span class="nav-icon">🤖</span>
-    <span>Bots</span>
+  <div class="nav-item" onclick="showTab('history', this)">
+    <span class="nav-icon">📊</span><span>History</span>
   </div>
-  <div class="nav-item">
-    <span class="nav-icon">📊</span>
-    <span>History</span>
-  </div>
-  <div class="nav-item">
-    <span class="nav-icon">⚙️</span>
-    <span>Settings</span>
+  <div class="nav-item" onclick="showTab('settings', this)">
+    <span class="nav-icon">⚙️</span><span>Settings</span>
   </div>
 </div>
 
 <script>
-const API = 'http://0.0.0.0:8080';
-let currentPrice = 0;
+const API = 'https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev';
+let allPositions = [];
+let allHistory = [];
+let positionSortKey = 'pnl_pct';
+let positionSortAsc = true;
+let paperMode = true;
 
+// ── TAB NAVIGATION ────────────────────────────────────────────────────────
+function showTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'history') fetchHistory();
+  if (name === 'settings') fetchConfig();
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────
 async function fetchStatus() {
   try {
     const res = await fetch(`${API}/status`);
     const data = await res.json();
-    currentPrice = data.price;
-    document.getElementById('livePrice').textContent = `BTC $${data.price.toLocaleString()}`;
+    document.getElementById('livePrice').textContent = `BTC $${data.btc_price.toLocaleString()}`;
     const dot = document.getElementById('statusDot');
     const status = document.getElementById('botStatus');
     if (data.running) {
@@ -294,79 +365,225 @@ async function fetchStatus() {
   }
 }
 
+// ── POSITIONS ─────────────────────────────────────────────────────────────
 async function fetchPositions() {
   try {
     const res = await fetch(`${API}/positions`);
-    const data = await res.json();
-    document.getElementById('posCount').textContent = data.length;
-    let totalInvested = 0;
-    let totalPnl = 0;
-    const tbody = document.getElementById('positionsTable');
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="loading">No open positions</td></tr>';
-      return;
-    }
-    tbody.innerHTML = data.map(pos => {
-      totalInvested += pos.total_invested;
-      const pnl = (currentPrice - pos.avg_cost) * pos.quantity;
-      const pnlPct = ((currentPrice - pos.avg_cost) / pos.avg_cost * 100).toFixed(2);
-      totalPnl += pnl;
-      const pnlColor = pnl >= 0 ? '#34D399' : '#F87171';
-      const pnlSign = pnl >= 0 ? '+' : '';
-      return `<tr>
-        <td>${pos.coin}</td>
-        <td>$${pos.avg_cost.toFixed(4)}</td>
-        <td>${pos.quantity.toFixed(6)}</td>
-        <td>$${pos.total_invested.toFixed(2)}</td>
-        <td><span class="badge badge-open">${pos.dca_count}</span></td>
-        <td style="color:${pnlColor}">${pnlSign}${pnlPct}%</td>
-        <td><button class="close-btn" onclick="closePosition(${pos.id})">Close</button></td>
-      </tr>`;
-    }).join('');
-    document.getElementById('totalInvested').textContent = `$${totalInvested.toFixed(2)}`;
-    const pnlEl = document.getElementById('totalPnl');
-    pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(4)}`;
-    pnlEl.style.color = totalPnl >= 0 ? '#34D399' : '#F87171';
+    allPositions = await res.json();
+    renderPositions(allPositions);
   } catch(e) {
     document.getElementById('positionsTable').innerHTML =
-      '<tr><td colspan="7" class="loading">Error loading positions</td></tr>';
+      '<tr><td colspan="8" class="loading">Error loading positions</td></tr>';
   }
 }
 
+function renderPositions(data) {
+  document.getElementById('posCount').textContent = data.length;
+  document.getElementById('posCountBadge').textContent = data.length;
+  let totalInvested = 0, totalPnl = 0;
+  const tbody = document.getElementById('positionsTable');
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon">🤖</div><div class="empty-text">No open positions. Start the bot to begin trading.</div></div></td></tr>';
+    document.getElementById('totalInvested').textContent = '$0.00';
+    document.getElementById('totalPnl').textContent = '$0.00';
+    return;
+  }
+  const sorted = [...data].sort((a, b) => {
+    const av = a[positionSortKey] ?? 0;
+    const bv = b[positionSortKey] ?? 0;
+    return positionSortAsc ? av - bv : bv - av;
+  });
+  tbody.innerHTML = sorted.map(pos => {
+    totalInvested += pos.total_invested;
+    totalPnl += pos.pnl;
+    const pnlColor = pos.pnl >= 0 ? '#34D399' : '#F87171';
+    const pnlSign = pos.pnl >= 0 ? '+' : '';
+    const dcaBadge = pos.dca_count > 0 ?
+      `<span class="badge badge-dca">${pos.dca_count}</span>` :
+      `<span class="badge badge-open">0</span>`;
+    return `<tr>
+      <td><strong>${pos.coin.replace('/USDT','')}</strong></td>
+      <td>$${pos.avg_cost.toFixed(4)}</td>
+      <td>$${pos.current_price.toFixed(4)}</td>
+      <td>$${pos.total_invested.toFixed(2)}</td>
+      <td>${dcaBadge}</td>
+      <td style="color:${pnlColor};font-weight:600">${pnlSign}${pos.pnl_pct}%</td>
+      <td style="color:${pnlColor}">${pnlSign}$${Math.abs(pos.pnl).toFixed(4)}</td>
+      <td><button class="close-btn" onclick="closePosition(${pos.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('totalInvested').textContent = `$${totalInvested.toFixed(2)}`;
+  const pnlEl = document.getElementById('totalPnl');
+  pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(4)}`;
+  pnlEl.style.color = totalPnl >= 0 ? '#34D399' : '#F87171';
+}
+
+function sortPositions(key) {
+  if (positionSortKey === key) positionSortAsc = !positionSortAsc;
+  else { positionSortKey = key; positionSortAsc = true; }
+  renderPositions(allPositions);
+}
+
+function filterPositions(type, el) {
+  document.querySelectorAll('.filter-bar .filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  let filtered = allPositions;
+  if (type === 'profit') filtered = allPositions.filter(p => p.pnl >= 0);
+  else if (type === 'loss') filtered = allPositions.filter(p => p.pnl < 0);
+  else if (type === 'dca') filtered = allPositions.filter(p => p.dca_count > 0);
+  renderPositions(filtered);
+}
+
+// ── TRADES ────────────────────────────────────────────────────────────────
 async function fetchTrades() {
   try {
     const res = await fetch(`${API}/trades`);
     const data = await res.json();
     const tbody = document.getElementById('tradesTable');
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="loading">No trades yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">No trades yet</td></tr>';
       return;
     }
-    tbody.innerHTML = data.map(t => {
+    tbody.innerHTML = data.slice(0,20).map(t => {
       const badgeClass = t.side === 'buy' ? 'badge-buy' : 'badge-sell';
-      const time = new Date(t.timestamp).toLocaleTimeString();
+      const time = new Date(t.timestamp + 'Z').toLocaleTimeString('en-SA', {timeZone: 'Asia/Riyadh', hour:'2-digit', minute:'2-digit'});
+      const coin = t.coin ? t.coin.replace('/USDT','') : '—';
+      const reasonBadge = t.reason === 'tp' ? `<span class="badge badge-tp">TP</span>` :
+                          t.reason === 'dca' ? `<span class="badge badge-dca">DCA</span>` :
+                          `<span style="color:#64748B;font-size:10px">${t.reason}</span>`;
       return `<tr>
         <td>${time}</td>
+        <td><strong>${coin}</strong></td>
         <td><span class="badge ${badgeClass}">${t.side.toUpperCase()}</span></td>
-        <td>$${t.price.toFixed(2)}</td>
+        <td>$${t.price.toFixed(4)}</td>
         <td>$${t.usdt_amount.toFixed(2)}</td>
-        <td>${t.reason}</td>
+        <td>${reasonBadge}</td>
       </tr>`;
     }).join('');
   } catch(e) {
     document.getElementById('tradesTable').innerHTML =
-      '<tr><td colspan="5" class="loading">Error loading trades</td></tr>';
+      '<tr><td colspan="6" class="loading">Error</td></tr>';
   }
 }
 
+// ── HISTORY ───────────────────────────────────────────────────────────────
+async function fetchHistory() {
+  try {
+    const res = await fetch(`${API}/history`);
+    allHistory = await res.json();
+    renderHistory(allHistory);
+  } catch(e) {
+    document.getElementById('historyTable').innerHTML =
+      '<tr><td colspan="8" class="loading">Error loading history</td></tr>';
+  }
+}
+
+function renderHistory(data) {
+  document.getElementById('histCount').textContent = data.length;
+  if (data.length === 0) {
+    document.getElementById('histProfit').textContent = '$0.00';
+    document.getElementById('histWinRate').textContent = '0%';
+    document.getElementById('historyTable').innerHTML =
+      '<tr><td colspan="8"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No closed trades yet. Trades appear here after Take Profit or manual close.</div></div></td></tr>';
+    return;
+  }
+  let totalProfit = 0, wins = 0;
+  const tbody = document.getElementById('historyTable');
+  tbody.innerHTML = data.map(pos => {
+    const profit = pos.realized_pnl || 0;
+    totalProfit += profit;
+    if (profit > 0) wins++;
+    const pnlColor = profit >= 0 ? '#34D399' : '#F87171';
+    const pnlSign = profit >= 0 ? '+' : '';
+    const pnlPct = pos.entry_price ? ((pos.exit_price - pos.entry_price) / pos.entry_price * 100).toFixed(2) : '0.00';
+    return `<tr>
+      <td><strong>${pos.coin.replace('/USDT','')}</strong></td>
+      <td>$${(pos.entry_price||0).toFixed(4)}</td>
+      <td>$${(pos.exit_price||0).toFixed(4)}</td>
+      <td>$${(pos.total_invested||0).toFixed(2)}</td>
+      <td><span class="badge badge-dca">${pos.dca_count||0}</span></td>
+      <td style="color:${pnlColor}">${pnlSign}${pnlPct}%</td>
+      <td style="color:${pnlColor};font-weight:600">${pnlSign}$${Math.abs(profit).toFixed(4)}</td>
+      <td><span class="badge badge-closed">${pos.exit_reason||'closed'}</span></td>
+    </tr>`;
+  }).join('');
+  const profitEl = document.getElementById('histProfit');
+  profitEl.textContent = `${totalProfit >= 0 ? '+' : ''}$${totalProfit.toFixed(4)}`;
+  profitEl.style.color = totalProfit >= 0 ? '#34D399' : '#F87171';
+  const winRate = data.length > 0 ? Math.round(wins / data.length * 100) : 0;
+  document.getElementById('histWinRate').textContent = `${winRate}%`;
+}
+
+function filterHistory(type, el) {
+  document.querySelectorAll('#tab-history .filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  let filtered = allHistory;
+  if (type === 'tp') filtered = allHistory.filter(h => h.exit_reason === 'tp');
+  else if (type === 'manual') filtered = allHistory.filter(h => h.exit_reason === 'manual');
+  else if (type === 'profit') filtered = allHistory.filter(h => (h.realized_pnl||0) > 0);
+  else if (type === 'loss') filtered = allHistory.filter(h => (h.realized_pnl||0) < 0);
+  renderHistory(filtered);
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+async function fetchConfig() {
+  try {
+    const res = await fetch(`${API}/config`);
+    const data = await res.json();
+    document.getElementById('cfg_base').value = data.base_order_usdt || 1.0;
+    document.getElementById('cfg_dca').value = data.dca_percent || 7.0;
+    document.getElementById('cfg_spacing').value = data.spacing_multiplier || 1.4;
+    document.getElementById('cfg_size').value = data.size_multiplier || 1.5;
+    document.getElementById('cfg_maxdca').value = data.max_dca_orders || 10;
+    document.getElementById('cfg_tp').value = data.take_profit_percent || 5.0;
+    document.getElementById('cfg_trail').value = data.trailing_percent || 2.0;
+    document.getElementById('cfg_interval').value = data.check_interval || 60;
+    paperMode = data.paper_mode !== false;
+    const toggle = document.getElementById('paperToggle');
+    if (paperMode) toggle.classList.add('on'); else toggle.classList.remove('on');
+  } catch(e) {}
+}
+
+function togglePaper() {
+  paperMode = !paperMode;
+  const toggle = document.getElementById('paperToggle');
+  if (paperMode) toggle.classList.add('on'); else toggle.classList.remove('on');
+}
+
+async function saveSettings() {
+  const settings = {
+    base_order_usdt: parseFloat(document.getElementById('cfg_base').value),
+    dca_percent: parseFloat(document.getElementById('cfg_dca').value),
+    spacing_multiplier: parseFloat(document.getElementById('cfg_spacing').value),
+    size_multiplier: parseFloat(document.getElementById('cfg_size').value),
+    max_dca_orders: parseInt(document.getElementById('cfg_maxdca').value),
+    take_profit_percent: parseFloat(document.getElementById('cfg_tp').value),
+    trailing_percent: parseFloat(document.getElementById('cfg_trail').value),
+    check_interval: parseInt(document.getElementById('cfg_interval').value),
+    paper_mode: paperMode,
+  };
+  try {
+    const res = await fetch(`${API}/config`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(settings)
+    });
+    const data = await res.json();
+    alert('✅ Settings saved! Restart bot to apply changes.');
+  } catch(e) {
+    alert('❌ Error saving settings');
+  }
+}
+
+// ── BOT CONTROLS ──────────────────────────────────────────────────────────
 async function startBot() {
   await fetch(`${API}/start`, {method: 'POST'});
-  loadAll();
+  setTimeout(loadAll, 1000);
 }
 
 async function stopBot() {
   await fetch(`${API}/stop`, {method: 'POST'});
-  loadAll();
+  setTimeout(loadAll, 1000);
 }
 
 async function closePosition(id) {
@@ -375,17 +592,15 @@ async function closePosition(id) {
   loadAll();
 }
 
+// ── MAIN LOOP ─────────────────────────────────────────────────────────────
 async function loadAll() {
   await fetchStatus();
   await fetchPositions();
   await fetchTrades();
 }
 
-// Load on start
 loadAll();
-
-// Auto refresh every 30 seconds
-setInterval(loadAll, 30000);
+setInterval(loadAll, 15000);
 </script>
 </body>
 </html>
