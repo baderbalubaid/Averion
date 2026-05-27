@@ -4,488 +4,660 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Averion</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#070711;--bg2:#0E0E1C;--bg3:#141428;
+  --border:#1E1E35;--border2:#252540;
+  --accent:#6366F1;--accent2:#4F46E5;
+  --green:#10D98A;--red:#F4645F;--amber:#F59E0B;--blue:#38BDF8;--purple:#A78BFA;
+  --text:#F0F0FF;--text2:#8888AA;--text3:#55556A;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
 
-body {
-  background: #09090F;
-  color: #E2E8F0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;transition:width 0.3s}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0}
+.logo-text{font-size:14px;font-weight:800;letter-spacing:2px}
+.logo-badge{font-size:8px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:auto}
+.sidebar-nav{padding:10px 8px;flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;padding:8px 10px 4px;font-weight:600}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text2);cursor:pointer;transition:all 0.15s;font-size:13px;font-weight:500;border:1px solid transparent}
+.nav-link:hover{background:var(--bg3);color:var(--text)}
+.nav-link.active{background:linear-gradient(135deg,#6366F115,#6366F108);color:var(--accent);border-color:#6366F118}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;min-width:18px;text-align:center}
+.sidebar-footer{padding:10px 8px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s}
+.user-row:hover{background:var(--bg3)}
+.user-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6366F1,#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:600}
+.user-plan{font-size:10px;color:var(--text3)}
 
-/* ── HEADER ── */
-.header {
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 20px #6366F140;
-}
-.header-left { display: flex; align-items: center; gap: 10px; }
-.pulse {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #34D399; animation: pulse 2s infinite;
-}
-.pulse.off { background: #64748B; animation: none; }
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-.logo { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: white; }
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.btc-price { font-size: 13px; font-weight: 700; color: white; }
-.btc-label { font-size: 9px; color: #A5B4FC; letter-spacing: 1px; }
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh}
 
-/* ── STATS ── */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 14px 12px 10px;
-}
-.stat-card {
-  background: #13131F;
-  border: 1px solid #1E1E3A;
-  border-radius: 14px;
-  padding: 12px 10px;
-  position: relative;
-  overflow: hidden;
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-}
-.stat-card.blue::before { background: #38BDF8; }
-.stat-card.green::before { background: #34D399; }
-.stat-card.purple::before { background: #A78BFA; }
-.stat-card.orange::before { background: #FB923C; }
-.stat-label { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 1px; }
-.stat-value { font-size: 16px; font-weight: 800; margin-top: 5px; line-height: 1; }
-.stat-sub { font-size: 9px; color: #64748B; margin-top: 3px; }
-.c-blue { color: #38BDF8; }
-.c-green { color: #34D399; }
-.c-red { color: #F87171; }
-.c-purple { color: #A78BFA; }
-.c-orange { color: #FB923C; }
-.c-muted { color: #64748B; }
+/* TOPBAR */
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.page-title{font-size:15px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.live-ticker{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 12px}
+.ticker-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.ticker-lbl{font-size:10px;color:var(--text3);font-weight:600}
+.ticker-price{font-size:13px;font-weight:700}
+.ticker-chg{font-size:10px;font-weight:600}
+.icon-btn{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:border-color 0.15s;position:relative}
+.icon-btn:hover{border-color:var(--accent)}
+.notif-dot{position:absolute;top:6px;right:6px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg2)}
+.paper-chip{background:#F59E0B12;border:1px solid #F59E0B28;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;color:var(--amber);letter-spacing:0.5px}
 
-/* ── CONTROLS ── */
-.controls {
-  display: flex;
-  gap: 8px;
-  padding: 0 12px 12px;
-}
-.btn {
-  padding: 10px 18px;
-  border-radius: 10px;
-  border: none;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  transition: opacity 0.2s, transform 0.1s;
-}
-.btn:active { transform: scale(0.97); }
-.btn-start { background: #34D399; color: #09090F; }
-.btn-stop { background: #F87171; color: #09090F; }
-.btn-refresh { background: #1E1E3A; color: #94A3B8; border: 1px solid #2D2D4A; }
+/* PAGE */
+.page{flex:1;overflow-y:auto;padding:24px}
+.page::-webkit-scrollbar{width:4px}
+.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
-/* ── SEARCH ── */
-.search-wrap { padding: 0 12px 10px; }
-.search-input {
-  width: 100%;
-  padding: 10px 16px;
-  background: #13131F;
-  border: 1px solid #1E1E3A;
-  border-radius: 10px;
-  color: #E2E8F0;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.search-input:focus { border-color: #6366F1; }
-.search-input::placeholder { color: #64748B; }
+/* TABS */
+.tab-content{display:none}
+.tab-content.active{display:block}
 
-/* ── FILTER BAR ── */
-.filter-bar {
-  display: flex;
-  gap: 6px;
-  padding: 0 12px 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.filter-bar::-webkit-scrollbar { display: none; }
-.filter-btn {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid #1E1E3A;
-  background: #13131F;
-  color: #64748B;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-.filter-btn.active {
-  background: #6366F1;
-  color: white;
-  border-color: #6366F1;
-}
+/* HERO STATS */
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.hero-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;cursor:default}
+.hero-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.hero-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--line-color,#6366F1),transparent);opacity:0.7}
+.hero-card.g{--line-color:#10D98A}.hero-card.b{--line-color:#38BDF8}.hero-card.a{--line-color:#F59E0B}
+.hero-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.hero-val{font-size:26px;font-weight:800;line-height:1;letter-spacing:-0.5px;margin-bottom:6px}
+.hero-sub{font-size:11px;color:var(--text3)}
+.hero-icon{position:absolute;top:16px;right:16px;font-size:22px;opacity:0.12}
 
-/* ── SECTION ── */
-.section { padding: 0 12px 14px; }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.section-title {
-  font-size: 10px;
-  color: #64748B;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-weight: 600;
-}
-.section-badge {
-  background: #1E1E3A;
-  color: #38BDF8;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
-}
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-title{font-size:14px;font-weight:700}
+.sec-sub{font-size:11px;color:var(--text3);margin-top:2px}
 
-/* ── TABLE ── */
-.table-wrap {
-  background: #13131F;
-  border: 1px solid #1E1E3A;
-  border-radius: 14px;
-  overflow: hidden;
-}
-table { width: 100%; border-collapse: collapse; }
-thead { background: #1A1A2E; }
-th {
-  color: #6366F1;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 10px 10px;
-  text-align: left;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-th:hover { color: #38BDF8; }
-td {
-  padding: 10px 10px;
-  font-size: 11px;
-  border-bottom: 1px solid #1E1E3A;
-  color: #E2E8F0;
-  white-space: nowrap;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #1E1E3A30; }
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s,transform 0.1s;display:inline-flex;align-items:center;gap:6px}
+.btn:active{opacity:0.8;transform:scale(0.98)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#09090F}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-xs{padding:4px 9px;font-size:9px;border-radius:6px;border:none;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-xs-stop{background:#F4645F15;color:var(--red);border:1px solid #F4645F25}
+.btn-xs-start{background:#10D98A15;color:var(--green);border:1px solid #10D98A25}
 
-/* ── BADGES ── */
-.badge {
-  padding: 3px 8px;
-  border-radius: 20px;
-  font-size: 9px;
-  font-weight: 700;
-  display: inline-block;
-}
-.badge-active { background: #34D39915; color: #34D399; border: 1px solid #34D39930; }
-.badge-stuck { background: #F59E0B15; color: #F59E0B; border: 1px solid #F59E0B30; }
-.badge-critical { background: #F8717115; color: #F87171; border: 1px solid #F8717130; }
-.badge-queued { background: #38BDF815; color: #38BDF8; border: 1px solid #38BDF830; }
-.badge-tp { background: #A78BFA15; color: #A78BFA; border: 1px solid #A78BFA30; }
-.badge-buy { background: #38BDF815; color: #38BDF8; }
-.badge-sell { background: #F8717115; color: #F87171; }
-.badge-dca { background: #A78BFA15; color: #A78BFA; }
-.badge-reason { background: #34D39915; color: #34D399; }
+/* EXCHANGE CARDS */
+.exc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:24px}
+.exc-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color 0.2s,transform 0.2s;cursor:pointer}
+.exc-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.exc-top{padding:16px 18px;display:flex;align-items:flex-start;gap:12px}
+.exc-logo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;flex-shrink:0}
+.exc-info{flex:1}
+.exc-name{font-size:14px;font-weight:700;margin-bottom:3px}
+.exc-sub{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.exc-dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+.exc-right{display:flex;gap:10px;align-items:flex-start}
+.exc-val-wrap{text-align:right}
+.exc-amount{font-size:15px;font-weight:800}
+.exc-pnl{font-size:11px;font-weight:600;margin-top:2px}
+.exc-menu-btn{width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--text2);transition:all 0.15s;flex-shrink:0;position:relative}
+.exc-menu-btn:hover{border-color:var(--accent);color:var(--accent)}
+.exc-stats{padding:0 18px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.exc-stat{background:var(--bg3);border-radius:9px;padding:9px 11px}
+.exc-stat-lbl{font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.exc-stat-val{font-size:13px;font-weight:700;margin-top:3px}
+.exc-footer{padding:8px 18px 12px;border-top:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.coin-tag{background:var(--bg3);border-radius:5px;padding:3px 7px;font-size:10px;color:var(--text3);font-weight:500}
+.coin-more{font-size:10px;color:var(--accent);font-weight:600;margin-left:2px}
 
-/* ── ACTION BUTTONS ── */
-.close-btn {
-  padding: 4px 8px;
-  background: transparent;
-  color: #F87171;
-  border: 1px solid #F8717150;
-  border-radius: 6px;
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.close-btn:hover { background: #F8717120; }
+/* ADD EXCHANGE */
+.exc-add{background:var(--bg2);border:1px dashed var(--border2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all 0.2s;min-height:160px}
+.exc-add:hover{border-color:var(--accent);background:#6366F108}
+.exc-add-icon{font-size:24px;opacity:0.3}
+.exc-add-text{font-size:12px;color:var(--text3);font-weight:500}
 
-/* ── LOADING / EMPTY ── */
-.loading { color: #64748B; font-size: 12px; padding: 24px; text-align: center; }
-.empty { text-align: center; padding: 32px 20px; }
-.empty-icon { font-size: 32px; margin-bottom: 8px; }
-.empty-text { font-size: 12px; color: #64748B; }
+/* DROPDOWN */
+.dropdown{position:relative}
+.dropdown-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--bg2);border:1px solid var(--border2);border-radius:10px;overflow:hidden;min-width:170px;z-index:100;box-shadow:0 8px 32px #00000080;display:none}
+.dropdown-menu.open{display:block}
+.dropdown-item{padding:10px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:9px;transition:background 0.1s;border-bottom:1px solid var(--border)}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover{background:var(--bg3);color:var(--text)}
+.dropdown-item.danger{color:var(--red)}
+.dropdown-item.danger:hover{background:#F4645F10}
 
-/* ── BOTTOM NAV ── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: #0D0D1E;
-  border-top: 1px solid #1E1E3A;
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 0 12px;
-  z-index: 100;
-}
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  color: #64748B;
-  font-size: 10px;
-  cursor: pointer;
-  padding: 4px 20px;
-  transition: color 0.2s;
-  border-radius: 10px;
-}
-.nav-item.active { color: #6366F1; }
-.nav-item.active .nav-icon { transform: scale(1.1); }
-.nav-icon { font-size: 22px; transition: transform 0.2s; }
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:#000000CC;z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:420px;overflow:hidden}
+.modal-hdr{background:var(--bg3);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.modal-title{font-size:14px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:5px;transition:background 0.15s}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{padding:18px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--text2);margin-bottom:6px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.form-input,.form-select{width:100%;padding:10px 13px;background:var(--bg);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text3)}
+.form-hint{margin-top:12px;padding:10px 13px;background:#38BDF808;border:1px solid #38BDF820;border-radius:8px;font-size:10px;color:#38BDF8;line-height:1.5}
+.modal-footer{padding:0 18px 18px;display:flex;gap:8px}
 
-/* ── TAB CONTENT ── */
-.tab { display: none; }
-.tab.active { display: block; }
-.content { padding-bottom: 90px; }
+/* BOTS */
+.bots-wrap{display:flex;flex-direction:column;gap:14px}
+.bot-section{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.bot-section-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg3)}
+.bot-exc-left{display:flex;align-items:center;gap:10px}
+.bot-exc-logo{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0}
+.bot-exc-name{font-size:13px;font-weight:700}
+.bot-exc-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.bot-exc-stats{display:flex;gap:16px;text-align:right}
+.bot-exc-stat-lbl{font-size:9px;color:var(--text3)}
+.bot-exc-stat-val{font-size:12px;font-weight:700}
+.bot-cards-list{display:flex;flex-direction:column}
+.bot-row{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
+.bot-row:last-of-type{border-bottom:none}
+.bot-row:hover{background:#6366F106}
+.bot-row-left{display:flex;align-items:center;gap:10px;flex:1}
+.bot-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bot-indicator.live{background:var(--green);box-shadow:0 0 8px #10D98A50}
+.bot-indicator.off{background:var(--text3)}
+.bot-row-info{flex:1}
+.bot-row-name{font-size:12px;font-weight:700;margin-bottom:4px}
+.bot-row-meta{display:flex;gap:12px}
+.bot-meta{font-size:10px;color:var(--text3)}
+.bot-meta span{color:var(--text2)}
+.bot-row-right{display:flex;align-items:center;gap:8px}
+.bot-arrow{color:var(--border2);font-size:14px}
+.add-bot-row{padding:11px 18px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;border-top:1px dashed var(--border2);transition:background 0.15s}
+.add-bot-row:hover{background:#6366F108}
+.add-bot-text{font-size:11px;color:var(--accent);font-weight:600}
 
-/* ── PAPER MODE BANNER ── */
-.paper-banner {
-  margin: 0 12px 10px;
-  padding: 8px 14px;
-  background: #F59E0B10;
-  border: 1px solid #F59E0B30;
-  border-radius: 10px;
-  font-size: 11px;
-  color: #F59E0B;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* BOT DETAIL */
+.bot-detail-hdr{background:var(--accent2);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.bot-detail-back{color:#C7D2FE;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;font-weight:500}
+.bot-detail-back:hover{color:#fff}
+.bot-detail-title{font-size:13px;font-weight:800}
+.bot-detail-badge{background:#10D98A20;color:var(--green);font-size:9px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid #10D98A30}
+.bot-detail-badge.off{background:#55556A20;color:var(--text3);border-color:#55556A30}
+
+/* STATS 4-GRID */
+.stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+.stat4{background:var(--bg3);border-radius:10px;padding:10px 12px}
+.stat4-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.stat4-val{font-size:14px;font-weight:800;margin-top:4px}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:6px;padding:0 14px 12px;overflow-x:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.f-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s;font-family:'Inter',sans-serif}
+.f-btn:hover{border-color:var(--border2);color:var(--text2)}
+.f-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* SEARCH */
+.search-wrap{padding:0 14px 10px}
+.search-input{width:100%;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+
+/* TABLE */
+.tbl-container{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:0 14px 14px}
+.tbl-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.tbl-title{font-size:13px;font-weight:700}
+.tbl-count{font-size:11px;color:var(--text3)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg3)}
+th{padding:10px 13px;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;text-align:left;cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--border)}
+th:hover{color:var(--text2)}
+td{padding:11px 13px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#6366F106}
+.td-coin{font-weight:700;display:flex;align-items:center;gap:7px}
+.coin-ico{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.td-muted{color:var(--text3);font-size:11px}
+
+/* BADGES */
+.badge{padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;display:inline-block}
+.badge-active{background:#10D98A12;color:var(--green);border:1px solid #10D98A22}
+.badge-stuck{background:#F59E0B12;color:var(--amber);border:1px solid #F59E0B22}
+.badge-critical{background:#F4645F12;color:var(--red);border:1px solid #F4645F22}
+.badge-queued{background:#38BDF812;color:var(--blue);border:1px solid #38BDF822}
+.badge-tp{background:#A78BFA12;color:var(--purple);border:1px solid #A78BFA22}
+.badge-closed{background:#55556A12;color:var(--text3);border:1px solid #55556A22}
+.badge-buy{background:#38BDF812;color:var(--blue)}
+.badge-sell{background:#F4645F12;color:var(--red)}
+
+/* HISTORY FILTERS */
+.hist-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;padding:0 0 4px}
+.filter-sel{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-family:'Inter',sans-serif;outline:none;cursor:pointer}
+.filter-sel:focus{border-color:var(--accent)}
+.date-presets{display:flex;gap:5px}
+.date-preset{padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
+.date-preset:hover,.date-preset.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.col-btn{margin-left:auto;padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:all 0.15s}
+.col-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* SETTINGS */
+.settings-group{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.settings-group-title{background:var(--bg3);padding:10px 16px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;border-bottom:1px solid var(--border)}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-lbl{font-size:13px;font-weight:500}
+.settings-desc{font-size:10px;color:var(--text3);margin-top:2px}
+.settings-input{width:90px;padding:7px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;text-align:right;outline:none}
+.settings-input:focus{border-color:var(--accent)}
+.toggle-wrap{position:relative}
+.toggle{width:42px;height:23px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background 0.2s}
+.toggle-thumb{width:17px;height:17px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left 0.2s}
+
+/* CLOSE BTN */
+.close-btn{padding:4px 9px;background:transparent;color:var(--red);border:1px solid #F4645F40;border-radius:6px;font-size:9px;cursor:pointer;font-weight:700;transition:background 0.15s}
+.close-btn:hover{background:#F4645F15}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:0.4}
+.empty-text{font-size:12px;color:var(--text3);line-height:1.6}
+
+/* LOADING */
+.loading{color:var(--text3);font-size:12px;padding:24px;text-align:center}
+
+/* SECTION PADDING */
+.sec-pad{padding:0 24px 20px}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-left">
-    <div class="pulse off" id="statusDot"></div>
-    <span class="logo">AVERION</span>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">A</div>
+    <span class="logo-text">AVERION</span>
+    <span class="logo-badge">BETA</span>
   </div>
-  <div class="header-right">
-    <div class="btc-price" id="livePrice">Loading...</div>
-    <div class="btc-label">BTC/USDT LIVE</div>
+  <div class="sidebar-nav">
+    <div class="nav-section-lbl">Overview</div>
+    <div class="nav-link active" onclick="switchTab('home',this)">
+      <span class="nav-icon">🏠</span><span>Home</span>
+    </div>
+    <div class="nav-link" onclick="switchTab('bots',this)">
+      <span class="nav-icon">🤖</span><span>Bots</span>
+      <span class="nav-badge" id="navBotsBadge">0</span>
+    </div>
+    <div class="nav-section-lbl" style="margin-top:8px">Analytics</div>
+    <div class="nav-link" onclick="switchTab('history',this)">
+      <span class="nav-icon">📊</span><span>History</span>
+    </div>
+    <div class="nav-section-lbl" style="margin-top:8px">System</div>
+    <div class="nav-link" onclick="switchTab('settings',this)">
+      <span class="nav-icon">⚙️</span><span>Settings</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="user-avatar">B</div>
+      <div>
+        <div class="user-name">Bader</div>
+        <div class="user-plan" id="userPlan">Personal · Paper</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="content">
+<!-- MAIN -->
+<div class="main">
 
-  <!-- TAB: HOME -->
-  <div class="tab active" id="tab-home">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="page-title" id="pageTitle">Home</span>
+    </div>
+    <div class="topbar-right">
+      <div class="paper-chip" id="modeChip">⚡ PAPER MODE</div>
+      <div class="live-ticker">
+        <div class="ticker-dot"></div>
+        <span class="ticker-lbl">BTC</span>
+        <span class="ticker-price" id="btcPrice">Loading...</span>
+        <span class="ticker-chg" id="btcChg" style="color:var(--green)"></span>
+      </div>
+      <div class="icon-btn">🔔<div class="notif-dot"></div></div>
+      <div class="icon-btn">👤</div>
+    </div>
+  </div>
 
-    <!-- Paper mode banner -->
-    <div class="paper-banner">
-      ⚡ PAPER MODE — No real orders
+  <!-- PAGE -->
+  <div class="page">
+
+    <!-- ═══════════════════════════ HOME ═══════════════════════════ -->
+    <div class="tab-content active" id="tab-home">
+
+      <!-- Hero Stats -->
+      <div class="hero-stats">
+        <div class="hero-card">
+          <div class="hero-icon">💰</div>
+          <div class="hero-lbl">Total Capital</div>
+          <div class="hero-val" id="h-capital">$0.00</div>
+          <div class="hero-sub" id="h-capital-sub">across all exchanges</div>
+        </div>
+        <div class="hero-card g">
+          <div class="hero-icon">📈</div>
+          <div class="hero-lbl">Last 24h P&L</div>
+          <div class="hero-val" id="h-24h">$0.00</div>
+          <div class="hero-sub" id="h-24h-pct" style="color:var(--green)">+0.00%</div>
+        </div>
+        <div class="hero-card b">
+          <div class="hero-icon">🏆</div>
+          <div class="hero-lbl">Total Profit</div>
+          <div class="hero-val" id="h-profit">$0.00</div>
+          <div class="hero-sub">all time · all exchanges</div>
+        </div>
+        <div class="hero-card a">
+          <div class="hero-icon">⚠️</div>
+          <div class="hero-lbl">Fees Due</div>
+          <div class="hero-val" id="h-fees" style="color:var(--amber)">$0.00</div>
+          <div class="hero-sub" id="h-fees-sub">20% of realized profit</div>
+        </div>
+      </div>
+
+      <!-- Exchanges -->
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title">Exchanges</div>
+          <div class="sec-sub">Connected API accounts</div>
+        </div>
+        <button class="btn btn-accent btn-sm" onclick="openModal()">+ Add Exchange</button>
+      </div>
+
+      <div class="exc-grid" id="exchangesGrid">
+        <div class="loading">Loading exchanges...</div>
+      </div>
+
     </div>
 
-    <!-- 4 Stat Cards -->
-    <div class="stats">
-      <div class="stat-card blue">
-        <div class="stat-label">Status</div>
-        <div class="stat-value c-muted" id="botStatus">OFF</div>
+    <!-- ═══════════════════════════ BOTS ═══════════════════════════ -->
+    <div class="tab-content" id="tab-bots">
+
+      <!-- LEVEL 1 -->
+      <div id="bots-l1">
+        <div class="bots-wrap" id="botsList">
+          <div class="loading">Loading bots...</div>
+        </div>
       </div>
-      <div class="stat-card green">
-        <div class="stat-label">Positions</div>
-        <div class="stat-value c-blue" id="posCount">0</div>
-        <div class="stat-sub" id="posSubLabel">open</div>
-      </div>
-      <div class="stat-card purple">
-        <div class="stat-label">Invested</div>
-        <div class="stat-value c-purple" id="totalInvested">$0</div>
-      </div>
-      <div class="stat-card orange">
-        <div class="stat-label">P&L</div>
-        <div class="stat-value" id="totalPnl">$0</div>
-        <div class="stat-sub" id="totalPnlPct">0.00%</div>
+
+      <!-- LEVEL 2 (bot detail) -->
+      <div id="bots-l2" style="display:none;margin:-24px">
+        <div class="bot-detail-hdr">
+          <div class="bot-detail-back" onclick="backToBots()">‹ Bots</div>
+          <div class="bot-detail-title" id="bdTitle">Bot Name</div>
+          <div class="bot-detail-badge" id="bdBadge">● Live</div>
+        </div>
+
+        <div class="stats4">
+          <div class="stat4"><div class="stat4-lbl">Open</div><div class="stat4-val" id="bd-open" style="color:var(--blue)">0</div></div>
+          <div class="stat4"><div class="stat4-lbl">Invested</div><div class="stat4-val" id="bd-inv" style="color:var(--purple)">$0</div></div>
+          <div class="stat4"><div class="stat4-lbl">P&L $</div><div class="stat4-val" id="bd-pnl">$0</div></div>
+          <div class="stat4"><div class="stat4-lbl">P&L %</div><div class="stat4-val" id="bd-pnlpct">0%</div></div>
+        </div>
+
+        <div style="display:flex;gap:8px;padding:0 14px 12px">
+          <button class="btn btn-red btn-sm" id="bdToggleBtn" onclick="toggleBot()">⬛ Stop Bot</button>
+          <button class="btn btn-ghost btn-sm" onclick="refreshBotDetail()">↻ Refresh</button>
+        </div>
+
+        <div class="search-wrap">
+          <input class="search-input" id="bdSearch" onkeyup="applyBotFilter()" placeholder="🔍 Search coin...">
+        </div>
+
+        <div class="filter-bar">
+          <button class="f-btn active" onclick="setBotFilter('all',this)">All</button>
+          <button class="f-btn" onclick="setBotFilter('profit',this)">📈 Profit</button>
+          <button class="f-btn" onclick="setBotFilter('loss',this)">📉 Loss</button>
+          <button class="f-btn" onclick="setBotFilter('dca',this)">🔄 DCA'd</button>
+          <button class="f-btn" onclick="setBotFilter('stuck',this)">⏳ Stuck</button>
+          <button class="f-btn" onclick="setBotFilter('tp',this)">🚀 TP Armed</button>
+        </div>
+
+        <div class="tbl-container">
+          <div class="tbl-hdr">
+            <span class="tbl-title">Positions</span>
+            <span class="tbl-count" id="bd-count">0 open</span>
+          </div>
+          <table>
+            <thead><tr>
+              <th onclick="sortBd('coin')">Coin</th>
+              <th>Avg Cost</th><th>Current</th>
+              <th onclick="sortBd('dca_count')">DCA#</th>
+              <th onclick="sortBd('days_open')">Days</th>
+              <th onclick="sortBd('pnl_pct')">P&L%</th>
+              <th onclick="sortBd('pnl')">P&L$</th>
+              <th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="bdTable"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button class="btn btn-start" onclick="startBot()">▶ START</button>
-      <button class="btn btn-stop" onclick="stopBot()">⬛ STOP</button>
-      <button class="btn btn-refresh" onclick="loadAll()">↻</button>
-    </div>
+    <!-- ═══════════════════════════ HISTORY ═══════════════════════════ -->
+    <div class="tab-content" id="tab-history">
 
-    <!-- Search -->
-    <div class="search-wrap">
-      <input class="search-input" id="coinSearch"
-        onkeyup="applyFilters()"
-        placeholder="🔍 Search coin (BTC, ETH, RVN...)">
-    </div>
-
-    <!-- Filter buttons -->
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
-      <button class="filter-btn" onclick="setFilter('profit', this)">📈 Profit</button>
-      <button class="filter-btn" onclick="setFilter('loss', this)">📉 Loss</button>
-      <button class="filter-btn" onclick="setFilter('dca', this)">🔄 DCA'd</button>
-      <button class="filter-btn" onclick="setFilter('stuck', this)">⏳ Stuck</button>
-      <button class="filter-btn" onclick="setFilter('tp', this)">🚀 TP Armed</button>
-    </div>
-
-    <!-- Positions Table -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">Open Positions</span>
-        <span class="section-badge" id="posCountBadge">0</span>
+      <!-- Stats -->
+      <div class="hero-stats" style="margin-bottom:16px">
+        <div class="hero-card">
+          <div class="hero-lbl">Closed Trades</div>
+          <div class="hero-val" id="hs-count" style="color:var(--blue)">0</div>
+        </div>
+        <div class="hero-card g">
+          <div class="hero-lbl">Total Profit</div>
+          <div class="hero-val" id="hs-profit">$0.00</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-lbl">Win Rate</div>
+          <div class="hero-val" id="hs-winrate" style="color:var(--green)">0%</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-lbl">Avg Hold Time</div>
+          <div class="hero-val" id="hs-avghold" style="color:var(--text2)">—</div>
+        </div>
       </div>
-      <div class="table-wrap">
+
+      <!-- Filters -->
+      <div class="hist-filters">
+        <select class="filter-sel" id="hf-exchange" onchange="applyHistoryFilter()">
+          <option value="">All Exchanges</option>
+          <option value="MEXC">MEXC</option>
+          <option value="Binance">Binance</option>
+        </select>
+        <select class="filter-sel" id="hf-coin" onchange="applyHistoryFilter()">
+          <option value="">All Coins</option>
+        </select>
+        <div class="date-presets">
+          <button class="date-preset" onclick="setDateFilter('today',this)">Today</button>
+          <button class="date-preset" onclick="setDateFilter('7d',this)">7 Days</button>
+          <button class="date-preset" onclick="setDateFilter('30d',this)">30 Days</button>
+          <button class="date-preset active" onclick="setDateFilter('all',this)">All Time</button>
+        </div>
+        <button class="col-btn" onclick="toggleColumnPicker()">⊞ Columns</button>
+      </div>
+
+      <!-- Column picker -->
+      <div id="columnPicker" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;display:none">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Show / Hide Columns</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="columnToggles"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-container" style="margin:0 0 14px">
+        <div class="tbl-hdr">
+          <span class="tbl-title">Closed Positions</span>
+          <span class="tbl-count" id="hs-tbl-count">0 trades</span>
+        </div>
         <table>
-          <thead>
-            <tr>
-              <th onclick="sortBy('coin')">Coin</th>
-              <th onclick="sortBy('avg_cost')">Avg Cost</th>
-              <th>Current</th>
-              <th onclick="sortBy('total_invested')">Invested</th>
-              <th onclick="sortBy('dca_count')">DCA#</th>
-              <th onclick="sortBy('days_open')">Days</th>
-              <th onclick="sortBy('pnl_pct')">P&L%</th>
-              <th onclick="sortBy('pnl')">P&L$</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="positionsTable">
-            <tr><td colspan="10" class="loading">Loading positions...</td></tr>
-          </tbody>
+          <thead><tr id="historyThead"></tr></thead>
+          <tbody id="historyTable"><tr><td class="loading">Loading history...</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <!-- Recent Trades -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">Recent Trades</span>
+    <!-- ═══════════════════════════ SETTINGS ═══════════════════════════ -->
+    <div class="tab-content" id="tab-settings">
+      <div style="max-width:560px">
+
+        <div class="settings-group">
+          <div class="settings-group-title">Trading Mode</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-lbl">Paper Mode</div>
+              <div class="settings-desc">Simulate trades — no real orders</div>
+            </div>
+            <button class="toggle" id="paperToggle" onclick="togglePaper()" style="background:var(--accent)">
+              <div class="toggle-thumb" id="paperThumb" style="left:22px"></div>
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-group" id="settingsFields"></div>
+
+        <button class="btn btn-accent" style="width:100%;padding:13px;justify-content:center;margin-bottom:14px" onclick="saveSettings()">
+          💾 Save Settings
+        </button>
+
+        <div style="padding:12px 16px;background:#F59E0B08;border:1px solid #F59E0B22;border-radius:12px">
+          <div style="font-size:11px;color:var(--amber);font-weight:700;margin-bottom:4px">⚠️ Paper Mode Active</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.6">All trades are simulated. No real money is used. Only switch to Live after thorough testing on Hetzner server.</div>
+        </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Coin</th>
-              <th>Side</th>
-              <th>Price</th>
-              <th>Amount</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody id="tradesTable">
-            <tr><td colspan="6" class="loading">Loading trades...</td></tr>
-          </tbody>
-        </table>
+    </div>
+
+  </div><!-- /page -->
+</div><!-- /main -->
+
+<!-- ADD EXCHANGE MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">Add Exchange</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Exchange</label>
+        <select class="form-select" id="m-exchange" onchange="onExchangeChange()">
+          <option value="mexc">MEXC</option>
+          <option value="binance">Binance</option>
+          <option value="kucoin">KuCoin</option>
+          <option value="gateio">Gate.io</option>
+          <option value="okx">OKX</option>
+          <option value="htx">HTX</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Custom Name</label>
+        <input class="form-input" id="m-name" placeholder="e.g. My MEXC Main Account">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input class="form-input" id="m-apikey" placeholder="Paste your API key">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Secret</label>
+        <input class="form-input" id="m-secret" type="password" placeholder="Paste your API secret">
+      </div>
+      <div class="form-group" id="m-pass-group" style="display:none">
+        <label class="form-label">Passphrase <span style="color:var(--text3);font-weight:400;text-transform:none">required for this exchange</span></label>
+        <input class="form-input" id="m-passphrase" type="password" placeholder="Enter passphrase">
+      </div>
+      <div class="form-hint">
+        ℹ️ Enable <strong>Read + Trade</strong> permissions only.<br>
+        Never enable withdrawals. Your API key never leaves your device.
       </div>
     </div>
-
-  </div>
-
-  <!-- TAB: HISTORY (placeholder) -->
-  <div class="tab" id="tab-history">
-    <div class="empty" style="margin-top: 60px;">
-      <div class="empty-icon">📊</div>
-      <div class="empty-text">History tab — coming tomorrow</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" style="flex:2;justify-content:center" onclick="saveExchange()">✓ Test & Save</button>
     </div>
-  </div>
-
-  <!-- TAB: BOTS (placeholder) -->
-  <div class="tab" id="tab-bots">
-    <div class="empty" style="margin-top: 60px;">
-      <div class="empty-icon">🤖</div>
-      <div class="empty-text">Multi-bot management — Phase 5</div>
-    </div>
-  </div>
-
-  <!-- TAB: SETTINGS (placeholder) -->
-  <div class="tab" id="tab-settings">
-    <div class="empty" style="margin-top: 60px;">
-      <div class="empty-icon">⚙️</div>
-      <div class="empty-text">Settings tab — coming tomorrow</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <div class="nav-item active" onclick="showTab('home', this)">
-    <span class="nav-icon">🏠</span>
-    <span>Home</span>
-  </div>
-  <div class="nav-item" onclick="showTab('history', this)">
-    <span class="nav-icon">📊</span>
-    <span>History</span>
-  </div>
-  <div class="nav-item" onclick="showTab('bots', this)">
-    <span class="nav-icon">🤖</span>
-    <span>Bots</span>
-  </div>
-  <div class="nav-item" onclick="showTab('settings', this)">
-    <span class="nav-icon">⚙️</span>
-    <span>Settings</span>
   </div>
 </div>
 
 <script>
 const API = 'https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev';
 
+// ── CONFIG ────────────────────────────────────────────────
+const EXC = {
+  mexc:    {name:'MEXC',    bg:'#1E3A5F',text:'#38BDF8',logo:'M',pass:false},
+  binance: {name:'Binance', bg:'#3D2B00',text:'#F59E0B',logo:'B',pass:false},
+  kucoin:  {name:'KuCoin',  bg:'#003D1E',text:'#4ADE80',logo:'K',pass:true},
+  gateio:  {name:'Gate.io', bg:'#1A2E3D',text:'#38BDF8',logo:'G',pass:false},
+  okx:     {name:'OKX',     bg:'#1A1A1A',text:'#E2E8F0',logo:'O',pass:true},
+  htx:     {name:'HTX',     bg:'#3D0000',text:'#F87171',logo:'H',pass:false},
+};
+
+const SETTINGS = [
+  {key:'base_order_usdt',    label:'Base Order ($)',     desc:'Amount per position entry',    step:0.5},
+  {key:'dca_percent',        label:'DCA Trigger (%)',    desc:'% drop from last buy to DCA', step:0.5},
+  {key:'spacing_multiplier', label:'Spacing Multiplier', desc:'Widens each DCA level',       step:0.1},
+  {key:'size_multiplier',    label:'Size Multiplier',    desc:'Increases each DCA buy size', step:0.1},
+  {key:'max_dca_orders',     label:'Max DCA Orders',     desc:'0 = unlimited',               step:1},
+  {key:'take_profit_percent',label:'Take Profit (%)',    desc:'% above avg cost to arm TP',  step:0.5},
+  {key:'trailing_percent',   label:'Trailing (%)',       desc:'% pullback to trigger exit',  step:0.5},
+  {key:'check_interval',     label:'Check Interval (s)', desc:'Seconds between checks',      step:10},
+];
+
+const HISTORY_COLS = [
+  {key:'coin',       label:'Coin',       show:true},
+  {key:'exchange',   label:'Exchange',   show:true},
+  {key:'entry_date', label:'Entry Date', show:true},
+  {key:'exit_date',  label:'Exit Date',  show:true},
+  {key:'entry_price',label:'Entry Price',show:true},
+  {key:'avg_cost',   label:'Avg Cost',   show:false},
+  {key:'exit_price', label:'Exit Price', show:true},
+  {key:'dca_count',  label:'DCA#',       show:true},
+  {key:'pnl_pct',    label:'P&L%',       show:true},
+  {key:'pnl_usd',    label:'P&L$',       show:true},
+  {key:'hold',       label:'Hold Time',  show:false},
+  {key:'exit_reason',label:'Exit',       show:true},
+];
+
+// ── STATE ─────────────────────────────────────────────────
 let allPositions = [];
-let currentFilter = 'all';
-let currentSort = 'pnl_pct';
-let sortAsc = true;
+let allHistory   = [];
+let botFilter    = 'all';
+let botSort      = 'pnl_pct';
+let botSortAsc   = true;
+let paperMode    = true;
+let currentBotRunning = true;
+let histDateFilter = 'all';
 
 // ── TAB NAVIGATION ────────────────────────────────────────
-function showTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+const TAB_TITLES = {home:'Home',bots:'Bots',history:'History',settings:'Settings'};
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   el.classList.add('active');
+  document.getElementById('pageTitle').textContent = TAB_TITLES[name];
+  if (name === 'history') { fetchHistory(); buildColumnToggles(); }
+  if (name === 'bots') renderBotsList();
+  if (name === 'settings') loadSettings();
 }
 
-// ── STATUS ────────────────────────────────────────────────
+// ── LIVE STATUS ───────────────────────────────────────────
 async function fetchStatus() {
   try {
     const res = await fetch(`${API}/status`);
-    const data = await res.json();
-    const price = data.btc_price;
-    document.getElementById('livePrice').textContent =
-      '$' + price.toLocaleString('en-US', {maximumFractionDigits: 2});
-    const dot = document.getElementById('statusDot');
-    const status = document.getElementById('botStatus');
-    if (data.running) {
-      dot.classList.remove('off');
-      status.textContent = 'ON';
-      status.style.color = '#34D399';
-    } else {
-      dot.classList.add('off');
-      status.textContent = 'OFF';
-      status.style.color = '#64748B';
-    }
+    const d = await res.json();
+    const price = d.btc_price || 0;
+    document.getElementById('btcPrice').textContent = '$' + price.toLocaleString('en-US',{maximumFractionDigits:2});
+    document.getElementById('navBotsBadge').textContent = allPositions.length;
   } catch(e) {
-    document.getElementById('livePrice').textContent = 'Offline';
+    document.getElementById('btcPrice').textContent = 'Offline';
   }
 }
 
@@ -494,181 +666,533 @@ async function fetchPositions() {
   try {
     const res = await fetch(`${API}/positions`);
     allPositions = await res.json();
-    applyFilters();
-  } catch(e) {
-    document.getElementById('positionsTable').innerHTML =
-      '<tr><td colspan="10" class="loading">Error loading positions</td></tr>';
+    renderHome();
+    if (document.getElementById('bots-l2').style.display !== 'none') applyBotFilter();
+  } catch(e) {}
+}
+
+function statusInfo(pos) {
+  const d = pos.days_open || 0;
+  if (pos.tp_armed) return {label:'🚀 TP Armed', cls:'badge-tp'};
+  if (d > 60)       return {label:'🔴 Critical', cls:'badge-critical'};
+  if (d > 30)       return {label:'🟡 Stuck',    cls:'badge-stuck'};
+  if (pos.queued)   return {label:'⏳ Queued',   cls:'badge-queued'};
+  return {label:'🟢 Active', cls:'badge-active'};
+}
+
+// ── HOME ──────────────────────────────────────────────────
+function renderHome() {
+  const total = allPositions.reduce((s,p) => s + p.total_invested, 0);
+  const pnl   = allPositions.reduce((s,p) => s + p.pnl, 0);
+  const pct   = total > 0 ? (pnl/total*100).toFixed(2) : '0.00';
+  const fees  = Math.max(0, pnl * 0.20);
+
+  document.getElementById('h-capital').textContent = '$' + total.toFixed(2);
+  document.getElementById('h-capital-sub').textContent = `across ${getExchanges().length} exchange${getExchanges().length!==1?'s':''}`;
+
+  const el24 = document.getElementById('h-24h');
+  el24.textContent = (pnl>=0?'+':'') + '$' + Math.abs(pnl).toFixed(2);
+  el24.style.color = pnl>=0?'var(--green)':'var(--red)';
+  const elPct = document.getElementById('h-24h-pct');
+  elPct.textContent = (pnl>=0?'+':'') + pct + '%';
+  elPct.style.color = pnl>=0?'var(--green)':'var(--red)';
+
+  const profEl = document.getElementById('h-profit');
+  profEl.textContent = (pnl>=0?'+':'') + '$' + Math.abs(pnl).toFixed(2);
+  profEl.style.color = pnl>=0?'var(--blue)':'var(--red)';
+
+  document.getElementById('h-fees').textContent = '$' + fees.toFixed(2);
+  document.getElementById('h-fees-sub').textContent = fees > 0 ? `20% of $${pnl.toFixed(2)} profit` : 'No fees due';
+
+  renderExchanges();
+}
+
+// ── EXCHANGES ─────────────────────────────────────────────
+function getExchanges() {
+  try { return JSON.parse(localStorage.getItem('av_exchanges') || '[]'); }
+  catch(e) { return [{id:'mexc',name:'My MEXC Account',connected:true}]; }
+}
+function setExchanges(list) {
+  try { localStorage.setItem('av_exchanges', JSON.stringify(list)); } catch(e) {}
+}
+
+function renderExchanges() {
+  const list = getExchanges();
+  const grid = document.getElementById('exchangesGrid');
+
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="exc-add" onclick="openModal()">
+        <div class="exc-add-icon">🔌</div>
+        <div class="exc-add-text">Connect your first exchange</div>
+      </div>`;
+    return;
+  }
+
+  const posCount = allPositions.length;
+  const pnl = allPositions.reduce((s,p)=>s+p.pnl,0);
+  const inv  = allPositions.reduce((s,p)=>s+p.total_invested,0);
+
+  grid.innerHTML = list.map(exc => {
+    const cfg = EXC[exc.id] || {name:exc.id,bg:'#1E1E35',text:'#E2E8F0',logo:'?'};
+    const displayName = exc.name || cfg.name;
+    const pnlSign = pnl>=0?'+':'';
+    const pnlColor = pnl>=0?'var(--green)':'var(--red)';
+    const coins = allPositions.slice(0,5).map(p=>p.coin.replace('/USDT','')).filter(Boolean);
+    const more = Math.max(0, posCount - 5);
+    return `
+    <div class="exc-card">
+      <div class="exc-top">
+        <div class="exc-logo" style="background:${cfg.bg};color:${cfg.text}">${cfg.logo}</div>
+        <div class="exc-info">
+          <div class="exc-name">${displayName}</div>
+          <div class="exc-sub"><div class="exc-dot"></div>Connected · ${posCount} positions</div>
+        </div>
+        <div class="exc-right">
+          <div class="exc-val-wrap">
+            <div class="exc-amount">$${inv.toFixed(2)}</div>
+            <div class="exc-pnl" style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)} today</div>
+          </div>
+          <div class="dropdown">
+            <div class="exc-menu-btn" onclick="toggleDropdown(event,'dd-${exc.id}')">⋯</div>
+            <div class="dropdown-menu" id="dd-${exc.id}">
+              <div class="dropdown-item" onclick="testExc(event,'${exc.id}')">✓ &nbsp;Test Connection</div>
+              <div class="dropdown-item" onclick="editExc(event,'${exc.id}')">✏️ &nbsp;Edit API Keys</div>
+              <div class="dropdown-item" onclick="renameExc(event,'${exc.id}')">🏷️ &nbsp;Rename</div>
+              <div class="dropdown-item danger" onclick="deleteExc(event,'${exc.id}')">✕ &nbsp;Delete Exchange</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="exc-stats">
+        <div class="exc-stat"><div class="exc-stat-lbl">Positions</div><div class="exc-stat-val" style="color:var(--blue)">${posCount}</div></div>
+        <div class="exc-stat"><div class="exc-stat-lbl">Bots Live</div><div class="exc-stat-val"><span style="color:var(--green)">1</span>/1</div></div>
+        <div class="exc-stat"><div class="exc-stat-lbl">24h P&L</div><div class="exc-stat-val" style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</div></div>
+      </div>
+      ${coins.length>0?`<div class="exc-footer">
+        ${coins.map(c=>`<span class="coin-tag">${c}</span>`).join('')}
+        ${more>0?`<span class="coin-more">+${more} more</span>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('') + `
+  <div class="exc-add" onclick="openModal()">
+    <div class="exc-add-icon">🔌</div>
+    <div class="exc-add-text">Connect another exchange</div>
+  </div>`;
+}
+
+// Dropdown
+function toggleDropdown(e, id) {
+  e.stopPropagation();
+  const menu = document.getElementById(id);
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+});
+
+function testExc(e, id) {
+  e.stopPropagation();
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+  alert(`✅ ${EXC[id]?.name || id} API connection successful!`);
+}
+function editExc(e, id) {
+  e.stopPropagation();
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+  document.getElementById('m-exchange').value = id;
+  onExchangeChange();
+  openModal();
+}
+function renameExc(e, id) {
+  e.stopPropagation();
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+  const list = getExchanges();
+  const exc = list.find(x => x.id === id);
+  if (!exc) return;
+  const name = prompt('New name for this exchange:', exc.name || EXC[id]?.name || id);
+  if (name && name.trim()) {
+    exc.name = name.trim();
+    setExchanges(list);
+    renderExchanges();
   }
 }
-
-function getStatus(pos) {
-  const daysOpen = pos.days_open || 0;
-  if (pos.tp_armed) return { label: '🚀 TP Armed', cls: 'badge-tp' };
-  if (daysOpen > 60) return { label: '🔴 Critical', cls: 'badge-critical' };
-  if (daysOpen > 30) return { label: '🟡 Stuck', cls: 'badge-stuck' };
-  if (pos.queued) return { label: '⏳ Queued', cls: 'badge-queued' };
-  return { label: '🟢 Active', cls: 'badge-active' };
+function deleteExc(e, id) {
+  e.stopPropagation();
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+  if (!confirm(`Remove ${EXC[id]?.name || id}?`)) return;
+  setExchanges(getExchanges().filter(x => x.id !== id));
+  renderExchanges();
 }
 
-function applyFilters() {
-  const search = document.getElementById('coinSearch').value.toLowerCase();
-  let filtered = allPositions.filter(p => {
-    const coinMatch = p.coin.toLowerCase().includes(search);
-    if (!coinMatch) return false;
-    const daysOpen = p.days_open || 0;
-    if (currentFilter === 'profit') return p.pnl >= 0;
-    if (currentFilter === 'loss') return p.pnl < 0;
-    if (currentFilter === 'dca') return p.dca_count > 0;
-    if (currentFilter === 'stuck') return daysOpen > 30;
-    if (currentFilter === 'tp') return p.tp_armed;
+// Modal
+function openModal() {
+  document.getElementById('addModal').classList.add('open');
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-apikey').value = '';
+  document.getElementById('m-secret').value = '';
+  document.getElementById('m-passphrase').value = '';
+}
+function closeModal() { document.getElementById('addModal').classList.remove('open'); }
+function onExchangeChange() {
+  const id = document.getElementById('m-exchange').value;
+  document.getElementById('m-pass-group').style.display = EXC[id]?.pass ? 'block' : 'none';
+  document.getElementById('m-name').placeholder = `e.g. My ${EXC[id]?.name || ''} Account`;
+}
+function saveExchange() {
+  const id = document.getElementById('m-exchange').value;
+  const name = document.getElementById('m-name').value.trim() || EXC[id]?.name || id;
+  const apiKey = document.getElementById('m-apikey').value.trim();
+  if (!apiKey) { alert('Please enter your API key'); return; }
+  const list = getExchanges();
+  if (!list.find(x => x.id === id)) list.push({ id, name, connected: true });
+  else { const e = list.find(x=>x.id===id); e.name=name; e.connected=true; }
+  setExchanges(list);
+  closeModal();
+  renderExchanges();
+  alert(`✅ ${name} connected successfully!`);
+}
+
+// ── BOTS LEVEL 1 ──────────────────────────────────────────
+function renderBotsList() {
+  const container = document.getElementById('botsList');
+  const exchanges = getExchanges();
+  const isRunning = document.getElementById('btcPrice').textContent !== 'Offline';
+  const pnl = allPositions.reduce((s,p)=>s+p.pnl,0);
+  const pnlSign = pnl>=0?'+':'';
+  const pnlColor = pnl>=0?'var(--green)':'var(--red)';
+
+  if (exchanges.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🔌</div><div class="empty-text">No exchanges connected.<br>Go to Home and add an exchange first.</div></div>`;
+    return;
+  }
+
+  container.innerHTML = exchanges.map(exc => {
+    const cfg = EXC[exc.id] || {};
+    const displayName = exc.name || cfg.name || exc.id;
+    return `
+    <div class="bot-section">
+      <div class="bot-section-hdr">
+        <div class="bot-exc-left">
+          <div class="bot-exc-logo" style="background:${cfg.bg||'#1E1E35'};color:${cfg.text||'#E2E8F0'}">${cfg.logo||'?'}</div>
+          <div>
+            <div class="bot-exc-name">${displayName}</div>
+            <div class="bot-exc-sub">$${allPositions.reduce((s,p)=>s+p.total_invested,0).toFixed(2)} total value</div>
+          </div>
+        </div>
+        <div class="bot-exc-stats">
+          <div><div class="bot-exc-stat-lbl">Bots</div><div class="bot-exc-stat-val"><span style="color:var(--green)">${isRunning?1:0}</span>/1</div></div>
+          <div><div class="bot-exc-stat-lbl">Trades</div><div class="bot-exc-stat-val">${allPositions.length}</div></div>
+        </div>
+      </div>
+      <div class="bot-cards-list">
+        <div class="bot-row" onclick="openBotDetail('DCA Long — All Coins', ${isRunning})">
+          <div class="bot-row-left">
+            <div class="bot-indicator ${isRunning?'live':'off'}"></div>
+            <div class="bot-row-info">
+              <div class="bot-row-name">DCA Long — All Coins</div>
+              <div class="bot-row-meta">
+                <div class="bot-meta">Trades: <span>${allPositions.length}</span></div>
+                <div class="bot-meta">P&L: <span style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</span></div>
+                <div class="bot-meta">Mode: <span>Paper</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bot-row-right">
+            ${isRunning
+              ? `<button class="btn-xs btn-xs-stop" onclick="stopBotInList(event)">⬛ Stop</button>`
+              : `<button class="btn-xs btn-xs-start" onclick="startBotInList(event)">▶ Start</button>`}
+            <span class="bot-arrow">›</span>
+          </div>
+        </div>
+      </div>
+      <div class="add-bot-row" onclick="alert('Bot creation wizard — Phase 5')">
+        <span style="color:var(--accent);font-size:14px">+</span>
+        <span class="add-bot-text">Create New Bot on ${displayName}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function startBotInList(e) {
+  e.stopPropagation();
+  await fetch(`${API}/start`, {method:'POST'});
+  renderBotsList();
+}
+async function stopBotInList(e) {
+  e.stopPropagation();
+  await fetch(`${API}/stop`, {method:'POST'});
+  renderBotsList();
+}
+
+// ── BOTS LEVEL 2 ──────────────────────────────────────────
+function openBotDetail(name, running) {
+  currentBotRunning = running;
+  document.getElementById('bots-l1').style.display = 'none';
+  document.getElementById('bots-l2').style.display = 'block';
+  document.getElementById('bdTitle').textContent = name;
+  updateBotDetailHeader();
+  refreshBotDetail();
+}
+function backToBots() {
+  document.getElementById('bots-l1').style.display = 'block';
+  document.getElementById('bots-l2').style.display = 'none';
+  renderBotsList();
+}
+function updateBotDetailHeader() {
+  const badge = document.getElementById('bdBadge');
+  const btn = document.getElementById('bdToggleBtn');
+  if (currentBotRunning) {
+    badge.textContent = '● Live'; badge.className = 'bot-detail-badge';
+    btn.textContent = '⬛ Stop Bot'; btn.className = 'btn btn-red btn-sm';
+  } else {
+    badge.textContent = '○ Stopped'; badge.className = 'bot-detail-badge off';
+    btn.textContent = '▶ Start Bot'; btn.className = 'btn btn-green btn-sm';
+  }
+}
+async function toggleBot() {
+  if (currentBotRunning) await fetch(`${API}/stop`,{method:'POST'});
+  else await fetch(`${API}/start`,{method:'POST'});
+  currentBotRunning = !currentBotRunning;
+  updateBotDetailHeader();
+}
+function refreshBotDetail() { applyBotFilter(); }
+
+function applyBotFilter() {
+  const search = (document.getElementById('bdSearch')?.value||'').toLowerCase();
+  let data = allPositions.filter(p => {
+    if (!p.coin.toLowerCase().includes(search)) return false;
+    const d = p.days_open||0;
+    if (botFilter==='profit') return p.pnl>=0;
+    if (botFilter==='loss')   return p.pnl<0;
+    if (botFilter==='dca')    return p.dca_count>0;
+    if (botFilter==='stuck')  return d>30;
+    if (botFilter==='tp')     return p.tp_armed;
     return true;
   });
 
-  // Sort
-  filtered.sort((a, b) => {
-    let av = a[currentSort] ?? 0;
-    let bv = b[currentSort] ?? 0;
-    if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-    return sortAsc ? av - bv : bv - av;
+  data.sort((a,b) => {
+    let av=a[botSort]??0, bv=b[botSort]??0;
+    if (typeof av==='string') return botSortAsc?av.localeCompare(bv):bv.localeCompare(av);
+    return botSortAsc?av-bv:bv-av;
   });
 
-  renderPositions(filtered);
-}
+  const invested = data.reduce((s,p)=>s+p.total_invested,0);
+  const pnl = data.reduce((s,p)=>s+p.pnl,0);
+  const pct = invested>0?(pnl/invested*100).toFixed(2):'0.00';
 
-function renderPositions(data) {
-  const count = data.length;
-  document.getElementById('posCount').textContent = count;
-  document.getElementById('posCountBadge').textContent = count;
-  document.getElementById('posSubLabel').textContent = 'open';
+  document.getElementById('bd-open').textContent = data.length;
+  document.getElementById('bd-inv').textContent = '$'+invested.toFixed(2);
+  const pnlEl = document.getElementById('bd-pnl');
+  pnlEl.textContent = (pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);
+  pnlEl.style.color = pnl>=0?'var(--green)':'var(--red)';
+  const pnlPctEl = document.getElementById('bd-pnlpct');
+  pnlPctEl.textContent = (pnl>=0?'+':'')+pct+'%';
+  pnlPctEl.style.color = pnl>=0?'var(--green)':'var(--red)';
+  document.getElementById('bd-count').textContent = data.length+' open';
 
-  let totalInvested = 0, totalPnl = 0;
-  const tbody = document.getElementById('positionsTable');
-
-  if (count === 0) {
-    tbody.innerHTML = `<tr><td colspan="10">
-      <div class="empty">
-        <div class="empty-icon">🤖</div>
-        <div class="empty-text">No positions match your filter</div>
-      </div></td></tr>`;
-    updateTotals(0, 0);
+  const tbody = document.getElementById('bdTable');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">🤖</div><div class="empty-text">No positions match filter</div></div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = data.map(pos => {
-    totalInvested += pos.total_invested;
-    totalPnl += pos.pnl;
-
-    const pnlColor = pos.pnl >= 0 ? '#34D399' : '#F87171';
-    const pnlSign = pos.pnl >= 0 ? '+' : '';
-    const daysOpen = pos.days_open || 0;
-    const status = getStatus(pos);
-    const dcaBadge = pos.dca_count > 0
-      ? `<span class="badge badge-dca">${pos.dca_count}</span>`
-      : `<span class="badge badge-active">0</span>`;
-
+    const pc = pos.pnl>=0?'var(--green)':'var(--red)';
+    const sign = pos.pnl>=0?'+':'';
+    const d = pos.days_open||0;
+    const dc = d>60?'var(--red)':d>30?'var(--amber)':'var(--text3)';
+    const st = statusInfo(pos);
     return `<tr>
-      <td><strong>${pos.coin.replace('/USDT','')}</strong><br>
-          <span style="font-size:9px;color:#64748B">USDT</span></td>
+      <td><div class="td-coin"><strong>${pos.coin.replace('/USDT','')}</strong></div></td>
       <td>$${pos.avg_cost.toFixed(4)}</td>
       <td>$${pos.current_price.toFixed(4)}</td>
-      <td>$${pos.total_invested.toFixed(2)}</td>
-      <td>${dcaBadge}</td>
-      <td style="color:${daysOpen>30?'#F87171':'#64748B'}">${daysOpen}d</td>
-      <td style="color:${pnlColor};font-weight:700">${pnlSign}${pos.pnl_pct}%</td>
-      <td style="color:${pnlColor}">${pnlSign}$${Math.abs(pos.pnl).toFixed(4)}</td>
-      <td><span class="badge ${status.cls}">${status.label}</span></td>
-      <td><button class="close-btn" onclick="closePosition(${pos.id})">✕ Close</button></td>
+      <td style="color:${pos.dca_count>0?'var(--purple)':'var(--text3)'};font-weight:700">${pos.dca_count}</td>
+      <td style="color:${dc}">${d}d</td>
+      <td style="color:${pc};font-weight:700">${sign}${pos.pnl_pct}%</td>
+      <td style="color:${pc}">${sign}$${Math.abs(pos.pnl).toFixed(4)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td><button class="close-btn" onclick="closePos(${pos.id})">✕</button></td>
     </tr>`;
   }).join('');
-
-  updateTotals(totalInvested, totalPnl);
 }
 
-function updateTotals(invested, pnl) {
-  document.getElementById('totalInvested').textContent = '$' + invested.toFixed(2);
-  const pnlEl = document.getElementById('totalPnl');
-  const pnlPctEl = document.getElementById('totalPnlPct');
-  const sign = pnl >= 0 ? '+' : '';
-  pnlEl.textContent = sign + '$' + Math.abs(pnl).toFixed(4);
-  pnlEl.style.color = pnl >= 0 ? '#34D399' : '#F87171';
-  const pct = invested > 0 ? (pnl / invested * 100).toFixed(2) : '0.00';
-  pnlPctEl.textContent = sign + pct + '%';
-  pnlPctEl.style.color = pnl >= 0 ? '#34D399' : '#F87171';
-}
-
-function setFilter(type, el) {
-  currentFilter = type;
-  document.querySelectorAll('.filter-bar .filter-btn').forEach(b => b.classList.remove('active'));
+function setBotFilter(type, el) {
+  botFilter = type;
+  document.querySelectorAll('#bots-l2 .f-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  applyFilters();
+  applyBotFilter();
+}
+function sortBd(key) {
+  if (botSort===key) botSortAsc=!botSortAsc;
+  else { botSort=key; botSortAsc=true; }
+  applyBotFilter();
 }
 
-function sortBy(key) {
-  if (currentSort === key) sortAsc = !sortAsc;
-  else { currentSort = key; sortAsc = true; }
-  applyFilters();
-}
-
-// ── TRADES ────────────────────────────────────────────────
-async function fetchTrades() {
+// ── HISTORY ───────────────────────────────────────────────
+async function fetchHistory() {
   try {
-    const res = await fetch(`${API}/trades`);
-    const data = await res.json();
-    const tbody = document.getElementById('tradesTable');
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="loading">No trades yet</td></tr>';
-      return;
+    const res = await fetch(`${API}/history`);
+    allHistory = await res.json();
+  } catch(e) { allHistory=[]; }
+  buildCoinFilter();
+  applyHistoryFilter();
+}
+
+function buildCoinFilter() {
+  const sel = document.getElementById('hf-coin');
+  const coins = [...new Set(allHistory.map(h=>h.coin).filter(Boolean))];
+  sel.innerHTML = '<option value="">All Coins</option>' +
+    coins.map(c=>`<option>${c}</option>`).join('');
+}
+
+function setDateFilter(type, el) {
+  histDateFilter = type;
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  applyHistoryFilter();
+}
+
+function applyHistoryFilter() {
+  const exc = document.getElementById('hf-exchange').value;
+  const coin = document.getElementById('hf-coin').value;
+  const now = Date.now();
+  let data = allHistory.filter(h => {
+    if (exc && h.exchange !== exc) return false;
+    if (coin && h.coin !== coin) return false;
+    if (histDateFilter === 'today') {
+      const d = new Date(h.closed_at);
+      if (d.toDateString() !== new Date().toDateString()) return false;
     }
-    tbody.innerHTML = data.slice(0, 20).map(t => {
-      const time = new Date(t.timestamp + 'Z').toLocaleTimeString('en-SA',
-        {timeZone:'Asia/Riyadh', hour:'2-digit', minute:'2-digit'});
-      const coin = t.coin ? t.coin.replace('/USDT','') : '—';
-      const sideCls = t.side === 'buy' ? 'badge-buy' : 'badge-sell';
-      const reasonBadge =
-        t.reason === 'tp'     ? `<span class="badge badge-reason">TP ✅</span>` :
-        t.reason === 'dca'    ? `<span class="badge badge-dca">DCA</span>` :
-        t.reason === 'open'   ? `<span style="color:#64748B;font-size:10px">Open</span>` :
-        t.reason === 'manual' ? `<span style="color:#F59E0B;font-size:10px">Manual</span>` :
-        `<span style="color:#64748B;font-size:10px">${t.reason}</span>`;
-      return `<tr>
-        <td>${time}</td>
-        <td><strong>${coin}</strong></td>
-        <td><span class="badge ${sideCls}">${t.side.toUpperCase()}</span></td>
-        <td>$${t.price.toFixed(4)}</td>
-        <td>$${t.usdt_amount.toFixed(2)}</td>
-        <td>${reasonBadge}</td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    document.getElementById('tradesTable').innerHTML =
-      '<tr><td colspan="6" class="loading">Error</td></tr>';
+    if (histDateFilter === '7d') {
+      if (now - new Date(h.closed_at) > 7*86400000) return false;
+    }
+    if (histDateFilter === '30d') {
+      if (now - new Date(h.closed_at) > 30*86400000) return false;
+    }
+    return true;
+  });
+  renderHistory(data);
+}
+
+function renderHistory(data) {
+  const count = data.length;
+  let profit=0, wins=0;
+  data.forEach(h => { const p=h.realized_pnl||0; profit+=p; if(p>0)wins++; });
+
+  document.getElementById('hs-count').textContent = count;
+  document.getElementById('hs-tbl-count').textContent = count + ' trades';
+  const profEl = document.getElementById('hs-profit');
+  profEl.textContent = (profit>=0?'+':'')+'$'+Math.abs(profit).toFixed(2);
+  profEl.style.color = profit>=0?'var(--green)':'var(--red)';
+  document.getElementById('hs-winrate').textContent = count>0?Math.round(wins/count*100)+'%':'0%';
+  document.getElementById('hs-avghold').textContent = '—';
+
+  const visibleCols = HISTORY_COLS.filter(c=>c.show);
+  const thead = document.getElementById('historyThead');
+  thead.innerHTML = visibleCols.map(c=>`<th>${c.label}</th>`).join('');
+
+  const tbody = document.getElementById('historyTable');
+  if (!count) {
+    const cols = visibleCols.length;
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No closed trades yet.<br>Trades appear here after TP hit or manual close.</div></div></td></tr>`;
+    return;
   }
+
+  tbody.innerHTML = data.map(h => {
+    const pnl = h.realized_pnl||0;
+    const pc = pnl>=0?'var(--green)':'var(--red)';
+    const sign = pnl>=0?'+':'';
+    return `<tr>${visibleCols.map(c => {
+      if (c.key==='coin') return `<td><div class="td-coin"><strong>${(h.coin||'—').replace('/USDT','')}</strong></div></td>`;
+      if (c.key==='exchange') return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
+      if (c.key==='entry_date') return `<td><span class="td-muted">${h.opened_at?new Date(h.opened_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
+      if (c.key==='exit_date') return `<td><span class="td-muted">${h.closed_at?new Date(h.closed_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
+      if (c.key==='entry_price') return `<td>$${(h.entry_price||0).toFixed(4)}</td>`;
+      if (c.key==='avg_cost') return `<td>$${(h.avg_cost||0).toFixed(4)}</td>`;
+      if (c.key==='exit_price') return `<td>$${(h.exit_price||0).toFixed(4)}</td>`;
+      if (c.key==='dca_count') return `<td style="color:var(--purple)">${h.dca_count||0}</td>`;
+      if (c.key==='pnl_pct') return `<td style="color:${pc};font-weight:600">${sign}0.00%</td>`;
+      if (c.key==='pnl_usd') return `<td style="color:${pc};font-weight:700">${sign}$${Math.abs(pnl).toFixed(4)}</td>`;
+      if (c.key==='hold') return `<td><span class="td-muted">—</span></td>`;
+      if (c.key==='exit_reason') return `<td><span class="badge badge-closed">${h.exit_reason||'closed'}</span></td>`;
+      return '<td>—</td>';
+    }).join('')}</tr>`;
+  }).join('');
 }
 
-// ── BOT CONTROLS ──────────────────────────────────────────
-async function startBot() {
-  await fetch(`${API}/start`, {method:'POST'});
-  setTimeout(loadAll, 1000);
+// Column picker
+function buildColumnToggles() {
+  const container = document.getElementById('columnToggles');
+  container.innerHTML = HISTORY_COLS.map((c,i) => `
+    <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg3);border-radius:7px;cursor:pointer;font-size:11px;color:var(--text2)">
+      <input type="checkbox" ${c.show?'checked':''} onchange="toggleCol(${i},this.checked)" style="accent-color:var(--accent)">
+      ${c.label}
+    </label>`).join('');
 }
 
-async function stopBot() {
-  await fetch(`${API}/stop`, {method:'POST'});
-  setTimeout(loadAll, 1000);
+function toggleColumnPicker() {
+  const el = document.getElementById('columnPicker');
+  el.style.display = el.style.display==='none'?'block':'none';
 }
 
-async function closePosition(id) {
+function toggleCol(i, show) {
+  HISTORY_COLS[i].show = show;
+  applyHistoryFilter();
+}
+
+// ── SETTINGS ──────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const res = await fetch(`${API}/config`);
+    const d = await res.json();
+    paperMode = d.paper_mode!==false;
+    updatePaperToggle();
+    const container = document.getElementById('settingsFields');
+    container.innerHTML = `<div class="settings-group-title">DCA & Trading</div>` +
+      SETTINGS.map(f=>`
+      <div class="settings-row">
+        <div>
+          <div class="settings-lbl">${f.label}</div>
+          <div class="settings-desc">${f.desc}</div>
+        </div>
+        <input class="settings-input" id="cfg_${f.key}" type="number" step="${f.step}" value="${d[f.key]||0}">
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function updatePaperToggle() {
+  const t = document.getElementById('paperToggle');
+  const th = document.getElementById('paperThumb');
+  if (paperMode) { t.style.background='var(--accent)'; th.style.left='22px'; }
+  else { t.style.background='var(--text3)'; th.style.left='3px'; }
+}
+function togglePaper() { paperMode=!paperMode; updatePaperToggle(); }
+
+async function saveSettings() {
+  const s = {paper_mode:paperMode};
+  SETTINGS.forEach(f => { const el=document.getElementById('cfg_'+f.key); if(el) s[f.key]=parseFloat(el.value); });
+  try {
+    await fetch(`${API}/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(s)});
+    alert('✅ Settings saved! Restart bot to apply.');
+  } catch(e) { alert('❌ Error saving'); }
+}
+
+// ── CONTROLS ──────────────────────────────────────────────
+async function closePos(id) {
   if (!confirm('Close this position?')) return;
-  await fetch(`${API}/positions/${id}/close`, {method:'POST'});
-  loadAll();
+  await fetch(`${API}/positions/${id}/close`,{method:'POST'});
+  await fetchPositions();
 }
 
 // ── MAIN ──────────────────────────────────────────────────
 async function loadAll() {
   await fetchStatus();
   await fetchPositions();
-  await fetchTrades();
 }
 
+// Init
 loadAll();
 setInterval(loadAll, 15000);
 </script>
