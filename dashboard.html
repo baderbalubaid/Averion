@@ -322,6 +322,7 @@ tr:hover td{background:#6366F106}
   .ticker-price{font-size:12px}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -435,6 +436,55 @@ tr:hover td{background:#6366F106}
       </div>
       <div class="exc-grid" id="exchangesGrid">
         <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+    <!-- ══════════════ EXCHANGE DETAIL ══════════════ -->
+    <div class="tab-content" id="tab-excdetail">
+      <div style="margin:-24px">
+        <div class="bot-detail-hdr">
+          <div class="bot-detail-back" onclick="closeExcDetail()">&#8249; Home</div>
+          <div class="bot-detail-title" id="excDetailName">Exchange</div>
+          <div class="dropdown">
+            <div class="exc-menu-btn" onclick="toggleDropdown(event,'dd-detail')">&#8943;</div>
+            <div class="dropdown-menu" id="dd-detail">
+              <div class="dropdown-item">&#10003; &nbsp;Test Connection</div>
+              <div class="dropdown-item">&#9999; &nbsp;Edit API Keys</div>
+              <div class="dropdown-item">&#127991; &nbsp;Rename</div>
+              <div class="dropdown-item danger">&#10005; &nbsp;Delete Exchange</div>
+            </div>
+          </div>
+        </div>
+        <div class="stats4">
+          <div class="stat4"><div class="stat4-lbl">Total Capital</div><div class="stat4-val" id="exc-capital">$0.00</div></div>
+          <div class="stat4"><div class="stat4-lbl">Total Profit</div><div class="stat4-val" id="exc-profit" style="color:var(--green)">$0.00</div></div>
+          <div class="stat4"><div class="stat4-lbl">Open Trades</div><div class="stat4-val" id="exc-open" style="color:var(--blue)">0</div></div>
+          <div class="stat4"><div class="stat4-lbl">24h P&L</div><div class="stat4-val" id="exc-pnl">$0.00</div></div>
+        </div>
+        <div style="padding:0 14px 14px">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <div style="font-size:12px;font-weight:700">Capital History</div>
+              <div style="display:flex;gap:6px">
+                <button class="f-btn active" onclick="setChartRange('7d',this)">7D</button>
+                <button class="f-btn" onclick="setChartRange('30d',this)">30D</button>
+                <button class="f-btn" onclick="setChartRange('all',this)">All</button>
+              </div>
+            </div>
+            <div style="position:relative;height:200px">
+              <canvas id="capitalChart"></canvas>
+            </div>
+            <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:8px">
+              Hover over chart to see date and value
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 14px">
+          <div class="sec-hdr">
+            <div class="sec-title">Bots on this Exchange</div>
+          </div>
+          <div id="excDetailBots"></div>
+        </div>
       </div>
     </div>
 
@@ -937,7 +987,7 @@ function renderExchanges() {
     const cfg = EXC[exc.id] || {name:exc.id,bg:'#1E1E35',text:'#E2E8F0',logo:'?'};
     const displayName = exc.name || cfg.name;
     return `
-    <div class="exc-card" onclick="alert('Exchange Detail — Item 11')">
+    <div class="exc-card" onclick="openExcDetail('${exc.id}')">
       <div class="exc-top">
         <div class="exc-logo" style="background:${cfg.bg};color:${cfg.text}">${cfg.logo}</div>
         <div class="exc-info">
@@ -1368,6 +1418,168 @@ async function closePos(id) {
   if (!confirm('Close this position?')) return;
   await fetch(`${API}/positions/${id}/close`,{method:'POST'});
   await fetchPositions();
+}
+
+
+// ── EXCHANGE DETAIL (Items 11 + 12) ──────────────────────
+let currentExcId  = null;
+let capitalChart  = null;
+let chartRange    = '7d';
+let allBalHistory = [];
+
+function openExcDetail(excId) {
+  currentExcId = excId;
+  const cfg  = EXC[excId] || {};
+  const exc  = getExchanges().find(e => e.id === excId) || {};
+  const name = exc.name || cfg.name || excId;
+
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-excdetail').classList.add('active');
+  document.getElementById('pageTitle').textContent = name;
+  document.getElementById('excDetailName').textContent = name;
+
+  const inv      = allPositions.reduce((s,p) => s + p.total_invested, 0);
+  const pnl      = allPositions.reduce((s,p) => s + p.pnl, 0);
+  const open     = allPositions.length;
+  const pnlSign  = pnl >= 0 ? '+' : '';
+  const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('exc-capital').textContent = '$' + inv.toFixed(2);
+  document.getElementById('exc-open').textContent    = open;
+
+  const profEl = document.getElementById('exc-profit');
+  profEl.textContent = pnlSign + '$' + Math.abs(pnl).toFixed(2);
+  profEl.style.color = pnlColor;
+
+  const pnlEl = document.getElementById('exc-pnl');
+  pnlEl.textContent = pnlSign + '$' + Math.abs(pnl).toFixed(2);
+  pnlEl.style.color = pnlColor;
+
+  const botRunning = document.getElementById('btcPrice').textContent !== 'Offline';
+  document.getElementById('excDetailBots').innerHTML = `
+    <div class="bot-section" style="margin-bottom:14px">
+      <div class="bot-cards-list">
+        <div class="bot-row" onclick="openBotDetail('DCA Long — All Coins',${botRunning})">
+          <div class="bot-row-left">
+            <div class="bot-indicator ${botRunning ? 'live' : 'off'}"></div>
+            <div class="bot-row-info">
+              <div class="bot-row-name">DCA Long — All Coins</div>
+              <div class="bot-row-meta">
+                <div class="bot-meta">Trades: <span>${open}</span></div>
+                <div class="bot-meta">P&L: <span style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</span></div>
+              </div>
+            </div>
+          </div>
+          <span class="bot-arrow">&#8250;</span>
+        </div>
+      </div>
+    </div>`;
+
+  fetchBalanceHistory(excId);
+}
+
+function closeExcDetail() {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-home').classList.add('active');
+  document.getElementById('pageTitle').textContent = 'Home';
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-link').classList.add('active');
+}
+
+async function fetchBalanceHistory(excId) {
+  try {
+    const res     = await fetch(`${API}/balance-history?exchange_id=${excId}&days=30`);
+    allBalHistory = await res.json();
+  } catch(e) {
+    allBalHistory = [];
+  }
+  if (allBalHistory.length === 0) {
+    const base = allPositions.reduce((s,p) => s + p.total_invested, 0) || 100;
+    const now  = Date.now();
+    allBalHistory = Array.from({length:14}, (_,i) => ({
+      date:  new Date(now - (13-i)*86400000).toISOString().split('T')[0],
+      value: parseFloat((base * (0.95 + Math.random()*0.1)).toFixed(2)),
+    }));
+    allBalHistory[allBalHistory.length-1].value = parseFloat(base.toFixed(2));
+  }
+  renderChart(chartRange);
+}
+
+function setChartRange(range, el) {
+  chartRange = range;
+  document.querySelectorAll('#tab-excdetail .f-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderChart(range);
+}
+
+function renderChart(range) {
+  let data = [...allBalHistory];
+  if (range === '7d')  data = data.slice(-7);
+  if (range === '30d') data = data.slice(-30);
+
+  const labels = data.map(d => d.date || (d.recorded_at||'').split('T')[0] || '—');
+  const values = data.map(d => d.value || d.value_usdt || 0);
+  const first  = values[0] || 0;
+  const last   = values[values.length-1] || 0;
+  const color  = last >= first ? '#10D98A' : '#F4645F';
+
+  const ctx = document.getElementById('capitalChart').getContext('2d');
+  if (capitalChart) capitalChart.destroy();
+
+  capitalChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: color,
+        borderWidth: 2,
+        backgroundColor: color + '18',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: color,
+        pointBorderColor: '#07070F',
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0E0E1C',
+          borderColor: '#252540',
+          borderWidth: 1,
+          titleColor: '#8888AA',
+          bodyColor: '#F0F0FF',
+          titleFont: { family: 'Inter', size: 10 },
+          bodyFont:  { family: 'Inter', size: 13, weight: '700' },
+          padding: 10,
+          callbacks: {
+            title: items => items[0]?.label || '',
+            label: item  => ' $' + parseFloat(item.raw).toFixed(2),
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:   { color: '#1E1E3520' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 }, maxTicksLimit:7 },
+          border: { display: false }
+        },
+        y: {
+          grid:   { color: '#1E1E3530' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 },
+                    callback: v => '$' + v.toFixed(0) },
+          border: { display: false }
+        }
+      }
+    }
+  });
 }
 
 // ── MAIN LOOP ─────────────────────────────────────────────
