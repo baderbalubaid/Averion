@@ -245,6 +245,10 @@ tr:hover td{background:#6366F106}
 .date-presets{display:flex;gap:5px;flex-wrap:wrap}
 .date-preset{padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
 .date-preset:hover,.date-preset.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.date-input{padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;transition:border-color 0.2s}
+.date-input:focus{border-color:var(--accent)}
+.date-range-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.date-range-lbl{font-size:10px;color:var(--text3);font-weight:600}
 .col-btn{margin-left:auto;padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:all 0.15s}
 .col-btn:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -576,6 +580,13 @@ tr:hover td{background:#6366F106}
           <button class="date-preset" onclick="setDateFilter('7d',this)">7d</button>
           <button class="date-preset" onclick="setDateFilter('30d',this)">30d</button>
           <button class="date-preset active" onclick="setDateFilter('all',this)">All</button>
+        </div>
+        <div class="date-range-wrap">
+          <span class="date-range-lbl">From</span>
+          <input class="date-input" type="date" id="hf-from" onchange="applyHistoryFilter()">
+          <span class="date-range-lbl">To</span>
+          <input class="date-input" type="date" id="hf-to" onchange="applyHistoryFilter()">
+          <button class="date-preset" onclick="clearDateRange()">✕ Clear</button>
         </div>
         <button class="col-btn" onclick="toggleColumnPicker()">⊞ Columns</button>
       </div>
@@ -1281,20 +1292,50 @@ function setDateFilter(type,el){
   histDateFilter=type;
   document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
+  // Clear custom date range when preset selected
+  const f=document.getElementById('hf-from');
+  const t=document.getElementById('hf-to');
+  if(f) f.value='';
+  if(t) t.value='';
+  applyHistoryFilter();
+}
+
+function clearDateRange(){
+  document.getElementById('hf-from').value='';
+  document.getElementById('hf-to').value='';
+  // Reactivate All preset
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.date-preset').forEach(b=>{if(b.textContent==='All')b.classList.add('active')});
+  histDateFilter='all';
   applyHistoryFilter();
 }
 function applyHistoryFilter() {
-  const exc  = document.getElementById('hf-exchange').value;
-  const coin = document.getElementById('hf-coin').value;
-  const now  = Date.now();
-  let data   = allHistory.filter(h => {
-    if (exc && h.exchange !== exc) return false;
-    if (coin && h.coin !== coin) return false;
+  const exc    = document.getElementById('hf-exchange').value;
+  const coin   = document.getElementById('hf-coin').value;
+  const fromEl = document.getElementById('hf-from');
+  const toEl   = document.getElementById('hf-to');
+  const fromDate = fromEl && fromEl.value ? new Date(fromEl.value) : null;
+  const toDate   = toEl   && toEl.value   ? new Date(toEl.value + 'T23:59:59') : null;
+  const now    = Date.now();
+
+  let data = allHistory.filter(h => {
+    if (exc  && h.exchange !== exc)  return false;
+    if (coin && h.coin    !== coin)  return false;
+
+    // Custom date range takes priority over presets
+    if (fromDate || toDate) {
+      const closed = new Date(h.closed_at);
+      if (fromDate && closed < fromDate) return false;
+      if (toDate   && closed > toDate)   return false;
+      return true;
+    }
+
+    // Preset filters
     if (histDateFilter==='today') {
       if (new Date(h.closed_at).toDateString()!==new Date().toDateString()) return false;
     }
-    if (histDateFilter==='7d' && now-new Date(h.closed_at)>7*86400000) return false;
-    if (histDateFilter==='30d'&& now-new Date(h.closed_at)>30*86400000) return false;
+    if (histDateFilter==='7d'  && now-new Date(h.closed_at)>7*86400000)  return false;
+    if (histDateFilter==='30d' && now-new Date(h.closed_at)>30*86400000) return false;
     return true;
   });
   renderHistory(data);
