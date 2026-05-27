@@ -547,7 +547,7 @@ tr:hover td{background:#6366F106}
 
     <!-- ══════════════ HISTORY TAB ══════════════ -->
     <div class="tab-content" id="tab-history">
-      <div class="hero-stats" style="margin-bottom:16px">
+      <div class="hero-stats" style="margin-bottom:16px;grid-template-columns:repeat(3,1fr)">
         <div class="hero-card">
           <div class="hero-lbl">Closed Trades</div>
           <div class="hero-val" id="hs-count" style="color:var(--blue)">0</div>
@@ -563,6 +563,16 @@ tr:hover td{background:#6366F106}
         <div class="hero-card">
           <div class="hero-lbl">Avg Hold</div>
           <div class="hero-val" id="hs-avghold" style="color:var(--text2)">—</div>
+        </div>
+        <div class="hero-card a">
+          <div class="hero-lbl">Fees (20%)</div>
+          <div class="hero-val" id="hs-fees" style="color:var(--amber)">$0.00</div>
+          <div class="hero-sub">performance fee due</div>
+        </div>
+        <div class="hero-card b">
+          <div class="hero-lbl">Net Profit</div>
+          <div class="hero-val" id="hs-net">$0.00</div>
+          <div class="hero-sub">after fees</div>
         </div>
       </div>
 
@@ -854,6 +864,8 @@ const HISTORY_COLS = [
   {key:'pnl_usd',     label:'P&L$',        show:true},
   {key:'hold',        label:'Hold Time',   show:false},
   {key:'exit_reason', label:'Exit',        show:true},
+  {key:'fee',         label:'Fee (20%)',   show:true},
+  {key:'net_profit',  label:'Net Profit',  show:true},
 ];
 
 let allPositions  = [];
@@ -1349,13 +1361,26 @@ function renderHistory(data) {
     if(p>0) wins++;
     totalDays += h.days_held||0;
   });
+  const fees   = Math.max(0, profit * 0.20);
+  const net    = profit - fees;
+
   document.getElementById('hs-count').textContent = count;
   document.getElementById('hs-tbl-count').textContent = count+' trades';
+
   const pe = document.getElementById('hs-profit');
   pe.textContent = (profit>=0?'+':'')+'$'+Math.abs(profit).toFixed(2);
   pe.style.color = profit>=0?'var(--green)':'var(--red)';
+
   document.getElementById('hs-winrate').textContent = count>0?Math.round(wins/count*100)+'%':'0%';
   document.getElementById('hs-avghold').textContent = count>0?Math.round(totalDays/count)+'d':'—';
+
+  const fe = document.getElementById('hs-fees');
+  fe.textContent = '-$'+fees.toFixed(2);
+  fe.style.color = fees>0?'var(--amber)':'var(--text3)';
+
+  const ne = document.getElementById('hs-net');
+  ne.textContent = (net>=0?'+':'')+'$'+Math.abs(net).toFixed(2);
+  ne.style.color = net>=0?'var(--green)':'var(--red)';
 
   const visibleCols = HISTORY_COLS.filter(c=>c.show);
   document.getElementById('historyThead').innerHTML =
@@ -1386,6 +1411,18 @@ function renderHistory(data) {
       if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${sign}$${Math.abs(pnl).toFixed(4)}</td>`;
       if(c.key==='hold')        return `<td><span class="td-muted">${h.days_held||0}d</span></td>`;
       if(c.key==='exit_reason') return `<td><span class="badge badge-closed">${h.exit_reason||'closed'}</span></td>`;
+      if(c.key==='fee'){
+        const p=h.realized_pnl||0;
+        const f=Math.max(0,p*0.20);
+        return `<td style="color:var(--amber)">-$${f.toFixed(4)}</td>`;
+      }
+      if(c.key==='net_profit'){
+        const p=h.realized_pnl||0;
+        const n=p-Math.max(0,p*0.20);
+        const pc=n>=0?'var(--green)':'var(--red)';
+        const sg=n>=0?'+':'';
+        return `<td style="color:${pc};font-weight:700">${sg}$${Math.abs(n).toFixed(4)}</td>`;
+      }
       return '<td>—</td>';
     }).join('')}</tr>`;
   }).join('');
