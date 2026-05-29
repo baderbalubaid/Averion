@@ -1228,7 +1228,7 @@ function renderBotsFlat(){
   let bots=exchanges.map(exc=>({
     id:exc.id+'_bot1',excId:exc.id,
     excName:exc.name||EXC_BADGE[exc.id]?.name||exc.id,
-    name:'DCA Long - All Coins',
+    name:'DCA Bot',
     trades:allPositions.length,pnl:pnl,
     pnlPct:inv>0?(pnl/inv*100):0,
     mode:'paper',running:isRunning,
