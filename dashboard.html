@@ -1259,7 +1259,7 @@ function renderBotsFlat(){
     var tL=state.trading?'19px':'3px';
     var dBg=state.dca?'var(--green)':'var(--text3)';
     var dL=state.dca?'19px':'3px';
-    return '<div class="bots-flat-row" onclick="openBotDetail(''+bot.name+'','+bot.running+')">'
+    return '<div class="bots-flat-row" onclick="openBotDetail(\''+bot.name+'\',' +bot.running+')">'
       +'<div class="bot-flat-name-wrap"><div class="bot-flat-indicator '+(bot.running?'live':'off')+'"></div>'
       +'<div><div class="bot-flat-name">'+bot.name+'</div><div class="bot-flat-sub">'+bot.excName+'</div></div></div>'
       +'<div class="bots-exch-cell"><span class="exc-badge '+badge.cls+'">['+badge.label+']</span></div>'
