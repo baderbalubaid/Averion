@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -8,7 +9,12 @@ import threading
 import uvicorn
 import ccxt
 
-app = FastAPI(title="Averion Bot API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="Averion Bot API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,11 +40,6 @@ def days_open(opened_at_str):
         return delta.days
     except:
         return 0
-
-# ── STARTUP ───────────────────────────────────────────────
-@app.on_event("startup")
-def startup():
-    init_db()
 
 # ── DASHBOARD ─────────────────────────────────────────────
 @app.get("/dashboard")
