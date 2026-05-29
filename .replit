@@ -27,7 +27,7 @@ outputType = "console"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 api.py"
-waitForPort = 8000
+waitForPort = 8080
 
 [[ports]]
 localPort = 8000
@@ -35,4 +35,4 @@ externalPort = 8000
 
 [[ports]]
 localPort = 8080
-externalPort = 80
+externalPort = 8080
