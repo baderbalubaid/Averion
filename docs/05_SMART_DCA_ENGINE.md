@@ -238,3 +238,34 @@ Worst deleted · best becomes Smart DCA default.
 - Daily: automatic health check → Telegram alert if flagged
 - Monthly: 5 minutes → share URL → approve changes
 - Quarterly: 10 minutes → delete worst · promote winners
+
+## Research Bot Grid (LOCKED — ChatGPT Validated)
+
+Total: 107 paper bots (102 method bots + 5 benchmarks)
+Period: 6 months · no mid-period adjustments
+Scaling: start 10 trades/bot → 20 → 30 gradually
+
+### Bot Count Per Method
+- E1 VWAP+RSI: 12 bots (RSI · VWAP · ATR · Bounce variations)
+- E2 Panic Exhaustion: 9 bots (Volume · BB · Recovery variations)
+- E3 Volume Climax: 12 bots (Volume multiple · Range · Close position)
+- E4 Time-Cycle: 9 bots (Window duration · SMA length)
+- E5 Multi-Timeframe: 12 bots (Macro EMA · Pullback EMA · RSI)
+- E6 Z-Score: 9 bots (Z trigger · Lookback period)
+- E7 Volatility Squeeze: 9 bots (Squeeze duration · Volume filter)
+- E8 Swing Structure: 9 bots (Detection width · VWAP length)
+- E9 Sequential Candle: 9 bots (Red candle count · Reversal volume)
+- E10 Pure Drop: 12 bots (Drop threshold · Lookback high)
+
+### 5 Benchmark Bots (always running)
+- BTC Buy and Hold
+- ETH Buy and Hold
+- Simple DCA (ASAP entry)
+- Random Entry DCA
+- Static Spacing DCA
+
+### Full Parameter Grid
+Stored in: docs/05_SMART_DCA_ENGINE.md
+Validated by ChatGPT May 2026
+Each bot tests unique parameter hypothesis
+Mathematical progression — no random values
