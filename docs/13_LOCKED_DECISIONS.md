@@ -433,3 +433,26 @@ Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
 - 3 consecutive quarterly reviews failed
 - Win rate below 40% consistently
 - Underperforms E10 control group
+
+## Research Bot Monthly Elimination Rule (LOCKED)
+
+- Monthly quick check — NOT parameter adjustment
+- Eliminate ONLY bots with zero trades in 30 days
+- Reason: signal too strict → never triggers on any coin
+- Replace eliminated bot with looser variation of same method
+- Do NOT eliminate bots with few trades — only zero trades
+- Full 6 month review still applies for promotion/deletion
+- This prevents server resources wasted on untriggerable bots
+
+## 5 Benchmark Bots — Purpose (LOCKED)
+
+- BTC Buy and Hold: pure market exposure baseline
+- ETH Buy and Hold: alternative market exposure
+- Simple DCA ASAP: tests if waiting for signal adds value
+- Random Entry DCA: tests if signals beat pure luck
+- Static Spacing DCA: tests if widening spacing adds value
+
+All 10 entry methods must beat relevant benchmarks
+to be considered for Smart DCA promotion.
+If methods lose to Random Entry = signals are noise.
+If methods lose to BTC Hold = wrong market regime.
