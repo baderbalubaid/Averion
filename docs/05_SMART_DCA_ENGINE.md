@@ -269,3 +269,147 @@ Stored in: docs/05_SMART_DCA_ENGINE.md
 Validated by ChatGPT May 2026
 Each bot tests unique parameter hypothesis
 Mathematical progression — no random values
+
+## Detailed Parameter Grid Per Method
+
+### E1 — VWAP + RSI (12 bots)
+| Bot | RSI | VWAP | ATR | Bounce |
+|-----|-----|------|-----|--------|
+| E1-1 | 25 | 4% | 1.5x | 65% |
+| E1-2 | 30 | 4% | 1.5x | 65% |
+| E1-3 | 35 | 4% | 1.5x | 65% |
+| E1-4 | 25 | 3% | 1.5x | 65% |
+| E1-5 | 30 | 3% | 1.5x | 65% |
+| E1-6 | 35 | 3% | 1.5x | 65% |
+| E1-7 | 25 | 2% | 1.5x | 65% |
+| E1-8 | 30 | 2% | 1.5x | 65% |
+| E1-9 | 35 | 2% | 1.5x | 65% |
+| E1-10 | 30 | 3% | 1.3x | 65% |
+| E1-11 | 30 | 3% | 1.5x | 55% |
+| E1-12 | 35 | 2% | 1.3x | 55% |
+
+### E2 — Panic Exhaustion (9 bots)
+| Bot | Volume | BB Sigma | Recovery |
+|-----|--------|----------|---------|
+| E2-1 | 1.5x | 2.0 | 0.5% |
+| E2-2 | 2.0x | 2.0 | 0.5% |
+| E2-3 | 3.0x | 2.0 | 0.5% |
+| E2-4 | 1.5x | 2.5 | 0.5% |
+| E2-5 | 2.0x | 2.5 | 0.5% |
+| E2-6 | 3.0x | 2.5 | 0.5% |
+| E2-7 | 2.0x | 2.0 | 1.0% |
+| E2-8 | 2.0x | 2.5 | 1.0% |
+| E2-9 | 3.0x | 2.5 | 1.0% |
+
+### E3 — Volume Climax (12 bots)
+| Bot | Volume | Range vs ATR | Close Position |
+|-----|--------|-------------|---------------|
+| E3-1 | 3x | 2.0x | Upper 40% |
+| E3-2 | 4x | 2.0x | Upper 40% |
+| E3-3 | 5x | 2.0x | Upper 40% |
+| E3-4 | 3x | 2.5x | Upper 50% |
+| E3-5 | 4x | 2.5x | Upper 50% |
+| E3-6 | 5x | 2.5x | Upper 50% |
+| E3-7 | 3x | 3.0x | Upper 60% |
+| E3-8 | 4x | 3.0x | Upper 60% |
+| E3-9 | 5x | 3.0x | Upper 60% |
+| E3-10 | 4x | 2.0x | Upper 60% |
+| E3-11 | 4x | 3.0x | Upper 40% |
+| E3-12 | 5x | 3.0x | Upper 50% |
+
+### E4 — Time-Cycle Window (9 bots)
+| Bot | Window | SMA Length |
+|-----|--------|-----------|
+| E4-1 | 1h | 24 |
+| E4-2 | 1h | 48 |
+| E4-3 | 1h | 72 |
+| E4-4 | 2h | 24 |
+| E4-5 | 2h | 48 |
+| E4-6 | 2h | 72 |
+| E4-7 | 4h | 24 |
+| E4-8 | 4h | 48 |
+| E4-9 | 4h | 72 |
+
+### E5 — Multi-Timeframe (12 bots)
+| Bot | Macro EMA | Pullback EMA | RSI |
+|-----|-----------|-------------|-----|
+| E5-1 | 144 | 12 | 35 |
+| E5-2 | 144 | 24 | 40 |
+| E5-3 | 144 | 36 | 45 |
+| E5-4 | 168 | 12 | 35 |
+| E5-5 | 168 | 24 | 40 |
+| E5-6 | 168 | 36 | 45 |
+| E5-7 | 200 | 12 | 35 |
+| E5-8 | 200 | 24 | 40 |
+| E5-9 | 200 | 36 | 45 |
+| E5-10 | 168 | 24 | 35 |
+| E5-11 | 168 | 24 | 45 |
+| E5-12 | 200 | 36 | 40 |
+
+### E6 — Z-Score Statistical (9 bots)
+| Bot | Z Trigger | Lookback |
+|-----|-----------|---------|
+| E6-1 | -2.0 | 96h |
+| E6-2 | -2.5 | 96h |
+| E6-3 | -3.0 | 96h |
+| E6-4 | -2.0 | 168h |
+| E6-5 | -2.5 | 168h |
+| E6-6 | -3.0 | 168h |
+| E6-7 | -2.0 | 336h |
+| E6-8 | -2.5 | 336h |
+| E6-9 | -3.0 | 336h |
+
+### E7 — Volatility Squeeze (9 bots)
+| Bot | Squeeze Duration | Volume Filter |
+|-----|-----------------|--------------|
+| E7-1 | 8h | 1.0x |
+| E7-2 | 12h | 1.0x |
+| E7-3 | 24h | 1.0x |
+| E7-4 | 8h | 1.5x |
+| E7-5 | 12h | 1.5x |
+| E7-6 | 24h | 1.5x |
+| E7-7 | 8h | 2.0x |
+| E7-8 | 12h | 2.0x |
+| E7-9 | 24h | 2.0x |
+
+### E8 — Swing Structure Shift (9 bots)
+| Bot | Swing Detection | VWAP Length |
+|-----|----------------|------------|
+| E8-1 | 2 candles | 12h |
+| E8-2 | 2 candles | 24h |
+| E8-3 | 2 candles | 48h |
+| E8-4 | 3 candles | 12h |
+| E8-5 | 3 candles | 24h |
+| E8-6 | 3 candles | 48h |
+| E8-7 | 5 candles | 12h |
+| E8-8 | 5 candles | 24h |
+| E8-9 | 5 candles | 48h |
+
+### E9 — Sequential Candle Decay (9 bots)
+| Bot | Red Candles | Reversal Volume |
+|-----|------------|----------------|
+| E9-1 | 5 | 1.0x |
+| E9-2 | 6 | 1.0x |
+| E9-3 | 7 | 1.0x |
+| E9-4 | 5 | 1.5x |
+| E9-5 | 6 | 1.5x |
+| E9-6 | 7 | 1.5x |
+| E9-7 | 5 | 2.0x |
+| E9-8 | 6 | 2.0x |
+| E9-9 | 7 | 2.0x |
+
+### E10 — Pure Drop Threshold (12 bots)
+| Bot | Drop % | Lookback High |
+|-----|--------|--------------|
+| E10-1 | 3% | 12h |
+| E10-2 | 5% | 12h |
+| E10-3 | 7% | 12h |
+| E10-4 | 10% | 12h |
+| E10-5 | 15% | 12h |
+| E10-6 | 3% | 24h |
+| E10-7 | 5% | 24h |
+| E10-8 | 7% | 24h |
+| E10-9 | 10% | 24h |
+| E10-10 | 15% | 24h |
+| E10-11 | 5% | 48h |
+| E10-12 | 10% | 48h |
