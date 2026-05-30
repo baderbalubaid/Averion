@@ -158,9 +158,6 @@ Most common: Trading OFF + DCA ON (ride only mode)
 
 ## Recovery Buy System
 
-- Trigger: position open >30 days AND price >10% below avg cost
-- Enters smart queue — scored same as DCAs
-- Amount: $1 fixed per recovery buy (configurable)
-- After buy: recalculate avg cost · reset DCA ladder from new last buy
-- Monthly max: 3 recovery buys per position per month
-- Dashboard shows: Queue badge ⏳ Queued until funded
+- REMOVED — handled by smart queue + Add Funds
+- Smart queue naturally prioritizes stuck positions
+- User uses Add Funds for manual intervention

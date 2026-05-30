@@ -109,9 +109,7 @@
 | Resume Threshold ($) | 75.00 | Must be higher than floor |
 | Auto-Resume | ON | Restores bot automatically |
 | Min Daily Volume ($) | 100,000 | Skips illiquid coins |
-| Recovery Buy | ON | For positions >30d and >10% down |
-| Recovery Amount | $1.00 | Per recovery buy |
-| Recovery Max/Month | 3 | Per position per month |
+| Recovery Buy | REMOVED | Handled by smart queue + Add Funds |
 
 ---
 
