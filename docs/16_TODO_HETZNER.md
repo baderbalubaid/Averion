@@ -121,3 +121,25 @@ Add:
 | 44 | Server measurement (baseline→500 trades) | Day 1-5 |
 | 45 | Test live $1 order on MEXC | Day 2 |
 | 46 | Global + per exchange toggles in admin | Day 1 |
+
+## Database Decision (LOCKED)
+
+- Use PostgreSQL from Day 1 (not SQLite)
+- PostgreSQL = free software · same server cost
+- Much better performance for 21,400+ positions
+- No migration headache later
+- Install during Day 1 server setup
+
+## Server Scaling Plan (LOCKED)
+
+- Start: CX23 €3.99/mo (4GB RAM · 2 vCPU)
+- Test gradually: 10 → 20 → 50 → 100 → 200 trades per bot
+- Measure loop time at each step
+- If loop time > 30 seconds → upgrade server
+- Upgrade path:
+  - CX33: €7.49/mo (8GB RAM · 4 vCPU)
+  - CX43: €16.49/mo (16GB RAM · 8 vCPU)
+  - CX53: €32.99/mo (32GB RAM · 16 vCPU)
+- Downgrade when research phase ends
+- Goal: know exact CX23 capacity in trades
+- This data = valuable for Phase 6 planning
