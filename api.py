@@ -23,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-bot_running = False
+bot_running = True
 stop_event  = threading.Event()
 exchange    = ccxt.mexc({'enableRateLimit': True})
 
