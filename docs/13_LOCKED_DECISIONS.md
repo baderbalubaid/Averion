@@ -337,3 +337,59 @@
 - Server load = total bots regardless of exchange
 - Price fetching shared across all bots on same exchange = efficient
 - No hard technical API rate limit issue with current architecture
+
+## Customer Telegram Channels (LOCKED)
+
+- 3 separate channels per customer:
+  - Trades: every buy · sell · DCA · TP (mute-friendly)
+  - Alerts: reserve low · bot stopped · ST flag · urgent (never mute)
+  - Reports: daily per exchange · weekly · monthly
+- Customer connects in Settings tab → Notifications section
+- Enter Telegram Chat ID → bot sends verification code → confirmed
+- Each channel has separate toggle ON/OFF
+- Customer controls which channels they receive
+
+## Daily Telegram Report Per Exchange (LOCKED)
+
+Format:
+🌙 Averion Daily Report — Date
+📊 Exchange Name
+Capital: $X
+Open trades: X
+Closed today: X
+Profit today: +$X
+Fees due: $X
+Available funds: $X
+🤖 System: CPU% · RAM% · All exchanges ✅
+
+## PWA Install Hint (LOCKED)
+
+- Detect if user is in browser vs installed PWA
+- Browser + not dismissed → show weekly hint:
+  "💡 Add Averion to home screen for app experience
+   [How to do it] [✓ Don't show again]"
+- Dismissed → never show again (localStorage)
+- PWA detected → never show hint
+- Simple JavaScript matchMedia check
+
+## Manual Bot Type (LOCKED)
+
+- Separate bot type: Manual
+- User picks specific coins manually
+- Not affected by Smart DCA automation
+- Has own virtual wallet
+- Allows second position on same coin
+  (Manual bot + Smart bot can both hold RVN)
+- Research data kept separate from auto bots
+- Available in bot creation wizard Step 2
+
+## Virtual Wallet System (LOCKED)
+
+- User creates named virtual wallets per exchange
+- Example: Long Test 1 · Short BTC · RVN Wallet
+- Each wallet: name · currency · capital amount or All
+- Bot links to one wallet (changeable anytime)
+- Same wallet = shared queue + shared capital
+- Different wallet = isolated queue + capital
+- Wallets section shown per exchange in dashboard
+- Bot creation wizard Step 2.5: Select or Create Wallet
