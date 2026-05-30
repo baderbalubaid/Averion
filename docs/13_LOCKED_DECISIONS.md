@@ -131,3 +131,11 @@
 - Parameters never change mid-position automatically
 - User controls existing positions via Add Funds · Close · Toggle DCA OFF
 - Reason: predictable · trustworthy · user always in control
+
+## Recovery Buy System (LOCKED)
+
+- REMOVED from spec
+- Smart queue already handles stuck positions naturally
+- User has Add Funds for manual intervention
+- Queue scores Loss% / USDT = naturally prioritizes stuck positions
+- Simpler system = better system
