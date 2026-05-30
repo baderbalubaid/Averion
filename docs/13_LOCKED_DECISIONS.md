@@ -278,3 +278,53 @@
 - Telegram logs: 30 days (Sunday cleanup cron handles this)
 - Error logs: 30 days (Sunday cleanup cron handles this)
 - Deposit logs: FOREVER (financial records · dispute resolution)
+
+## Monetization & Bot Limits (LOCKED)
+
+### Free Tier
+- 5 bots included free forever
+- 100 trades open maximum (hard limit always)
+- 100 trade bundle per month included
+- 1 exchange connection
+- 20% performance fee on profits
+
+### Paid Additions (from reserve wallet)
+- Extra bots: $1 per bot per 30 days
+- Extra trade bundles:
+ - 200 trades: $3/month
+ - 500 trades: $5/month
+ - 1000 trades: $8/month
+ - Unlimited: $15/month
+- All deducted automatically 1st of every month
+- Performance fee deducted per winning trade (ongoing)
+
+### Auto-Deduction Rules
+- 1st of month: bot fees deducted first · trade bundle second
+- If reserve insufficient:
+ - Deduct what is available
+ - Last created bot turns OFF automatically
+ - Existing positions on expired bot continue to TP
+ - No new positions on expired bot
+ - Telegram alert sent immediately
+- No grace period for monthly fee shortage
+- Manual renewal always — never automatic
+
+### Bot Slot System
+- Free slots: 5
+- Paid slots: however many purchased
+- Active bots cannot exceed total slots
+- User turns off one bot → slot freed → another bot can activate
+- Last created bot expires first when slots exceeded
+- Expired bot shows in dashboard: EXPIRED · renew to open new positions
+
+### Trade Limit Rules
+- 100 open trades hard limit — always — regardless of bundle
+- Bundle = how many can be opened this month total
+- When one closes → new one can open (within limit)
+- Dashboard shows: Open 67/100 · Bundle used 234/500
+
+### API Key Abuse Prevention
+- Exchange UID fingerprint captured on API key creation
+- Same UID cannot be added twice (anti-fraud Layer 2)
+- Prevents free bot limit bypass via multiple API keys
+- Cannot bypass without creating entirely new exchange account (requires exchange KYC)
