@@ -243,3 +243,38 @@
   - [Cancel] [Close All and Delete]
   - Market orders close all positions
   - Bot deleted after all closed
+
+## External Service Outages (Point 11 - LOCKED)
+
+- CoinGecko down: use last recorded cap · skip reclassification · retry next 3am
+- Telegram down: bot continues trading · alerts queued · max 50 queued · send when recovered
+- NOWPayments: DB log all deposits (not Excel) · admin can export to Excel anytime
+  - Table: reserve_deposits (user_id · amount_sent · amount_received · network · tx_hash · status · timestamps)
+  - Admin panel shows deposit log with Match button for unknown deposits
+  - Admin can export full log to Excel anytime
+- Exchange API down: CCXT retries with exponential backoff · after 5 fails → Telegram alert
+  - Pause that exchange only · other exchanges continue · auto-resume when recovered
+- Bot NEVER stops for any external service failure
+
+## Exchange API Key Rules (LOCKED)
+
+- IP whitelist reminder shown when user adds API key
+- Server IP displayed prominently in admin panel Tab 5
+- Reminder shows which exchanges require IP whitelist:
+  - Binance · OKX = required
+  - KuCoin = recommended
+  - MEXC · Gate.io · Bybit · Bitget = optional
+- User must confirm IP whitelisted before saving key
+- Bot detects API key rejection → Telegram alert → exchange paused
+- Some exchanges expire keys after 90 days → bot detects → alerts user
+
+## Data Retention Policy (Point 12 - LOCKED)
+
+- Trade history: FOREVER (tax records · research needs full history)
+- OHLCV hourly: 90 days rolling (older compressed to daily summary)
+- Daily summaries: FOREVER (tiny storage · long term analysis)
+- Research decisions: FOREVER (never repeat failed experiments)
+- Balance history: FOREVER (all time chart for users)
+- Telegram logs: 30 days (Sunday cleanup cron handles this)
+- Error logs: 30 days (Sunday cleanup cron handles this)
+- Deposit logs: FOREVER (financial records · dispute resolution)
