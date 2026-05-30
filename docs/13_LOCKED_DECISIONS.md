@@ -123,3 +123,11 @@
 - Switch back to PRIVATE when averion.app launches publicly
 - Remove GitHub token from all docs at same time
 - Both actions happen together on launch day
+
+## Reclassification Effect on Existing Positions (LOCKED)
+
+- Reclassification affects NEW positions only
+- Existing open positions keep original parameters forever
+- Parameters never change mid-position automatically
+- User controls existing positions via Add Funds · Close · Toggle DCA OFF
+- Reason: predictable · trustworthy · user always in control
