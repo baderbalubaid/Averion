@@ -1,0 +1,240 @@
+# Smart DCA Engine
+
+> The brain of Averion.
+> Auto-classification · 10 entry methods · research system · equations.
+
+---
+
+## Philosophy
+- Survivability first · Controlled recovery second · Profit third
+- Platform gets smarter every year automatically
+- Data decides winners — not opinions
+
+---
+
+## Five Market Cap Categories
+
+| Category | Market Cap | Examples | Default Spacing | Default TP |
+|----------|-----------|---------|----------------|-----------|
+| Mega Cap | >$100B | BTC · ETH | 4-5% | 2-3% |
+| Large Cap | $10B-$100B | BNB · SOL · XRP | 6-7% | 3-5% |
+| Mid Cap | $1B-$10B | AVAX · LINK · INJ | 8-10% | 5-7% |
+| Small Cap | $100M-$1B | RVN · HBAR · CELO | 10-15% | 6-10% |
+| Micro Cap | <$100M | Unknown/new coins | 15-25% | 8-15% |
+
+Customers see category name ONLY.
+All boundaries and parameters = admin only — never shown to customers.
+
+---
+
+## Admin-Only Parameter Limits
+
+| Category | Spacing Min/Max | Size Mult | TP% | Trail% |
+|----------|----------------|-----------|-----|--------|
+| Mega Cap | 2% — 8% | 1.1x — 1.8x | 1% — 5% | 0.5% — 2% |
+| Large Cap | 5% — 12% | 1.2x — 2.2x | 2% — 7% | 1% — 3% |
+| Mid Cap | 7% — 18% | 1.3x — 2.8x | 4% — 10% | 1.5% — 4% |
+| Small Cap | 10% — 25% | 1.5x — 3.5x | 5% — 15% | 2% — 6% |
+| Micro Cap | 15% — 40% | 2x — 5x | 8% — 20% | 3% — 8% |
+
+---
+
+## Smart DCA Calculations
+
+### What It Calculates Automatically
+- Reads 90 days of hourly OHLCV data per coin per exchange
+- Calculates optimal spacing using ATR_14 + median bounce threshold
+- Calculates size multiplier from category base + per-level escalation
+- Calculates TP from weighted average entry + median recovery
+- Volume-weighted category parameters
+- Updates all parameters daily at 3am
+
+### Spacing Formula (LOCKED)
+- spacing = max(ATR_14 x 1.5, median_bounce_threshold x 0.85)
+- Clamped between category min and max
+
+### Example — BTC (Mega Cap)
+- ATR daily = 1.8% → ATR x 1.5 = 2.7%
+- Median drop before bounce = 3.1% → x 0.85 = 2.6%
+- max(2.7%, 2.6%) = 2.7% → within Mega Cap range ✅
+
+### Example — RVN (Small Cap)
+- ATR daily = 4.2% → ATR x 1.5 = 6.3%
+- Median drop before bounce = 8.4% → x 0.85 = 7.1%
+- max(6.3%, 7.1%) = 7.1% → below Small Cap floor 10% → clamped to 10% ✅
+
+### TP Formula
+- TP_target = weighted_avg_entry_price x (1 + median_recovery% x 0.70)
+- Always from YOUR actual average cost — not original entry
+
+### Size Multiplier
+- Coin base: Mega=1.10x · Large=1.20x · Mid=1.35x · Small=1.50x · Micro=1.65x
+- Per level: L1=1.0x · L2=1.2x · L3=1.4x · L4=1.6x · L5+=2.0x hard cap
+- Example Small Cap L3: $1.00 x 1.50 x 1.4 = $2.10 per DCA buy
+
+### Always Use MEDIAN Not MEAN
+- Sample: 2% · 3% · 4% · 5% · 40%
+- Mean = 10.8% (distorted by flash crash)
+- Median = 4% (actual typical behavior) ✅
+
+---
+
+## Volume-Weighted Category Parameters
+
+Formula:
+Category_Spacing = Sum(coin_spacing x coin_24h_volume) / Sum(all volumes in category)
+
+### Example — Mega Cap
+| Coin | Spacing | 24h Volume | Weight | Contribution |
+|------|---------|-----------|--------|-------------|
+| BTC | 2.7% | $28B | 87.0% | 2.349% |
+| ETH | 3.1% | $4B | 12.5% | 0.388% |
+| BNB | 3.4% | $200M | 0.5% | 0.017% |
+| Result | — | $32.2B | 100% | 2.754% |
+
+Updates daily at 3am as volumes shift.
+
+---
+
+## Auto-Classification Engine
+
+### Data Sources (LOCKED)
+- Exchange data via CCXT: coin list + volume + OHLCV
+- CoinGecko: market cap ONLY for classification
+- Never mixed in same calculation
+
+### Daily 3am Process
+1. Fetch market cap from CoinGecko (rate-limited · batched)
+2. Apply cap protection formula
+3. Compare against category boundaries
+4. If boundary crossed → reclassify immediately
+5. Apply new parameters to existing positions immediately
+6. Log in coin_history table
+7. Telegram alert if any coin reclassified
+
+### CoinGecko Failure Fallback
+- Use last recorded market cap from coin_history
+- Skip reclassification that day
+- Telegram alert: CoinGecko failed — using last recorded caps
+- Retry next 3am automatically
+
+### New Coin Tiered Confidence
+| History | Approach | Badge |
+|---------|---------|-------|
+| < 30 days | Category defaults + penalty | 🔴 New |
+| 30-90 days | 70% defaults + 30% coin stats | 🟡 Learning |
+| > 90 days | Fully adaptive — coin's own data | 🟢 Calibrated |
+
+---
+
+## Cap Protection System (LOCKED)
+
+Original idea by Bader. No other platform does this.
+
+### Formula
+- Upward: recorded_cap = min(real_cap, previous x 1.10) — max +10% per day
+- Downward: recorded_cap = real_cap — full drop immediately
+
+### Why It Works
+- Fake pump: $100M → $500M overnight → recorded as $110M only
+- Coin stays Small Cap → conservative parameters maintained
+- Real growth: takes 25+ consecutive days to cross category boundary
+- Fake pumps cannot sustain 25 days → naturally filtered
+
+---
+
+## 10 Entry Methods
+
+All run simultaneously in paper mode.
+Same coins · same DCA params · only entry signal differs.
+3-12 months data decides winner.
+Worst deleted · best becomes Smart DCA default.
+
+### 5 Benchmark Bots (always running)
+- BTC Buy & Hold — pure market exposure
+- ETH Buy & Hold — pure market exposure
+- Simple DCA — ASAP entry no signal
+- Random Entry DCA — control group
+- Static Spacing DCA — tests if widening adds value
+
+### E1 — VWAP + RSI Deviation (Current Baseline)
+- RSI < 35 (oversold)
+- VWAP distance > 3% below
+- ATR > 1.5x 30-day average (volatility spike)
+- Bounce probability > 60%
+- ALL FOUR required simultaneously
+
+### E2 — Panic Exhaustion
+- Previous candle pierced below lower Bollinger Band
+- Current candle closes back inside band
+- Volume > 2x 24h average
+- Current candle closes green
+
+### E3 — Volume Climax
+- Volume > 4x SMA(Volume, 72)
+- Close < SMA(Close, 24)
+- Candle range > 2.5x ATR · close in upper 50%
+
+### E4 — Time-Cycle Window
+- Sunday UTC 22:00-23:00 only
+- Close < SMA(Close, 48)
+
+### E5 — Multi-Timeframe Alignment
+- Close > EMA(Close, 168) — bullish macro
+- Close < EMA(Close, 24) — micro pullback
+- RSI(14) < 45
+- Close > Close[1] — first green candle
+
+### E6 — Z-Score Statistical
+- Z = (Close - Rolling_Mean_168h) / Rolling_StdDev_168h
+- Entry when Z < -2.5
+
+### E7 — Volatility Squeeze
+- Bollinger Bands inside Keltner Channels >= 12 hours
+- Current close > Upper Bollinger Band
+- Volume > SMA(Volume, 24)
+
+### E8 — Swing Structure Shift
+- Lower low within past 48 hours confirmed
+- Last swing high identified (high > 3 candles before AND after)
+- Close > last swing high
+- Close > Trailing VWAP(24)
+
+### E9 — Sequential Candle Decay
+- 6 consecutive red candles (lower closes)
+- 7th candle: green AND volume > avg of prior 6
+
+### E10 — Pure Drop Threshold (Control Group)
+- Price drops X% from recent 24h high → enter
+- No indicators — pure price drop only
+- Most important benchmark — measures if signals add value
+
+---
+
+## Research System
+
+### What Gets Stored Per Trade
+- Entry method + version
+- Full market context (BTC trend · regime · volatility)
+- All signal values at entry
+- DCA progression
+- Exit details + profit
+
+### Parameter Versioning
+- Every parameter change creates new version
+- Old versions kept for comparison
+- Never mix results between versions
+- 30-day cooldown enforced after any change
+
+### Monthly Review Workflow
+1. Generate signed research URL (1 click in admin)
+2. Share URL with Claude → get analysis
+3. Share same URL with ChatGPT → second opinion
+4. Compare recommendations
+5. Approve changes in admin panel
+6. 30-day cooldown starts automatically
+
+### Three-Speed Evaluation
+- Daily: automatic health check → Telegram alert if flagged
+- Monthly: 5 minutes → share URL → approve changes
+- Quarterly: 10 minutes → delete worst · promote winners
