@@ -108,7 +108,7 @@ Example markers:
    python3 -c "import shutil;shutil.copy('dashboard.html','dashboard_backup.html')"
 
 2. Always push after every change:
-   git add . && git commit -m "message" && git push https://baderbalubaid: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@github.com/baderbalubaid/Averion.git main
+   git add . && git commit -m "message" && git push https://baderbalubaid:YOUR_TOKEN@github.com/baderbalubaid/Averion.git main
 
 3. Always verify push worked:
    git log --oneline -3
