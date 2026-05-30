@@ -164,3 +164,17 @@
 - Short DCA: checks quantity >= minimum lot size before every sell
   - If holdings < minimum lot → skip level · show dashboard warning
   - User must increase holdings manually first
+
+## Exchange Minimum Order Rules (LOCKED)
+
+- Bot creates normally — no blocking at wizard
+- Trading holds per coin if minimum not met
+- Bot settings page shows error section:
+  - Active coins · Pending coins (needs funds) · Cannot trade coins
+  - Each with reason and suggested fix
+- Add Funds: blocks if amount < exchange minimum
+- Short DCA two-way calculation:
+  - User sets TP% → system calculates minimum quantity needed
+  - User sets quantity → system calculates minimum TP% needed
+  - Live feedback shown before saving
+  - Dashboard warning if current settings cannot meet minimum
