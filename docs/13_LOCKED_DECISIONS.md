@@ -178,3 +178,68 @@
   - User sets quantity → system calculates minimum TP% needed
   - Live feedback shown before saving
   - Dashboard warning if current settings cannot meet minimum
+
+## Entry Method Promotion Criteria (Point 7 — Pending AI Review)
+
+- Promotion score = Win Rate x Avg Profit x Recovery Speed / Max Drawdown
+- Promote to Smart DCA default IF:
+  - Minimum 100 trades recorded
+  - Tested across 3+ market regimes (bull · bear · sideways)
+  - Score beats E10 control group
+  - Score beats Simple DCA benchmark
+  - 30 day cooldown passed
+- Delete IF:
+  - 3 consecutive quarterly reviews failed
+  - Win rate < 40% consistently
+  - Underperforms E10 control group
+- NOTE: Share this formula with AIs for validation before implementing
+- NOTE: Get recommendations from ChatGPT + Gemini on scoring weights
+
+## Multi-Exchange Bot Behavior (Point 8 — LOCKED)
+
+- One bot tied to one exchange only
+- Multiple bots allowed per exchange (e.g. 10 bots on MEXC)
+- Each bot has its OWN smart queue
+- Capital isolated per bot via Virtual Wallet System
+
+## Virtual Wallet System (NEW FEATURE — LOCKED)
+
+- User creates named virtual wallets per exchange
+- Example: "Long Test 1" · "Short BTC" · "RVN Wallet"
+- Each wallet links to exchange balance (fixed $ or "All")
+- Bot links to one wallet at creation (changeable anytime)
+- Same wallet = shared queue + shared capital between bots
+- Different wallet = completely isolated queue + capital
+- Wallets visible in new Wallets section per exchange
+- Bot creation wizard Step 2.5: Select or Create Wallet
+- Solves: short bot isolation · capital sharing · queue control
+- No other trading platform has this feature — unique to Averion
+
+## Short DCA Lifecycle (Point 9 — LOCKED)
+
+- Full worked example added to 03_TRADING_SYSTEM.md
+- User must hold coin before opening Short DCA
+- Bot sells portions as price rises (widening spacing)
+- Avg sell price calculated from all sells combined
+- TP triggers when price drops below avg sell price - TP%
+- Trailing arms then fires on TRAIL% pullback
+- Buy back uses collected USDT only
+- Profit = difference between avg sell and buy back price
+- Profit coin: USDT (keep difference) or base coin (buy more)
+
+## Bot Deletion Behavior (Point 10 — LOCKED)
+
+- Bot has 0 open positions:
+  - Shows [Delete Bot] button only
+  - Clean delete · no warning needed
+
+- Bot has open positions:
+  - Shows [Close All and Delete] button
+  - Click shows warning modal with:
+    - Count of positions
+    - Estimated P&L per position (green/red)
+    - Net total P&L (green/red)
+    - Cannot be undone warning
+  - [Cancel] [Close All and Delete]
+  - Market orders close all positions
+  - Bot deleted after all closed
