@@ -14,7 +14,7 @@ Built for future public launch with 20% performance fee.
 
 ## Credentials
 - GitHub: github.com/baderbalubaid/Averion
-- Token: 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
+- Token: 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
 - Dashboard: https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev/dashboard
 - Hetzner: CX23 · Helsinki · Ubuntu 24.04 · €3.99/mo
 
