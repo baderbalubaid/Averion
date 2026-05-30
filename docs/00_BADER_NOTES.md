@@ -8,20 +8,20 @@
 
 ## Ideas to Discuss
 
-- [ ] Daily Telegram report per exchange format
-- [ ] 3 customer Telegram channels (how customers connect)
-- [ ] Manual trade entry option in Smart bot
-- [ ] Manual bot type (separate from Smart)
-- [ ] PWA install hint with dismiss button
-- [ ] Short DCA two-way minimum calculation (done in Point 6)
+- [x] Daily Telegram report per exchange format
+- [x] 3 customer Telegram channels (how customers connect)
+- [x] Manual trade entry option in Smart bot
+- [x] Manual bot type (separate from Smart)
+- [x] PWA install hint with dismiss button
+- [x] Short DCA two-way minimum calculation (done in Point 6)
 
 ---
 
 ## Questions I Have
 
-- [ ] How does multi-exchange work — one bot or multiple?
-- [ ] Can same bot trade on Binance AND MEXC?
-- [ ] What happens when user deletes a bot with open positions?
+- [x] How does multi-exchange work — one bot or multiple?
+- [x] Can same bot trade on Binance AND MEXC?
+- [x] What happens when user deletes a bot with open positions?
 
 ---
 
@@ -35,9 +35,9 @@
 
 ## Decisions Pending (Not Yet Locked)
 
-- [ ] Entry method promotion criteria (Point 7)
-- [ ] External service outage behavior (Point 11)
-- [ ] Data retention policy (Point 12)
+- [x] Entry method promotion criteria (Point 7)
+- [x] External service outage behavior (Point 11)
+- [x] Data retention policy (Point 12)
 
 ---
 
