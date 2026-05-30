@@ -142,3 +142,12 @@ All orders are market orders. Before every DCA:
 5. Gate.io
 6. Bybit
 7. Bitget
+
+## TP Recalculation Timing (LOCKED)
+
+- TP target recalculates after EVERY buy automatically
+- Formula: TP_target = avg_cost x (1 + TP%)
+- Recalculates after: entry buy, every auto DCA, every Add Funds
+- TP target is NEVER a fixed price
+- Always based on current weighted average cost
+- Add Funds shows preview before executing: quantity, new avg cost, new TP target
