@@ -139,3 +139,16 @@
 - User has Add Funds for manual intervention
 - Queue scores Loss% / USDT = naturally prioritizes stuck positions
 - Simpler system = better system
+
+## Paper Mode Virtual Funding (LOCKED)
+
+- Paper trades use UNLIMITED virtual balance
+- No artificial funding limits for paper trading
+- Abuse prevented by existing rules:
+  - Max 30 paper trades per user
+  - 90 day auto-close if no live trades
+  - Server cost protection built in
+- Dashboard shows clearly:
+  "PAPER MODE — Virtual funds unlimited
+   Switch to live trading to use real funds"
+- Purpose: testing · research · learning bot behavior
