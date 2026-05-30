@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+import sys
+
+HTML = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1666,4 +1668,10 @@ loadAll();
 setInterval(loadAll, 15000);
 </script>
 </body>
-</html>
+</html>'''
+
+with open('dashboard.html', 'w', encoding='utf-8') as f:
+    f.write(HTML)
+
+lines = HTML.count('\n') + 1
+print(f'dashboard.html written — {lines} lines')
