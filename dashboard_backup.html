@@ -325,6 +325,23 @@ tr:hover td{background:#6366F106}
   .live-ticker{padding:5px 8px}
   .ticker-price{font-size:12px}
 }
+
+.bot-flat-row{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;gap:12px}
+.bot-flat-row:last-child{border-bottom:none}
+.bot-flat-row:hover{background:#6366F106}
+.exc-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font-size:11px;font-weight:900;flex-shrink:0}
+.bot-flat-name{font-size:13px;font-weight:700;margin-bottom:3px}
+.bot-flat-meta{font-size:10px;color:var(--text3)}
+.bot-flat-meta span{color:var(--text2)}
+.bot-toggle-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.toggle-lbl{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.toggle-mini{width:34px;height:19px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle-mini-thumb{width:13px;height:13px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left 0.2s}
+.kebab-btn{width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--text2);transition:all 0.15s;flex-shrink:0}
+.kebab-btn:hover{border-color:var(--accent);color:var(--accent)}
+.bot-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bot-status-dot.on{background:var(--green);box-shadow:0 0 6px #10D98A60}
+.bot-status-dot.off{background:var(--text3)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -495,7 +512,22 @@ tr:hover td{background:#6366F106}
     <!-- ══════════════ BOTS TAB ══════════════ -->
     <div class="tab-content" id="tab-bots">
       <div id="bots-l1">
-        <div class="bots-wrap" id="botsList"><div class="loading">Loading...</div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:15px;font-weight:800">Bots</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px" id="botsSubtitle">Loading...</div>
+          </div>
+          <button class="btn btn-accent btn-sm" onclick="alert('Bot creation wizard - Phase 5')">+ New Bot</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">
+          <button class="f-btn active" onclick="setBotListFilter('all',this)">All</button>
+          <button class="f-btn" onclick="setBotListFilter('running',this)">&#128994; Running</button>
+          <button class="f-btn" onclick="setBotListFilter('stopped',this)">&#11035; Stopped</button>
+          <button class="f-btn" onclick="setBotListFilter('paper',this)">&#128196; Paper</button>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden" id="flatBotsList">
+          <div class="loading">Loading...</div>
+        </div>
       </div>
       <div id="bots-l2" style="display:none;margin:-24px">
         <div class="bot-detail-hdr">
@@ -840,7 +872,7 @@ tr:hover td{background:#6366F106}
 </div>
 
 <script>
-const API = 'https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev';
+const API = 'https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev:8080';
 
 const EXC = {
   mexc:    {name:'MEXC',    bg:'#1E3A5F',text:'#38BDF8',logo:'M',pass:false},
@@ -1660,6 +1692,28 @@ function renderChart(range) {
   });
 }
 
+
+function toggleBotSwitch(excId,type,btn){
+  const list=getExchanges();
+  const exc=list.find(e=>e.id===excId);
+  if(!exc)return;
+  if(type==='trading'){
+    exc.trading=exc.trading===false?true:false;
+    const on=exc.trading!==false;
+    btn.style.background=on?'var(--green)':'var(--text3)';
+    btn.querySelector('.toggle-mini-thumb').style.left=on?'18px':'3px';
+    if(on)fetch(`${API}/start`,{method:'POST'});
+    else fetch(`${API}/stop`,{method:'POST'});
+  }else{
+    exc.dca=exc.dca===false?true:false;
+    const on=exc.dca!==false;
+    btn.style.background=on?'var(--accent)':'var(--text3)';
+    btn.querySelector('.toggle-mini-thumb').style.left=on?'18px':'3px';
+  }
+  setExchanges(list);
+  const sub=document.getElementById('botsSubtitle');
+  if(sub)sub.textContent=`${list.length} bot${list.length!==1?'s':''} · ${list.filter(e=>e.trading!==false).length} running`;
+}
 // ── MAIN LOOP ─────────────────────────────────────────────
 async function loadAll() {
   await fetchStatus();
