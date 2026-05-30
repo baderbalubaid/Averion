@@ -393,3 +393,43 @@ Available funds: $X
 - Different wallet = isolated queue + capital
 - Wallets section shown per exchange in dashboard
 - Bot creation wizard Step 2.5: Select or Create Wallet
+
+## Entry Method Promotion Formula (Point 7 - LOCKED)
+
+Validated by ChatGPT · Gemini · DeepSeek independently.
+
+### Normalization (all components to 0-1 first)
+- WR_norm = Win Rate (already 0-1)
+- AP_norm = (profit - min) / (max - min)
+- RS_norm = inverted: 1/(recovery_hours+1) then normalized
+- DD_norm = 1 - drawdown% (lower drawdown = higher score)
+- Floor: max(drawdown, 0.01) to prevent division by zero
+
+### Scoring Formula
+Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
+
+### Weights Rationale
+- Drawdown 35%: survivability first - matches Averion philosophy
+- Win Rate 30%: DCA relies on consistency
+- Avg Profit 20%: reward but not chase profit
+- Recovery Speed 15%: capital efficiency tiebreaker
+
+### Formula Adjustment Feature
+- Admin can adjust weights via sliders in Tab 4
+- Weights must always total 100%
+- System recalculates ALL historical scores on change
+- Old ranking saved for comparison
+- 30 day cooldown between weight changes
+- Enables regime-specific tuning (bull/bear markets)
+
+### Promotion Rules
+- Minimum 100 closed trades before scoring
+- Tested across 3+ market regimes
+- Score beats E10 control group
+- Score beats Simple DCA benchmark
+- 30 day cooldown after any parameter change
+
+### Deletion Rules
+- 3 consecutive quarterly reviews failed
+- Win rate below 40% consistently
+- Underperforms E10 control group
