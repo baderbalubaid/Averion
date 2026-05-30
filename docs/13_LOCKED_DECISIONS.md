@@ -328,3 +328,12 @@
 - Same UID cannot be added twice (anti-fraud Layer 2)
 - Prevents free bot limit bypass via multiple API keys
 - Cannot bypass without creating entirely new exchange account (requires exchange KYC)
+
+## Concurrent Bot Limits (Point 13 - LOCKED)
+
+- 5 bots free TOTAL across all exchanges (not per exchange)
+- Prevents abuse: 10 exchanges would give 50 free bots if per-exchange
+- Extra bots: $1 per bot per month from reserve wallet
+- Server load = total bots regardless of exchange
+- Price fetching shared across all bots on same exchange = efficient
+- No hard technical API rate limit issue with current architecture
