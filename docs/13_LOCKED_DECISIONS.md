@@ -152,3 +152,15 @@
   "PAPER MODE — Virtual funds unlimited
    Switch to live trading to use real funds"
 - Purpose: testing · research · learning bot behavior
+
+## Exchange Minimum Order Rules (LOCKED)
+
+- Bot sticks to user selected base order size — no auto-adjustment
+- Before launching bot: system checks all coins against exchange minimums
+- Shows warning in Step 7 wizard:
+  "Coin X requires $5 minimum — will be skipped with your $1 base"
+- User decides to increase base order or accept skipped coins
+- Add Funds: blocks confirmation if amount < exchange minimum
+- Short DCA: checks quantity >= minimum lot size before every sell
+  - If holdings < minimum lot → skip level · show dashboard warning
+  - User must increase holdings manually first
