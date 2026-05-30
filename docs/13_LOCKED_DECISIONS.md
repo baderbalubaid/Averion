@@ -114,3 +114,12 @@
 - One DCA per cycle: intentional — predictable over speed
 - 60 second interval: intentional — DCA swing system not scalping
 - High water mark: intentionally excluded — simplicity over complexity
+
+---
+
+## GitHub Repository
+
+- Repo is currently PUBLIC (needed for Claude to fetch docs)
+- Switch back to PRIVATE when averion.app launches publicly
+- Remove GitHub token from all docs at same time
+- Both actions happen together on launch day
