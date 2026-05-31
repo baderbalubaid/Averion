@@ -491,3 +491,65 @@ ALTER TABLE trades ADD COLUMN IF NOT EXISTS running_quantity DECIMAL(20,8);
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS running_total_invested DECIMAL(20,8);
 
 SELECT 'Base coin and position detail columns added!' AS result;
+
+-- ═══════════════════════════════
+-- CRITICAL FIXES — v5 Review
+-- ═══════════════════════════════
+
+-- Exchange passphrase (KuCoin · OKX · Bitget)
+ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS passphrase_enc TEXT;
+ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS ip_whitelist_confirmed BOOLEAN DEFAULT FALSE;
+
+-- Research bot market regime tracking
+ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regimes_tested JSONB DEFAULT '[]';
+ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS bundle_period VARCHAR(7);
+
+-- Subscription billing history
+CREATE TABLE IF NOT EXISTS subscription_billing (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    billing_date DATE NOT NULL,
+    bot_fee DECIMAL(20,8) DEFAULT 0,
+    bundle_fee DECIMAL(20,8) DEFAULT 0,
+    total_fee DECIMAL(20,8) DEFAULT 0,
+    reserve_before DECIMAL(20,8),
+    reserve_after DECIMAL(20,8),
+    bots_affected JSONB,
+    status VARCHAR(20) DEFAULT 'paid',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Exchange coin limits tracking
+CREATE TABLE IF NOT EXISTS exchange_coin_limits (
+    id SERIAL PRIMARY KEY,
+    exchange_id INTEGER REFERENCES exchanges(id),
+    coin VARCHAR(20) NOT NULL,
+    min_order_size DECIMAL(20,8),
+    min_notional DECIMAL(20,8),
+    status VARCHAR(20) DEFAULT 'active',
+    status_reason TEXT,
+    last_checked TIMESTAMP DEFAULT NOW(),
+    UNIQUE(exchange_id, coin)
+);
+
+-- Short buyback order history
+CREATE TABLE IF NOT EXISTS short_buyback_orders (
+    id SERIAL PRIMARY KEY,
+    position_id INTEGER REFERENCES positions(id),
+    exchange_order_id VARCHAR(100) UNIQUE,
+    limit_price DECIMAL(20,8),
+    quantity DECIMAL(20,8),
+    usdt_reserved DECIMAL(20,8),
+    status VARCHAR(20) DEFAULT 'pending',
+    filled_at TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Additional indexes
+CREATE INDEX IF NOT EXISTS idx_subscription_billing_user ON subscription_billing(user_id, billing_date);
+CREATE INDEX IF NOT EXISTS idx_exchange_coin_limits ON exchange_coin_limits(exchange_id, coin);
+CREATE INDEX IF NOT EXISTS idx_short_buyback_position ON short_buyback_orders(position_id, status);
+CREATE INDEX IF NOT EXISTS idx_reserve_deposits_nowpayments ON reserve_deposits(nowpayments_id, status);
+
+SELECT 'v5 critical fixes applied!' AS result;
