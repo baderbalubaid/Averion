@@ -46,8 +46,9 @@
 
 ## PHASE 4 — Database Setup (5 min)
 - [ ] Run schema: psql -U averion -d averion -h localhost < /home/averion/Averion/setup/schema.sql
-- [ ] Verify tables: psql -U averion -d averion -h localhost -c "\dt"
-- [ ] Should see: 15+ tables listed
+- [ ] Initialize DB: python3 /home/averion/Averion/setup/init_db.py
+- [ ] Should see: all 17 tables ✅
+- [ ] Admin user created ✅
 
 ## PHASE 5 — Bot Startup (5 min)
 - [ ] Restart bot with .env: pm2 restart averion
