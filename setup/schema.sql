@@ -323,3 +323,124 @@ INSERT INTO owner_balance (accumulated_fees_usdt, total_transferred)
 VALUES (0, 0);
 
 SELECT 'Averion database schema created successfully!' AS result;
+
+-- ═══════════════════════════════
+-- TELEGRAM SETTINGS
+-- ═══════════════════════════════
+CREATE TABLE user_telegram (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) UNIQUE,
+    chat_id VARCHAR(100),
+    verified BOOLEAN DEFAULT FALSE,
+    verification_code VARCHAR(20),
+    trade_alerts BOOLEAN DEFAULT TRUE,
+    report_alerts BOOLEAN DEFAULT TRUE,
+    alert_alerts BOOLEAN DEFAULT TRUE,
+    connected_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- ATTENTION LOG
+-- ═══════════════════════════════
+CREATE TABLE attention_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    bot_id INTEGER REFERENCES bots(id),
+    position_id INTEGER REFERENCES positions(id),
+    severity VARCHAR(10) NOT NULL,
+    item_type VARCHAR(50) NOT NULL,
+    message TEXT,
+    action_taken VARCHAR(50),
+    resolved BOOLEAN DEFAULT FALSE,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- NOTIFICATION QUEUE
+-- ═══════════════════════════════
+CREATE TABLE notification_queue (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    chat_id VARCHAR(100),
+    message TEXT NOT NULL,
+    message_type VARCHAR(30),
+    sent BOOLEAN DEFAULT FALSE,
+    sent_at TIMESTAMP,
+    retry_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- POSITIONS ARCHIVE
+-- ═══════════════════════════════
+CREATE TABLE positions_archive (
+    LIKE positions INCLUDING ALL
+);
+
+-- ═══════════════════════════════
+-- STRATEGY VERSIONS
+-- ═══════════════════════════════
+CREATE TABLE strategy_versions (
+    id SERIAL PRIMARY KEY,
+    method VARCHAR(20) NOT NULL,
+    version INTEGER NOT NULL,
+    parameters_json JSONB,
+    date_created TIMESTAMP DEFAULT NOW(),
+    parent_version INTEGER,
+    cooldown_until TIMESTAMP,
+    created_by INTEGER REFERENCES users(id)
+);
+
+-- ═══════════════════════════════
+-- RESEARCH SCORES
+-- ═══════════════════════════════
+CREATE TABLE research_scores (
+    id SERIAL PRIMARY KEY,
+    bot_id INTEGER REFERENCES bots(id),
+    method VARCHAR(20),
+    bot_config_id VARCHAR(20),
+    total_trades INTEGER DEFAULT 0,
+    winning_trades INTEGER DEFAULT 0,
+    losing_trades INTEGER DEFAULT 0,
+    win_rate DECIMAL(5,2),
+    avg_profit DECIMAL(20,8),
+    avg_loss DECIMAL(20,8),
+    total_profit DECIMAL(20,8),
+    max_drawdown DECIMAL(20,8),
+    avg_hold_hours DECIMAL(10,2),
+    recovery_speed DECIMAL(10,2),
+    promotion_score DECIMAL(10,6),
+    rank INTEGER,
+    status VARCHAR(20) DEFAULT 'active',
+    last_calculated TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- BOT SLOTS AND BUNDLES
+-- ═══════════════════════════════
+CREATE TABLE user_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) UNIQUE,
+    free_bot_slots INTEGER DEFAULT 5,
+    paid_bot_slots INTEGER DEFAULT 0,
+    free_trade_bundle INTEGER DEFAULT 100,
+    paid_trade_bundle INTEGER DEFAULT 0,
+    trades_used_this_month INTEGER DEFAULT 0,
+    bundle_type VARCHAR(20) DEFAULT 'free',
+    next_billing_date DATE,
+    last_deduction_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- ADDITIONAL INDEXES
+-- ═══════════════════════════════
+CREATE INDEX idx_attention_log_user ON attention_log(user_id, resolved);
+CREATE INDEX idx_notification_queue_sent ON notification_queue(sent, created_at);
+CREATE INDEX idx_research_scores_method ON research_scores(method, promotion_score);
+CREATE INDEX idx_strategy_versions_method ON strategy_versions(method, version);
+
+SELECT 'Schema update complete — all tables created!' AS result;
