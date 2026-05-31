@@ -40,7 +40,7 @@ Survivability first · Controlled recovery second · Profit third
 
 ## 18 Rules Never To Break
 1. DCA spacing from LAST BUY PRICE — not average cost
-2. Market orders ONLY — no limit orders ever
+2. Market orders ONLY — exception: Short DCA buyback uses limit order to reserve funds
 3. 20% fee on REALIZED profits only — loss months = $0
 4. User funds ALWAYS on their exchange — Averion never holds
 5. Paper stays paper FOREVER — live stays live — no conversion
