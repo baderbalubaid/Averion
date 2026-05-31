@@ -470,3 +470,18 @@ Step 2: If still equal → oldest position wins
 - Position open longest gets priority
 - Simple · deterministic · fair
 - Easy to implement and audit
+
+## Partial Liquidity DCA Handling (LOCKED)
+
+When DCA triggers but full amount not available:
+
+1. Buy whatever available immediately (market order)
+2. Recalculate avg cost and TP target after every partial buy
+3. Remaining amount goes to STANDBY — not back to queue
+4. Standby monitors price only — fires when price reaches same DCA level again
+5. Standby does NOT compete with queue — completely separate system
+6. Queue continues normally for other coins while RVN is in standby
+7. When price reaches DCA level again → standby buys remaining
+8. If remaining < exchange minimum → add to next DCA level amount
+9. After standby complete → position returns to normal queue
+10. Each partial buy recorded as separate trade for full audit trail
