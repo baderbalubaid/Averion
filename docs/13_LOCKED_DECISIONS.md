@@ -544,3 +544,13 @@ If exchange never reconnects:
 - Reason: safety net for edge cases
   (hospitalized · abandoned account · lost access)
 - Monthly alerts prevent user being surprised at day 365
+
+## Performance Fee Calculation (LOCKED)
+
+- Performance fee = 20% of NET profit (after exchange trading fees)
+- Formula: Net Profit = Exit Value - Entry Cost - Exchange Fees
+- Performance Fee = Net Profit x 20%
+- Exchange fees tracked per order via CCXT (fee.cost field)
+- All fees summed across entry + DCAs + TP sell
+- Fairer to customer · transparent · builds trust
+- Small difference in practice but correct approach
