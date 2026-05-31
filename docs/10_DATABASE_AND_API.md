@@ -174,3 +174,31 @@
 5. Check ST flags on all exchanges
 6. Save any new trades to DB
 7. Sleep until next cycle
+
+## Virtual Wallet Tables (Phase 5)
+
+### virtual_wallets
+- id · user_id · exchange_id
+- name (user defined e.g. Long Test 1)
+- currency (USDT · RVN · BTC etc)
+- allocation_type (fixed · all)
+- allocation_amount (fixed amount · null if all)
+- current_balance
+- created_at · updated_at
+
+### wallet_bot_assignments
+- id · wallet_id · bot_id
+- assigned_at
+- unassigned_at (null if still active)
+
+### wallet_transactions
+- id · wallet_id · position_id
+- type (deposit · dca_debit · tp_credit · fee_debit)
+- amount · balance_after
+- created_at
+
+### How bots share capital
+- Same wallet = shared balance + shared queue
+- Different wallet = isolated balance + isolated queue
+- wallet_transactions tracks every movement
+- Full audit trail per wallet per bot
