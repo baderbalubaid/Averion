@@ -807,3 +807,34 @@ Step 4: Any test fails → stay on current version → retry next week
 - Telegram notification after every attempt (pass or fail)
 - Fully automatic · zero manual intervention needed
 - Never breaks live bot · always tested before applying
+
+## Attention Log — Bots Tab (LOCKED)
+
+Top section of Bots tab — hidden when empty.
+Appears automatically when any item needs attention.
+
+Severity levels:
+- Red: action required (checkpoint · API expired · ST flag · reserve empty)
+- Yellow: awareness only (standby active · low volume · exchange paused)
+- Green: auto-resolved info (CCXT upgraded · exchange reconnected)
+
+Items shown in log:
+- DCA checkpoint reached → [Continue] [Pause] [Sell Now]
+- Reserve wallet low/empty → [Top Up]
+- API key expired → [Update Key]
+- ST flag detected → [View Position]
+- Standby active (partial DCA waiting) → [View] [Cancel]
+- Dead coin detected → [View Position]
+- Low volume warning → [View Position]
+- Delisted coin → [Mark Closed]
+- Exchange paused → [Update Key]
+
+Behavior:
+- Empty = section completely hidden
+- Items exist = section shows at top of Bots tab
+- User resolves item = disappears from log
+- All resolved = section hidden again
+- Clean · not annoying · always visible when needed
+
+Also sent to Telegram for critical items
+Dashboard is primary · Telegram is secondary
