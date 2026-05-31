@@ -143,3 +143,53 @@ Add:
 - Downgrade when research phase ends
 - Goal: know exact CX23 capacity in trades
 - This data = valuable for Phase 6 planning
+
+## Frontend Architecture — Separate Files (LOCKED)
+
+Split dashboard.html into separate files on Hetzner Day 1.
+Structure evolves — new sections get new files · removed from old files.
+
+### File Structure
+frontend/
+├── index.html
+├── css/
+│   ├── base.css
+│   ├── layout.css
+│   ├── components.css
+│   ├── tables.css
+│   └── responsive.css
+├── pages/
+│   ├── login.html
+│   ├── dashboard.html
+│   └── admin.html
+├── tabs/
+│   ├── home/home.html + home.js
+│   ├── bots/bots.html + bots.js + bot-detail.html + bot-detail.js
+│   ├── history/history.html + history.js
+│   └── settings/settings.html + settings.js
+├── wizard/
+│   ├── wizard.html + wizard.js
+│   └── steps/step1 through step7.html
+├── admin/
+│   ├── admin-shell.html
+│   └── tabs/overview + health + users + smart-mode + controls
+├── components/
+│   ├── exchange-card.html
+│   ├── bot-row.html
+│   ├── position-row.html
+│   ├── modal-add-exchange.html
+│   └── modal-add-funds.html
+└── js/
+    ├── api.js
+    ├── auth.js
+    ├── navigation.js
+    ├── notifications.js
+    └── utils.js
+
+### Rules
+- Each folder = one responsibility
+- New section needed = create new file
+- Remove from old file after moving
+- Claude edits one file at a time
+- Never touch multiple sections in one session
+- Structure evolves naturally — never forced
