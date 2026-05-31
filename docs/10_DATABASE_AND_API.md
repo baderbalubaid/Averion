@@ -202,3 +202,44 @@
 - Different wallet = isolated balance + isolated queue
 - wallet_transactions tracks every movement
 - Full audit trail per wallet per bot
+
+## Updated Schema — New Columns and Tables (Phase 4-5)
+
+### positions table — new columns needed
+- wallet_id: links position to virtual wallet
+- standby_amount: remaining USDT in standby (0 if none)
+- standby_price: target price to trigger standby buy
+- standby_timeout_at: when standby expires
+- dust_amount: remaining coin balance below minimum order
+- dust_currency: which coin is dust
+- is_manual: boolean — manual bot position or smart bot
+
+### exchanges table — new columns needed
+- paused_at: timestamp when exchange paused
+- pause_reason: API_KEY_INVALID · RATE_LIMIT · MANUAL · DELISTED
+- pause_type: temporary · permanent
+- reconnect_attempts: count of reconnection tries
+
+### New Table: fee_debt
+- id · user_id · exchange_id
+- position_id (which trade generated the debt)
+- amount_usdt (fee owed)
+- trade_profit (profit that generated this fee)
+- created_at
+- paid_at (null if unpaid)
+- paid_from_deposit_id (links to reserve deposit)
+
+### New Table: standby_orders
+- id · position_id · bot_id · wallet_id
+- standby_amount (USDT remaining to buy)
+- target_price (DCA level price to trigger)
+- dca_level (which level this standby is for)
+- timeout_at (when standby expires)
+- created_at · triggered_at · expired_at
+- status: active · triggered · expired · cancelled
+
+### Redis Key Structure
+- prices:{exchange}:{coin} → current price (TTL: 90s)
+- prices:updated_at → last fetch timestamp
+- st_flags:{exchange}:{coin} → ST status (TTL: 90min)
+- bot:running → boolean (TTL: 120s heartbeat)
