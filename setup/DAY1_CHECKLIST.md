@@ -138,3 +138,39 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 
 ## DAY 2 COMPLETE ✅
 Platform is live! 6 month research period begins.
+
+---
+
+## IMPORTANT NOTES — Lessons Learned
+
+### Python Packages
+- Always use: pip install -r requirements.txt --break-system-packages
+- Never use pip3 on Hetzner — use pip only
+- requirements.txt has exact pinned versions — never change without testing
+- If asked "Install Replit tools?" → type n (Hetzner only question)
+- Do NOT run pip install without --break-system-packages on Ubuntu 24.04
+
+### File Paths
+- Never hardcode /home/user/ — use os.path.expanduser('~/') or os.getcwd()
+- Replit path = /home/runner/workspace/
+- Hetzner path = /home/averion/Averion/
+- Always use relative paths in scripts when possible
+
+### Git Push
+- Always use: source .env first to load GITHUB_TOKEN
+- Push command: git push https://baderbalubaid:$GITHUB_TOKEN@github.com/baderbalubaid/Averion.git main
+- If push rejected for secrets: go to GitHub security URL and allow
+- If authentication failed: token may be expired — generate new one
+
+### Database
+- Always run schema.sql BEFORE init_db.py
+- PostgreSQL user = averion · database = averion
+- Connection: psql -U averion -d averion -h localhost
+- If connection refused: systemctl start postgresql
+
+### Excel Reports
+- Generated daily at 4am automatically
+- Saved to: /home/averion/Averion/reports/
+- Download via SCP: scp root@IP:/home/averion/Averion/reports/latest.xlsx .
+- Open in Excel or Google Sheets
+- Never rename columns — AI workflows depend on stable names
