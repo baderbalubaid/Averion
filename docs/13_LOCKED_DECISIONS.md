@@ -760,3 +760,30 @@ Why Option C is correct permanently:
 - Professional · clean · simple
 - No multi-channel complexity ever
 - WhatsApp Business and best Telegram bots use this approach
+
+## Short DCA Spacing Formula (LOCKED)
+
+Reference price: price at bot activation (not avg hold price)
+Direction: rises instead of drops (mirrors Long DCA)
+
+Trigger formula:
+- Level 1: activation_price x (1 + DCA%)
+- Level 2+: last_sell_price x (1 + DCA% x spacing_multiplier^level)
+- Mirrors Long DCA geometry exactly — just direction reversed
+
+Order types (LOCKED):
+- Sell orders: MARKET (immediate execution always)
+- Buyback order: LIMIT (reserves USDT on exchange)
+
+After every market sell:
+1. Update last_sell_price
+2. Cancel previous limit buy order
+3. Recalculate avg_sell_price (weighted average of all sells)
+4. Recalculate TP target = avg_sell_price x (1 - TP%)
+5. Place new limit buy at TP target price
+6. Exchange reserves exact USDT needed for buyback
+
+TP formula for Short DCA:
+- TP target = avg_sell_price x (1 - TP%)
+- Price drops to TP target → limit buy fills
+- Profit = total USDT collected - total USDT spent on buyback
