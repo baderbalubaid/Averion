@@ -554,3 +554,35 @@ If exchange never reconnects:
 - All fees summed across entry + DCAs + TP sell
 - Fairer to customer · transparent · builds trust
 - Small difference in practice but correct approach
+
+## Short DCA Buyback — Limit Order Exception (LOCKED)
+
+Short DCA is the ONLY exception to market orders rule:
+- Sells: market orders (immediate execution)
+- Buyback: limit order (reserves USDT on exchange)
+
+Why limit order for buyback:
+- USDT from sells must be reserved on exchange
+- Prevents queue from using Short funds for Long DCAs
+- Exchange holds USDT → guaranteed buyback when price drops
+- No trailing needed → fixed limit price = exact profit target
+
+After every Short DCA sell:
+1. Receive USDT from market sell
+2. Cancel previous limit buy order (if exists)
+3. Recalculate new avg sell price + new TP target
+4. Place new limit buy order at new TP target price
+5. Exchange reserves exact USDT needed
+6. Queue cannot touch reserved funds
+
+Timing Protection Rule:
+- When Short DCA sell executes → flag: PENDING_BUYBACK
+- ALL Long DCA bots on same exchange → HOLD new DCAs
+- Hold lasts until limit buy order confirmed by exchange (~2 seconds)
+- Then Long DCA resumes normally
+- Prevents queue grabbing Short funds during placement delay
+
+Priority Order (same exchange · same wallet):
+1. Short DCA buyback (always first)
+2. TP exits (free capital immediately)
+3. Long DCA queue (normal scoring)
