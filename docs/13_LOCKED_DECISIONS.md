@@ -808,7 +808,7 @@ Step 4: Any test fails → stay on current version → retry next week
 - Fully automatic · zero manual intervention needed
 - Never breaks live bot · always tested before applying
 
-## Attention Log — Bots Tab (LOCKED)
+## Attention Log — Customer Dashboard (LOCKED)
 
 Top section of Bots tab — hidden when empty.
 Appears automatically when any item needs attention.
