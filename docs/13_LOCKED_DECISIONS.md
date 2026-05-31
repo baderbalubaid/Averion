@@ -586,3 +586,14 @@ Priority Order (same exchange · same wallet):
 1. Short DCA buyback (always first)
 2. TP exits (free capital immediately)
 3. Long DCA queue (normal scoring)
+
+## Reserve Wallet Debt System (LOCKED)
+
+- Bot NEVER stops when reserve = $0
+- Position closes at TP normally regardless of reserve balance
+- Fee recorded as debt in DB if reserve insufficient
+- Debt shown clearly in dashboard with [Top Up Now] button
+- When user tops up: debt deducted first · remaining = new balance
+- Telegram: "Reserve topped up · debt cleared · balance remaining"
+- Debt accumulates until reserve funded
+- No blocking · no stopping · no forced actions ever
