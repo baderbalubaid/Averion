@@ -167,6 +167,13 @@ echo "✅ Chrony NTP sync active"
 echo "🗄️ Step 8: Setting up PostgreSQL..."
 systemctl enable postgresql
 systemctl start postgresql
+echo "⏳ Waiting for PostgreSQL to be ready..."
+sleep 5
+until pg_isready -U averion -h localhost; do
+    echo "PostgreSQL not ready yet · waiting..."
+    sleep 3
+done
+echo "✅ PostgreSQL is ready"
 sudo -u postgres psql -c "CREATE USER $AVERION_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User exists"
 sudo -u postgres psql -c "CREATE DATABASE averion OWNER $AVERION_USER;" 2>/dev/null || echo "DB exists"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE averion TO $AVERION_USER;"
