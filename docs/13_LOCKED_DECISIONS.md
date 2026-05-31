@@ -659,3 +659,28 @@ Debt Data Retention:
   - If still too small → ignore · keep in dashboard
 - Dust never causes errors · never blocks calculations
 - Small cosmetic issue only · handled gracefully
+
+## NOWPayments Webhook Reliability (LOCKED)
+
+Three layer system:
+
+Layer 1 — Webhook (primary · instant)
+- NOWPayments fires webhook → credit user immediately
+- payment_id saved to DB · status = CREDITED
+
+Layer 2 — Hourly polling (fallback)
+- Every hour: check NOWPayments API for last 24h payments
+- Compare against DB · any missing payment_id → credit now
+- Catches all missed webhooks automatically
+
+Layer 3 — Admin manual reconciliation
+- Admin deposit log shows ALL payments sorted by newest
+- Status per payment: Credited · Pending · Unknown · Failed
+- [Match] button for unknown deposits (no user match)
+- [Credit Manually] button for stuck payments
+- [Export Excel] for full records
+
+Duplicate Protection:
+- Check payment_id exists in DB before every credit
+- If exists → skip · if not exists → credit
+- Never double-credits under any circumstance
