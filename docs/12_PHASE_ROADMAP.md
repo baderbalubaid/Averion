@@ -103,7 +103,7 @@
 - Referral system 3%
 - Two bot toggles (Trading + DCA)
 - Reserve floor + auto-resume
-- Recovery buy system
+- Recovery buy system REMOVED
 - TradingView webhook
 
 ---

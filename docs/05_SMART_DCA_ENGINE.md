@@ -108,7 +108,7 @@ Updates daily at 3am as volumes shift.
 2. Apply cap protection formula
 3. Compare against category boundaries
 4. If boundary crossed → reclassify immediately
-5. Apply new parameters to existing positions immediately
+5. Apply new parameters to NEW positions only (existing positions keep original parameters — see 13_LOCKED_DECISIONS.md)
 6. Log in coin_history table
 7. Telegram alert if any coin reclassified
 
