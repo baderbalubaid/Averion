@@ -510,3 +510,18 @@ Step 4: If user never fixes (rare)
 - After 7 days: reminder to close positions manually on exchange
 - Admin can mark positions closed if needed
 - Nothing forced ever
+
+## API Disconnection Auto-Archive (LOCKED)
+
+If exchange never reconnects:
+- Day 1: Telegram alert + dashboard red banner
+- Day 7: Warning to close positions manually on exchange
+- Day 30: Stronger warning reminder
+- Day 365: Auto-archive all positions
+  - Status changed to EXPIRED
+  - Removed from active dashboard
+  - Kept in History tab forever (tax records)
+  - Telegram final notice sent
+  - DB cleaned · no data deleted
+- Reason: safety net for edge cases
+  (hospitalized · abandoned account · lost access)
