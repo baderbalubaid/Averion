@@ -480,3 +480,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS trades_used_this_month INTEGER DEFAUL
 ALTER TABLE users ADD COLUMN IF NOT EXISTS next_billing_date DATE;
 
 SELECT 'Schema updates applied successfully!' AS result;
+
+-- Base coin support
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+
+-- Position detail enhancements
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS dca_level_price DECIMAL(20,8);
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS running_avg_cost DECIMAL(20,8);
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS running_quantity DECIMAL(20,8);
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS running_total_invested DECIMAL(20,8);
+
+SELECT 'Base coin and position detail columns added!' AS result;
