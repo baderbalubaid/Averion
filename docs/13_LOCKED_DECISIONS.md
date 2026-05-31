@@ -456,3 +456,17 @@ All 10 entry methods must beat relevant benchmarks
 to be considered for Smart DCA promotion.
 If methods lose to Random Entry = signals are noise.
 If methods lose to BTC Hold = wrong market regime.
+
+## Smart Queue Tie-Breaker (LOCKED)
+
+When two positions have identical scores (Loss% / USDT required):
+
+Step 1: Highest loss $ amount wins
+- Position with bigger absolute loss funded first
+- Closing bigger loss = better recovery for customer
+- More capital freed when TP eventually fires
+
+Step 2: If still equal → oldest position wins
+- Position open longest gets priority
+- Simple · deterministic · fair
+- Easy to implement and audit
