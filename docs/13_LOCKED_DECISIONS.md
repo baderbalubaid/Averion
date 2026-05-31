@@ -485,3 +485,28 @@ When DCA triggers but full amount not available:
 8. If remaining < exchange minimum → add to next DCA level amount
 9. After standby complete → position returns to normal queue
 10. Each partial buy recorded as separate trade for full audit trail
+
+## API Key Expiry Flow (LOCKED)
+
+Step 1: Bot detects API rejection (CCXT auth error)
+- Exchange marked PAUSED in DB
+- Telegram Alerts: MEXC API key rejected · action required
+- Dashboard: red banner · API KEY INVALID · [Update API Key] button
+
+Step 2: User updates API key in Settings
+- Bot tests connection automatically
+- If valid → exchange resumes immediately
+
+Step 3: Auto-resume on reconnection
+- Bot fetches current prices immediately
+- Any TP that triggered during downtime → fires immediately
+- Any DCA that triggered → enters queue normally
+- Everything resumes automatically — no manual intervention
+- 60s loop continues as normal
+
+Step 4: If user never fixes (rare)
+- Positions stay paused · shown in dashboard
+- Telegram reminder every 24 hours
+- After 7 days: reminder to close positions manually on exchange
+- Admin can mark positions closed if needed
+- Nothing forced ever
