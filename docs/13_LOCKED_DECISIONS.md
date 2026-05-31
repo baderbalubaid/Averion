@@ -879,3 +879,52 @@ Settings tab shows:
   - Telegram: "Reserve topped up · $5 debt cleared · $5.00 remaining"
 - Debt shown clearly in red until cleared
 - Never hidden · always transparent
+
+## Paper Trade Timer Reset (LOCKED)
+
+- Timer resets when live trade OPENS only
+- Closing a live trade does NOT reset timer
+- Only OPENING a new live trade resets 90-day counter
+- Reason: user could close last live trade on Day 89
+ and never open another — timer would reset incorrectly
+
+## Short DCA Balance Check (LOCKED)
+
+- Check coin balance on exchange before EVERY Short DCA sell
+- If balance insufficient → standby system activates
+- Telegram alert: insufficient balance for Short DCA sell
+- Attention log: warning shown in dashboard
+- Bot waits for sufficient balance automatically
+- No manual action needed
+
+## Database Backup Strategy (LOCKED)
+
+- Daily 3am: pg_dump → /home/averion/backups/
+- Filename: averion_YYYY-MM-DD.sql
+- Keep last 7 days only (auto-delete older)
+- Phase 4: local backups sufficient for personal use
+- Phase 6: add Hetzner Volume 10GB at €0.48/month
+ for off-disk disaster recovery before public launch
+- Telegram alert if backup fails
+
+## MAX_COINS Production Assertion (LOCKED)
+
+- MAX_COINS = 100 exists in Replit only (memory limit)
+- Remove MAX_COINS completely on Hetzner Day 1
+- Add startup assertion in main.py:
+ If MAX_COINS set AND PAPER_MODE=false → refuse to start
+ Error message: Remove MAX_COINS before going live
+- Prevents silent coin limit in production
+- Already in DAY1_CHECKLIST.md as reminder
+
+## Unconfirmed Order Reconciliation on Startup (LOCKED)
+
+- On every PM2 restart or bot startup:
+ 1. Fetch last 100 orders from each exchange via CCXT
+ 2. Compare against DB trades table
+ 3. Any order on exchange NOT in DB → insert as trade
+ 4. Any DB trade marked pending → verify with exchange
+ 5. Fill all gaps before resuming queue
+- Prevents: mid-trade PM2 crash losing order confirmation
+- Takes approximately 5 seconds on startup
+- Critical for data integrity with real money
