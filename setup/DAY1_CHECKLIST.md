@@ -17,8 +17,10 @@
 
 ## PHASE 1 — Server Access (5 min)
 - [ ] SSH into server: ssh root@YOUR_IP
-- [ ] Change root password: passwd
 - [ ] Note server IP address
+- [ ] Add your SSH public key to server before running script!
+- [ ] Run Day 1 script (asks to confirm SSH key added)
+- [ ] After setup: ssh -p 2847 averion@YOUR_IP
 
 ## PHASE 2 — Run Day 1 Script (15 min)
 - [ ] Clone repo: git clone https://github.com/baderbalubaid/Averion.git
