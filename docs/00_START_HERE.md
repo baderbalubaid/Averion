@@ -1,3 +1,15 @@
+
+## CLAUDE FIRST ACTION — Read These Files First
+
+> Every new Claude session must fetch these files immediately before responding.
+
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/docs/00_START_HERE.md
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/docs/13_LOCKED_DECISIONS.md
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/docs/03_TRADING_SYSTEM.md
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/docs/04_RISK_AND_SAFETY.md
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/docs/05_SMART_DCA_ENGINE.md
+- https://raw.githubusercontent.com/baderbalubaid/Averion/main/setup/schema.sql
+
 # Averion — Start Here
 
 ## What Is Averion
