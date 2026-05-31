@@ -1,17 +1,28 @@
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
-# Time: ~15 minutes
+# Time: ~20 minutes
+# SECURITY HARDENED VERSION
 
 set -e
 echo "🚀 Starting Averion Day 1 Setup..."
+echo "⚠️  Run this as root on fresh Ubuntu 24.04"
+
+# ═══════════════════════════════
+# VARIABLES — EDIT BEFORE RUNNING
+# ═══════════════════════════════
+SSH_PORT=2847
+AVERION_USER=averion
+DB_PASSWORD="change-this-strong-password"
 
 # ═══════════════════════════════
 # STEP 1 — System Update
 # ═══════════════════════════════
 echo "📦 Step 1: Updating system..."
 apt update && apt upgrade -y
-echo "✅ System updated"
+apt install -y unattended-upgrades
+dpkg-reconfigure -f noninteractive unattended-upgrades
+echo "✅ System updated + auto security updates enabled"
 
 # ═══════════════════════════════
 # STEP 2 — Install Dependencies
@@ -32,107 +43,226 @@ apt install -y \
     git \
     ufw \
     curl \
-    nano
+    nano \
+    logwatch \
+    nodejs \
+    npm
 echo "✅ Dependencies installed"
 
 # ═══════════════════════════════
-# STEP 3 — Security Setup
+# STEP 3 — Create Non-Root User
 # ═══════════════════════════════
-echo "🔒 Step 3: Setting up security..."
-ufw allow 22
-ufw allow 80
-ufw allow 443
-ufw allow 8080
-ufw --force enable
-systemctl enable fail2ban
-systemctl start fail2ban
-echo "✅ Firewall and fail2ban configured"
+echo "👤 Step 3: Creating averion user..."
+useradd -m -s /bin/bash $AVERION_USER 2>/dev/null || echo "User already exists"
+usermod -aG sudo $AVERION_USER
+echo "✅ User $AVERION_USER created"
 
 # ═══════════════════════════════
-# STEP 4 — Clock Sync
+# STEP 4 — SSH Hardening
 # ═══════════════════════════════
-echo "🕐 Step 4: Setting up clock sync..."
+echo "🔒 Step 4: Hardening SSH..."
+
+# Backup original config
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+
+# Apply security settings
+cat > /etc/ssh/sshd_config << SSHCONF
+# Averion Security Hardened SSH Config
+Port $SSH_PORT
+Protocol 2
+
+# Authentication
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PermitEmptyPasswords no
+MaxAuthTries 3
+LoginGraceTime 30
+
+# Security
+X11Forwarding no
+AllowTcpForwarding no
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# Allow only averion user
+AllowUsers $AVERION_USER
+SSHCONF
+
+echo "⚠️  IMPORTANT: Add your SSH public key before restarting SSH!"
+echo "Run: mkdir -p /home/$AVERION_USER/.ssh"
+echo "Run: echo 'YOUR_PUBLIC_KEY' >> /home/$AVERION_USER/.ssh/authorized_keys"
+echo "Run: chmod 700 /home/$AVERION_USER/.ssh"
+echo "Run: chmod 600 /home/$AVERION_USER/.ssh/authorized_keys"
+echo "Run: chown -R $AVERION_USER:$AVERION_USER /home/$AVERION_USER/.ssh"
+echo ""
+read -p "Have you added your SSH key? (yes/no): " SSH_CONFIRMED
+if [ "$SSH_CONFIRMED" != "yes" ]; then
+    echo "❌ Aborted — add SSH key first!"
+    cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
+    exit 1
+fi
+
+systemctl restart sshd
+echo "✅ SSH hardened — port $SSH_PORT · root login disabled · password auth disabled"
+
+# ═══════════════════════════════
+# STEP 5 — Firewall (UFW)
+# ═══════════════════════════════
+echo "🔥 Step 5: Configuring firewall..."
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow $SSH_PORT/tcp comment 'SSH custom port'
+ufw allow 80/tcp comment 'HTTP'
+ufw allow 443/tcp comment 'HTTPS'
+ufw allow 8080/tcp comment 'Averion dashboard'
+ufw --force enable
+echo "✅ UFW firewall configured"
+
+# ═══════════════════════════════
+# STEP 6 — Fail2ban
+# ═══════════════════════════════
+echo "🛡️ Step 6: Configuring fail2ban..."
+systemctl enable fail2ban
+systemctl start fail2ban
+
+cat > /etc/fail2ban/jail.local << F2B
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 3
+destemail = root@localhost
+action = %(action_mw)s
+
+[sshd]
+enabled = true
+port = $SSH_PORT
+maxretry = 3
+bantime = 86400
+
+[nginx-http-auth]
+enabled = true
+
+[nginx-botsearch]
+enabled = true
+F2B
+
+systemctl restart fail2ban
+echo "✅ Fail2ban configured"
+
+# ═══════════════════════════════
+# STEP 7 — Clock Sync
+# ═══════════════════════════════
+echo "🕐 Step 7: Setting up clock sync..."
 systemctl enable chrony
 systemctl start chrony
 chronyc makestep
 echo "✅ Chrony NTP sync active"
 
 # ═══════════════════════════════
-# STEP 5 — PostgreSQL Setup
+# STEP 8 — PostgreSQL Setup
 # ═══════════════════════════════
-echo "🗄️ Step 5: Setting up PostgreSQL..."
+echo "🗄️ Step 8: Setting up PostgreSQL..."
 systemctl enable postgresql
 systemctl start postgresql
-sudo -u postgres psql -c "CREATE USER averion WITH PASSWORD 'CHANGE_THIS_PASSWORD';"
-sudo -u postgres psql -c "CREATE DATABASE averion OWNER averion;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE averion TO averion;"
-echo "✅ PostgreSQL configured"
+sudo -u postgres psql -c "CREATE USER $AVERION_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User exists"
+sudo -u postgres psql -c "CREATE DATABASE averion OWNER $AVERION_USER;" 2>/dev/null || echo "DB exists"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE averion TO $AVERION_USER;"
+
+# Secure PostgreSQL
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" /etc/postgresql/*/main/postgresql.conf
+systemctl restart postgresql
+echo "✅ PostgreSQL configured · localhost only"
 
 # ═══════════════════════════════
-# STEP 6 — Redis Setup
+# STEP 9 — Redis Setup
 # ═══════════════════════════════
-echo "📮 Step 6: Setting up Redis..."
+echo "📮 Step 9: Setting up Redis..."
+# Bind Redis to localhost only
+sed -i 's/^bind 127.0.0.1 -::1/bind 127.0.0.1/' /etc/redis/redis.conf
+sed -i 's/^# requirepass/requirepass/' /etc/redis/redis.conf
 systemctl enable redis-server
 systemctl start redis-server
-echo "✅ Redis running"
+echo "✅ Redis running · localhost only"
 
 # ═══════════════════════════════
-# STEP 7 — Create Averion User
+# STEP 10 — Clone Repository
 # ═══════════════════════════════
-echo "👤 Step 7: Creating averion user..."
-useradd -m -s /bin/bash averion 2>/dev/null || echo "User already exists"
-echo "✅ User averion ready"
-
-# ═══════════════════════════════
-# STEP 8 — Clone Repository
-# ═══════════════════════════════
-echo "📥 Step 8: Cloning repository..."
-cd /home/averion
-git clone https://github.com/baderbalubaid/Averion.git
-chown -R averion:averion /home/averion/Averion
+echo "📥 Step 10: Cloning repository..."
+cd /home/$AVERION_USER
+sudo -u $AVERION_USER git clone https://github.com/baderbalubaid/Averion.git
 echo "✅ Repository cloned"
 
 # ═══════════════════════════════
-# STEP 9 — Python Dependencies
+# STEP 11 — Python Dependencies
 # ═══════════════════════════════
-echo "🐍 Step 9: Installing Python packages..."
-cd /home/averion/Averion
-pip3 install -r requirements.txt --break-system-packages
+echo "🐍 Step 11: Installing Python packages..."
+pip install -r /home/$AVERION_USER/Averion/requirements.txt --break-system-packages
 echo "✅ Python packages installed"
 
 # ═══════════════════════════════
-# STEP 10 — Database Schema
+# STEP 12 — Database Schema
 # ═══════════════════════════════
-echo "🗄️ Step 10: Creating database tables..."
-psql -U averion -d averion -h localhost < /home/averion/Averion/setup/schema.sql
+echo "🗄️ Step 12: Creating database tables..."
+sudo -u $AVERION_USER psql -d averion -h localhost < /home/$AVERION_USER/Averion/setup/schema.sql
 echo "✅ Database tables created"
 
 # ═══════════════════════════════
-# STEP 11 — PM2 Setup
+# STEP 13 — PM2 Setup (as averion user)
 # ═══════════════════════════════
-echo "⚙️ Step 11: Setting up PM2..."
+echo "⚙️ Step 13: Setting up PM2..."
 npm install -g pm2
-pm2 start /home/averion/Averion/main.py --name averion --interpreter python3
-pm2 startup
-pm2 save
-echo "✅ PM2 configured"
+sudo -u $AVERION_USER pm2 start /home/$AVERION_USER/Averion/main.py \
+    --name averion \
+    --interpreter python3
+sudo -u $AVERION_USER pm2 startup
+sudo -u $AVERION_USER pm2 save
+echo "✅ PM2 configured as $AVERION_USER user"
 
 # ═══════════════════════════════
-# STEP 12 — Cron Jobs
+# STEP 14 — Cron Jobs
 # ═══════════════════════════════
-echo "⏰ Step 12: Installing cron jobs..."
-(crontab -l 2>/dev/null; echo "0 * * * * /home/averion/Averion/automation/health_check.sh >> /var/log/averion_health.log 2>&1") | crontab -
-(crontab -l 2>/dev/null; echo "0 3 * * * /home/averion/Averion/automation/daily_cron.sh >> /var/log/averion_daily.log 2>&1") | crontab -
-(crontab -l 2>/dev/null; echo "30 4 * * 0 /home/averion/Averion/automation/weekly_cron.sh >> /var/log/averion_weekly.log 2>&1") | crontab -
-echo "✅ Cron jobs installed"
+echo "⏰ Step 14: Installing cron jobs..."
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 * * * * /home/$AVERION_USER/Averion/automation/health_check.sh >> /var/log/averion_health.log 2>&1") | crontab -u $AVERION_USER -
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 3 * * * /home/$AVERION_USER/Averion/automation/daily_cron.sh >> /var/log/averion_daily.log 2>&1") | crontab -u $AVERION_USER -
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "30 4 * * 0 /home/$AVERION_USER/Averion/automation/weekly_cron.sh >> /var/log/averion_weekly.log 2>&1") | crontab -u $AVERION_USER -
+echo "✅ Cron jobs installed for $AVERION_USER"
 
 # ═══════════════════════════════
-# STEP 13 — Create Backups Folder
+# STEP 15 — Backups Folder
 # ═══════════════════════════════
-echo "💾 Step 13: Creating backup folder..."
-mkdir -p /home/averion/backups
-chown averion:averion /home/averion/backups
+echo "💾 Step 15: Creating backup folder..."
+mkdir -p /home/$AVERION_USER/backups
+chown $AVERION_USER:$AVERION_USER /home/$AVERION_USER/backups
+chmod 700 /home/$AVERION_USER/backups
 echo "✅ Backup folder ready"
+
+# ═══════════════════════════════
+# STEP 16 — File Permissions
+# ═══════════════════════════════
+echo "🔐 Step 16: Setting file permissions..."
+chown -R $AVERION_USER:$AVERION_USER /home/$AVERION_USER/Averion
+chmod 600 /home/$AVERION_USER/Averion/.env 2>/dev/null || true
+chmod 700 /home/$AVERION_USER/Averion/automation/*.sh 2>/dev/null || true
+echo "✅ File permissions set"
+
+# ═══════════════════════════════
+# STEP 17 — Nginx Basic Config
+# ═══════════════════════════════
+echo "🌐 Step 17: Configuring Nginx..."
+cat > /etc/nginx/conf.d/security.conf << NGINX
+# Security headers
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+add_header Referrer-Policy "strict-origin-when-cross-origin";
+server_tokens off;
+NGINX
+
+systemctl enable nginx
+systemctl start nginx
+echo "✅ Nginx configured with security headers"
 
 # ═══════════════════════════════
 # DONE
@@ -140,11 +270,22 @@ echo "✅ Backup folder ready"
 echo ""
 echo "🎉 Day 1 Setup Complete!"
 echo ""
-echo "Next steps:"
-echo "1. Create .env file: cp /home/averion/Averion/setup/env.example /home/averion/Averion/.env"
-echo "2. Edit .env: nano /home/averion/Averion/.env"
-echo "3. Restart bot: pm2 restart averion"
-echo "4. Check status: pm2 status"
-echo "5. Continue with Day 2 setup (domain + HTTPS)"
+echo "Security summary:"
+echo "✅ Root login disabled"
+echo "✅ SSH password auth disabled"
+echo "✅ SSH on port $SSH_PORT"
+echo "✅ UFW firewall active"
+echo "✅ Fail2ban active"
+echo "✅ PostgreSQL localhost only"
+echo "✅ Redis localhost only"
+echo "✅ Running as $AVERION_USER (not root)"
+echo "✅ Auto security updates enabled"
 echo ""
-echo "Dashboard: http://YOUR_SERVER_IP:8080/dashboard"
+echo "Next steps:"
+echo "1. cp /home/$AVERION_USER/Averion/setup/env.example /home/$AVERION_USER/Averion/.env"
+echo "2. nano /home/$AVERION_USER/Averion/.env"
+echo "3. python3 /home/$AVERION_USER/Averion/setup/init_db.py"
+echo "4. pm2 restart averion"
+echo "5. Continue with Day 2 (domain + HTTPS)"
+echo ""
+echo "⚠️  New SSH connection: ssh -p $SSH_PORT $AVERION_USER@YOUR_IP"
