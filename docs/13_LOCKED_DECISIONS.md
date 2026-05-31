@@ -800,3 +800,82 @@ Behavior:
 
 Also sent to Telegram for critical items
 Dashboard is primary · Telegram is secondary
+
+## Base Coin Selection (LOCKED)
+
+- User selects quote currency at bot creation: USDT or BTC
+- USDT bot: trades RVN/USDT · BTC/USDT · ETH/USDT etc
+- BTC bot: trades RVN/BTC · ETH/BTC etc
+- User must have selected base coin on exchange
+- Bot checks base coin balance before every trade
+- Cannot mix: one bot = one base currency always
+- Shown clearly in bot creation wizard Step 3
+
+## Position Price Bar — Live View (LOCKED)
+
+- Every open position shows live progress bar
+- Bar displays three markers:
+  - Current price (live · updates every 60s)
+  - Next DCA trigger price
+  - TP target price
+- Visual indicator: how close to DCA or TP
+- Shown in: Bots tab position row + Position detail screen
+
+## Position Detail Screen (LOCKED)
+
+- Each position has unique ID number
+- Click any position → opens detail screen
+- Shows:
+  - Position ID · Coin · Exchange · Bot name
+  - Current price · Avg cost · Quantity
+  - Total invested · Unrealized P&L
+  - Progress bar (Current · Next DCA · TP)
+  - Full DCA history table:
+    - Each DCA: level · timestamp · price · amount · quantity
+  - Total funds in this trade
+  - Total coin quantity accumulated
+  - Entry method used
+
+## Telegram Notifications — Final (LOCKED)
+
+- ONE chat with @AverionBot — Option C confirmed permanently
+- User toggles each message TYPE on/off independently
+
+Message types:
+- Trade notifications: every buy · DCA · sell · TP
+  (toggle ON/OFF — high volume · many mute this)
+- Alert notifications: reserve low · API expired · ST flag
+  (one alert per event · never repeated · never annoying)
+- Daily report: closed trades count · profit · fees
+- Weekly report: total profit in USDT + coins
+- Monthly report: full summary
+
+Settings tab shows:
+- Connected: @AverionBot ✅
+- Trade notifications: [ON/OFF]
+- Alert notifications: [ON/OFF]
+- Daily report: [ON/OFF]
+- Weekly report: [ON/OFF]
+- Monthly report: [ON/OFF]
+
+## Short Bot Partial Holdings — Standby (LOCKED)
+
+- User sets bot to sell 100 RVN
+- Exchange only has 50 RVN available
+- Bot shows hint: "Only 50 RVN available · waiting for more"
+- Bot sells available 50 RVN immediately
+- Standby activates: waiting for remaining 50 RVN
+- When user receives 50 more RVN → bot resumes immediately
+- Same standby system as partial DCA liquidity
+- No manual action needed · fully automatic
+
+## Reserve Wallet Debt Display (LOCKED)
+
+- Position closes at profit · fee = $5 · reserve = $0
+- Dashboard shows: Fees due: -$5.00 (red)
+- User deposits $10:
+  - Debt $5 deducted first automatically
+  - Remaining $5.00 shown as balance
+  - Telegram: "Reserve topped up · $5 debt cleared · $5.00 remaining"
+- Debt shown clearly in red until cleared
+- Never hidden · always transparent
