@@ -597,3 +597,20 @@ Priority Order (same exchange · same wallet):
 - Telegram: "Reserve topped up · debt cleared · balance remaining"
 - Debt accumulates until reserve funded
 - No blocking · no stopping · no forced actions ever
+
+## Reserve Wallet Debt System (LOCKED)
+
+- Bot NEVER stops when reserve = $0
+- Position closes at TP normally regardless of reserve balance
+- Fee recorded as debt in DB if reserve insufficient
+- Debt shown clearly in dashboard with [Top Up Now] button
+- When user tops up: debt deducted first · remaining = new balance
+- Telegram: debt cleared notification sent
+- Debt accumulates until reserve funded
+- No blocking · no stopping · no forced actions ever
+
+Debt Data Retention:
+- Active unpaid debt: kept forever until paid
+- Paid debt history: kept FOREVER
+- Reason: financial records · tax · dispute resolution
+- Never deleted regardless of account status
