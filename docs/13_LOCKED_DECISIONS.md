@@ -731,3 +731,32 @@ Missing candles from exchange outage:
 - If gap over 24 hours → admin Telegram alert
 - Bot continues trading with available data
 - Minor accuracy impact only · self-correcting
+
+## Customer Telegram Setup (LOCKED)
+
+One direct chat with @AverionBot — professional and simple.
+No separate channels needed — ever.
+
+Connection flow:
+1. Settings → Notifications → [Connect Telegram]
+2. Dashboard shows unique code: /connect ABC123XYZ
+3. Customer opens Telegram → finds @AverionBot
+4. Sends: /connect ABC123XYZ
+5. Bot confirms connection
+6. All notifications go to one direct chat
+
+Message format — clearly labeled:
+- 🟢 TRADE: every buy · sell · DCA · TP
+- 🔴 ALERT: reserve low · ST flag · errors · urgent
+- 📊 REPORT: daily · weekly · monthly summaries
+
+Customer controls in Settings:
+- Toggle each message type ON/OFF independently
+- Alerts recommended always ON
+- Customer can mute bot in Telegram if needed
+
+Why Option C is correct permanently:
+- One chat = everything in one place
+- Professional · clean · simple
+- No multi-channel complexity ever
+- WhatsApp Business and best Telegram bots use this approach
