@@ -13,7 +13,8 @@ echo "⚠️  Run this as root on fresh Ubuntu 24.04"
 # ═══════════════════════════════
 SSH_PORT=2847
 AVERION_USER=averion
-DB_PASSWORD="change-this-strong-password"
+DB_PASSWORD=$(openssl rand -hex 16)
+echo "Generated DB password stored in /tmp/averion_setup_vars"
 
 # ═══════════════════════════════
 # STEP 1 — System Update
@@ -172,8 +173,12 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE averion TO $AVERION_U
 
 # Secure PostgreSQL
 sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" /etc/postgresql/*/main/postgresql.conf
+# Allow password authentication from localhost
+PG_VERSION=$(ls /etc/postgresql/)
+echo "host    averion         averion         127.0.0.1/32            scram-sha-256" >> /etc/postgresql/$PG_VERSION/main/pg_hba.conf
+echo "host    averion         averion         ::1/128                 scram-sha-256" >> /etc/postgresql/$PG_VERSION/main/pg_hba.conf
 systemctl restart postgresql
-echo "✅ PostgreSQL configured · localhost only"
+echo "✅ PostgreSQL configured · localhost only · password auth enabled"
 
 # ═══════════════════════════════
 # STEP 9 — Redis Setup
@@ -181,7 +186,9 @@ echo "✅ PostgreSQL configured · localhost only"
 echo "📮 Step 9: Setting up Redis..."
 # Bind Redis to localhost only
 sed -i 's/^bind 127.0.0.1 -::1/bind 127.0.0.1/' /etc/redis/redis.conf
-sed -i 's/^# requirepass/requirepass/' /etc/redis/redis.conf
+REDIS_PASS=$(openssl rand -hex 16)
+sed -i "s/^# requirepass foobared/requirepass $REDIS_PASS/" /etc/redis/redis.conf
+echo "REDIS_PASSWORD=$REDIS_PASS" >> /tmp/averion_setup_vars
 systemctl enable redis-server
 systemctl start redis-server
 echo "✅ Redis running · localhost only"
@@ -216,8 +223,9 @@ npm install -g pm2
 sudo -u $AVERION_USER pm2 start /home/$AVERION_USER/Averion/main.py \
     --name averion \
     --interpreter python3
-sudo -u $AVERION_USER pm2 startup
-sudo -u $AVERION_USER pm2 save
+# PM2 startup — correct approach
+env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER
+su - $AVERION_USER -c 'pm2 save'
 echo "✅ PM2 configured as $AVERION_USER user"
 
 # ═══════════════════════════════
