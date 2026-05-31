@@ -684,3 +684,19 @@ Duplicate Protection:
 - Check payment_id exists in DB before every credit
 - If exists → skip · if not exists → credit
 - Never double-credits under any circumstance
+
+## ST Flag — Entry Check + Exit Rule (LOCKED)
+
+Before entering ANY new position:
+- Check ST flag for that coin
+- If ST active → skip · do not enter
+- Move to next qualifying coin
+- Telegram alert: coin skipped due to ST
+
+During open position:
+- ST detected → auto sell immediately (market order)
+- No exceptions · even at significant loss
+- Reason: some money better than nothing
+- Coin may become permanently untradeable
+- Telegram alert: position closed · ST detected · P&L shown
+- Capital freed → queue rescores immediately
