@@ -787,3 +787,23 @@ TP formula for Short DCA:
 - TP target = avg_sell_price x (1 - TP%)
 - Price drops to TP target → limit buy fills
 - Profit = total USDT collected - total USDT spent on buyback
+
+## CCXT Version Management (LOCKED)
+
+- Never blind auto-upgrade on live server
+- Safe automated upgrade process:
+
+Step 1: Weekly check for new CCXT version
+Step 2: If new version found:
+  - Install in temporary virtual environment only
+  - Run 5 validation tests:
+    1. Fetch live price from MEXC
+    2. Fetch order book
+    3. Fetch account balance
+    4. Fetch OHLCV data
+    5. Parse order response format
+Step 3: All tests pass → upgrade main installation → restart bot
+Step 4: Any test fails → stay on current version → retry next week
+- Telegram notification after every attempt (pass or fail)
+- Fully automatic · zero manual intervention needed
+- Never breaks live bot · always tested before applying
