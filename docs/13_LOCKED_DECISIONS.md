@@ -1044,3 +1044,28 @@ All limit orders checked every hour:
 - If missing on exchange → auto-recovery triggered
 - Uses CCXT fetchOrder() to verify status
 - Cross-references with DB short_buyback_orders table
+
+## Platform Approach (LOCKED)
+
+- Build public-ready from Day 1 — not personal then upgrade
+- No technical debt from "personal first" approach
+- Server starts small (CX23) · scales with users
+- Admin dashboard monitors capacity · easy upgrade path
+
+## Day 1 Exchange Priority (LOCKED)
+
+- MEXC: Long DCA (primary test exchange)
+- KuCoin: Long DCA (Bader actively trades here)
+- Both exchanges needed from Day 1
+- KuCoin requires passphrase_enc (already in schema)
+- Short DCA: Phase 5 (MEXC first · then KuCoin)
+
+## Virtual Wallet — Day 1 Feature (LOCKED)
+
+- Virtual wallet system built from Day 1
+- Not Phase 5 · not deferred
+- Reason: build once · build right · public platform
+- Every bot assigned to a wallet from creation
+- Default wallet created automatically per exchange
+- User can create named wallets anytime
+- No migration needed later
