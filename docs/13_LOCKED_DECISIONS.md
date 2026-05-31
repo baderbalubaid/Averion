@@ -525,3 +525,22 @@ If exchange never reconnects:
   - DB cleaned · no data deleted
 - Reason: safety net for edge cases
   (hospitalized · abandoned account · lost access)
+
+## API Disconnection Auto-Archive (LOCKED)
+
+If exchange never reconnects:
+- Day 1: Telegram alert + dashboard red banner
+- Day 7: Warning to close positions manually on exchange
+- Day 30: Strong warning · monthly alerts begin from here
+- Monthly: reminder sent every 30 days
+- Month 6: Monthly reminder + "6 months disconnected" warning
+- Month 12: Monthly reminder + "Account will be archived in 30 days"
+- Day 365: Auto-archive all positions
+  - Status changed to EXPIRED
+  - Removed from active dashboard
+  - Kept in History tab forever (tax records)
+  - Telegram final notice sent
+  - DB cleaned · no data deleted
+- Reason: safety net for edge cases
+  (hospitalized · abandoned account · lost access)
+- Monthly alerts prevent user being surprised at day 365
