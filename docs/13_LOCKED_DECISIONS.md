@@ -626,3 +626,15 @@ Debt Data Retention:
 - Parameters: vs_currency=usd · per_page=250 · page=N
 - Never call individual /coins/{id} endpoint
 - Dynamic · scalable · always complete
+
+## Smart Queue Cycle Definition (LOCKED)
+
+- One cycle = one 60 second price check loop
+- ONE DCA executed per cycle maximum
+- When TP fires mid-cycle:
+  - Capital freed immediately
+  - Queue rescores immediately
+  - Next DCA waits for next 60s cycle
+  - Never two DCAs in same 60s window
+- Maximum DCA rate = one per 60 seconds
+- Predictable · auditable · never chaotic
