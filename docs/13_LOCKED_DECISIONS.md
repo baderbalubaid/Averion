@@ -714,3 +714,20 @@ Queue never blocks on insufficient funds:
 - Capital always deployed to best available option
 - Never idle when something can be funded
 - Low balance Telegram alert when NO position can be funded
+
+## OHLCV Data Gap Handling (LOCKED)
+
+New coins under 90 days:
+- Handled by confidence tier system already
+- Under 30 days = category defaults
+- 30-90 days = blend own data + defaults
+- Over 90 days = fully own data
+
+Missing candles from exchange outage:
+- Skip missing candles in ATR calculation
+- Never fake or interpolate data
+- Use available candles only
+- Gap fills automatically next hourly fetch
+- If gap over 24 hours → admin Telegram alert
+- Bot continues trading with available data
+- Minor accuracy impact only · self-correcting
