@@ -700,3 +700,17 @@ During open position:
 - Coin may become permanently untradeable
 - Telegram alert: position closed · ST detected · P&L shown
 - Capital freed → queue rescores immediately
+
+## Smart Queue Insufficient Funds Behavior (LOCKED)
+
+Queue never blocks on insufficient funds:
+- Score all positions by Loss% / USDT required
+- Attempt to fund #1 highest score
+- If insufficient funds → SKIP · move to #2
+- Attempt #2 · if insufficient → SKIP · move to #3
+- Continue until funded position found or list exhausted
+- Execute best affordable position
+- Remaining positions retry next 60s cycle
+- Capital always deployed to best available option
+- Never idle when something can be funded
+- Low balance Telegram alert when NO position can be funded
