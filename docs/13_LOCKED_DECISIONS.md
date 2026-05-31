@@ -638,3 +638,24 @@ Debt Data Retention:
   - Never two DCAs in same 60s window
 - Maximum DCA rate = one per 60 seconds
 - Predictable · auditable · never chaotic
+
+## Server Clock Sync (LOCKED)
+
+- Install chrony on Hetzner Day 1
+- Syncs with multiple NTP servers automatically
+- Prevents clock drift that causes exchange API rejections
+- Ubuntu 24.04 has systemd-timesyncd by default
+- Chrony provides better accuracy for trading systems
+- One install · runs forever · never needs attention
+
+## Dust Accumulation Handling (LOCKED)
+
+- After every TP sell: check remaining coin balance
+- If remaining < exchange minimum order size = dust
+- Dust marked in DB · excluded from calculations
+- Shown in dashboard: Dust: 0.00003 BTC
+- Weekly Sunday cron: attempt to sell all dust combined
+  - If total dust value >= minimum order → sell
+  - If still too small → ignore · keep in dashboard
+- Dust never causes errors · never blocks calculations
+- Small cosmetic issue only · handled gracefully
