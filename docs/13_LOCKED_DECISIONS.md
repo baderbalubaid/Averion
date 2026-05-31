@@ -614,3 +614,15 @@ Debt Data Retention:
 - Paid debt history: kept FOREVER
 - Reason: financial records · tax · dispute resolution
 - Never deleted regardless of account status
+
+## CoinGecko Rate Limiting Solution (LOCKED)
+
+- Use /coins/markets endpoint (250 coins per call)
+- Fetch ALL coins dynamically - not limited to 1870
+- New coins appear automatically in next batch
+- Process: fetch page 1 · page 2 · page 3 · until empty page returned
+- Empty page = all coins fetched · stop automatically
+- Free tier: 50 calls/minute · well within limit
+- Parameters: vs_currency=usd · per_page=250 · page=N
+- Never call individual /coins/{id} endpoint
+- Dynamic · scalable · always complete
