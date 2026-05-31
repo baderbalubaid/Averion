@@ -82,7 +82,7 @@ Most common: Trading OFF + DCA ON (ride only mode)
 
 ## Trade Limits
 
-- Total limit = 100 open trades per customer (paper + live combined)
+- Total limit = 100 CONCURRENT open trades maximum (paper + live combined) — separate from monthly trade bundle
 - Paper maximum = 30 of the 100
 - Live maximum = 100 minus paper trades used
 - At paper limit → blocked with message

@@ -6,12 +6,12 @@
 
 ## Database
 
-- SQLite with WAL mode (Write-Ahead Logging)
+- PostgreSQL from Day 1 (see 16_TODO_HETZNER.md)
 - WAL allows reads while writing — no blocking
 - Located at: averion.db (Replit) · /home/averion/Averion/averion.db (Hetzner)
 - Backup daily at 3am → /backups/averion_YYYY-MM-DD.db
 - Keep last 7 days of backups only
-- Migrate to PostgreSQL at Phase 6 (multi-user)
+- Already using PostgreSQL from Day 1 on Hetzner
 
 ---
 
