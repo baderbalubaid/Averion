@@ -155,18 +155,6 @@
 
 ## Exchange Minimum Order Rules (LOCKED)
 
-- Bot sticks to user selected base order size — no auto-adjustment
-- Before launching bot: system checks all coins against exchange minimums
-- Shows warning in Step 7 wizard:
-  "Coin X requires $5 minimum — will be skipped with your $1 base"
-- User decides to increase base order or accept skipped coins
-- Add Funds: blocks confirmation if amount < exchange minimum
-- Short DCA: checks quantity >= minimum lot size before every sell
-  - If holdings < minimum lot → skip level · show dashboard warning
-  - User must increase holdings manually first
-
-## Exchange Minimum Order Rules (LOCKED)
-
 - Bot creates normally — no blocking at wizard
 - Trading holds per coin if minimum not met
 - Bot settings page shows error section:
@@ -516,21 +504,6 @@ Step 4: If user never fixes (rare)
 If exchange never reconnects:
 - Day 1: Telegram alert + dashboard red banner
 - Day 7: Warning to close positions manually on exchange
-- Day 30: Stronger warning reminder
-- Day 365: Auto-archive all positions
-  - Status changed to EXPIRED
-  - Removed from active dashboard
-  - Kept in History tab forever (tax records)
-  - Telegram final notice sent
-  - DB cleaned · no data deleted
-- Reason: safety net for edge cases
-  (hospitalized · abandoned account · lost access)
-
-## API Disconnection Auto-Archive (LOCKED)
-
-If exchange never reconnects:
-- Day 1: Telegram alert + dashboard red banner
-- Day 7: Warning to close positions manually on exchange
 - Day 30: Strong warning · monthly alerts begin from here
 - Monthly: reminder sent every 30 days
 - Month 6: Monthly reminder + "6 months disconnected" warning
@@ -586,17 +559,6 @@ Priority Order (same exchange · same wallet):
 1. Short DCA buyback (always first)
 2. TP exits (free capital immediately)
 3. Long DCA queue (normal scoring)
-
-## Reserve Wallet Debt System (LOCKED)
-
-- Bot NEVER stops when reserve = $0
-- Position closes at TP normally regardless of reserve balance
-- Fee recorded as debt in DB if reserve insufficient
-- Debt shown clearly in dashboard with [Top Up Now] button
-- When user tops up: debt deducted first · remaining = new balance
-- Telegram: "Reserve topped up · debt cleared · balance remaining"
-- Debt accumulates until reserve funded
-- No blocking · no stopping · no forced actions ever
 
 ## Reserve Wallet Debt System (LOCKED)
 
