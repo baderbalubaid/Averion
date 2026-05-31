@@ -126,7 +126,10 @@ CREATE TABLE positions (
     entry_method VARCHAR(20),
     opened_at TIMESTAMP DEFAULT NOW(),
     closed_at TIMESTAMP,
-    close_reason VARCHAR(50)
+    close_reason VARCHAR(50),
+    short_buyback_order_id VARCHAR(100),
+    short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
+    pending_buyback BOOLEAN DEFAULT FALSE
 );
 
 -- ═══════════════════════════════
