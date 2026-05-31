@@ -77,7 +77,7 @@ New approach = write complete new dashboard.html.
 
 ### How To Start This Item
 Tell Claude in new chat:
-"I am on Item 24 — Bots tab flat list redesign.
+"Item 24 is COMPLETE — do not work on this.
 Read 00_START_HERE.md and 15_TODO_REPLIT.md from GitHub first.
 Then help me code it via Replit terminal."
 
