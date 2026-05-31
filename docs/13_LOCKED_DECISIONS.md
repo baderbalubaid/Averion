@@ -993,3 +993,54 @@ Settings tab shows:
   Without it: Long DCA queue steals Short funds
 - Minimum 100 paper Short trades before any live Short
 - Test on MEXC first (already familiar exchange)
+
+## PM2 Startup Sequence (LOCKED)
+
+- hetzner_day1.sh: sleep 5 after PostgreSQL starts
+- main.py startup sequence:
+  1. Wait for PostgreSQL ready (retry every 5s · max 60s)
+  2. Wait for Redis ready (retry every 3s · max 30s)
+  3. Run unconfirmed order reconciliation
+  4. Start bot loop only after all services ready
+- If DB not ready after 60s: log clear error · exit · PM2 retries
+- Admin dashboard shows: startup status per service
+
+## Admin Dashboard Startup Status (LOCKED)
+
+Shows real-time service status on startup:
+- PostgreSQL: ✅ Running / ❌ Not Running
+- Redis: ✅ Running / ❌ Not Running  
+- Bot Loop: ✅ Running / ⏳ Starting / ❌ Stopped
+- Last Reconciliation: timestamp
+- CCXT Version: current version
+- All shown with professional colored indicators
+- Same style as rest of dashboard (dark theme)
+
+## Short DCA Limit Order Auto-Recovery (LOCKED)
+
+Problem: User accidentally cancels limit buyback on exchange
+Bot detects: limit order no longer exists on exchange
+
+Recovery flow:
+1. Hourly check: verify all Short DCA limit orders still active
+2. If limit order cancelled/missing on exchange:
+   → Flag position: BUYBACK_MISSING
+   → Check available USDT in wallet
+   → If USDT available: place new limit order immediately
+   → If USDT gone (stolen by Long DCA queue):
+     · Set same exchange Long DCA bots: HOLD
+     · Telegram alert: Short buyback recovering
+     · Wait for next Long DCA TP to free capital
+     · When capital available: place limit order
+     · Release Long DCA HOLD
+3. Attention log: shows recovery status
+4. User can also press [Force Recover] button
+
+## Limit Order Monitoring (LOCKED)
+
+All limit orders checked every hour:
+- Short DCA buyback orders
+- Any other limit orders (future features)
+- If missing on exchange → auto-recovery triggered
+- Uses CCXT fetchOrder() to verify status
+- Cross-references with DB short_buyback_orders table
