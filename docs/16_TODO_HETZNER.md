@@ -193,3 +193,54 @@ frontend/
 - Claude edits one file at a time
 - Never touch multiple sections in one session
 - Structure evolves naturally — never forced
+
+## Database Architecture — Never-Break Stack (LOCKED)
+
+Three layers working together — zero extra cost on Hetzner.
+
+### Layer 1 — Redis (In-Memory Cache)
+- Stores live prices in RAM
+- Bot reads prices from RAM not DB
+- Microsecond speed — never slow
+- 1870 coins = ~1MB RAM only
+- Refreshed every 60 seconds from exchanges
+- Free · runs on same Hetzner server
+
+### Layer 2 — PostgreSQL (Main Database)
+- All positions · trades · history · users
+- Multiple concurrent writers — no locking
+- Proper indexes on key columns:
+  - coin · exchange · status · last_buy_price
+  - user_id · opened_at · closed_at
+- Partitioned by exchange (MEXC / Binance / etc)
+- Never scans full table — always uses index
+- Always fast regardless of row count
+- Free · runs on same Hetzner server
+
+### Layer 3 — Archive Table (Cold Storage)
+- Closed trades older than 1 year moved here
+- Main positions table stays small and fast
+- Archive table for history and tax records
+- Queries always fast — hot data always small
+- Same PostgreSQL DB — just separate table
+
+### Why This Stack
+- SQLite = one writer at a time = breaks under load
+- PostgreSQL = multiple concurrent writers = never breaks
+- Redis = RAM speed for prices = never slow
+- Archive = keeps main table small = always fast
+
+### Indexes to Create on Day 1
+- positions: (exchange, status) — queue scoring
+- positions: (user_id, status) — dashboard load
+- positions: (coin, last_buy_price) — DCA trigger check
+- trades: (position_id) — trade history lookup
+- trades: (user_id, closed_at) — history tab filter
+- balance_history: (exchange, recorded_at) — chart data
+- ohlcv_hourly: (coin, exchange, timestamp) — ATR calc
+
+### Scaling Path
+- CX23 handles: up to ~10000 users estimated
+- Dedicated DB server needed at: ~100000 users
+- Hetzner Managed PostgreSQL: ~20-50 euro/month
+- Long way away — current stack handles years of growth
