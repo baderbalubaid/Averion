@@ -447,3 +447,36 @@ CREATE INDEX idx_research_scores_method ON research_scores(method, promotion_sco
 CREATE INDEX idx_strategy_versions_method ON strategy_versions(method, version);
 
 SELECT 'Schema update complete — all tables created!' AS result;
+
+-- ═══════════════════════════════
+-- SCHEMA UPDATES — Additional Columns
+-- ═══════════════════════════════
+
+-- DCA Checkpoint fields for bots
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS dca_checkpoint_level INTEGER DEFAULT 0;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS dca_checkpoint_on BOOLEAN DEFAULT FALSE;
+
+-- DCA Checkpoint tracking for positions
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_reached BOOLEAN DEFAULT FALSE;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_reached_at TIMESTAMP;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_level_reached INTEGER DEFAULT 0;
+
+-- Virtual wallet standby reserved amount
+ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS standby_reserved DECIMAL(20,8) DEFAULT 0;
+
+-- API key expiry tracking
+ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS key_expires_at TIMESTAMP;
+ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;
+ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS alert_count INTEGER DEFAULT 0;
+
+-- Bot slot tracking per user
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trade_alerts_on BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS report_alerts_on BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_alerts_on BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_slots_total INTEGER DEFAULT 5;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trades_used_this_month INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS next_billing_date DATE;
+
+SELECT 'Schema updates applied successfully!' AS result;
