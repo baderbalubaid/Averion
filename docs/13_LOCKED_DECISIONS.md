@@ -953,3 +953,31 @@ Settings tab shows:
 - Records which bots affected when insufficient reserve
 - Used for: billing disputes · audit trail · admin reporting
 - Never deleted — financial records forever
+
+## Standby System — No Timeout (LOCKED)
+
+- Standby has NO timeout — waits forever
+- Two exit conditions only:
+  1. Price returns to DCA level → fills remainder
+  2. Position hits TP → standby cancelled automatically
+- Partial fill accumulation:
+  - $2 filled + $7.50 standby = $9.50 total
+  - Remaining $0.50 < minimum → added to next DCA level
+- No user configuration needed for timeout
+- TP always handles final exit naturally
+
+## DCA Checkpoint — TP Always Wins (LOCKED)
+
+- Bot NEVER pauses for checkpoint
+- TP always runs regardless of checkpoint state
+- Checkpoint behavior:
+  - Position reaches configured DCA level
+  - DCA turns OFF automatically at checkpoint
+  - Attention log shows warning with cost hint
+  - TP continues running normally
+  - If price rises to TP → sells immediately ✅
+- User can turn DCA back ON manually:
+  - Shows hint: next DCA cost + trigger price
+  - [Turn DCA ON for this level] button
+  - User decision always — never forced
+- Core principle: TP is the goal · DCA is optional
