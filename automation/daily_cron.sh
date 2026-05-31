@@ -20,6 +20,8 @@ echo "--- 03:30 Data ---"
 sleep 1800
 python3 /home/averion/Averion/automation/fetch_ohlcv.py
 echo "✅ OHLCV fetched"
+python3 /home/averion/Averion/automation/classify_coins.py
+echo "✅ Classification done"
 
 # 04:00 — Reporting
 echo "--- 04:00 Reporting ---"
