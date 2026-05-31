@@ -928,3 +928,28 @@ Settings tab shows:
 - Prevents: mid-trade PM2 crash losing order confirmation
 - Takes approximately 5 seconds on startup
 - Critical for data integrity with real money
+
+## Exchange Passphrase (LOCKED)
+
+- KuCoin · OKX · Bitget require 3 credentials:
+  API Key · API Secret · API Passphrase
+- Passphrase stored encrypted in exchanges.passphrase_enc
+- User enters passphrase when adding exchange in settings
+- CCXT uses all 3 credentials for authentication
+- MEXC · Binance · Gate.io · Bybit = no passphrase needed
+
+## Dashboard Login Brute Force Protection (LOCKED)
+
+- Track failed login attempts in Redis per IP
+- 5 failures in 15 minutes → 30 minute cooldown
+- Admin can clear blocked IPs in admin panel
+- Applies to both user login and admin login
+- Telegram alert to admin when IP blocked
+
+## Subscription Billing History (LOCKED)
+
+- Every monthly deduction recorded in subscription_billing table
+- Columns: user_id · billing_date · bot_fee · bundle_fee · total
+- Records which bots affected when insufficient reserve
+- Used for: billing disputes · audit trail · admin reporting
+- Never deleted — financial records forever
