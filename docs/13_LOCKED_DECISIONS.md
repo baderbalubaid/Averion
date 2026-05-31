@@ -981,3 +981,15 @@ Settings tab shows:
   - [Turn DCA ON for this level] button
   - User decision always — never forced
 - Core principle: TP is the goal · DCA is optional
+
+## Short DCA Implementation Priority (LOCKED)
+
+- Short DCA = Phase 5 feature (not Day 1)
+- Day 1 Hetzner: focus on Smart DCA + 10 entry methods
+- Server capacity testing comes first
+- Continue revenuebot.io for Short DCA meanwhile
+- Short DCA proven concept: same as 3commas · revenuebot.io
+- Limit order for buyback = correct and necessary
+  Without it: Long DCA queue steals Short funds
+- Minimum 100 paper Short trades before any live Short
+- Test on MEXC first (already familiar exchange)
