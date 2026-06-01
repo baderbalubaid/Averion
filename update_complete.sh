@@ -25,7 +25,7 @@ cat docs/00_START_HERE.md \
     setup/init_db.py \
     main.py database.py api.py bot_loop.py \
     exchanges.py telegram.py auth.py email_service.py \
-    index.html login.html register.html admin.html \
+    index.html login.html register.html dashboard.html admin.html \
     > averion_COMPLETE.md
 
 echo "✅ Done! $(wc -l < averion_COMPLETE.md) lines"
