@@ -875,3 +875,89 @@ def telegram_status(payload: dict = Depends(verify_token)):
         'connected': bool(user[3]) if user else False,
         'verified': bool(user[4]) if user else False
     }
+
+# ═══════════════════════════════
+# AUTH — RESET PASSWORD
+# ═══════════════════════════════
+class ResetPasswordRequest(BaseModel):
+    email: str
+    method: str = 'email'
+
+class ResetPasswordConfirm(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+@app.post('/auth/reset-password')
+def reset_password(req: ResetPasswordRequest):
+    user = db.get_user_by_email(req.email)
+    if not user:
+        # Don't reveal if email exists
+        return {'message': 'If this email exists · code sent'}
+
+    user_id = user[0]
+    code = db.create_verification_code(user_id)
+
+    if req.method == 'telegram':
+        chat_id = user[5] if len(user) > 5 else None
+        if chat_id:
+            import telegram as tg
+            tg.send_message(chat_id,
+                f'🔐 <b>Password Reset Code</b>\n\n'
+                f'Your code: <b>{code}</b>\n'
+                f'Valid for 15 minutes.\n\n'
+                f'If you did not request this · ignore.'
+            )
+        else:
+            return {'message': 'Telegram not connected · try email'}
+    else:
+        # Email reset — Phase 6 with SendGrid
+        # For now: store code · admin can see in logs
+        db.log_security_event(
+            user_id, 'password_reset_requested',
+            details={'method': req.method, 'code': code}
+        )
+
+    return {'message': 'If this email exists · code sent'}
+
+@app.post('/auth/reset-password/confirm')
+def reset_password_confirm(req: ResetPasswordConfirm):
+    user = db.get_user_by_email(req.email)
+    if not user:
+        raise HTTPException(status_code=400,
+                            detail='Invalid request')
+
+    user_id = user[0]
+
+    # Verify code
+    success = db.verify_code(user_id, req.code)
+    if not success:
+        raise HTTPException(status_code=400,
+                            detail='Invalid or expired code')
+
+    # Validate new password
+    import re
+    if len(req.new_password) < 8:
+        raise HTTPException(status_code=400,
+                            detail='Password must be at least 8 characters')
+    if not re.search(r'[A-Z]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain uppercase letter')
+    if not re.search(r'[0-9]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain a number')
+    if not re.search(r'[@$!%*#&]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain special character')
+
+    # Update password
+    new_hash = auth_module.hash_password(req.new_password)
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE users SET password_hash = %s
+            WHERE id = %s
+        """, (new_hash, user_id))
+
+    db.log_security_event(user_id, 'password_reset_complete')
+    return {'message': 'Password updated · please login'}
