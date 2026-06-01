@@ -18,15 +18,12 @@ BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 ADMIN_CHAT = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
 CMC_API_KEY = os.getenv('CMC_API_KEY', '')
 
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import telegram as tg
+
 def send_telegram(msg):
-    try:
-        requests.post(
-            f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
-            json={'chat_id': ADMIN_CHAT, 'text': msg},
-            timeout=10
-        )
-    except:
-        pass
+    tg.send_admin(msg)
 
 def main():
     print(f'=== CMC Fetch started: {datetime.utcnow()} ===')

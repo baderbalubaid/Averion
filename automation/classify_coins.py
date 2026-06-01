@@ -46,15 +46,12 @@ def apply_cap_protection(real_cap, previous_cap):
         return real_cap
     return min(real_cap, previous_cap * 1.10)
 
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import telegram as tg
+
 def send_telegram(msg):
-    try:
-        requests.post(
-            f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
-            json={'chat_id': ADMIN_CHAT, 'text': msg},
-            timeout=10
-        )
-    except:
-        pass
+    tg.send_admin(msg)
 
 def fetch_coingecko():
     print('Fetching CoinGecko...')
