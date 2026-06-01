@@ -1321,3 +1321,38 @@ Not in Phase 4:
 - More features
 - Server upgrades
 - Referral system active
+
+## Gate Reference Promotion Rule (LOCKED)
+
+When reference trade closes:
+- Highest sequence_number still open = new reference
+- Example: Trades 1·2·3 open · Trade 3 closes
+  → Trade 2 becomes reference (highest still open)
+- is_gate_reference updated immediately on close
+- gate_reference_since = timestamp when became reference
+
+Timer reset rule:
+- Timer always measures from gate_reference_since
+- NOT from when trade originally opened
+- Example: Trade 2 opened 15:00 · became reference 22:00
+  Gate timer 5h → next trade at 03:00 (not 20:00)
+- Timer resets completely when reference changes
+- DCA trigger also resets · watches new reference only
+
+## Short DCA HOLD Rule — Simplified (LOCKED)
+
+Previous rule removed: HOLD Long DCAs 2 seconds
+New rule:
+- PENDING_BUYBACK flag set when limit order being placed
+- Long DCA checks flag at start of each cycle
+- If PENDING_BUYBACK = TRUE → skip this cycle
+- After limit order confirmed placed → flag cleared
+- Long DCA resumes next 60s cycle automatically
+- 60s cycle handles timing naturally · no manual hold needed
+
+## MAX_COINS Removal — Day 1 (LOCKED)
+
+- Do NOT add MAX_COINS to Hetzner .env
+- Replit-only variable · never used on Hetzner
+- Simply leave it out of .env completely
+- Startup assertion refuses to start if found with PAPER_MODE=false
