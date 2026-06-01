@@ -231,8 +231,15 @@ def register_user(email: str, password: str,
         return None, 'Email already registered'
 
     # Validate password strength
+    import re
     if len(password) < 8:
         return None, 'Password must be at least 8 characters'
+    if not re.search(r'[A-Z]', password):
+        return None, 'Password must contain at least one uppercase letter'
+    if not re.search(r'[0-9]', password):
+        return None, 'Password must contain at least one number'
+    if not re.search(r'[@$!%*#&]', password):
+        return None, 'Password must contain at least one special character'
 
     # Hash password
     password_hash = hash_password(password)
