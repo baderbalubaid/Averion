@@ -959,7 +959,7 @@ function switchTabMobile(name, el) {
 // ── STATUS ────────────────────────────────────────────────
 async function fetchStatus() {
   try {
-    const res = await fetch(`${API}/status`);
+    const res = await fetch(`${API}/status`, {headers: authHeaders()});
     const d   = await res.json();
     document.getElementById('btcPrice').textContent =
       '$' + (d.btc_price||0).toLocaleString('en-US',{maximumFractionDigits:2});
@@ -972,7 +972,7 @@ async function fetchStatus() {
 // ── POSITIONS ─────────────────────────────────────────────
 async function fetchPositions() {
   try {
-    const res = await fetch(`${API}/positions`);
+    const res = await fetch(`${API}/positions`, {headers: authHeaders()});
     allPositions = await res.json();
     renderHome();
     if (document.getElementById('bots-l2').style.display !== 'none') applyBotFilter();
@@ -1235,12 +1235,12 @@ function renderBotsList() {
 
 async function startBotInList(e) {
   e.stopPropagation();
-  await fetch(`${API}/start`,{method:'POST'});
+  await fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
   setTimeout(()=>{fetchPositions();renderBotsList();},1000);
 }
 async function stopBotInList(e) {
   e.stopPropagation();
-  await fetch(`${API}/stop`,{method:'POST'});
+  await fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
   setTimeout(()=>renderBotsList(),1000);
 }
 
@@ -1269,8 +1269,8 @@ function updateBdHeader() {
   }
 }
 async function toggleBot() {
-  if (currentBotRunning) await fetch(`${API}/stop`,{method:'POST'});
-  else await fetch(`${API}/start`,{method:'POST'});
+  if (currentBotRunning) await fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
+  else await fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
   currentBotRunning = !currentBotRunning;
   updateBdHeader();
 }
@@ -1343,7 +1343,7 @@ function sortBd(key){
 // ── HISTORY ───────────────────────────────────────────────
 async function fetchHistory() {
   try {
-    const res  = await fetch(`${API}/history`);
+    const res  = await fetch(`${API}/history`, {headers: authHeaders()});
     allHistory = await res.json();
   } catch(e) { allHistory=[]; }
   buildCoinFilter();
@@ -1549,7 +1549,7 @@ function submitFeature() {
 // ── CONTROLS ──────────────────────────────────────────────
 async function closePos(id) {
   if (!confirm('Close this position?')) return;
-  await fetch(`${API}/positions/${id}/close`,{method:'POST'});
+  await fetch(`${API}/positions/${id}/close`, {method: 'POST', headers: authHeaders()});
   await fetchPositions();
 }
 
@@ -1621,7 +1621,7 @@ function closeExcDetail() {
 
 async function fetchBalanceHistory(excId) {
   try {
-    const res     = await fetch(`${API}/balance-history?exchange_id=${excId}&days=30`);
+    const res     = await fetch(`${API}/balance-history?exchange_id=${excId}&days=30`, {headers: authHeaders()});
     allBalHistory = await res.json();
   } catch(e) {
     allBalHistory = [];
@@ -1725,8 +1725,8 @@ function toggleBotSwitch(excId,type,btn){
     const on=exc.trading!==false;
     btn.style.background=on?'var(--green)':'var(--text3)';
     btn.querySelector('.toggle-mini-thumb').style.left=on?'18px':'3px';
-    if(on)fetch(`${API}/start`,{method:'POST'});
-    else fetch(`${API}/stop`,{method:'POST'});
+    if(on)fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
+    else fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
   }else{
     exc.dca=exc.dca===false?true:false;
     const on=exc.dca!==false;
