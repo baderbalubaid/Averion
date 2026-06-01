@@ -1400,3 +1400,20 @@ Phase 4-6: not needed
 Phase 7 public launch: add FastAPI middleware
 - 60 requests/minute per token
 - Easy to add · leave for Phase 6 preparation
+
+## Email Verification at Registration (LOCKED)
+
+- Required before accessing dashboard
+- Flow:
+  1. User registers → account created (unverified)
+  2. 6-digit code sent to email immediately
+  3. Redirect to verify page
+  4. Enter code → verified → go to dashboard
+  5. Cannot access dashboard until verified
+
+- Email service: SendGrid free tier (100/day)
+- Setup needed: sendgrid.com account + API key
+- Add to .env: SENDGRID_API_KEY · SENDER_EMAIL
+- Columns already in schema: email_verified · email_verify_code
+- Implement when averion.app domain is ready (Day 2)
+- Sender email: noreply@averion.app
