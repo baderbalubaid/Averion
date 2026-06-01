@@ -553,3 +553,26 @@ CREATE INDEX IF NOT EXISTS idx_short_buyback_position ON short_buyback_orders(po
 CREATE INDEX IF NOT EXISTS idx_reserve_deposits_nowpayments ON reserve_deposits(nowpayments_id, status);
 
 SELECT 'v5 critical fixes applied!' AS result;
+
+-- Auto-renew support for bots and bundles
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT FALSE;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS renewal_type VARCHAR(20) DEFAULT 'one-time';
+
+-- Trade bundle tracking per user
+CREATE TABLE IF NOT EXISTS trade_bundles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    bundle_type VARCHAR(20) NOT NULL,
+    trades_total INTEGER NOT NULL,
+    trades_used INTEGER DEFAULT 0,
+    price_usdt DECIMAL(10,2),
+    auto_renew BOOLEAN DEFAULT FALSE,
+    renewal_type VARCHAR(20) DEFAULT 'one-time',
+    purchased_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active'
+);
+
+CREATE INDEX IF NOT EXISTS idx_trade_bundles_user ON trade_bundles(user_id, status);
+
+SELECT 'Auto-renew and bundle tables added!' AS result;
