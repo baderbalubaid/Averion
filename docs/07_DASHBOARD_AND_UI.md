@@ -300,3 +300,61 @@ Last 5 closed positions:
 - Summary: total invested · avg cost · exit price
 - All fees breakdown
 - Final net profit
+
+## Customer Dashboard — Settings Tab (LOCKED)
+
+### Section 1 — Profile
+- Email · phone · change password
+- Account created date · referral code
+
+### Section 2 — Exchanges
+- List of connected exchanges
+- Per exchange row:
+  Name · Status · Last connected
+  [Test Connection] [Edit] [Delete]
+- Test Connection button:
+  → Fetches balance from exchange
+  → Shows: ✅ Connected · Balance: $234.50
+  → Or: ❌ Invalid key / IP not whitelisted / Wrong passphrase
+- [+ Add Exchange] button
+- Exchange form: Name · API Key · Secret · 
+  Passphrase (if required) · IP whitelist confirmed ☑
+
+### Section 3 — Notifications
+- Connect status: @AverionBot ✅ [Disconnect]
+- If not connected: [Connect Telegram] button
+- Toggles (each independent ON/OFF):
+  Trade notifications · Alert notifications
+  Daily report · Weekly report · Monthly report
+
+### Section 4 — Reserve Wallet
+- Current balance · Fee debt (red if any)
+- Last 10 deposit history
+- [Top Up] button → NOWPayments flow
+- No withdrawal option · funds used for trading only
+
+### Section 5 — Subscription & Billing
+
+Free plan always included:
+- 5 bots · 100 trades/month · forever
+
+Per Bot billing:
+- Each bot has own expiry date
+- Table: Bot Name · Expires · Auto-renew · Action
+- [Renew] button per bot
+- [Auto-renew ON/OFF] toggle per bot
+- Auto-renew: deducts from reserve 3 days before expiry
+- One-time: user renews manually
+- Telegram reminder 3 days before expiry either way
+- [+ Add Bot Slot $1/month]
+
+Per Trade Bundle:
+- Current bundle: trades used · remaining · expiry
+- Auto-renew toggle per bundle
+- [+ Buy Bundle]: 200=$3 · 500=$5 · 1000=$8 · Unlimited=$15/mo
+- Bundles stack: current used first · new starts after
+
+### Section 6 — Security
+- Last login: date · IP · device
+- Active sessions list
+- [Log Out All Devices] button
