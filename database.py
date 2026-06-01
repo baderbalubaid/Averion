@@ -936,3 +936,80 @@ def get_all_users_admin():
             ORDER BY open_positions DESC
         """)
         return cur.fetchall()
+
+# ═══════════════════════════════
+# SECURITY AUDIT LOG
+# ═══════════════════════════════
+def log_security_event(user_id, event_type, ip_address=None,
+                        user_agent=None, details=None):
+    import json
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO security_audit_log
+            (user_id, event_type, ip_address, user_agent, details)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, event_type, ip_address, user_agent,
+              json.dumps(details) if details else None))
+
+def get_security_logs(user_id=None, limit=100):
+    with get_db() as conn:
+        cur = conn.cursor()
+        if user_id:
+            cur.execute("""
+                SELECT id, user_id, event_type, ip_address,
+                       details, created_at
+                FROM security_audit_log
+                WHERE user_id = %s
+                ORDER BY created_at DESC LIMIT %s
+            """, (user_id, limit))
+        else:
+            cur.execute("""
+                SELECT id, user_id, event_type, ip_address,
+                       details, created_at
+                FROM security_audit_log
+                ORDER BY created_at DESC LIMIT %s
+            """, (limit,))
+        return cur.fetchall()
+
+# ═══════════════════════════════
+# SESSION MANAGEMENT
+# ═══════════════════════════════
+def create_verification_code(user_id):
+    import random
+    code = str(random.randint(100000, 999999))
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE users SET
+                verification_code = %s,
+                verification_expires_at = NOW() + INTERVAL '15 minutes'
+            WHERE id = %s
+        """, (code, user_id))
+    return code
+
+def verify_code(user_id, code):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT verification_code, verification_expires_at
+            FROM users WHERE id = %s
+        """, (user_id,))
+        row = cur.fetchone()
+        if not row:
+            return False
+        stored_code, expires_at = row
+        if stored_code != code:
+            return False
+        from datetime import datetime, timezone
+        if expires_at < datetime.now(timezone.utc):
+            return False
+        # Mark as verified
+        cur.execute("""
+            UPDATE users SET
+                last_verified_at = NOW(),
+                verification_code = NULL,
+                verification_expires_at = NULL
+            WHERE id = %s
+        """, (user_id,))
+        return True
