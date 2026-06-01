@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import database as db
 import telegram as tg
+import email_service as email_svc
 
 load_dotenv()
 
@@ -279,8 +280,15 @@ def register_user(email: str, password: str,
         details={'email': email, 'referral': referral_code}
     )
 
+    # Send welcome email
+    email_svc.send_welcome_email(email)
+
+    # Send verification code
+    code = db.create_verification_code(user_id)
+    email_svc.send_verification_email(email, code)
+
     token = create_token(user_id, False)
-    return {'token': token, 'user_id': user_id}, None
+    return {'token': token, 'user_id': user_id, 'needs_email_verification': True}, None
 
 # ═══════════════════════════════
 # PASSWORD CHANGE
