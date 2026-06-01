@@ -1417,3 +1417,34 @@ Phase 7 public launch: add FastAPI middleware
 - Columns already in schema: email_verified · email_verify_code
 - Implement when averion.app domain is ready (Day 2)
 - Sender email: noreply@averion.app
+
+## Email Architecture (LOCKED)
+
+### Domain (LOCKED)
+- One domain only: averionbot.com
+- Dashboard: averionbot.com/dashboard
+- Admin: averionbot.com/ops-XXXX
+- API: averionbot.com/api
+
+### Two Email Systems
+
+Human email (Google Workspace):
+- admin@averionbot.com
+- support@averionbot.com
+- billing@averionbot.com
+- $6/mo per user
+
+Automated email (Resend):
+- noreply@averionbot.com
+- Free: 3,000/month · 100/day
+- verification · reset · reports · alerts
+
+### EmailProvider Abstraction (LOCKED)
+- All email through email_service.py
+- Never call Resend directly
+- Switching provider = change one file only
+
+### Marketing Email (Future)
+- Phase 6+: Brevo or MailerLite
+- Separate from transactional
+- Transactional stays on Resend forever
