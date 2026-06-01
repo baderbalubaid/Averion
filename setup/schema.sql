@@ -624,3 +624,28 @@ CREATE INDEX IF NOT EXISTS idx_pending_limit_orders_status ON pending_limit_orde
 CREATE INDEX IF NOT EXISTS idx_pending_limit_orders_position ON pending_limit_orders(position_id);
 
 SELECT 'Final v6 fixes applied!' AS result;
+
+-- ═══════════════════════════════
+-- SECURITY AUDIT LOG
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS security_audit_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    event_type VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(50),
+    user_agent TEXT,
+    details JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_security_audit_user ON security_audit_log(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_security_audit_event ON security_audit_log(event_type, created_at);
+
+-- Session management columns
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_token VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_expires_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP;
+
+SELECT 'Security tables added!' AS result;
