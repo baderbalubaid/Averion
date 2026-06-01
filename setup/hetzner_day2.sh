@@ -10,7 +10,7 @@ echo "🚀 Starting Averion Day 2 Setup..."
 # ═══════════════════════════════
 # VARIABLES — EDIT THESE FIRST
 # ═══════════════════════════════
-DOMAIN="averion.app"
+DOMAIN="averionbot.com"
 EMAIL="your-email@gmail.com"
 
 # ═══════════════════════════════

@@ -146,7 +146,7 @@ Balance: <b>${balance:.2f}</b>
 Performance fees may not be collected.
 Please top up your reserve wallet.
 
-<a href="https://averion.app/settings">Top Up Now</a>"""
+<a href="https://averionbot.com/settings">Top Up Now</a>"""
 
     send_message(user[3], msg)
     db.add_attention_log(user_id, 'red', 'reserve_low',
