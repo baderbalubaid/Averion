@@ -109,16 +109,16 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 ## DAY 2 CHECKLIST
 
 ## PHASE 11 — Domain (30 min wait)
-- [ ] Buy averion.app domain
+- [ ] Buy averionbot.com domain
 - [ ] Point A record to Hetzner IP
-- [ ] Wait for DNS propagation (check: dig averion.app)
+- [ ] Wait for DNS propagation (check: dig averionbot.com)
 
 ## PHASE 12 — Run Day 2 Script (10 min)
 - [ ] Edit domain: nano /home/averion/Averion/setup/hetzner_day2.sh
-- [ ] Change DOMAIN="averion.app"
+- [ ] Change DOMAIN="averionbot.com"
 - [ ] Change EMAIL="your@email.com"
 - [ ] Run: bash /home/averion/Averion/setup/hetzner_day2.sh
-- [ ] Verify HTTPS: https://averion.app/dashboard
+- [ ] Verify HTTPS: https://averionbot.com/dashboard
 
 ## PHASE 13 — Live Order Test (10 min)
 - [ ] Edit .env: PAPER_MODE=false

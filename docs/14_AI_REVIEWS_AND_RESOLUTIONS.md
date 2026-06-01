@@ -16,7 +16,7 @@
 **Concern:** Live token exposed in PDF is security risk.
 **Resolution:** ACKNOWLEDGED — keeping token in docs temporarily.
 Token needed for new Claude to auto-fetch code.
-Will remove when averion.app launches publicly.
+Will remove when averionbot.com launches publicly.
 **Status:** ✅ Resolved — intentional decision
 
 ---

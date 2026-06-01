@@ -8,7 +8,7 @@
 ## Access
 
 - Secret URL stored in .env only — never in code — never on GitHub
-- Format: averion.app/ops-XXXX (random string set in .env)
+- Format: averionbot.com/ops-XXXX (random string set in .env)
 - Security layers: Secret URL + Password + IP whitelist + 2FA + 5-fail lockout
 - Admin accounts: no fee · no reserve wallet needed
 

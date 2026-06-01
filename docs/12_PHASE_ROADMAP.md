@@ -71,7 +71,7 @@
 - GitHub Actions auto-deploy
 
 ### Hetzner Day 2:
-- Buy averion.app domain
+- Buy averionbot.com domain
 - Nginx reverse proxy
 - Let's Encrypt HTTPS
 - Test live $1 MEXC order (PAPER_MODE=false)

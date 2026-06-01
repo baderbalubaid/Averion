@@ -145,7 +145,7 @@
 ---
 
 ## Future Brand Extensions
-- averion.app — main platform
-- docs.averion.app — documentation
-- status.averion.app — uptime page
-- api.averion.app — developer API
+- averionbot.com — main platform
+- docs.averionbot.com — documentation
+- status.averionbot.com — uptime page
+- api.averionbot.com — developer API
