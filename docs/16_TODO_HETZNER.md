@@ -3,6 +3,7 @@
 > Everything that requires the actual server.
 > Do NOT attempt on Replit — server only.
 > All commands run via SSH on Hetzner.
+> Follow DAY1_CHECKLIST.md for exact sequence.
 
 ---
 
@@ -12,235 +13,173 @@
 - Location: Helsinki, Finland
 - OS: Ubuntu 24.04
 - Cost: €3.99/month
-- Status: Ordered · ID verification pending ~10 days
+- Status: Ordered · ID verification pending
 
 ---
 
-## Day 1 — Server Setup & Security
+## What Is Already Ready (Coded on Replit)
 
-### Step 1 — First Login
-### Step 2 — Create Non-Root User
-### Step 3 — SSH Key Setup
-### Step 4 — Firewall
-### Step 5 — Fail2ban
-### Step 6 — Install Python + Dependencies
+All code written · pushed to GitHub · ready to deploy:
+
+| File | Status | Description |
+|------|--------|-------------|
+| database.py | ✅ Ready | PostgreSQL · 1015 lines · 57 functions |
+| api.py | ✅ Ready | FastAPI · 877 lines · 30+ endpoints |
+| main.py | ✅ Ready | Startup sequence · DB wait · reconciliation |
+| bot_loop.py | ✅ Ready | Trading engine · smart queue · TP · DCA |
+| exchanges.py | ✅ Ready | CCXT wrapper · 7 exchanges · encryption |
+| telegram.py | ✅ Ready | Notifications · alerts · reports |
+| auth.py | ✅ Ready | Login · session · brute force protection |
+| index.html | ✅ Ready | Homepage · marketing |
+| login.html | ✅ Ready | Sign in · forgot password |
+| register.html | ✅ Ready | Sign up · password validation |
+| dashboard.html | ✅ Ready | Customer trading dashboard |
+| admin.html | ✅ Ready | Admin control panel |
+| schema.sql | ✅ Ready | 651 lines · 28 tables |
+| hetzner_day1.sh | ✅ Ready | Security hardened setup script |
+| hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
+| DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
+| research_bots.json | ✅ Ready | 107 paper bots configured |
+| launch_research_bots.py | ✅ Ready | Launch all 107 bots |
+| daily_cron.sh | ✅ Ready | All automation scheduled |
+| health_check.sh | ✅ Ready | Hourly monitoring |
+| fetch_coingecko.py | ✅ Ready | CoinGecko market caps |
+| fetch_cmc.py | ✅ Ready | CoinMarketCap market caps |
+| classify_coins.py | ✅ Ready | Classification engine |
+| generate_excel.py | ✅ Ready | 9-sheet Excel reports |
+| generate_diagnostics.py | ✅ Ready | Auto-analysis markdown |
+
 ---
 
-## Day 1 — Clone & Setup
+## Day 1 — Server Setup
 
-### Step 7 — Clone GitHub Repo
-### Step 8 — Create .env File
-Add all variables:
-### Step 9 — PM2 Setup
-### Step 10 — Install Cron Jobs
-Add:
-### Step 11 — UptimeRobot
-- Create free account at uptimerobot.com
-- Add monitor for http://YOUR_IP:8080
-- Alert email + Telegram if down
+> Run: bash setup/hetzner_day1.sh
+> Full details in setup/DAY1_CHECKLIST.md
 
-### Step 12 — GitHub Actions Auto-Deploy
-- Create .github/workflows/deploy.yml
-- git push → auto-deploys to Hetzner
-- No manual SSH for code updates
+Covers automatically:
+- System update + auto security updates
+- PostgreSQL + Redis + Nginx + Fail2ban + Chrony
+- SSH hardening (port 2847 · no root · keys only)
+- UFW firewall (default deny)
+- Clone GitHub repo
+- Install Python packages
+- Create database + run schema
+- PM2 setup + startup
+- Cron jobs installed
+- File permissions
+
+Manual steps after script:
+- Fill in .env file
+- Run init_db.py (create admin user)
+- Add GitHub Actions secrets
+- Setup UptimeRobot monitoring
 
 ---
 
 ## Day 2 — Domain & HTTPS
 
-### Step 13 — Buy Domain
-- Buy averion.app (same day server goes live)
-- Point DNS A record to Hetzner IP
-- Wait for DNS propagation (1-24 hours)
+> Run: bash setup/hetzner_day2.sh
 
-### Step 14 — Nginx Setup
-### Step 15 — HTTPS Certificate
-### Step 16 — Test Live Order
+- Buy averion.app domain
+- Point DNS A record to server IP
+- Wait DNS propagation (1-24 hours)
+- Run Day 2 script (Nginx + HTTPS + deploy keys)
+- Setup SendGrid for email verification
+- Test live $1 order on MEXC
+
+---
+
+## Day 3+ — Paper Trading
+
+- 107 research bots running simultaneously
+- Smart DCA entry methods testing (paper only)
+- OHLCV data building hourly
+- Classification running daily at 04:30
+- Excel reports generated daily at 05:00
+- Diagnostics auto-pushed to GitHub hourly
+- Monitor admin dashboard daily
+- Check Telegram alerts (never mute)
+
+---
+
+## Day 30+ — Parameter Optimization
+
+- Download Excel from /reports/ folder
+- Upload to Claude: analyze research bot rankings
+- Share with ChatGPT for second opinion
+- Apply best parameters
+- Restart bot with optimized settings
+
+---
+
+## Day 45+ — Live Trading
+
 - Set PAPER_MODE=false in .env
-- Watch 10 second countdown warning
-- Confirm red banner in dashboard
+- Verify red LIVE banner in dashboard
 - Place $1 test order on MEXC
-- Verify order appears on exchange
-- Set PAPER_MODE=true again
+- Verify order on exchange website
+- Scale gradually with more capital
 
 ---
 
-## Day 3-16 — Paper Trading Data Collection
+## Hetzner Items Status
 
-- Bot runs 24/7 collecting data
-- All 10 entry methods running simultaneously
-- OHLCV data building up per coin
-- Excel reports generated daily at 4am
-- Monitor Telegram Reports channel daily
-- Monitor Telegram Alerts channel (never mute)
-
----
-
-## Day 17 — Parameter Optimization
-
-- Download Excel report from server
-- Upload to Claude: "Analyze this and optimize DCA parameters"
-- Share same file with ChatGPT for second opinion
-- Compare recommendations
-- Apply best parameters to config
-- Restart bot with new parameters
-
----
-
-## Day 18+ — Live Trading
-
-- Set PAPER_MODE=false in .env
-- Monitor first 24 hours closely
-- Check Telegram Alerts constantly
-- Verify real orders on MEXC exchange
-- Scale gradually
+| # | Task | Status |
+|---|------|--------|
+| 27 | Server creation + security | ⏳ Waiting for server |
+| 28 | Clone GitHub + folder structure | ✅ Script ready |
+| 29 | Create .env with all variables | ✅ env.example ready |
+| 30 | PM2 start + startup + save | ✅ Script ready |
+| 31 | Buy averion.app + DNS | ⏳ Day 2 |
+| 32 | Nginx + HTTPS certificate | ✅ Script ready |
+| 33 | Secret admin URL via .env | ✅ In api.py |
+| 34 | Fernet API key encryption | ✅ In exchanges.py |
+| 35 | GitHub Actions auto-deploy | ✅ deploy.yml ready |
+| 36 | UptimeRobot monitoring | ⏳ Day 1 manual step |
+| 37 | Telegram bot · one chat | ✅ In telegram.py |
+| 38 | Cron jobs installed + tested | ✅ daily_cron.sh ready |
+| 39 | OHLCV hourly fetch | ✅ fetch_ohlcv.py ready |
+| 40 | Daily aggregation script | ✅ daily_aggregation.py ready |
+| 41 | Diagnostics → GitHub daily | ✅ generate_diagnostics.py |
+| 42 | Admin dashboard | ✅ admin.html ready |
+| 43 | Excel daily report | ✅ generate_excel.py ready |
+| 44 | Server capacity measurement | ⏳ Day 1-5 |
+| 45 | Test live $1 order on MEXC | ⏳ Day 2 |
+| 46 | Component toggles in admin | ✅ In admin.html |
 
 ---
 
-## Hetzner Items 27-46 (Full List)
+## Daily Cron Schedule (LOCKED)
 
-| # | Task | When |
-|---|------|------|
-| 27 | Server creation + security baseline | Day 1 |
-| 28 | Clone GitHub + folder structure | Day 1 |
-| 29 | Create .env with all variables | Day 1 |
-| 30 | pm2 start + startup + save | Day 1 |
-| 31 | Buy averion.app + DNS | Day 2 |
-| 32 | Nginx + HTTPS certificate | Day 2 |
-| 33 | Secret admin URL via .env | Day 1 |
-| 34 | Fernet API key encryption | Day 1 |
-| 35 | GitHub Actions auto-deploy | Day 1 |
-| 36 | UptimeRobot monitoring | Day 1 |
-| 37 | 3 Telegram channels + .env | Day 1 |
-| 38 | Cron jobs installed + tested | Day 1 |
-| 39 | ohlcv_hourly table + hourly fetch | Day 1 |
-| 40 | Daily aggregation script | Day 1 |
-| 41 | metrics/latest.json → GitHub daily | Day 1 |
-| 42 | Admin health dashboard (Tab 2) | Day 1 |
-| 43 | Excel daily report generator | Day 1 |
-| 44 | Server measurement (baseline→500 trades) | Day 1-5 |
-| 45 | Test live $1 order on MEXC | Day 2 |
-| 46 | Global + per exchange toggles in admin | Day 1 |
 
-## Database Decision (LOCKED)
 
-- Use PostgreSQL from Day 1 (not SQLite)
-- PostgreSQL = free software · same server cost
-- Much better performance for 21,400+ positions
-- No migration headache later
-- Install during Day 1 server setup
+---
+
+## Database Architecture (LOCKED)
+
+Three layers:
+- Redis: live prices in RAM · 60s refresh
+- PostgreSQL: all data · 28 tables · proper indexes
+- Archive: positions older than 1 year
+
+---
 
 ## Server Scaling Plan (LOCKED)
 
-- Start: CX23 €3.99/mo (4GB RAM · 2 vCPU)
-- Test gradually: 10 → 20 → 50 → 100 → 200 trades per bot
-- Measure loop time at each step
-- If loop time > 30 seconds → upgrade server
-- Upgrade path:
-  - CX33: €7.49/mo (8GB RAM · 4 vCPU)
-  - CX43: €16.49/mo (16GB RAM · 8 vCPU)
-  - CX53: €32.99/mo (32GB RAM · 16 vCPU)
-- Downgrade when research phase ends
-- Goal: know exact CX23 capacity in trades
-- This data = valuable for Phase 6 planning
+- Start: CX23 €3.99/mo
+- Measure loop time at 10→20→50→100→200 trades
+- If loop > 30s → upgrade
+- CX33: €7.49/mo · CX43: €16.49/mo · CX53: €32.99/mo
 
-## Frontend Architecture — Separate Files (LOCKED)
+---
 
-Split dashboard.html into separate files on Hetzner Day 1.
-Structure evolves — new sections get new files · removed from old files.
+## Phase 5 Items (After Live Stable)
 
-### File Structure
-frontend/
-├── index.html
-├── css/
-│   ├── base.css
-│   ├── layout.css
-│   ├── components.css
-│   ├── tables.css
-│   └── responsive.css
-├── pages/
-│   ├── login.html
-│   ├── dashboard.html
-│   └── admin.html
-├── tabs/
-│   ├── home/home.html + home.js
-│   ├── bots/bots.html + bots.js + bot-detail.html + bot-detail.js
-│   ├── history/history.html + history.js
-│   └── settings/settings.html + settings.js
-├── wizard/
-│   ├── wizard.html + wizard.js
-│   └── steps/step1 through step7.html
-├── admin/
-│   ├── admin-shell.html
-│   └── tabs/overview + health + users + smart-mode + controls
-├── components/
-│   ├── exchange-card.html
-│   ├── bot-row.html
-│   ├── position-row.html
-│   ├── modal-add-exchange.html
-│   └── modal-add-funds.html
-└── js/
-    ├── api.js
-    ├── auth.js
-    ├── navigation.js
-    ├── notifications.js
-    └── utils.js
-
-### Rules
-- Each folder = one responsibility
-- New section needed = create new file
-- Remove from old file after moving
-- Claude edits one file at a time
-- Never touch multiple sections in one session
-- Structure evolves naturally — never forced
-
-## Database Architecture — Never-Break Stack (LOCKED)
-
-Three layers working together — zero extra cost on Hetzner.
-
-### Layer 1 — Redis (In-Memory Cache)
-- Stores live prices in RAM
-- Bot reads prices from RAM not DB
-- Microsecond speed — never slow
-- 1870 coins = ~1MB RAM only
-- Refreshed every 60 seconds from exchanges
-- Free · runs on same Hetzner server
-
-### Layer 2 — PostgreSQL (Main Database)
-- All positions · trades · history · users
-- Multiple concurrent writers — no locking
-- Proper indexes on key columns:
-  - coin · exchange · status · last_buy_price
-  - user_id · opened_at · closed_at
-- Partitioned by exchange (MEXC / Binance / etc)
-- Never scans full table — always uses index
-- Always fast regardless of row count
-- Free · runs on same Hetzner server
-
-### Layer 3 — Archive Table (Cold Storage)
-- Closed trades older than 1 year moved here
-- Main positions table stays small and fast
-- Archive table for history and tax records
-- Queries always fast — hot data always small
-- Same PostgreSQL DB — just separate table
-
-### Why This Stack
-- SQLite = one writer at a time = breaks under load
-- PostgreSQL = multiple concurrent writers = never breaks
-- Redis = RAM speed for prices = never slow
-- Archive = keeps main table small = always fast
-
-### Indexes to Create on Day 1
-- positions: (exchange, status) — queue scoring
-- positions: (user_id, status) — dashboard load
-- positions: (coin, last_buy_price) — DCA trigger check
-- trades: (position_id) — trade history lookup
-- trades: (user_id, closed_at) — history tab filter
-- balance_history: (exchange, recorded_at) — chart data
-- ohlcv_hourly: (coin, exchange, timestamp) — ATR calc
-
-### Scaling Path
-- CX23 handles: up to ~10000 users estimated
-- Dedicated DB server needed at: ~100000 users
-- Hetzner Managed PostgreSQL: ~20-50 euro/month
-- Long way away — current stack handles years of growth
+- Short DCA implementation
+- Limit orders for entry and DCA
+- Sequential trade gates
+- Virtual wallet UI
+- Full bot creation wizard
+- Public user registration
+- NOWPayments integration
+- Split dashboard into separate files
