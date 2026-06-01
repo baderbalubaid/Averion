@@ -5634,13 +5634,13 @@ Platform is live! 6 month research period begins.
 - Never rename columns — AI workflows depend on stable names
 # Averion Environment Variables
 # Copy this file to .env and fill in your values
-# Command: cp env.example .env
+# Command: cp setup/env.example .env
 
 # ═══════════════════════════════
 # CORE SETTINGS
 # ═══════════════════════════════
 PAPER_MODE=true
-SECRET_KEY=generate-random-string-here
+SECRET_KEY=generate-random-string-here-min-32-chars
 
 # ═══════════════════════════════
 # DATABASE
@@ -5656,13 +5656,20 @@ DB_PASSWORD=your-strong-password-here
 # ═══════════════════════════════
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=
+REDIS_PASSWORD=your-redis-password-here
 
 # ═══════════════════════════════
 # ADMIN
 # ═══════════════════════════════
 ADMIN_PATH=ops-CHANGEME
 ADMIN_PASSWORD=your-admin-password-here
+ADMIN_EMAIL=admin@averion.app
+
+# ═══════════════════════════════
+# ENCRYPTION
+# ═══════════════════════════════
+# Generate with: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FERNET_KEY=generate-with-python-cryptography
 
 # ═══════════════════════════════
 # OWNER WALLET
@@ -5674,7 +5681,7 @@ TRANSFER_THRESHOLD=10
 # ═══════════════════════════════
 # TELEGRAM
 # ═══════════════════════════════
-TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_BOT_TOKEN=your-bot-token-from-botfather
 TELEGRAM_ADMIN_CHAT_ID=your-admin-chat-id
 
 # ═══════════════════════════════
@@ -5683,15 +5690,16 @@ TELEGRAM_ADMIN_CHAT_ID=your-admin-chat-id
 CMC_API_KEY=your-cmc-api-key
 
 # ═══════════════════════════════
-# NOWPAYMENTS
+# EMAIL (Phase 6 · Day 2)
+# ═══════════════════════════════
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDER_EMAIL=noreply@averion.app
+
+# ═══════════════════════════════
+# NOWPAYMENTS (Phase 7)
 # ═══════════════════════════════
 NOWPAYMENTS_API_KEY=your-api-key
 NOWPAYMENTS_IPN_SECRET=your-ipn-secret
-
-# ═══════════════════════════════
-# ENCRYPTION
-# ═══════════════════════════════
-FERNET_KEY=generate-with-python-cryptography
 
 # ═══════════════════════════════
 # GITHUB (for auto-deploy)
@@ -10644,6 +10652,7 @@ if __name__ == '__main__':
     const API = '';
     let pendingUserId = null;
     let resetMethod = 'email';
+    let resetEmail = '';
 
     // ── SCREENS ──────────────────────────────────
     function showLogin() {
@@ -10819,16 +10828,10 @@ if __name__ == '__main__':
                 return;
             }
 
+            resetEmail = email;
             closeForgot();
-            showError('login-error', '');
-            document.getElementById('login-error').style.display = 'block';
-            document.getElementById('login-error').style.background =
-                'rgba(16,217,138,0.1)';
-            document.getElementById('login-error').style.borderColor =
-                'rgba(16,217,138,0.3)';
-            document.getElementById('login-error').style.color = '#10D98A';
-            document.getElementById('login-error').textContent =
-                '✅ Reset code sent · check your ' + resetMethod;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('reset-confirm-screen').style.display = 'block';
 
         } catch(e) {
             showError('reset-error', 'Connection error');
@@ -10855,8 +10858,129 @@ if __name__ == '__main__':
             if (r.ok) window.location.href = '/dashboard';
         }).catch(() => {});
     }
+
+    async function handleResetConfirm() {
+        const errorEl = document.getElementById('confirm-error');
+        errorEl.style.display = 'none';
+        const code = document.getElementById('confirm-code').value.trim();
+        const newPwd = document.getElementById('new-password').value;
+        const confirmPwd = document.getElementById('new-password-confirm').value;
+
+        if (code.length !== 6) {
+            errorEl.textContent = 'Please enter the 6-digit code';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd.length < 8) {
+            errorEl.textContent = 'Password must be at least 8 characters';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!/[A-Z]/.test(newPwd)) {
+            errorEl.textContent = 'Password must contain uppercase letter';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!/[0-9]/.test(newPwd)) {
+            errorEl.textContent = 'Password must contain a number';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!/[@$!%*#&]/.test(newPwd)) {
+            errorEl.textContent = 'Password must contain special character (@$!%*#&)';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd !== confirmPwd) {
+            errorEl.textContent = 'Passwords do not match';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const btn = document.getElementById('confirm-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Resetting...';
+
+        try {
+            const res = await fetch(`${API}/auth/reset-password/confirm`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: resetEmail,
+                    code: code,
+                    new_password: newPwd
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                errorEl.textContent = data.detail || 'Reset failed';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Reset Password';
+                return;
+            }
+
+            // Success · go to login
+            document.getElementById('reset-confirm-screen').style.display = 'none';
+            showLogin();
+            const loginError = document.getElementById('login-error');
+            loginError.style.display = 'block';
+            loginError.style.background = 'rgba(16,217,138,0.1)';
+            loginError.style.borderColor = 'rgba(16,217,138,0.3)';
+            loginError.style.color = '#10D98A';
+            loginError.textContent = '✅ Password reset successfully · please login';
+
+        } catch(e) {
+            errorEl.textContent = 'Connection error · please try again';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Reset Password';
+        }
+    }
+
 </script>
 
+
+<!-- Reset Confirm Screen -->
+<div id="reset-confirm-screen" style="display:none">
+    <div class="card" style="margin-top:20px">
+        <h2>Enter reset code</h2>
+        <p class="sub">Check your Telegram or email</p>
+
+        <div class="error" id="confirm-error"></div>
+
+        <div class="form-group">
+            <label>6-digit code</label>
+            <input type="text" id="confirm-code"
+                   class="code-input"
+                   placeholder="000000"
+                   maxlength="6"
+                   inputmode="numeric">
+        </div>
+
+        <div class="form-group">
+            <label>New password</label>
+            <input type="password" id="new-password"
+                   placeholder="Min 8 chars · uppercase · number · special">
+        </div>
+
+        <div class="form-group">
+            <label>Confirm new password</label>
+            <input type="password" id="new-password-confirm"
+                   placeholder="Repeat new password">
+        </div>
+
+        <button class="btn btn-primary" id="confirm-btn"
+                onclick="handleResetConfirm()">
+            Reset Password
+        </button>
+
+        <div class="resend" style="margin-top:12px">
+            <a onclick="showLogin()">← Back to login</a>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 <!DOCTYPE html>
