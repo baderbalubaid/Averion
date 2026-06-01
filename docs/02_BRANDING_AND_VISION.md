@@ -10,7 +10,7 @@
 |------|--------|
 | App Name | Averion |
 | Tagline | Intelligent DCA Trading · Automate. Adapt. Grow. |
-| Domain | averion.app (buy on Hetzner day) |
+| Domain | averionbot.com (buy on Hetzner Day 2) |
 | GitHub | github.com/baderbalubaid/Averion |
 
 ---

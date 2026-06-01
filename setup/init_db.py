@@ -28,7 +28,7 @@ def main():
     # ═══════════════════════════
     # Create Admin User
     # ═══════════════════════════
-    admin_email = os.getenv('ADMIN_EMAIL', 'admin@averion.app')
+    admin_email = os.getenv('ADMIN_EMAIL', 'admin@averionbot.com')
     admin_password = os.getenv('ADMIN_PASSWORD', 'changeme123')
     admin_hash = hash_password(admin_password)
 

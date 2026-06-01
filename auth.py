@@ -295,7 +295,7 @@ def register_user(email: str, password: str,
 # ═══════════════════════════════
 def change_password(user_id: int, old_password: str,
                      new_password: str, ip: str = None) -> tuple:
-    user = db.get_user_by_email_by_id(user_id)
+    user = db.get_user_by_id(user_id)
     if not user:
         return False, 'User not found'
 

@@ -80,11 +80,11 @@ Manual steps after script:
 
 > Run: bash setup/hetzner_day2.sh
 
-- Buy averion.app domain
+- Buy averionbot.com domain
 - Point DNS A record to server IP
 - Wait DNS propagation (1-24 hours)
 - Run Day 2 script (Nginx + HTTPS + deploy keys)
-- Setup SendGrid for email verification
+- Setup Resend for email (resend.com · free 3,000/month)
 - Test live $1 order on MEXC
 
 ---
@@ -130,7 +130,7 @@ Manual steps after script:
 | 28 | Clone GitHub + folder structure | ✅ Script ready |
 | 29 | Create .env with all variables | ✅ env.example ready |
 | 30 | PM2 start + startup + save | ✅ Script ready |
-| 31 | Buy averion.app + DNS | ⏳ Day 2 |
+| 31 | Buy averionbot.com + DNS | ⏳ Day 2 |
 | 32 | Nginx + HTTPS certificate | ✅ Script ready |
 | 33 | Secret admin URL via .env | ✅ In api.py |
 | 34 | Fernet API key encryption | ✅ In exchanges.py |
