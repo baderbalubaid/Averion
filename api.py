@@ -2,7 +2,7 @@ import os
 import hashlib
 import secrets
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -75,7 +75,11 @@ def verify_password(password: str, stored: str) -> bool:
 
 def create_token(user_id: int, is_admin: bool) -> str:
     return jwt.encode(
-        {'user_id': user_id, 'is_admin': is_admin},
+        {
+            'user_id': user_id,
+            'is_admin': is_admin,
+            'exp': datetime.utcnow() + timedelta(days=30)
+        },
         SECRET_KEY, algorithm='HS256'
     )
 
@@ -145,12 +149,14 @@ def login(req: LoginRequest, request: Request):
     user = db.get_user_by_email(req.email)
     if not user or not verify_password(req.password, user[2]):
         record_login_fail(ip)
+        db.log_security_event(None, 'login_failed', ip, request.headers.get('user-agent'), {'email': req.email})
         raise HTTPException(status_code=401, detail='Invalid credentials')
 
     if user[6]:  # is_suspended
         raise HTTPException(status_code=403, detail='Account suspended')
 
     clear_login_fails(ip)
+    db.log_security_event(user[0], 'login', ip, request.headers.get('user-agent'), {'email': req.email})
     token = create_token(user[0], user[3])  # id, is_admin
 
     return {
