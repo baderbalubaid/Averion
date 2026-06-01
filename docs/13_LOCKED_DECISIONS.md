@@ -1356,3 +1356,47 @@ New rule:
 - Replit-only variable · never used on Hetzner
 - Simply leave it out of .env completely
 - Startup assertion refuses to start if found with PAPER_MODE=false
+
+## Security Session Management (LOCKED)
+
+- JWT token expires 30 days on same device
+- Day 30: verification code sent via Telegram or email (FREE)
+- Enter code → fresh 30 days granted
+- New device: login + immediate verification code required
+- Wrong code 3 times → account locked · admin Telegram alert
+- No SMS · Telegram or email only (free)
+
+## API Key Withdrawal Warning (LOCKED)
+
+When user adds exchange:
+- Required checkbox (cannot save without):
+  ☑ "I confirm withdrawal permission is DISABLED on this API key"
+- Warning shown in red:
+  "Never enable withdrawal permission on your API key!
+   If compromised, attacker cannot withdraw your funds."
+- Link to guide per exchange showing how to disable
+- User responsibility · platform warns clearly
+- No automatic withdrawal testing from our side
+
+## Security Audit Log (LOCKED)
+
+Record every critical action in security_audit_log:
+- User login: IP · device · timestamp
+- Failed login attempts
+- API key added/deleted
+- Exchange added/deleted
+- Bot created/deleted
+- Admin actions (every admin endpoint)
+- Password changed
+- Telegram connected/disconnected
+- Verification code sent/used
+
+## API Rate Limiting (LOCKED)
+
+Phase 4-6: not needed
+- Queue system naturally limits requests
+- Max 100 trades · one DCA per 60s
+- Login already brute force protected ✅
+Phase 7 public launch: add FastAPI middleware
+- 60 requests/minute per token
+- Easy to add · leave for Phase 6 preparation
