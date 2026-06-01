@@ -1214,3 +1214,58 @@ Rolling 30 days:
 How to use with Claude:
 "Read this and diagnose:
  https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md"
+
+## Limit Orders for Entry and DCA (LOCKED)
+
+User selects per bot in wizard:
+- Entry order type: [Market] or [Limit]
+- DCA order type: [Market] or [Limit]
+- Can switch ON/OFF anytime · even mid-trade
+
+Limit DCA behavior:
+- Places limit buy for NEXT DCA level only
+- Not all levels at once (avoids locking USDT)
+- Partial fill → avg cost + TP recalculate immediately
+- TP fires → cancel pending limit → USDT freed
+- Remaining < minimum order → add to next DCA level
+- Example: $10 DCA · $2 fills · $7.50 fills · $0.50 remaining
+  → $0.50 added to next DCA level amount
+
+Trailing TP:
+- Trailing TP disappears when limit DCA mode ON
+- Common sense: limit orders cannot trail
+- Option hidden automatically in wizard when limit selected
+
+ON → bot places limit order on exchange immediately
+OFF → cancels all pending limit orders · USDT returned
+
+## Sequential Trade Gates (LOCKED)
+
+Two separate bot settings:
+- Trades per bot: max concurrent open trades from this bot
+- Trades per coin: how many times same coin repeats
+
+Gate conditions (per bot):
+- [DCA trigger ON/OFF]: opens next trade when current hits DCA level
+- [Timer ON/OFF]: opens next trade after X hours from last opened
+- Both ON: whichever comes first opens next trade
+- Both OFF: only 1 trade per coin (default behavior)
+
+Sequence behavior:
+- Trades open one by one in sequence
+- Last opened trade = gate reference always
+- When reference trade closes → previous becomes reference
+- Sequence continues forever · no hard stop
+- When one closes → slot opens → new trade can start
+
+Entry method:
+- All trades in bot use same parameters
+- Same DCA% · spacing · TP% · entry method
+- No per-trade customization · simple · consistent
+
+Example:
+Trades per bot: 20 · Trades per coin: 3 · Gate: both
+→ Bot opens max 20 trades total
+→ Any coin max 3 concurrent trades
+→ Each coin's trades open sequentially via gate
+→ Last opened = reference for next gate trigger
