@@ -576,3 +576,23 @@ CREATE TABLE IF NOT EXISTS trade_bundles (
 CREATE INDEX IF NOT EXISTS idx_trade_bundles_user ON trade_bundles(user_id, status);
 
 SELECT 'Auto-renew and bundle tables added!' AS result;
+
+-- ═══════════════════════════════
+-- MULTI-TRADE GATE SYSTEM + LIMIT ORDERS
+-- ═══════════════════════════════
+
+-- Bot level settings
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS trades_per_bot INTEGER DEFAULT 1;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS trades_per_coin INTEGER DEFAULT 1;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS gate_dca_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS gate_timer_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS gate_timer_hours INTEGER DEFAULT 5;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS order_entry_type VARCHAR(10) DEFAULT 'market';
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS order_dca_type VARCHAR(10) DEFAULT 'market';
+
+-- Position level tracking
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS is_gate_reference BOOLEAN DEFAULT FALSE;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS coin_trade_number INTEGER DEFAULT 1;
+
+SELECT 'Multi-trade gate and limit order columns added!' AS result;
