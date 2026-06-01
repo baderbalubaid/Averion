@@ -598,3 +598,341 @@ if __name__ == '__main__':
     init_pool()
     print('✅ Database module ready')
     print('✅ All functions available')
+
+# ═══════════════════════════════
+# NOTIFICATIONS
+# ═══════════════════════════════
+def queue_notification(user_id, chat_id, message, message_type):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO notification_queue
+            (user_id, chat_id, message, message_type)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, chat_id, message, message_type))
+        return cur.fetchone()[0]
+
+def get_pending_notifications():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, user_id, chat_id, message, message_type
+            FROM notification_queue
+            WHERE sent = FALSE
+            ORDER BY created_at ASC
+            LIMIT 50
+        """)
+        return cur.fetchall()
+
+def mark_notification_sent(notification_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE notification_queue
+            SET sent = TRUE, sent_at = NOW()
+            WHERE id = %s
+        """, (notification_id,))
+
+def increment_notification_retry(notification_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE notification_queue
+            SET retry_count = retry_count + 1
+            WHERE id = %s
+        """, (notification_id,))
+
+# ═══════════════════════════════
+# VIRTUAL WALLETS
+# ═══════════════════════════════
+def get_user_wallets(user_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT w.id, w.name, w.currency,
+                   w.allocation_type, w.allocation_amount,
+                   w.current_balance, w.standby_reserved,
+                   e.exchange, e.custom_name
+            FROM virtual_wallets w
+            JOIN exchanges e ON e.id = w.exchange_id
+            WHERE w.user_id = %s
+            ORDER BY w.created_at ASC
+        """, (user_id,))
+        return cur.fetchall()
+
+def get_wallet_by_id(wallet_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, user_id, exchange_id, name,
+                   currency, allocation_type,
+                   allocation_amount, current_balance,
+                   standby_reserved
+            FROM virtual_wallets WHERE id = %s
+        """, (wallet_id,))
+        return cur.fetchone()
+
+def create_wallet(user_id, exchange_id, name,
+                  currency, allocation_type, allocation_amount):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO virtual_wallets
+            (user_id, exchange_id, name, currency,
+             allocation_type, allocation_amount)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, exchange_id, name, currency,
+              allocation_type, allocation_amount))
+        return cur.fetchone()[0]
+
+def update_wallet_balance(wallet_id, amount, operation='add'):
+    with get_db() as conn:
+        cur = conn.cursor()
+        if operation == 'add':
+            cur.execute("""
+                UPDATE virtual_wallets
+                SET current_balance = current_balance + %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (amount, wallet_id))
+        else:
+            cur.execute("""
+                UPDATE virtual_wallets
+                SET current_balance = current_balance - %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (amount, wallet_id))
+
+def record_wallet_transaction(wallet_id, position_id,
+                               tx_type, amount, balance_after):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO wallet_transactions
+            (wallet_id, position_id, type, amount, balance_after)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (wallet_id, position_id, tx_type,
+              amount, balance_after))
+
+# ═══════════════════════════════
+# BALANCE HISTORY
+# ═══════════════════════════════
+def record_balance_history(user_id, exchange_id, value_usdt):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO balance_history
+            (user_id, exchange_id, value_usdt)
+            VALUES (%s, %s, %s)
+        """, (user_id, exchange_id, value_usdt))
+
+def get_balance_history(exchange_id, days=30):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT value_usdt, recorded_at
+            FROM balance_history
+            WHERE exchange_id = %s
+            AND recorded_at > NOW() - INTERVAL '%s days'
+            ORDER BY recorded_at ASC
+        """, (exchange_id, days))
+        return cur.fetchall()
+
+# ═══════════════════════════════
+# OHLCV
+# ═══════════════════════════════
+def store_ohlcv(coin, exchange, timestamp,
+                open_p, high, low, close, volume):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO ohlcv_hourly
+            (coin, exchange, timestamp, open, high,
+             low, close, volume)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (coin, exchange, timestamp)
+            DO NOTHING
+        """, (coin, exchange, timestamp,
+              open_p, high, low, close, volume))
+
+def get_ohlcv(coin, exchange, limit=100):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT timestamp, open, high, low, close,
+                   volume, atr_14
+            FROM ohlcv_hourly
+            WHERE coin = %s AND exchange = %s
+            ORDER BY timestamp DESC
+            LIMIT %s
+        """, (coin, exchange, limit))
+        return cur.fetchall()
+
+def update_atr(coin, exchange, atr_14):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE ohlcv_hourly SET atr_14 = %s
+            WHERE coin = %s AND exchange = %s
+            AND timestamp = (
+                SELECT MAX(timestamp) FROM ohlcv_hourly
+                WHERE coin = %s AND exchange = %s
+            )
+        """, (atr_14, coin, exchange, coin, exchange))
+
+def cleanup_old_ohlcv(days=90):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM ohlcv_hourly
+            WHERE timestamp < NOW() - INTERVAL '%s days'
+        """, (days,))
+        return cur.rowcount
+
+# ═══════════════════════════════
+# RESEARCH SCORES
+# ═══════════════════════════════
+def update_research_score(bot_id, method, config_id,
+                           total_trades, winning_trades,
+                           total_profit, max_drawdown,
+                           avg_hold_hours):
+    with get_db() as conn:
+        cur = conn.cursor()
+        losing = total_trades - winning_trades
+        win_rate = (winning_trades / total_trades * 100
+                    ) if total_trades > 0 else 0
+
+        cur.execute("""
+            INSERT INTO research_scores (
+                bot_id, method, bot_config_id,
+                total_trades, winning_trades, losing_trades,
+                win_rate, total_profit, max_drawdown,
+                avg_hold_hours, last_calculated
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (bot_id) DO UPDATE SET
+                total_trades = EXCLUDED.total_trades,
+                winning_trades = EXCLUDED.winning_trades,
+                losing_trades = EXCLUDED.losing_trades,
+                win_rate = EXCLUDED.win_rate,
+                total_profit = EXCLUDED.total_profit,
+                max_drawdown = EXCLUDED.max_drawdown,
+                avg_hold_hours = EXCLUDED.avg_hold_hours,
+                last_calculated = NOW()
+        """, (bot_id, method, config_id, total_trades,
+              winning_trades, losing, win_rate,
+              total_profit, max_drawdown, avg_hold_hours))
+
+def get_research_rankings():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT r.bot_id, r.method, r.bot_config_id,
+                   r.total_trades, r.win_rate,
+                   r.total_profit, r.max_drawdown,
+                   r.avg_hold_hours, r.promotion_score,
+                   r.rank, r.status,
+                   b.name as bot_name
+            FROM research_scores r
+            JOIN bots b ON b.id = r.bot_id
+            WHERE r.status = 'active'
+            ORDER BY r.promotion_score DESC NULLS LAST
+        """)
+        return cur.fetchall()
+
+# ═══════════════════════════════
+# STANDBY ORDERS
+# ═══════════════════════════════
+def create_standby_order(position_id, bot_id,
+                          wallet_id, standby_amount,
+                          target_price, dca_level):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO standby_orders
+            (position_id, bot_id, wallet_id,
+             standby_amount, target_price, dca_level)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (position_id, bot_id, wallet_id,
+              standby_amount, target_price, dca_level))
+        return cur.fetchone()[0]
+
+def get_active_standby_orders(exchange_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT s.id, s.position_id, s.standby_amount,
+                   s.target_price, s.dca_level,
+                   p.coin, p.bot_id, p.user_id
+            FROM standby_orders s
+            JOIN positions p ON p.id = s.position_id
+            JOIN bots b ON b.id = p.bot_id
+            WHERE s.status = 'active'
+            AND b.exchange_id = %s
+        """, (exchange_id,))
+        return cur.fetchall()
+
+def trigger_standby_order(standby_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE standby_orders
+            SET status = 'triggered', triggered_at = NOW()
+            WHERE id = %s
+        """, (standby_id,))
+
+def cancel_standby_order(standby_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE standby_orders
+            SET status = 'cancelled', expired_at = NOW()
+            WHERE id = %s
+        """, (standby_id,))
+
+# ═══════════════════════════════
+# ADMIN
+# ═══════════════════════════════
+def get_platform_stats():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM users WHERE is_admin=FALSE) as total_users,
+                (SELECT COUNT(*) FROM bots WHERE status='active') as active_bots,
+                (SELECT COUNT(*) FROM positions WHERE status='open') as open_positions,
+                (SELECT COUNT(*) FROM positions WHERE status='open' AND is_paper=FALSE) as live_positions,
+                (SELECT COUNT(*) FROM positions WHERE status='open' AND is_paper=TRUE) as paper_positions,
+                (SELECT COALESCE(SUM(balance_usdt),0) FROM reserve_wallets) as total_reserve,
+                (SELECT accumulated_fees_usdt FROM owner_balance LIMIT 1) as owner_balance,
+                (SELECT COUNT(*) FROM trades WHERE DATE(timestamp)=CURRENT_DATE) as trades_today
+        """)
+        return cur.fetchone()
+
+def get_all_users_admin():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT u.id, u.email, u.created_at,
+                   u.is_suspended, u.telegram_verified,
+                   COUNT(DISTINCT b.id) as bot_count,
+                   COUNT(DISTINCT p.id) as open_positions,
+                   COALESCE(r.balance_usdt, 0) as reserve_balance,
+                   COALESCE(SUM(fd.amount_usdt) FILTER
+                       (WHERE fd.paid_at IS NULL), 0) as fee_debt
+            FROM users u
+            LEFT JOIN bots b ON b.user_id = u.id
+                AND b.status = 'active'
+            LEFT JOIN positions p ON p.user_id = u.id
+                AND p.status = 'open'
+            LEFT JOIN reserve_wallets r ON r.user_id = u.id
+            LEFT JOIN fee_debt fd ON fd.user_id = u.id
+            WHERE u.is_admin = FALSE
+            GROUP BY u.id, u.email, u.created_at,
+                     u.is_suspended, u.telegram_verified,
+                     r.balance_usdt
+            ORDER BY open_positions DESC
+        """)
+        return cur.fetchall()
