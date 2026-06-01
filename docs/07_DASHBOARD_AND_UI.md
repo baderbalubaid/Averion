@@ -203,3 +203,51 @@ To be added after Item 24:
 - Preparation for Hetzner file split
 
 Example:
+
+## Customer Dashboard — Home Tab (LOCKED)
+
+### Design Philosophy
+- Fits one phone screen · no scrolling for critical info
+- Most important info visible immediately on open
+- Clean · minimal · actionable
+
+### Layout
+
+#### TOP — 4 Quick Stat Cards
+| Open Positions | Profit Today | Fees Today | Reserve Wallet |
+|----------------|--------------|------------|----------------|
+| 23             | +$47.20      | $9.44      | $50.00         |
+
+- Profit today = realized profits only
+- Fees today = performance fees deducted today
+- Reserve wallet = current balance · tap to top up
+
+#### SECTION 2 — Active Alerts
+- Same attention log as Bots tab
+- Only shows when something needs attention
+- Empty = shows "✅ All systems normal"
+- Tap alert → goes to relevant screen
+
+#### SECTION 3 — Exchange Capital (compact)
+One line per exchange:
+- MEXC    $234.50  [3 bots · 12 positions]
+- KuCoin  $567.20  [5 bots · 11 positions]
+- Total   $801.70
+
+- Tap exchange row → goes to Bots tab filtered by exchange
+- Shows only exchanges user has added
+- Shows capital deployed + active bots + open positions
+
+#### SECTION 4 — Recent Activity
+Last 5 closed positions:
+- Coin · profit/loss · time ago · result icon
+- RVN  +$4.20  2h ago  ✅
+- BTC  +$12.50  5h ago  ✅
+- ETH  -$2.10  8h ago  ❌
+- Tap any row → goes to position detail screen
+
+### Mobile First
+- Designed for phone screen primarily
+- 4 cards fit in 2×2 grid on small screen
+- All sections stack vertically
+- Large tap targets · no tiny buttons
