@@ -192,7 +192,7 @@
     <div class="form-group">
         <label>Password</label>
         <input type="password" id="password"
-               placeholder="Minimum 8 characters"
+               placeholder="Min 8 chars · uppercase · number · special"
                autocomplete="new-password"
                oninput="checkStrength(this.value)">
         <div class="password-strength">
@@ -281,6 +281,18 @@
 
         if (password.length < 8) {
             showError('Password must be at least 8 characters');
+            return;
+        }
+        if (!/[A-Z]/.test(password)) {
+            showError('Password must contain at least one uppercase letter');
+            return;
+        }
+        if (!/[0-9]/.test(password)) {
+            showError('Password must contain at least one number');
+            return;
+        }
+        if (!/[@$!%*#&]/.test(password)) {
+            showError('Password must contain at least one special character (@$!%*#&)');
             return;
         }
 
