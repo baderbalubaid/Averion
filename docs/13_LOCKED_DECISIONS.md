@@ -1125,3 +1125,31 @@ Cron: daily batch processing at 3am-5:30am
 - Classification · reports · maintenance
 - Does NOT affect dashboard live accuracy
 - Two completely independent systems
+
+## Admin Dashboard Cron Control (LOCKED)
+
+Admin dashboard shows live cron status:
+- Each step: ✅ Complete · ❌ Failed · ⏳ Running · — Skipped
+- Last run time · duration · records processed · errors
+- [Re-run] button per step — triggers immediately
+- [View Logs] button per step — shows full output
+
+Re-run behavior:
+- Runs that specific step only
+- Uses latest available data
+- Updates status live with spinner
+- Admin can re-run any step independently
+- Example: CoinGecko failed → re-run CoinGecko
+  → then re-run Classification
+  → then re-run Reporting
+
+Steps shown:
+1. Infrastructure (03:00)
+2. CoinGecko Fetch (03:30)
+3. CoinMarketCap Fetch (04:00)
+4. Classification (04:30)
+5. Reporting (05:00)
+6. Sunday Cleanup (05:30 · Sunday only)
+
+All steps visible · all independently re-runnable
+No need to wait for next day if any step fails
