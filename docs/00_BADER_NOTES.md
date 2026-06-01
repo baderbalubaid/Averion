@@ -27,7 +27,7 @@
 
 ## Reminders
 
-- [ ] Switch GitHub repo to private when averion.app launches
+- [ ] Switch GitHub repo to private when averionbot.com launches
 - [ ] Remove token from docs on launch day
 - [ ] Generate new token and update .env on Hetzner
 

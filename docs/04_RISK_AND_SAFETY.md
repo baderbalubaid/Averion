@@ -151,7 +151,7 @@ Most common: Trading OFF + DCA ON (ride only mode)
 - Red banner across full topbar in LIVE mode
 - Fernet encryption for API keys stored in DB
 - IP whitelist for admin panel
-- CORS — non-averion.app domains blocked
+- CORS — non-averionbot.com domains blocked
 - Withdrawal permissions NEVER enabled on API keys
 
 ---

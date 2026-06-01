@@ -143,7 +143,7 @@
 
 - API keys encrypted with Fernet before storing in DB
 - Admin URL stored in .env only — never in code
-- CORS — non-averion.app domains blocked
+- CORS — non-averionbot.com domains blocked
 - Rate limiting per user on all endpoints
 - Research API: read-only GET only — no mutations
 - Signed URLs: 7-day expiry for research sharing

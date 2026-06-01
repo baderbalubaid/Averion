@@ -249,7 +249,7 @@ Build once · Build right · Public platform from Day 1
 ## GitHub Repository
 
 - Repo is currently PUBLIC (needed for Claude to fetch docs)
-- Switch back to PRIVATE when averion.app launches publicly
+- Switch back to PRIVATE when averionbot.com launches publicly
 - Remove GitHub token from all docs at same time
 - Both actions happen together on launch day
 
@@ -1544,8 +1544,8 @@ Phase 7 public launch: add FastAPI middleware
 - Setup needed: resend.com account + API key
 - Add to .env: RESEND_API_KEY · SENDER_EMAIL
 - Columns already in schema: email_verified · email_verify_code
-- Implement when averion.app domain is ready (Day 2)
-- Sender email: noreply@averion.app
+- Implement when averionbot.com domain is ready (Day 2)
+- Sender email: noreply@averionbot.com
 
 ## Email Architecture (LOCKED)
 
@@ -2068,7 +2068,7 @@ Most common: Trading OFF + DCA ON (ride only mode)
 - Red banner across full topbar in LIVE mode
 - Fernet encryption for API keys stored in DB
 - IP whitelist for admin panel
-- CORS — non-averion.app domains blocked
+- CORS — non-averionbot.com domains blocked
 - Withdrawal permissions NEVER enabled on API keys
 
 ---
@@ -3486,7 +3486,7 @@ Split to professional structure on Hetzner Day 1 only.
 
 - API keys encrypted with Fernet before storing in DB
 - Admin URL stored in .env only — never in code
-- CORS — non-averion.app domains blocked
+- CORS — non-averionbot.com domains blocked
 - Rate limiting per user on all endpoints
 - Research API: read-only GET only — no mutations
 - Signed URLs: 7-day expiry for research sharing
@@ -3596,7 +3596,7 @@ Split to professional structure on Hetzner Day 1 only.
 ## Access
 
 - Secret URL stored in .env only — never in code — never on GitHub
-- Format: averion.app/ops-XXXX (random string set in .env)
+- Format: averionbot.com/ops-XXXX (random string set in .env)
 - Security layers: Secret URL + Password + IP whitelist + 2FA + 5-fail lockout
 - Admin accounts: no fee · no reserve wallet needed
 
@@ -3891,7 +3891,7 @@ Tab 5 — Controls
 - GitHub Actions auto-deploy
 
 ### Hetzner Day 2:
-- Buy averion.app domain
+- Buy averionbot.com domain
 - Nginx reverse proxy
 - Let's Encrypt HTTPS
 - Test live $1 MEXC order (PAPER_MODE=false)
@@ -4004,7 +4004,7 @@ Tab 5 — Controls
 **Concern:** Live token exposed in PDF is security risk.
 **Resolution:** ACKNOWLEDGED — keeping token in docs temporarily.
 Token needed for new Claude to auto-fetch code.
-Will remove when averion.app launches publicly.
+Will remove when averionbot.com launches publicly.
 **Status:** ✅ Resolved — intentional decision
 
 ---
@@ -4428,10 +4428,10 @@ list their strategies for subscribers to use.
 ---
 
 ## Future Brand Extensions
-- averion.app — main platform
-- docs.averion.app — documentation
-- status.averion.app — uptime page
-- api.averion.app — developer API
+- averionbot.com — main platform
+- docs.averionbot.com — documentation
+- status.averionbot.com — uptime page
+- api.averionbot.com — developer API
 -- Averion PostgreSQL Schema
 -- Run this on Hetzner Day 1
 -- Command: psql -U averion -d averion < schema.sql
@@ -5596,16 +5596,16 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 ## DAY 2 CHECKLIST
 
 ## PHASE 11 — Domain (30 min wait)
-- [ ] Buy averion.app domain
+- [ ] Buy averionbot.com domain
 - [ ] Point A record to Hetzner IP
-- [ ] Wait for DNS propagation (check: dig averion.app)
+- [ ] Wait for DNS propagation (check: dig averionbot.com)
 
 ## PHASE 12 — Run Day 2 Script (10 min)
 - [ ] Edit domain: nano /home/averion/Averion/setup/hetzner_day2.sh
-- [ ] Change DOMAIN="averion.app"
+- [ ] Change DOMAIN="averionbot.com"
 - [ ] Change EMAIL="your@email.com"
 - [ ] Run: bash /home/averion/Averion/setup/hetzner_day2.sh
-- [ ] Verify HTTPS: https://averion.app/dashboard
+- [ ] Verify HTTPS: https://averionbot.com/dashboard
 
 ## PHASE 13 — Live Order Test (10 min)
 - [ ] Edit .env: PAPER_MODE=false
@@ -5694,7 +5694,7 @@ REDIS_PASSWORD=your-redis-password-here
 # ═══════════════════════════════
 ADMIN_PATH=ops-CHANGEME
 ADMIN_PASSWORD=your-admin-password-here
-ADMIN_EMAIL=admin@averion.app
+ADMIN_EMAIL=admin@averionbot.com
 
 # ═══════════════════════════════
 # ENCRYPTION
