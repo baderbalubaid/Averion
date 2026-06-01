@@ -111,6 +111,18 @@ def dashboard():
 def admin_dashboard():
     return FileResponse('admin.html')
 
+@app.get('/')
+def homepage():
+    return FileResponse('index.html')
+
+@app.get('/login')
+def login_page():
+    return FileResponse('login.html')
+
+@app.get('/register')
+def register_page():
+    return FileResponse('register.html')
+
 # ═══════════════════════════════
 # AUTH ENDPOINTS
 # ═══════════════════════════════
