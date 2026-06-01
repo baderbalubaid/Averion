@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Averion — Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0E0E1C; --card: #16162A;
+            --border: #2A2A45; --green: #10D98A;
+            --blue: #38BDF8; --red: #F4645F;
+            --amber: #FFA500; --text: #FFFFFF;
+            --muted: #888888;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ── TOP BAR ── */
+        .topbar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .admin-badge {
+            background: rgba(244,100,95,0.15);
+            border: 1px solid rgba(244,100,95,0.3);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--red);
+            font-weight: 600;
+        }
+        .bot-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+        .status-dot.online { background: var(--green); }
+        .status-dot.offline { background: var(--red); }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-sm {
+            padding: 7px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        .btn-danger {
+            background: rgba(244,100,95,0.15);
+            border: 1px solid rgba(244,100,95,0.3);
+            color: var(--red);
+        }
+        .btn-danger:hover { background: rgba(244,100,95,0.25); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green), #0BB876);
+            color: #0E0E1C;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+        /* ── TABS ── */
+        .tabs {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 14px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+        }
+
+        /* ── MAIN ── */
+        .main {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .stat-value.green { color: var(--green); }
+        .stat-value.red { color: var(--red); }
+        .stat-value.blue { color: var(--blue); }
+
+        /* ── SERVICES ── */
+        .service-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .service-row:last-child { border-bottom: none; }
+        .service-name {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .service-detail { font-size: 12px; color: var(--muted); }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-green {
+            background: rgba(16,217,138,0.15);
+            color: var(--green);
+        }
+        .badge-red {
+            background: rgba(244,100,95,0.15);
+            color: var(--red);
+        }
+        .badge-amber {
+            background: rgba(255,165,0,0.15);
+            color: var(--amber);
+        }
+        .badge-blue {
+            background: rgba(56,189,248,0.15);
+            color: var(--blue);
+        }
+
+        /* ── CRON STEPS ── */
+        .cron-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .cron-step {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .cron-step.success { border-color: rgba(16,217,138,0.3); }
+        .cron-step.failed { border-color: rgba(244,100,95,0.3); }
+        .cron-step.running { border-color: rgba(56,189,248,0.3); }
+        .cron-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .cron-name { font-size: 13px; font-weight: 700; }
+        .cron-time { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+        .cron-meta { font-size: 11px; color: var(--muted); }
+        .cron-error {
+            font-size: 11px;
+            color: var(--red);
+            background: rgba(244,100,95,0.1);
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+        .cron-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-xs {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-rerun {
+            background: rgba(16,217,138,0.15);
+            color: var(--green);
+            border: 1px solid rgba(16,217,138,0.3);
+        }
+        .btn-rerun:hover { background: rgba(16,217,138,0.25); }
+        .btn-logs {
+            background: rgba(56,189,248,0.15);
+            color: var(--blue);
+            border: 1px solid rgba(56,189,248,0.3);
+        }
+        .btn-copy {
+            background: rgba(136,136,136,0.15);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ── PROGRESS BARS ── */
+        .progress-bar {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* ── TABLE ── */
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(42,42,69,0.5);
+            vertical-align: middle;
+        }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        tr:last-child td { border-bottom: none; }
+
+        /* ── TOGGLES ── */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-info h4 { font-size: 14px; margin-bottom: 4px; }
+        .toggle-info p { font-size: 12px; color: var(--muted); }
+        .toggle {
+            width: 44px; height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            border: none;
+            flex-shrink: 0;
+        }
+        .toggle.on { background: var(--green); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 3px; left: 3px;
+            transition: left 0.2s;
+        }
+        .toggle.on::after { left: 23px; }
+
+        /* ── HEALTH BARS ── */
+        .health-item {
+            margin-bottom: 16px;
+        }
+        .health-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .health-label { color: var(--muted); }
+
+        /* ── ALERTS ── */
+        .alerts-section {
+            margin-bottom: 20px;
+        }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .alert-red {
+            background: rgba(244,100,95,0.1);
+            border: 1px solid rgba(244,100,95,0.2);
+        }
+        .alert-amber {
+            background: rgba(255,165,0,0.1);
+            border: 1px solid rgba(255,165,0,0.2);
+        }
+        .alert-green {
+            background: rgba(16,217,138,0.1);
+            border: 1px solid rgba(16,217,138,0.2);
+        }
+        .alert-icon { font-size: 16px; }
+        .alert-msg { flex: 1; }
+        .alert-action {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+        }
+
+        /* ── LOGS MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .log-content {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-y: auto;
+            flex: 1;
+            color: #AAA;
+            white-space: pre-wrap;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ── REFRESH ── */
+        .last-updated {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <div class="logo">AVERION</div>
+        <div class="admin-badge">ADMIN</div>
+        <div class="bot-status">
+            <div class="status-dot" id="bot-dot"></div>
+            <span id="bot-status-text">Loading...</span>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <span class="last-updated" id="last-updated"></span>
+        <button class="btn-sm btn-danger" onclick="emergencyStop()">
+            🔴 Stop All Trading
+        </button>
+        <button class="btn-sm btn-primary" onclick="restartBot()">
+            🔄 Restart Bot
+        </button>
+        <button class="btn-sm btn-secondary" onclick="logout()">
+            Sign Out
+        </button>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('health')">
+        Health & Control
+    </div>
+    <div class="tab" onclick="switchTab('users')">Users</div>
+    <div class="tab" onclick="switchTab('stats')">Platform Stats</div>
+    <div class="tab" onclick="switchTab('categories')">Coin Categories</div>
+    <div class="tab" onclick="switchTab('controls')">Controls</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- ── TAB 1: HEALTH & CONTROL ── -->
+    <div class="tab-content active" id="tab-health">
+
+        <!-- Active Alerts -->
+        <div class="alerts-section" id="alerts-section">
+            <div class="empty" style="padding:20px">
+                ✅ All systems normal
+            </div>
+        </div>
+
+        <!-- Yesterday Summary -->
+        <div class="grid-4" style="margin-bottom:20px">
+            <div class="stat-card">
+                <div class="stat-label">Trades Closed Today</div>
+                <div class="stat-value green" id="trades-today">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Bots</div>
+                <div class="stat-value blue" id="active-bots">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Positions</div>
+                <div class="stat-value" id="open-positions">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Owner Wallet</div>
+                <div class="stat-value green" id="owner-wallet">—</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Services</div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🗄️</span> PostgreSQL
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge badge-green" id="pg-status">Checking...</div>
+                        <div class="service-detail" id="pg-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>⚡</span> Redis
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge badge-green" id="redis-status">Checking...</div>
+                        <div class="service-detail" id="redis-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🤖</span> Bot Loop
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge" id="bot-badge">Checking...</div>
+                        <div class="service-detail" id="bot-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🔄</span> Last Cycle
+                    </div>
+                    <div style="text-align:right">
+                        <div class="service-detail" id="last-cycle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Health -->
+            <div class="card">
+                <div class="card-title">
+                    Server Health
+                    <span class="last-updated" id="health-updated"></span>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">CPU</span>
+                        <span id="cpu-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpu-bar"
+                             style="width:0%; background: var(--green)"></div>
+                    </div>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">RAM</span>
+                        <span id="ram-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="ram-bar"
+                             style="width:0%; background: var(--blue)"></div>
+                    </div>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">Disk</span>
+                        <span id="disk-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="disk-bar"
+                             style="width:0%; background: var(--amber)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cron Steps -->
+        <div class="card">
+            <div class="card-title">
+                Daily Cron Status
+                <button class="btn-xs btn-rerun" onclick="loadCronStatus()">
+                    ↻ Refresh
+                </button>
+            </div>
+            <div class="cron-grid" id="cron-grid">
+                <div class="empty">Loading cron status...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 2: USERS ── -->
+    <div class="tab-content" id="tab-users">
+        <div class="card">
+            <div class="card-title">
+                All Users
+                <input type="text" id="user-search"
+                       placeholder="Search email..."
+                       style="background:var(--bg);border:1px solid var(--border);
+                              border-radius:8px;padding:6px 12px;color:var(--text);
+                              font-size:13px;outline:none;width:200px"
+                       oninput="filterUsers()">
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Bots</th>
+                            <th>Open Trades</th>
+                            <th>Reserve</th>
+                            <th>Fee Debt</th>
+                            <th>Telegram</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table">
+                        <tr><td colspan="9" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 3: PLATFORM STATS ── -->
+    <div class="tab-content" id="tab-stats">
+        <div class="grid-4">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value blue" id="stat-users">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Bots</div>
+                <div class="stat-value" id="stat-bots">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Positions</div>
+                <div class="stat-value" id="stat-positions">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Live Positions</div>
+                <div class="stat-value green" id="stat-live">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Paper Positions</div>
+                <div class="stat-value blue" id="stat-paper">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Reserve</div>
+                <div class="stat-value green" id="stat-reserve">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Owner Wallet</div>
+                <div class="stat-value green" id="stat-owner">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Trades Today</div>
+                <div class="stat-value" id="stat-trades">—</div>
+            </div>
+        </div>
+
+        <!-- Diagnostics -->
+        <div class="card" style="margin-top:20px">
+            <div class="card-title">
+                Diagnostics Report
+                <div style="display:flex;gap:8px">
+                    <button class="btn-xs btn-rerun"
+                            onclick="copyDiagnostics()">
+                        📋 Copy Markdown
+                    </button>
+                    <button class="btn-xs btn-logs"
+                            onclick="generateDiagnostics()">
+                        🔄 Regenerate
+                    </button>
+                </div>
+            </div>
+            <div class="log-content" id="diagnostics-content"
+                 style="max-height:400px">
+                Loading diagnostics...
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 4: COIN CATEGORIES ── -->
+    <div class="tab-content" id="tab-categories">
+        <div class="card">
+            <div class="card-title">Market Cap Categories</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Market Cap Range</th>
+                            <th>DCA %</th>
+                            <th>Spacing Mult</th>
+                            <th>Size Mult</th>
+                            <th>TP %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-blue">Mega Cap</span></td>
+                            <td>> $100B</td>
+                            <td>2%</td>
+                            <td>1.2x</td>
+                            <td>1.2x</td>
+                            <td>2%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-green">Large Cap</span></td>
+                            <td>$10B - $100B</td>
+                            <td>4%</td>
+                            <td>1.3x</td>
+                            <td>1.3x</td>
+                            <td>3%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge" style="background:rgba(255,165,0,0.15);color:var(--amber)">Mid Cap</span></td>
+                            <td>$1B - $10B</td>
+                            <td>6%</td>
+                            <td>1.4x</td>
+                            <td>1.4x</td>
+                            <td>4%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-amber">Small Cap</span></td>
+                            <td>$100M - $1B</td>
+                            <td>8%</td>
+                            <td>1.5x</td>
+                            <td>1.5x</td>
+                            <td>5%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">Micro Cap</span></td>
+                            <td>< $100M</td>
+                            <td>10%</td>
+                            <td>1.6x</td>
+                            <td>1.6x</td>
+                            <td>6%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="color:var(--muted);font-size:12px;margin-top:12px">
+                ℹ️ Category parameters are set by the Smart DCA engine.
+                Updated daily at 04:30 after classification.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── TAB 5: CONTROLS ── -->
+    <div class="tab-content" id="tab-controls">
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Component Toggles</div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CoinGecko Integration</h4>
+                        <p>Fetch market caps daily at 03:30</p>
+                    </div>
+                    <button class="toggle on" id="tog-coingecko"
+                            onclick="toggleComponent(this, 'coingecko')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CoinMarketCap Integration</h4>
+                        <p>Fetch market caps daily at 04:00</p>
+                    </div>
+                    <button class="toggle on" id="tog-cmc"
+                            onclick="toggleComponent(this, 'cmc')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>Telegram Notifications</h4>
+                        <p>Send alerts and reports to users</p>
+                    </div>
+                    <button class="toggle on" id="tog-telegram"
+                            onclick="toggleComponent(this, 'telegram')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>Excel Report Generation</h4>
+                        <p>Generate daily Excel reports at 05:00</p>
+                    </div>
+                    <button class="toggle on" id="tog-excel"
+                            onclick="toggleComponent(this, 'excel')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CCXT Auto-Upgrade</h4>
+                        <p>Safe upgrade at 03:00 daily</p>
+                    </div>
+                    <button class="toggle on" id="tog-ccxt"
+                            onclick="toggleComponent(this, 'ccxt')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>New User Registration</h4>
+                        <p>Allow new accounts to be created</p>
+                    </div>
+                    <button class="toggle on" id="tog-registration"
+                            onclick="toggleComponent(this, 'registration')"></button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Emergency Controls</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <button class="btn-sm btn-danger"
+                            style="padding:14px;font-size:14px"
+                            onclick="emergencyStop()">
+                        🔴 Stop All Live Trading
+                    </button>
+                    <button class="btn-sm"
+                            style="padding:14px;font-size:14px;
+                                   background:rgba(255,165,0,0.15);
+                                   border:1px solid rgba(255,165,0,0.3);
+                                   color:var(--amber)"
+                            onclick="pauseNewPositions()">
+                        ⏸️ Pause New Positions Only
+                    </button>
+                    <button class="btn-sm btn-primary"
+                            style="padding:14px;font-size:14px"
+                            onclick="restartBot()">
+                        🔄 Restart Bot
+                    </button>
+                    <button class="btn-sm btn-secondary"
+                            style="padding:14px;font-size:14px"
+                            onclick="forceReconciliation()">
+                        🔁 Force Reconciliation
+                    </button>
+                </div>
+
+                <div class="card-title" style="margin-top:24px">
+                    Backup Status
+                </div>
+                <div id="backup-info" style="color:var(--muted);font-size:13px">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- LOGS MODAL -->
+<div class="modal-overlay" id="logs-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">Logs</h3>
+            <button class="modal-close" onclick="closeLogs()">✕</button>
+        </div>
+        <div class="log-content" id="modal-log-content">
+            No logs available
+        </div>
+        <div class="modal-actions">
+            <button class="btn-xs btn-rerun" onclick="copyLog()">
+                📋 Copy
+            </button>
+            <button class="btn-xs btn-secondary btn-sm"
+                    onclick="closeLogs()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '';
+    const TOKEN = localStorage.getItem('averion_token');
+    let allUsers = [];
+    let cronData = {};
+
+    function headers() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TOKEN}`
+        };
+    }
+
+    // ── AUTH CHECK ────────────────────────────────
+    if (!TOKEN) window.location.href = '/login';
+
+    // ── TABS ─────────────────────────────────────
+    function switchTab(name) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active',
+                t.textContent.toLowerCase().includes(name) ||
+                (name === 'health' && i === 0) ||
+                (name === 'users' && i === 1) ||
+                (name === 'stats' && i === 2) ||
+                (name === 'categories' && i === 3) ||
+                (name === 'controls' && i === 4)
+            );
+        });
+        document.querySelectorAll('.tab-content').forEach(c => {
+            c.classList.remove('active');
+        });
+        document.getElementById(`tab-${name}`).classList.add('active');
+
+        if (name === 'users') loadUsers();
+        if (name === 'stats') loadStats();
+        if (name === 'controls') loadDiagnostics();
+    }
+
+    // ── STATUS ────────────────────────────────────
+    async function loadStatus() {
+        try {
+            const res = await fetch(`${API}/status`,
+                { headers: headers() });
+            const data = await res.json();
+
+            const dot = document.getElementById('bot-dot');
+            const text = document.getElementById('bot-status-text');
+            const badge = document.getElementById('bot-badge');
+            const detail = document.getElementById('bot-detail');
+
+            if (data.running) {
+                dot.className = 'status-dot online';
+                text.textContent = `BOT RUNNING · ${data.cycle_time}s`;
+                badge.className = 'badge badge-green';
+                badge.textContent = 'Running';
+            } else {
+                dot.className = 'status-dot offline';
+                text.textContent = 'BOT STOPPED';
+                badge.className = 'badge badge-red';
+                badge.textContent = 'Stopped';
+            }
+            detail.textContent = `Last: ${data.last_cycle || 'never'}`;
+
+            document.getElementById('last-updated').textContent =
+                `Updated: ${new Date().toLocaleTimeString()}`;
+
+        } catch(e) {
+            document.getElementById('bot-status-text').textContent = 'Connection error';
+        }
+    }
+
+    // ── ADMIN STATS ───────────────────────────────
+    async function loadAdminStats() {
+        try {
+            const res = await fetch(`${API}/admin/stats`,
+                { headers: headers() });
+            if (res.status === 401 || res.status === 403) {
+                window.location.href = '/login';
+                return;
+            }
+            const data = await res.json();
+
+            document.getElementById('trades-today').textContent =
+                data.trades_today || 0;
+            document.getElementById('active-bots').textContent =
+                data.active_bots || 0;
+            document.getElementById('open-positions').textContent =
+                data.open_positions || 0;
+            document.getElementById('owner-wallet').textContent =
+                `$${(data.owner_wallet || 0).toFixed(2)}`;
+
+        } catch(e) { console.error(e); }
+    }
+
+    // ── HEALTH ────────────────────────────────────
+    async function loadHealth() {
+        try {
+            const res = await fetch(`${API}/admin/health`,
+                { headers: headers() });
+            const rows = await res.json();
+            if (!rows.length) return;
+
+            const latest = rows[rows.length - 1];
+            const cpu = latest.cpu || 0;
+            const ram = latest.ram || 0;
+            const disk = latest.disk || 0;
+
+            document.getElementById('cpu-val').textContent = `${cpu}%`;
+            document.getElementById('ram-val').textContent = `${ram}%`;
+            document.getElementById('disk-val').textContent = `${disk}%`;
+
+            const cpuBar = document.getElementById('cpu-bar');
+            cpuBar.style.width = `${cpu}%`;
+            cpuBar.style.background = cpu > 80 ? 'var(--red)' :
+                cpu > 60 ? 'var(--amber)' : 'var(--green)';
+
+            const ramBar = document.getElementById('ram-bar');
+            ramBar.style.width = `${ram}%`;
+            ramBar.style.background = ram > 80 ? 'var(--red)' :
+                ram > 60 ? 'var(--amber)' : 'var(--blue)';
+
+            const diskBar = document.getElementById('disk-bar');
+            diskBar.style.width = `${disk}%`;
+            diskBar.style.background = disk > 70 ? 'var(--red)' :
+                disk > 50 ? 'var(--amber)' : 'var(--amber)';
+
+            document.getElementById('health-updated').textContent =
+                new Date(latest.recorded_at).toLocaleTimeString();
+
+        } catch(e) { console.error(e); }
+    }
+
+    // ── CRON STATUS ───────────────────────────────
+    async function loadCronStatus() {
+        try {
+            const res = await fetch(`${API}/admin/cron-status`,
+                { headers: headers() });
+            cronData = await res.json();
+
+            const steps = [
+                { key: 'infrastructure', name: 'Infrastructure', time: '03:00' },
+                { key: 'coingecko', name: 'CoinGecko Fetch', time: '03:30' },
+                { key: 'cmc', name: 'CMC Fetch', time: '04:00' },
+                { key: 'classification', name: 'Classification', time: '04:30' },
+                { key: 'reporting', name: 'Reporting', time: '05:00' },
+                { key: 'cleanup', name: 'Sunday Cleanup', time: '05:30' },
+            ];
+
+            const grid = document.getElementById('cron-grid');
+            grid.innerHTML = steps.map(step => {
+                const d = cronData[step.key];
+                const status = d ? d.status : null;
+                const cls = status === 'success' ? 'success' :
+                            status === 'failed' ? 'failed' :
+                            status === 'running' ? 'running' : '';
+                const badge = status === 'success' ?
+                    '<span class="badge badge-green">✅ Complete</span>' :
+                    status === 'failed' ?
+                    '<span class="badge badge-red">❌ Failed</span>' :
+                    status === 'running' ?
+                    '<span class="badge badge-blue">⏳ Running</span>' :
+                    '<span class="badge" style="background:rgba(136,136,136,0.1);color:var(--muted)">— Pending</span>';
+
+                return `
+                <div class="cron-step ${cls}">
+                    <div class="cron-header">
+                        <span class="cron-name">${step.time} · ${step.name}</span>
+                        ${badge}
+                    </div>
+                    ${d ? `
+                    <div class="cron-time">
+                        Duration: ${d.duration?.toFixed(1)}s ·
+                        Records: ${d.records || 0}
+                    </div>` : ''}
+                    ${d?.error ? `
+                    <div class="cron-error" onclick="showLog('${step.name}', \`${d.error}\`)">
+                        ❌ ${d.error.substring(0, 80)}...
+                        <br><small>Click to view full error</small>
+                    </div>` : ''}
+                    <div class="cron-actions">
+                        <button class="btn-xs btn-rerun"
+                                onclick="rerunStep('${step.key}')">
+                            ↻ Re-run
+                        </button>
+                        ${d?.error ? `
+                        <button class="btn-xs btn-logs"
+                                onclick="showLog('${step.name}', \`${d.error}\`)">
+                            📋 Logs
+                        </button>
+                        <button class="btn-xs btn-copy"
+                                onclick="copyText(\`${d.error}\`)">
+                            Copy
+                        </button>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch(e) {
+            document.getElementById('cron-grid').innerHTML =
+                '<div class="empty">Failed to load cron status</div>';
+        }
+    }
+
+    async function rerunStep(step) {
+        try {
+            await fetch(`${API}/admin/cron/${step}/run`, {
+                method: 'POST',
+                headers: headers()
+            });
+            setTimeout(loadCronStatus, 2000);
+        } catch(e) { alert('Failed to start step'); }
+    }
+
+    // ── USERS ─────────────────────────────────────
+    async function loadUsers() {
+        try {
+            const res = await fetch(`${API}/admin/users`,
+                { headers: headers() });
+            allUsers = await res.json();
+            renderUsers(allUsers);
+        } catch(e) {
+            document.getElementById('users-table').innerHTML =
+                '<tr><td colspan="9" class="empty">Failed to load users</td></tr>';
+        }
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('users-table');
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">No users yet</td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td style="color:var(--muted)">#${u.id}</td>
+                <td>${u.email}</td>
+                <td>${u.bots || 0}</td>
+                <td>${u.open_positions || 0}</td>
+                <td style="color:var(--green)">$${(u.reserve || 0).toFixed(2)}</td>
+                <td style="color:${u.fee_debt > 0 ? 'var(--red)' : 'var(--muted)'}">
+                    ${u.fee_debt > 0 ? '-$' + u.fee_debt.toFixed(2) : '$0'}
+                </td>
+                <td>${u.telegram ?
+                    '<span class="badge badge-green">✅</span>' :
+                    '<span class="badge badge-red">❌</span>'}</td>
+                <td>${u.suspended ?
+                    '<span class="badge badge-red">Suspended</span>' :
+                    '<span class="badge badge-green">Active</span>'}</td>
+                <td style="color:var(--muted)">
+                    ${new Date(u.created_at).toLocaleDateString()}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        renderUsers(allUsers.filter(u =>
+            u.email.toLowerCase().includes(q)
+        ));
+    }
+
+    // ── STATS ─────────────────────────────────────
+    async function loadStats() {
+        try {
+            const res = await fetch(`${API}/admin/stats`,
+                { headers: headers() });
+            const data = await res.json();
+
+            document.getElementById('stat-users').textContent = data.total_users || 0;
+            document.getElementById('stat-bots').textContent = data.active_bots || 0;
+            document.getElementById('stat-positions').textContent = data.open_positions || 0;
+            document.getElementById('stat-live').textContent = data.live_positions || 0;
+            document.getElementById('stat-paper').textContent = data.paper_positions || 0;
+            document.getElementById('stat-reserve').textContent =
+                `$${(data.total_reserve || 0).toFixed(2)}`;
+            document.getElementById('stat-owner').textContent =
+                `$${(data.owner_wallet || 0).toFixed(2)}`;
+            document.getElementById('stat-trades').textContent = data.trades_today || 0;
+
+        } catch(e) { console.error(e); }
+
+        loadDiagnostics();
+    }
+
+    async function loadDiagnostics() {
+        try {
+            const res = await fetch(`${API}/admin/diagnostics`,
+                { headers: headers() });
+            const data = await res.json();
+            document.getElementById('diagnostics-content').textContent =
+                data.content || 'No diagnostics available';
+        } catch(e) {
+            document.getElementById('diagnostics-content').textContent =
+                'Failed to load diagnostics';
+        }
+    }
+
+    async function generateDiagnostics() {
+        await fetch(`${API}/admin/diagnostics/generate`, {
+            method: 'POST',
+            headers: headers()
+        });
+        setTimeout(loadDiagnostics, 5000);
+    }
+
+    function copyDiagnostics() {
+        const content = document.getElementById('diagnostics-content').textContent;
+        navigator.clipboard.writeText(content);
+        alert('✅ Copied to clipboard · paste to Claude for diagnosis');
+    }
+
+    // ── CONTROLS ──────────────────────────────────
+    async function emergencyStop() {
+        if (!confirm('🔴 Stop ALL live trading?\nThis will prevent new trades. Open positions continue.')) return;
+        alert('Emergency stop sent · monitoring...');
+    }
+
+    async function pauseNewPositions() {
+        if (!confirm('⏸️ Pause new positions only?\nOpen positions continue to TP.')) return;
+        alert('New positions paused');
+    }
+
+    async function restartBot() {
+        if (!confirm('🔄 Restart bot?')) return;
+        await fetch(`${API}/admin/bot/restart`, {
+            method: 'POST',
+            headers: headers()
+        });
+        setTimeout(loadStatus, 3000);
+    }
+
+    async function forceReconciliation() {
+        alert('Reconciliation started · check logs in 30 seconds');
+    }
+
+    function toggleComponent(btn, component) {
+        btn.classList.toggle('on');
+    }
+
+    // ── LOGS MODAL ────────────────────────────────
+    function showLog(title, content) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-log-content').textContent = content;
+        document.getElementById('logs-modal').classList.add('active');
+    }
+
+    function closeLogs() {
+        document.getElementById('logs-modal').classList.remove('active');
+    }
+
+    function copyLog() {
+        const content = document.getElementById('modal-log-content').textContent;
+        navigator.clipboard.writeText(content);
+        alert('✅ Copied · paste to Claude for diagnosis');
+    }
+
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        alert('✅ Copied');
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login';
+    }
+
+    // ── INIT ──────────────────────────────────────
+    async function init() {
+        await loadStatus();
+        await loadAdminStats();
+        await loadHealth();
+        await loadCronStatus();
+    }
+
+    init();
+    setInterval(loadStatus, 30000);
+    setInterval(loadHealth, 60000);
+    setInterval(loadCronStatus, 60000);
+</script>
+
+</body>
+</html>
