@@ -17,14 +17,12 @@ DB_CONFIG = {
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 ADMIN_CHAT = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
 
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import telegram as tg
+
 def send_telegram(msg):
-    try:
-        requests.post(
-            f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
-            json={'chat_id': ADMIN_CHAT, 'text': msg, 'parse_mode': 'HTML'}
-        )
-    except Exception as e:
-        print(f'Telegram error: {e}')
+    tg.send_admin(msg)
 
 def aggregate_daily(conn):
     cur = conn.cursor()
