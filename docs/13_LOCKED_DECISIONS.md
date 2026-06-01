@@ -1269,3 +1269,55 @@ Trades per bot: 20 · Trades per coin: 3 · Gate: both
 → Any coin max 3 concurrent trades
 → Each coin's trades open sequentially via gate
 → Last opened = reference for next gate trigger
+
+## Feature Phasing — Final (LOCKED)
+
+### Phase 4 — Day 1 Hetzner (paper mode first)
+Must work:
+- User login (basic auth · admin only)
+- Add exchange (MEXC + KuCoin)
+- Create bot (basic wizard)
+- Paper trading loop (60s cycles)
+- Long DCA market orders (paper)
+- Smart queue (Loss% / USDT)
+- Trailing TP
+- Telegram notifications
+- Dashboard showing positions
+- 107 research bots launched
+- Daily cron (CoinGecko · CMC · classify · report)
+- Classification engine
+- Basic admin dashboard
+- Diagnostics auto-generated hourly
+
+Not in Phase 4:
+- Short DCA · Limit orders · Sequential gates
+- NOWPayments · Public registration
+- Virtual wallet UI · Full admin dashboard
+
+### Phase 4.5 — First Live Trade
+- After 7+ days paper stable
+- $1 test order on MEXC
+- Then KuCoin Long DCA live
+- Small amounts · monitor carefully
+
+### Phase 5 — After Live Stable
+- Short DCA (MEXC first)
+- Limit orders (entry + DCA)
+- Sequential trade gates
+- Virtual wallet UI
+- Full admin dashboard
+- Smart DCA entry methods proven
+
+### Phase 6 — Public Launch
+- NOWPayments integration
+- Public registration
+- Full authentication
+- Performance fees system
+- Reserve wallet payments
+- Marketing
+
+### Phase 7 — Scale
+- More exchanges
+- More features
+- Server upgrades
+- Referral system active
