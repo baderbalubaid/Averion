@@ -5,6 +5,7 @@ import redis
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
+import telegram as tg
 
 load_dotenv()
 
@@ -29,20 +30,7 @@ def get_redis():
 # ═══════════════════════════════
 # TELEGRAM
 # ═══════════════════════════════
-def send_telegram(chat_id, message):
-    import requests
-    try:
-        requests.post(
-            f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
-            json={'chat_id': chat_id, 'text': message},
-            timeout=10
-        )
-    except Exception as e:
-        print(f'Telegram error: {e}')
-
-def send_admin(message):
-    if ADMIN_CHAT:
-        send_telegram(ADMIN_CHAT, message)
+# Telegram handled by telegram.py module
 
 # ═══════════════════════════════
 # EXCHANGE INITIALIZATION
@@ -370,6 +358,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 method
             )
             print(f'✅ Position opened: {coin} #{pos_id}')
+            tg.notify_trade_open(user_id, coin, direction, result['price'], base_order, method, PAPER_MODE)
             break
 
 def check_gate_conditions(bot, coin, open_positions):
@@ -509,6 +498,7 @@ def run_cycle(r):
                         pos[2], pos[0], fee_amount, gross_profit
                     )
                     print(f'💰 TP closed: {pos[4]} profit: ${gross_profit:.2f} fee: ${fee_amount:.2f}')
+                    tg.notify_trade_closed(pos[2], pos[4], pos[5], float(pos[7] or 0), result.get('price', 0), gross_profit, fee_amount, pos[10], 'tp', PAPER_MODE)
 
                 # Promote gate reference
                 db.promote_gate_reference(pos[1], pos[4])
