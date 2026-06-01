@@ -17,14 +17,14 @@ DB_CONFIG = {
 
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 ADMIN_CHAT = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
+CMC_API_KEY = os.getenv('CMC_API_KEY', '')
 
-# Category boundaries (market cap in USD)
 CATEGORIES = {
-    'mega':  100_000_000_000,  # > $100B
-    'large': 10_000_000_000,   # $10B - $100B
-    'mid':   1_000_000_000,    # $1B - $10B
-    'small': 100_000_000,      # $100M - $1B
-    'micro': 0                 # < $100M
+    'mega':  100_000_000_000,
+    'large': 10_000_000_000,
+    'mid':   1_000_000_000,
+    'small': 100_000_000,
+    'micro': 0
 }
 
 def get_category(market_cap):
@@ -42,154 +42,185 @@ def get_category(market_cap):
 def apply_cap_protection(real_cap, previous_cap):
     if previous_cap is None:
         return real_cap
-    # Max +10% upward per day
-    max_upward = previous_cap * 1.10
-    # Full drop immediately
     if real_cap < previous_cap:
         return real_cap
-    # Cap upward movement
-    return min(real_cap, max_upward)
+    return min(real_cap, previous_cap * 1.10)
 
 def send_telegram(msg):
     try:
         requests.post(
             f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
-            json={'chat_id': ADMIN_CHAT, 'text': msg}
+            json={'chat_id': ADMIN_CHAT, 'text': msg},
+            timeout=10
         )
     except:
         pass
 
-def fetch_coingecko_page(page):
-    url = 'https://api.coingecko.com/api/v3/coins/markets'
-    params = {
-        'vs_currency': 'usd',
-        'order': 'market_cap_desc',
-        'per_page': 250,
-        'page': page,
-        'sparkline': False
-    }
-    try:
-        response = requests.get(url, params=params, timeout=30)
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 429:
-            print('Rate limited — waiting 60 seconds')
-            time.sleep(60)
-            return fetch_coingecko_page(page)
-        else:
-            print(f'CoinGecko error: {response.status_code}')
-            return []
-    except Exception as e:
-        print(f'CoinGecko fetch error: {e}')
-        return []
-
-def fetch_all_coins():
-    all_coins = []
+def fetch_coingecko():
+    print('Fetching CoinGecko...')
+    all_coins = {}
     page = 1
     while True:
-        print(f'Fetching CoinGecko page {page}...')
-        coins = fetch_coingecko_page(page)
-        if not coins:
+        try:
+            url = 'https://api.coingecko.com/api/v3/coins/markets'
+            params = {
+                'vs_currency': 'usd',
+                'order': 'market_cap_desc',
+                'per_page': 250,
+                'page': page,
+                'sparkline': False
+            }
+            r = requests.get(url, params=params, timeout=30)
+            if r.status_code == 429:
+                print('CoinGecko rate limit · waiting 60s')
+                time.sleep(60)
+                continue
+            if r.status_code != 200:
+                print(f'CoinGecko error: {r.status_code}')
+                break
+            coins = r.json()
+            if not coins:
+                break
+            for coin in coins:
+                symbol = coin.get('symbol', '').upper()
+                cap = coin.get('market_cap') or 0
+                if cap > 0:
+                    all_coins[symbol] = cap
+            print(f'CoinGecko page {page}: {len(coins)} coins')
+            page += 1
+            time.sleep(1.5)
+        except Exception as e:
+            print(f'CoinGecko fetch error: {e}')
             break
-        all_coins.extend(coins)
-        page += 1
-        time.sleep(1.5)
-    print(f'Total coins fetched: {len(all_coins)}')
+    print(f'CoinGecko total: {len(all_coins)} coins')
     return all_coins
 
-def get_previous_cap(cur, coin_id):
+def fetch_coinmarketcap():
+    if not CMC_API_KEY:
+        print('CMC API key not set · skipping')
+        return {}
+    print('Fetching CoinMarketCap...')
+    all_coins = {}
+    start = 1
+    limit = 5000
+    try:
+        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+        headers = {'X-CMC_PRO_API_KEY': CMC_API_KEY}
+        params = {
+            'start': start,
+            'limit': limit,
+            'convert': 'USD'
+        }
+        r = requests.get(url, headers=headers, params=params, timeout=30)
+        if r.status_code == 200:
+            data = r.json()
+            for coin in data.get('data', []):
+                symbol = coin.get('symbol', '').upper()
+                cap = coin.get('quote', {}).get('USD', {}).get('market_cap') or 0
+                if cap > 0:
+                    all_coins[symbol] = cap
+            print(f'CMC total: {len(all_coins)} coins')
+        else:
+            print(f'CMC error: {r.status_code}')
+    except Exception as e:
+        print(f'CMC fetch error: {e}')
+    return all_coins
+
+def get_previous_data(cur, coin_id):
     cur.execute("""
-        SELECT recorded_cap FROM coin_history
-        WHERE coin = %s
-        ORDER BY recorded_at DESC
-        LIMIT 1
+        SELECT recorded_cap, category FROM coin_history
+        WHERE coin = %s ORDER BY recorded_at DESC LIMIT 1
     """, (coin_id,))
     row = cur.fetchone()
-    return float(row[0]) if row else None
+    if row:
+        return float(row[0]), row[1]
+    return None, None
 
-def get_previous_category(cur, coin_id):
-    cur.execute("""
-        SELECT category FROM coin_history
-        WHERE coin = %s
-        ORDER BY recorded_at DESC
-        LIMIT 1
-    """, (coin_id,))
-    row = cur.fetchone()
-    return row[0] if row else None
-
-def classify_and_store(conn, coins):
+def classify_and_store(conn, cg_caps, cmc_caps):
     cur = conn.cursor()
-    reclassified = []
     now = datetime.utcnow()
+    reclassified = []
+    total = 0
 
-    for coin in coins:
-        coin_id = coin.get('symbol', '').upper()
-        real_cap = coin.get('market_cap') or 0
-        volume_24h = coin.get('total_volume') or 0
+    all_coins = set(list(cg_caps.keys()) + list(cmc_caps.keys()))
 
-        if real_cap <= 0:
+    for coin_id in all_coins:
+        cg_cap = cg_caps.get(coin_id)
+        cmc_cap = cmc_caps.get(coin_id)
+
+        # Average both sources
+        if cg_cap and cmc_cap:
+            real_cap = (cg_cap + cmc_cap) / 2
+            source = 'both'
+        elif cg_cap:
+            real_cap = cg_cap
+            source = 'coingecko'
+        elif cmc_cap:
+            real_cap = cmc_cap
+            source = 'cmc'
+        else:
             continue
 
-        previous_cap = get_previous_cap(cur, coin_id)
-        previous_category = get_previous_category(cur, coin_id)
-
+        previous_cap, previous_category = get_previous_data(cur, coin_id)
         recorded_cap = apply_cap_protection(real_cap, previous_cap)
         new_category = get_category(recorded_cap)
 
-        # Calculate confidence days
-        cur.execute("""
-            SELECT COUNT(DISTINCT DATE(recorded_at))
-            FROM coin_history WHERE coin = %s
-        """, (coin_id,))
-        confidence_days = cur.fetchone()[0] or 0
-
-        # Store in coin_history
         cur.execute("""
             INSERT INTO coin_history
-            (coin, real_cap, recorded_cap, category, volume_24h, confidence_days, recorded_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (coin_id, real_cap, recorded_cap, new_category, volume_24h, confidence_days, now))
+            (coin, real_cap, recorded_cap, category, recorded_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (coin_id, real_cap, recorded_cap, new_category, now))
 
-        # Check reclassification
         if previous_category and previous_category != new_category:
             reclassified.append({
                 'coin': coin_id,
                 'from': previous_category,
                 'to': new_category
             })
+        total += 1
 
     conn.commit()
 
-    # Alert reclassified coins
     if reclassified:
-        msg = f'⚠️ Reclassification Alert — {now.date()}\n\n'
+        msg = f'⚠️ Reclassification — {now.date()}\n\n'
         for r in reclassified:
             msg += f'{r["coin"]}: {r["from"]} → {r["to"]}\n'
         send_telegram(msg)
         print(msg)
 
-    return len(coins), len(reclassified)
-
-def fallback_from_last_recorded(conn):
-    print('⚠️ CoinGecko unavailable — using last recorded caps')
-    send_telegram('⚠️ CoinGecko failed — classification skipped today · using last recorded caps')
+    return total, len(reclassified)
 
 def main():
-    print(f'🔄 Classification started: {datetime.utcnow()}')
+    print(f'=== Classification started: {datetime.utcnow()} ===')
     conn = psycopg2.connect(**DB_CONFIG)
 
-    coins = fetch_all_coins()
+    # Fetch from both sources
+    cg_caps = fetch_coingecko()
+    cmc_caps = fetch_coinmarketcap()
 
-    if not coins:
-        fallback_from_last_recorded(conn)
+    # Fallback if both fail
+    if not cg_caps and not cmc_caps:
+        print('❌ Both sources failed · using last recorded caps')
+        send_telegram('⚠️ Classification failed — CoinGecko + CMC both unavailable · using last recorded caps')
         conn.close()
         return
 
-    total, reclassified = classify_and_store(conn, coins)
+    # Classify
+    total, reclassified = classify_and_store(conn, cg_caps, cmc_caps)
     conn.close()
 
-    print(f'✅ Classification complete: {total} coins · {reclassified} reclassified')
-    send_telegram(f'✅ Classification complete: {total} coins · {reclassified} reclassified')
+    # Summary
+    cg_status = f'✅ {len(cg_caps)} coins' if cg_caps else '❌ Failed'
+    cmc_status = f'✅ {len(cmc_caps)} coins' if cmc_caps else '❌ Failed'
+
+    summary = f"""✅ Classification complete — {datetime.utcnow().date()}
+CoinGecko: {cg_status}
+CoinMarketCap: {cmc_status}
+Total classified: {total} coins
+Reclassified: {reclassified} coins"""
+
+    print(summary)
+    send_telegram(summary)
 
 if __name__ == '__main__':
     main()
