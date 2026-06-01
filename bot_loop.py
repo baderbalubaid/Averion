@@ -48,40 +48,8 @@ def send_admin(message):
 # EXCHANGE INITIALIZATION
 # ═══════════════════════════════
 def init_exchange(exchange_row):
-    from cryptography.fernet import Fernet
-    fernet_key = os.getenv('FERNET_KEY')
-    f = Fernet(fernet_key.encode())
-
-    exc_id = exchange_row[0]
-    exc_name = exchange_row[2]
-    api_key_enc = exchange_row[3]
-    secret_enc = exchange_row[4]
-    passphrase_enc = exchange_row[5]
-
-    try:
-        api_key = f.decrypt(api_key_enc.encode()).decode()
-        secret = f.decrypt(secret_enc.encode()).decode()
-        passphrase = None
-        if passphrase_enc:
-            passphrase = f.decrypt(passphrase_enc.encode()).decode()
-
-        exchange_class = getattr(ccxt, exc_name)
-        config = {
-            'apiKey': api_key,
-            'secret': secret,
-            'enableRateLimit': True
-        }
-        if passphrase:
-            config['password'] = passphrase
-
-        return exchange_class(config)
-
-    except Exception as e:
-        print(f'Exchange init error {exc_name}: {e}')
-        db.pause_exchange(exc_id, str(e), 'api_error')
-        db.record_bot_event(None, None, 'exchange_error',
-                           exchange=exc_name, error_message=str(e))
-        return None
+    from exchanges import init_exchange as _init
+    return _init(exchange_row)
 
 # ═══════════════════════════════
 # PRICE FETCHING
