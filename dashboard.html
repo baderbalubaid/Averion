@@ -351,7 +351,15 @@ tr:hover td{background:#6366F106}
 <!-- ═══════════════════════════════════════ -->
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    function logout() {
+        localStorage.removeItem('averion_token');
+        localStorage.removeItem('averion_user_id');
+        localStorage.removeItem('averion_is_admin');
+        window.location.href = '/login';
+    }
+
+</script>
 </head>
 <body>
 
@@ -399,7 +407,8 @@ tr:hover td{background:#6366F106}
     <div class="topbar-left">
       <span class="page-title" id="pageTitle">Home</span>
     </div>
-    <div class="topbar-right">
+    <div class="topbar-right"
+        <button onclick="logout()" style="background:transparent;border:1px solid #2A2A45;color:#888;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;margin-left:8px;" onmouseover="this.style.borderColor='#F4645F';this.style.color='#F4645F'" onmouseout="this.style.borderColor='#2A2A45';this.style.color='#888'">Sign Out</button>>
       <div class="paper-chip">⚡ PAPER</div>
       <div class="live-ticker">
         <div class="ticker-dot"></div>
@@ -1744,6 +1753,14 @@ async function loadAll() {
 }
 loadAll();
 setInterval(loadAll, 15000);
+
+    function logout() {
+        localStorage.removeItem('averion_token');
+        localStorage.removeItem('averion_user_id');
+        localStorage.removeItem('averion_is_admin');
+        window.location.href = '/login';
+    }
+
 </script>
 </body>
 </html>
