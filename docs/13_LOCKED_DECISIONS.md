@@ -1185,3 +1185,32 @@ Admin dashboard toggle per component:
 
 Philosophy: nothing brings down entire platform
 Each piece fails gracefully · independently
+
+## Diagnostics Report System (LOCKED)
+
+- Auto-generated every hour
+- Pushed to GitHub automatically
+- Always latest at:
+  https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md
+
+Contains:
+- Auto-analysis with explanations (🔴🟡🟢)
+- 30 day system health table
+- 30 day cron performance table
+- 30 day bot events table
+- 30 day trade events table
+- Server upgrade guide
+
+Admin dashboard buttons:
+- [📋 Copy Markdown] → paste directly to Claude
+- [🔗 Copy URL] → Claude fetches from GitHub
+- [📥 Download] → save locally
+
+Rolling 30 days:
+- Day 31 automatically deleted
+- New day added automatically
+- No manual cleanup needed
+
+How to use with Claude:
+"Read this and diagnose:
+ https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md"
