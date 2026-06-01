@@ -1153,3 +1153,35 @@ Steps shown:
 
 All steps visible · all independently re-runnable
 No need to wait for next day if any step fails
+
+## Admin Dashboard Log Copy Button (LOCKED)
+
+- Every log output has [Copy] button
+- One click copies full log to clipboard
+- User pastes to Claude/ChatGPT for debugging
+- No screenshots needed · no typing errors
+- Applies to: cron logs · error logs · trade logs
+- Available in: admin dashboard · attention log
+
+## Standalone Component Architecture (LOCKED)
+
+Each component fails independently:
+- CoinGecko down → CMC covers · no platform impact
+- CMC down → CoinGecko covers · no platform impact
+- Both down → last recorded caps · Telegram alert
+- Telegram down → alerts queue in DB · retry hourly
+- Redis down → bot reads PostgreSQL directly (slower)
+- Backup fails → Telegram alert · bot continues
+- CCXT upgrade fails → stays on current version
+- Excel generation fails → Telegram alert · retry tomorrow
+
+Admin dashboard toggle per component:
+- [ON/OFF] CoinGecko integration
+- [ON/OFF] CMC integration
+- [ON/OFF] Telegram notifications
+- [ON/OFF] Excel report generation
+- [ON/OFF] GitHub metrics push
+- [ON/OFF] CCXT auto-upgrade
+
+Philosophy: nothing brings down entire platform
+Each piece fails gracefully · independently
