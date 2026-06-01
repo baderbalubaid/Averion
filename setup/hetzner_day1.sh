@@ -239,7 +239,7 @@ echo "✅ PM2 configured as $AVERION_USER user"
 # STEP 14 — Cron Jobs
 # ═══════════════════════════════
 echo "⏰ Step 14: Installing cron jobs..."
-(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 * * * * /home/$AVERION_USER/Averion/automation/health_check.sh >> /var/log/averion_health.log 2>&1") | crontab -u $AVERION_USER -
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 * * * * /home/$AVERION_USER/Averion/automation/health_check.sh >> /var/log/averion/health.log 2>&1") | crontab -u $AVERION_USER -
 (crontab -u $AVERION_USER -l 2>/dev/null; echo "0 3 * * * /home/$AVERION_USER/Averion/automation/daily_cron.sh >> /var/log/averion_daily.log 2>&1") | crontab -u $AVERION_USER -
 (crontab -u $AVERION_USER -l 2>/dev/null; echo "30 4 * * 0 /home/$AVERION_USER/Averion/automation/weekly_cron.sh >> /var/log/averion_weekly.log 2>&1") | crontab -u $AVERION_USER -
 echo "✅ Cron jobs installed for $AVERION_USER"
