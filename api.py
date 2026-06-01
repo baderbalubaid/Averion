@@ -757,3 +757,109 @@ def admin_health(payload: dict = Depends(require_admin)):
        'open_positions': r[7],
        'recorded_at': str(r[8])
    } for r in rows]
+
+# ═══════════════════════════════
+# AUTH — REGISTER / VERIFY
+# ═══════════════════════════════
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    referral_code: Optional[str] = None
+
+@app.post('/auth/register')
+def register(req: RegisterRequest, request: Request):
+    result, error = auth_module.register_user(
+        req.email, req.password, req.referral_code
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return result
+
+class VerifyRequest(BaseModel):
+    user_id: int
+    code: str
+
+@app.post('/auth/verify')
+def verify(req: VerifyRequest, request: Request):
+    ip = request.client.host
+    success = auth_module.verify_code(
+        req.user_id, req.code, ip
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid or expired code'
+        )
+    return {'message': 'Verified successfully'}
+
+@app.post('/auth/send-code')
+def send_code(payload: dict = Depends(verify_token)):
+    success = auth_module.send_verification(
+        payload['user_id']
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail='Telegram not connected'
+        )
+    return {'message': 'Code sent via Telegram'}
+
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str
+
+@app.post('/auth/change-password')
+def change_password(req: PasswordChange,
+                    request: Request,
+                    payload: dict = Depends(verify_token)):
+    success, message = auth_module.change_password(
+        payload['user_id'],
+        req.old_password,
+        req.new_password,
+        request.client.host
+    )
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return {'message': message}
+
+# ═══════════════════════════════
+# SUPPORTED EXCHANGES LIST
+# ═══════════════════════════════
+@app.get('/exchanges/supported')
+def get_supported_exchanges():
+    from exchanges import get_supported_exchanges
+    return get_supported_exchanges()
+
+# ═══════════════════════════════
+# ADMIN — SECURITY LOGS
+# ═══════════════════════════════
+@app.get('/admin/security-logs')
+def admin_security_logs(limit: int = 100,
+                         payload: dict = Depends(require_admin)):
+    logs = db.get_security_logs(limit=limit)
+    return [{'id': l[0], 'user_id': l[1],
+              'event': l[2], 'ip': l[3],
+              'details': l[4], 'time': str(l[5])}
+            for l in logs]
+
+# ═══════════════════════════════
+# TELEGRAM — CONNECT
+# ═══════════════════════════════
+@app.post('/telegram/connect')
+def connect_telegram(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    # Generate connect code for user
+    code = db.create_verification_code(user_id)
+    return {
+        'message': f'Send this code to @AverionBot: CONNECT-{code}',
+        'code': f'CONNECT-{code}',
+        'bot_username': 'AverionBot'
+    }
+
+@app.get('/telegram/status')
+def telegram_status(payload: dict = Depends(verify_token)):
+    user = db.get_user_by_id(payload['user_id'])
+    return {
+        'connected': bool(user[3]) if user else False,
+        'verified': bool(user[4]) if user else False
+    }
