@@ -596,3 +596,31 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS is_gate_reference BOOLEAN DEFAULT
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS coin_trade_number INTEGER DEFAULT 1;
 
 SELECT 'Multi-trade gate and limit order columns added!' AS result;
+
+-- Gate reference tracking
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS gate_reference_since TIMESTAMP;
+
+-- Pending limit orders
+CREATE TABLE IF NOT EXISTS pending_limit_orders (
+    id SERIAL PRIMARY KEY,
+    position_id INTEGER REFERENCES positions(id),
+    bot_id INTEGER REFERENCES bots(id),
+    exchange_id INTEGER REFERENCES exchanges(id),
+    order_type VARCHAR(20) NOT NULL,
+    exchange_order_id VARCHAR(100) UNIQUE,
+    original_quantity DECIMAL(20,8) NOT NULL,
+    filled_quantity DECIMAL(20,8) DEFAULT 0,
+    remaining_quantity DECIMAL(20,8),
+    limit_price DECIMAL(20,8) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    placed_at TIMESTAMP DEFAULT NOW(),
+    filled_at TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    last_checked TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_limit_orders_status ON pending_limit_orders(status, exchange_id);
+CREATE INDEX IF NOT EXISTS idx_pending_limit_orders_position ON pending_limit_orders(position_id);
+
+SELECT 'Final v6 fixes applied!' AS result;
