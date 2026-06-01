@@ -1069,3 +1069,59 @@ All limit orders checked every hour:
 - Default wallet created automatically per exchange
 - User can create named wallets anytime
 - No migration needed later
+
+## Daily Cron Schedule — Final (LOCKED)
+
+03:00 — Infrastructure
+- pip install ccxt safe upgrade (test then apply)
+- pm2 restart averion
+- PostgreSQL backup → /backups/averion_YYYY-MM-DD.sql
+- Keep last 7 days · delete older
+- Telegram admin: "Daily maintenance started"
+
+03:30 — CoinGecko Fetch
+- Fetch all coins market caps (250 per call · dynamic)
+- Store raw caps in coin_history (source: coingecko)
+- No classification yet · raw data only
+
+04:00 — CoinMarketCap Fetch
+- Fetch all coins market caps from CMC API
+- Store raw caps in coin_history (source: cmc)
+- No classification yet · raw data only
+
+04:30 — Classification
+- Average: recorded_cap = (CoinGecko + CMC) / 2
+- If only one source: use that source
+- If both fail: use last recorded · Telegram alert
+- Apply cap protection formula
+- Classify all coins into categories
+- Reclassify changed coins · Telegram alert per change
+- Update coin_history with final recorded_cap + category
+
+05:00 — Reporting
+- Generate Excel report (9 sheets · fresh classification)
+- Update metrics/latest.json → push to GitHub
+- Send daily Telegram to admin (health + stats)
+- Send daily Telegram to each customer (their summary)
+- Save report to /reports/ folder
+
+05:30 — Sunday Only
+- DB VACUUM + ANALYZE
+- Delete logs older than 30 days
+- Delete Excel reports older than 30 days
+- Disk space check → alert if >70%
+- Weekly Telegram summary (profit + fees + rankings)
+- Check CCXT version → safe upgrade if available
+
+## Dashboard vs Cron (LOCKED)
+
+Dashboard: live data · updates every 60 seconds
+- Prices from Redis (updated every 60s from exchanges)
+- Positions from PostgreSQL (updated after every trade)
+- P&L calculated live · always accurate
+- No dependency on cron schedule
+
+Cron: daily batch processing at 3am-5:30am
+- Classification · reports · maintenance
+- Does NOT affect dashboard live accuracy
+- Two completely independent systems
