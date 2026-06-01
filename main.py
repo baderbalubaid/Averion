@@ -1,143 +1,248 @@
-import ccxt
+import os
 import time
+import psycopg2
+import redis
+import ccxt
 from datetime import datetime
-from database import get_db, init_db
-from dca_logic import calc_new_average, should_take_profit, calc_quantity
-from config import *
+from dotenv import load_dotenv
 
-exchange = ccxt.mexc({'enableRateLimit': True})
+load_dotenv()
 
-def get_all_coins():
+# ═══════════════════════════════
+# CONFIGURATION
+# ═══════════════════════════════
+PAPER_MODE = os.getenv('PAPER_MODE', 'true').lower() == 'true'
+MAX_COINS = os.getenv('MAX_COINS')
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432),
+    'dbname': os.getenv('DB_NAME', 'averion'),
+    'user': os.getenv('DB_USER', 'averion'),
+    'password': os.getenv('DB_PASSWORD')
+}
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+ADMIN_CHAT = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
+
+# ═══════════════════════════════
+# STARTUP ASSERTIONS
+# ═══════════════════════════════
+def check_assertions():
+    if MAX_COINS and not PAPER_MODE:
+        raise Exception(
+            "CRITICAL: Remove MAX_COINS before going live! "
+            "MAX_COINS is for Replit only."
+        )
+    print(f"✅ Mode: {'PAPER' if PAPER_MODE else 'LIVE'}")
+    print(f"✅ Assertions passed")
+
+# ═══════════════════════════════
+# WAIT FOR POSTGRESQL
+# ═══════════════════════════════
+def wait_for_postgresql():
+    print("⏳ Waiting for PostgreSQL...")
+    attempts = 0
+    max_attempts = 12  # 60 seconds total
+    while attempts < max_attempts:
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            conn.close()
+            print("✅ PostgreSQL ready")
+            return True
+        except Exception as e:
+            attempts += 1
+            print(f"PostgreSQL not ready ({attempts}/{max_attempts}): {e}")
+            time.sleep(5)
+    raise Exception("❌ PostgreSQL not available after 60 seconds · exiting")
+
+# ═══════════════════════════════
+# WAIT FOR REDIS
+# ═══════════════════════════════
+def wait_for_redis():
+    print("⏳ Waiting for Redis...")
+    attempts = 0
+    max_attempts = 10  # 30 seconds total
+    while attempts < max_attempts:
+        try:
+            r = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                password=REDIS_PASSWORD,
+                decode_responses=True
+            )
+            r.ping()
+            print("✅ Redis ready")
+            return r
+        except Exception as e:
+            attempts += 1
+            print(f"Redis not ready ({attempts}/{max_attempts}): {e}")
+            time.sleep(3)
+    raise Exception("❌ Redis not available after 30 seconds · exiting")
+
+# ═══════════════════════════════
+# UNCONFIRMED ORDER RECONCILIATION
+# ═══════════════════════════════
+def reconcile_orders():
+    print("🔄 Running startup reconciliation...")
     try:
-        markets = exchange.load_markets()
-        coins = [
-            symbol for symbol, market in markets.items()
-            if symbol.endswith('/USDT')
-            and market.get('active', True)
-            and market.get('spot', True)
-        ]
-        coins = coins[:100]
-        print(f"Found {len(coins)} coins on MEXC")
-        return coins
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+        # Get all active exchanges
+        cur.execute("""
+            SELECT id, exchange, api_key_enc, secret_enc, passphrase_enc
+            FROM exchanges
+            WHERE active = TRUE AND paused_at IS NULL
+        """)
+        exchanges = cur.fetchall()
+
+        for exc in exchanges:
+            exc_id, exc_name, api_key, secret, passphrase = exc
+            try:
+                # Initialize CCXT exchange
+                exchange_class = getattr(ccxt, exc_name)
+                config = {
+                    'apiKey': api_key,
+                    'secret': secret
+                }
+                if passphrase:
+                    config['password'] = passphrase
+
+                exchange = exchange_class(config)
+
+                # Fetch last 100 orders
+                orders = exchange.fetch_orders(limit=100)
+
+                for order in orders:
+                    order_id = order.get('id')
+                    if not order_id:
+                        continue
+
+                    # Check if order exists in DB
+                    cur.execute("""
+                        SELECT id FROM trades
+                        WHERE exchange_order_id = %s
+                    """, (order_id,))
+
+                    if not cur.fetchone():
+                        # Order on exchange but not in DB
+                        print(f"⚠️ Missing order found: {order_id} on {exc_name}")
+                        cur.execute("""
+                            INSERT INTO trades (
+                                exchange_id, coin, side, price,
+                                quantity, usdt_amount, order_type,
+                                exchange_order_id, timestamp, is_paper
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE)
+                        """, (
+                            exc_id,
+                            order.get('symbol', '').replace('/USDT', ''),
+                            order.get('side'),
+                            order.get('price') or 0,
+                            order.get('filled') or 0,
+                            order.get('cost') or 0,
+                            order.get('type'),
+                            order_id,
+                            datetime.utcnow()
+                        ))
+                        print(f"✅ Reconciled: {order_id}")
+
+                conn.commit()
+                print(f"✅ Reconciliation complete for {exc_name}")
+
+            except Exception as e:
+                print(f"⚠️ Reconciliation skipped for {exc_name}: {e}")
+                continue
+
+        conn.close()
+        print("✅ Startup reconciliation complete")
+
     except Exception as e:
-        print(f"Error fetching coins: {e}")
-        return ["BTC/USDT", "ETH/USDT", "XRP/USDT"]
+        print(f"⚠️ Reconciliation error: {e} · continuing anyway")
 
-def get_price(coin):
-    ticker = exchange.fetch_ticker(coin)
-    return ticker['last']
+# ═══════════════════════════════
+# SEND TELEGRAM
+# ═══════════════════════════════
+def send_telegram(msg):
+    try:
+        import requests
+        requests.post(
+            f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage',
+            json={'chat_id': ADMIN_CHAT, 'text': msg},
+            timeout=10
+        )
+    except:
+        pass
 
-def open_position(coin, price):
-    quantity = calc_quantity(BASE_ORDER_USDT, price)
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''INSERT INTO positions 
-                 (coin, avg_cost, quantity, total_invested, dca_count, last_buy_price)
-                 VALUES (?, ?, ?, ?, 0, ?)''',
-              (coin, price, quantity, BASE_ORDER_USDT, price))
-    position_id = c.lastrowid
-    c.execute('''INSERT INTO trades 
-                 (position_id, side, price, quantity, usdt_amount, reason, paper)
-                 VALUES (?, 'buy', ?, ?, ?, 'open', ?)''',
-              (position_id, price, quantity, BASE_ORDER_USDT, 1 if PAPER_MODE else 0))
-    conn.commit()
-    conn.close()
-    print(f"[{datetime.now()}] OPEN {coin}: {quantity:.6f} @ ${price}")
-    return position_id
+# ═══════════════════════════════
+# MAIN BOT LOOP
+# ═══════════════════════════════
+def bot_loop(redis_client):
+    print("🚀 Bot loop starting...")
+    send_telegram(f"🚀 Averion started · {'PAPER' if PAPER_MODE else 'LIVE'} mode · {datetime.utcnow()}")
 
-def dca_position(position, price):
-    dca_num = position['dca_count'] + 1
-    size = BASE_ORDER_USDT * (SIZE_MULTIPLIER ** dca_num)
-    quantity = calc_quantity(size, price)
-    new_total = position['total_invested'] + size
-    new_qty = position['quantity'] + quantity
-    new_avg = calc_new_average(new_total, new_qty)
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''UPDATE positions SET avg_cost=?, quantity=?,
-                 total_invested=?, dca_count=dca_count+1,
-                 last_buy_price=? WHERE id=?''',
-              (new_avg, new_qty, new_total, price, position['id']))
-    c.execute('''INSERT INTO trades
-                 (position_id, side, price, quantity, usdt_amount, reason, paper)
-                 VALUES (?, 'buy', ?, ?, ?, 'dca', ?)''',
-              (position['id'], price, quantity, size, 1 if PAPER_MODE else 0))
-    conn.commit()
-    conn.close()
-    print(f"[{datetime.now()}] DCA #{dca_num} {position['coin']} @ ${price} | New Avg: ${new_avg:.6f}")
-
-def close_position(position, price):
-    profit = (price - position['avg_cost']) * position['quantity']
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''UPDATE positions SET status='closed', closed_at=CURRENT_TIMESTAMP
-                 WHERE id=?''', (position['id'],))
-    c.execute('''INSERT INTO trades
-                 (position_id, side, price, quantity, usdt_amount, reason, paper)
-                 VALUES (?, 'sell', ?, ?, ?, 'tp', ?)''',
-              (position['id'], price, position['quantity'],
-               position['quantity'] * price, 1 if PAPER_MODE else 0))
-    conn.commit()
-    conn.close()
-    print(f"[{datetime.now()}] TP {position['coin']} @ ${price} | Profit: ${profit:.4f}")
-
-def get_open_position(coin):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM positions WHERE status='open' AND coin=? LIMIT 1", (coin,))
-    pos = c.fetchone()
-    conn.close()
-    return pos
-
-def run_bot():
-    init_db()
-    print("Averion Bot Started!")
-    print(f"Mode: {'PAPER' if PAPER_MODE else 'LIVE'}")
-    print("Fetching all coins from MEXC...")
-    print("-" * 50)
-
-    trailing_highs = {}
-
+    cycle = 0
     while True:
         try:
-            coins = get_all_coins()
-            print(f"Trading {len(coins)} coins...")
+            cycle += 1
+            start = time.time()
 
-            for coin in coins:
-                try:
-                    price = get_price(coin)
-                    position = get_open_position(coin)
+            # TODO: implement full trading loop on Hetzner
+            # 1. Fetch live prices → store in Redis
+            # 2. Check ST flags
+            # 3. Check TP triggers
+            # 4. Run smart queue → execute DCA
+            # 5. Check standby orders
+            # 6. Check limit orders (Short DCA)
 
-                    if position is None:
-                        open_position(coin, price)
-                        trailing_highs[coin] = None
-                    else:
-                        last_buy = position['last_buy_price'] or position['avg_cost']
-                        dca_count = position['dca_count']
-                        spacing = DCA_PERCENT * (SPACING_MULTIPLIER ** dca_count)
-                        trigger = last_buy * (1 - spacing / 100)
+            elapsed = time.time() - start
+            print(f"Cycle {cycle} complete in {elapsed:.2f}s")
 
-                        if price <= trigger:
-                            if MAX_DCA_ORDERS == 0 or dca_count < MAX_DCA_ORDERS:
-                                dca_position(position, price)
+            # Store loop health in Redis
+            redis_client.setex('bot:last_cycle', 120, str(datetime.utcnow()))
+            redis_client.setex('bot:cycle_time', 120, str(round(elapsed, 2)))
+            redis_client.setex('bot:status', 120, 'running')
 
-                        if should_take_profit(position['avg_cost'], price, TAKE_PROFIT_PERCENT):
-                            if trailing_highs.get(coin) is None or price > trailing_highs[coin]:
-                                trailing_highs[coin] = price
-                            trail_trigger = trailing_highs[coin] * (1 - TRAILING_PERCENT / 100)
-                            if price <= trail_trigger:
-                                close_position(position, price)
-                                trailing_highs[coin] = None
+            # Sleep remainder of 60 seconds
+            sleep_time = max(0, 60 - elapsed)
+            time.sleep(sleep_time)
 
-                except Exception as e:
-                    print(f"Error on {coin}: {e}")
-                    continue
-
+        except KeyboardInterrupt:
+            print("🛑 Bot stopped manually")
+            send_telegram("🛑 Averion stopped manually")
+            break
         except Exception as e:
-            print(f"Bot error: {e}")
+            print(f"❌ Loop error: {e}")
+            redis_client.setex('bot:status', 120, f'error: {e}')
+            time.sleep(10)
 
-        print(f"Cycle complete. Waiting {CHECK_INTERVAL}s...")
-        time.sleep(CHECK_INTERVAL)
+# ═══════════════════════════════
+# STARTUP SEQUENCE
+# ═══════════════════════════════
+if __name__ == '__main__':
+    print("=" * 50)
+    print("AVERION — Adaptive DCA Trading Bot")
+    print(f"Starting: {datetime.utcnow()}")
+    print("=" * 50)
 
-if __name__ == "__main__":
-    run_bot()
+    try:
+        # Step 1: Assertions
+        check_assertions()
+
+        # Step 2: Wait for PostgreSQL
+        wait_for_postgresql()
+
+        # Step 3: Wait for Redis
+        redis_client = wait_for_redis()
+
+        # Step 4: Reconcile orders
+        reconcile_orders()
+
+        # Step 5: Start bot loop
+        bot_loop(redis_client)
+
+    except Exception as e:
+        print(f"❌ FATAL: {e}")
+        send_telegram(f"❌ Averion failed to start: {e}")
+        exit(1)
