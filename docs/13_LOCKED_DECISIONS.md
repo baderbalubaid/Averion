@@ -1411,9 +1411,9 @@ Phase 7 public launch: add FastAPI middleware
   4. Enter code → verified → go to dashboard
   5. Cannot access dashboard until verified
 
-- Email service: SendGrid free tier (100/day)
-- Setup needed: sendgrid.com account + API key
-- Add to .env: SENDGRID_API_KEY · SENDER_EMAIL
+- Email service: Resend free tier (3,000/month forever)
+- Setup needed: resend.com account + API key
+- Add to .env: RESEND_API_KEY · SENDER_EMAIL
 - Columns already in schema: email_verified · email_verify_code
 - Implement when averion.app domain is ready (Day 2)
 - Sender email: noreply@averion.app
