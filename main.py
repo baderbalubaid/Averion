@@ -188,13 +188,8 @@ def bot_loop(redis_client):
             cycle += 1
             start = time.time()
 
-            # TODO: implement full trading loop on Hetzner
-            # 1. Fetch live prices → store in Redis
-            # 2. Check ST flags
-            # 3. Check TP triggers
-            # 4. Run smart queue → execute DCA
-            # 5. Check standby orders
-            # 6. Check limit orders (Short DCA)
+            from bot_loop import run_cycle
+            run_cycle(redis_client)
 
             elapsed = time.time() - start
             print(f"Cycle {cycle} complete in {elapsed:.2f}s")
