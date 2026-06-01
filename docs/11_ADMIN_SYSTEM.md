@@ -143,3 +143,90 @@ Admin receives ALL alerts in Alerts channel:
 Never share admin URL.
 Never hardcode admin URL in any file.
 Only in .env which is gitignored.
+
+## Admin Dashboard — Final Design (LOCKED)
+
+### Design Philosophy
+- Telegram handles real-time alerts instantly
+- Dashboard = morning 60-second review
+- Most critical info visible without scrolling
+- Server health collapsed by default (Telegram alerts if critical)
+- Everything changeable — layout never hardcoded
+
+### Single Page + Tabs Structure
+
+#### TOP BAR (always visible · never scrolls)
+One line shows everything is fine or not:
+🟢 BOT RUNNING · Cycle 4521 · 1.8s ago
+🔴 BOT STOPPED · Last seen 14 minutes ago
+
+#### SECTION 1 — Active Alerts
+Only shows when something needs attention
+Empty = everything fine (show: "✅ All systems normal")
+Examples:
+- 🔴 Exchange MEXC paused — User #3 [View]
+- 🔴 Bot crashed at 14:23 — auto-restarted [Logs]
+- 🟡 User #5 reserve low — $2.30 [View]
+- 🟡 API key expiring — User #7 in 3 days [View]
+- 🟢 CCXT upgraded 4.5.56 → 4.5.57
+
+#### SECTION 2 — Yesterday Summary
+- Trades closed · Fees collected · New users
+- Owner wallet balance · [Transfer to Wallet] button
+
+#### SECTION 3 — Cron Status
+Compact row — click to expand + re-run:
+03:00 ✅ · 03:30 ✅ · 04:00 ❌ · 04:30 ⚠️ · 05:00 —
+Click any step → expand → [Re-run] [Logs] [Copy]
+
+#### SECTION 4 — Server Health (collapsed by default)
+CPU · RAM · Disk · Uptime
+Expand only when needed
+Telegram already alerts if threshold crossed
+[▼ Show Server Health]
+
+### Tabs (for detail)
+
+Tab 1 — Users
+- Table: ID · email · bots · open trades
+  · profit · fees · reserve · consumption · status
+- Sortable by any column
+- Search by email or ID
+- Click row → expand:
+  · Exchanges + status
+  · Active bots
+  · Recent trades
+  · Server consumption % estimate
+
+Tab 2 — Cron Logs
+- Full log per step with [Copy] button
+- Re-run any step independently
+- Historical runs (last 7 days)
+
+Tab 3 — Platform Stats
+- Total users · bots · positions
+- Total capital under management
+- Total profit all time
+- Total fees · owner wallet
+- Simple charts: profit · fees · growth
+
+Tab 4 — Coin Categories
+- 5 categories with settings
+- Edit spacing · multiplier · min · max inline
+- Last classification timestamp
+- Recent reclassifications
+
+Tab 5 — Controls
+- Component toggles (CoinGecko · CMC · Telegram etc)
+- Emergency: [STOP ALL LIVE TRADING]
+- Emergency: [PAUSE NEW POSITIONS]
+- [RESTART BOT]
+- Backup status · CCXT version
+
+### Key Principles
+- Alerts section empty = platform healthy
+- Server health = Telegram's job · not dashboard's
+- Everything built in separate components
+- Layout changeable without touching logic
+- [Copy] on every log · every error
+- No hardcoded values · all from DB/Redis
