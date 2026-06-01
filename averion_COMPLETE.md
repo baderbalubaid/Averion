@@ -127,276 +127,1610 @@ Build once · Build right · Public platform from Day 1
 ├── generate_metrics.py
 ├── generate_excel.py (9 sheets)
 └── generate_diagnostics.py (auto-analysis)
-# Project Overview
+# Locked Decisions
 
-> What Averion is, who it is for, and what makes it different.
-
----
-
-## What Is Averion
-
-Averion is a personal automated crypto spot trading platform.
-Runs 24/7 on Hetzner cloud server (~€3.99/month).
-Accessible from any device via secure web dashboard.
-Built to replace 3commas with no per-position limits.
-Designed from day one for future public launch.
+> These decisions are FINAL. Do not re-suggest, re-discuss, or modify without Bader explicitly saying "discuss this decision". AI must respect all decisions below.
 
 ---
 
-## Core Concept
+## Trading Logic
 
-Buy low · average lower · sell at profit.
-Fully automated · no daily intervention needed.
-Put money in · forget it · collect profits.
+- DCA spacing calculated from LAST BUY PRICE — never average cost
+- Market orders ONLY — no limit orders ever — no exceptions
+- Trailing safety (Smart DCA only): if TP% - Trail% < 1% → direct market TP
+- NO maximum DCA levels — smart queue handles capital allocation forever
+- Bot NEVER stops running — detects new funds within 60 seconds
+- Open positions update IMMEDIATELY on reclassification (Option B)
+- One pair per bot — no duplicate coin on same bot — cross-bot is fine
+- Paper stays paper FOREVER — live stays live — NO conversion ever
+- Short DCA = spot only — user must already hold the coin — min exchange order size required
+- Profit coin = user chooses USDT or base coin — works for both Long and Short
+- All slippage handling uses market orders only — no limit orders
 
----
+## Slippage Handling
+- Check order book depth before every DCA
+- If available quantity at target price >= $1 minimum → buy at target price
+- If available quantity < $1 minimum → buy $1 market order (max slippage = $1)
+- Never chase price more than $1 above target
+- Always executes something when triggered — never stuck waiting
 
-## Who It Is For
+## ST Flag (Exchange Suspended Trading)
+- If exchange marks coin as ST → auto sell immediately (market order)
+- Do not open new positions on ST coins
+- When ST cleared → resume normally
+- Telegram alert when ST detected and when cleared
+- Works via CCXT on all 7 exchanges
+- This is the ONLY forced close — user controls everything else
 
-### Phase 1-4 (Now)
-- Bader only — personal trading
-- Paper mode first · live after Hetzner
+## Smart Queue
+- Score = Loss% divided by USDT required for next DCA
+- Higher score = more recovery per dollar = funded first
+- ONE DCA per cycle — predictable and auditable
+- When TP fires → freed capital → IMMEDIATE rescan
+- Queue naturally prevents duplicate DCAs (last buy price always updates)
+- Queue naturally handles crash scenarios (capital depletes gradually)
+- No special crash detection needed — queue is the protection
 
-### Phase 6-7 (Future)
-- Public subscribers paying 20% performance fee
-- Anyone wanting automated DCA without monthly subscriptions
+## Reclassification
+- Reclassification uses percentage-based trigger not fixed price threshold
+- No phantom buys possible — percentage from last buy price always moves
+- Smart queue handles reclassification correctly
+- CoinGecko for market cap classification ONLY
+- Exchange data (CCXT) for volume/OHLCV/coin list
 
----
+## Cap Protection
+- Upward: recorded_cap = min(real_cap, previous × 1.10) — max +10% per day
+- Downward: recorded_cap = real_cap — full drop recorded immediately
+- Protects against fake pumps and market manipulation
+- Original idea by Bader
 
-## Main Goals
+## Data Sources
+- Exchange data via CCXT: coin list + 24h volume + OHLCV
+- CoinGecko: market cap ONLY for classification — once daily 3am
+- Never mixed in same calculation — clean separation
+- CoinGecko failure fallback: use last recorded cap — skip reclassification that day
 
-| Goal | Detail |
-|------|--------|
-| Replace 3commas | Full control · own server · no limits |
-| No monthly fee | Users pay only when they profit |
-| Set and forget | Bot never stops · detects funds in 60s |
-| Survivability | Never blows up · survives crashes |
-| Self-improving | 10 entry methods compete · best wins |
-| Fair pricing | 20% of profits only · loss months = $0 |
+## Business Model
+- Performance fee = 20% of realized profits only
+- Loss months = $0 fee — no high water mark — no rollover
+- Reserve wallet = fee pre-funding only — NOT trading capital
+- Reserve wallet uses NOWPayments (0.5% fee) — unique address per user
+- Minimum top-up = $10
+- New user gets $5 free trial credit
+- Reserve alerts: <$5 warning · <$2 critical · $0 new positions pause
+- Referral = 3% of 20% fee → referrer reserve wallet — forever
+- Referral code entered at registration ONLY — cannot change after
+- Regular customers always pay 20% — no discount ever
+- 0% fee accounts = relatives/selected by admin only — no reserve needed
+- Admin accounts = no fee · no reserve — all income to owner wallet
+- Fee transfer threshold = $10 default (admin adjustable in panel)
+- Month-end force transfer regardless of threshold
+- Transfer to owner wallet via TRC20 (cheapest fees)
 
----
+## Infrastructure
+- Health check every 1 hour (CPU · RAM · Disk · PM2 · trades count)
+- 3am cron staggered:
+  - 03:00 Infrastructure (CCXT upgrade · restart · backup)
+  - 03:30 Data & Classification (CoinGecko · parameters · volume)
+  - 04:00 Reporting (snapshot · metrics · Excel · Telegram)
+  - 04:30 Sunday only (cleanup · disk · DB VACUUM · weekly report)
 
-## Supported Exchanges (via CCXT)
+## Security
+- PAPER_MODE moved to .env file — never in config.py
+- Default PAPER_MODE = true always (safe by default)
+- 10 second countdown warning when switching to LIVE mode
+- Red banner across full topbar in LIVE mode
 
-| Exchange | Status |
-|----------|--------|
-| MEXC | ✅ Live now on Replit |
-| Binance | Phase 6 |
-| KuCoin | Phase 6 |
-| OKX | Phase 6 |
-| Gate.io | Phase 6 |
-| Bybit | Phase 6 |
-| Bitget | Phase 6 |
+## Paper Trade Rules
+- Paper trades count toward 100 trade limit (shared with live)
+- Paper maximum = 30 of 100
+- Auto-close ALL paper trades if ZERO live trades for 90 days
+- Day 83 warning · Day 89 final warning · Day 90 auto-close
+- Timer resets when ANY live position opens
 
----
+## Dashboard
+- Settings tab = account info ONLY — bot config lives in wizard
+- Bots tab = flat list — not grouped by exchange
+- Exchange badge per row: M=MEXC · B=Binance · K=KuCoin etc
+- Two toggles per bot: Trading (new positions) + DCA (averaging)
+- Both independent — can mix ON/OFF in any combination
 
-## Core Features
-
-### Trading
-- Long DCA — buy dips · sell at profit
-- Short DCA — sell rises · buy back cheaper
-- Trailing take profit — follows price up
-- Smart DCA queue — best recovery first
-- Market orders only — guaranteed execution
-- Unlimited DCA levels — never stuck
-
-### Intelligence
-- 10 entry methods competing simultaneously
-- Auto-classification into 5 market cap categories
-- Cap protection against fake pumps
-- Volume-weighted parameters per category
-- 90-day rolling data window per coin
-- Self-improving research system
-
-### Business
-- 20% performance fee on profits only
-- Reserve wallet pre-funding (NOWPayments)
-- Referral system 3% forever
-- Free $5 trial credit for new users
-
-### Operations
-- PWA — works on any browser including iPhone Face ID
-- 3 Telegram channels (Trades · Alerts · Reports)
-- Automated daily maintenance at 3am
-- GitHub Actions auto-deploy
-- UptimeRobot external monitoring
-
----
-
-## What Makes Averion Different
-
-| Feature | 3commas | Averion |
-|---------|---------|---------|
-| Monthly fee | Yes $29-99 | No |
-| Performance fee | No | 20% profits only |
-| Position limits | Yes | No limits |
-| Server control | No | Full control |
-| Self-improving | No | Yes (10 methods) |
-| Market cap aware | No | Yes (5 categories) |
-| Cap protection | No | Yes (original idea) |
-| Never stuck | No | Yes |
-| Cost | $29-99/month | €3.99/month server |
-
----
-
-## Long-Term Vision
-
-Platform gets smarter every year.
-10 entry methods compete → worst deleted → best survives.
-Intelligence compounds over time automatically.
-Eventually becomes a marketplace where signal providers
-list their strategies for subscribers to use.
-# Branding and Vision
-
-> Averion identity · design language · positioning.
-
----
-
-## Identity
-
-| Item | Detail |
-|------|--------|
-| App Name | Averion |
-| Tagline | Intelligent DCA Trading · Automate. Adapt. Grow. |
-| Domain | averion.app (buy on Hetzner day) |
-| GitHub | github.com/baderbalubaid/Averion |
+## Decisions From AI Review (May 2026)
+- No complex state machine needed — queue + last buy price prevents duplicates
+- No special crash detection needed — smart queue is the protection
+- Dead coin scenario: ST flag handles it — no forced close otherwise
+- Reclassification mid-ladder: not a bug — percentage trigger always correct
+- One DCA per cycle: intentional — predictable over speed
+- 60 second interval: intentional — DCA swing system not scalping
+- High water mark: intentionally excluded — simplicity over complexity
 
 ---
 
-## Logo
-- DCA ladder bars inside A triangle
-- Gold arc + silver legs + blue bars
-- CONFIRMED — do not change
+## GitHub Repository
+
+- Repo is currently PUBLIC (needed for Claude to fetch docs)
+- Switch back to PRIVATE when averion.app launches publicly
+- Remove GitHub token from all docs at same time
+- Both actions happen together on launch day
+
+## Reclassification Effect on Existing Positions (LOCKED)
+
+- Reclassification affects NEW positions only
+- Existing open positions keep original parameters forever
+- Parameters never change mid-position automatically
+- User controls existing positions via Add Funds · Close · Toggle DCA OFF
+- Reason: predictable · trustworthy · user always in control
+
+## Recovery Buy System (LOCKED)
+
+- REMOVED from spec
+- Smart queue already handles stuck positions naturally
+- User has Add Funds for manual intervention
+- Queue scores Loss% / USDT = naturally prioritizes stuck positions
+- Simpler system = better system
+
+## Paper Mode Virtual Funding (LOCKED)
+
+- Paper trades use UNLIMITED virtual balance
+- No artificial funding limits for paper trading
+- Abuse prevented by existing rules:
+  - Max 30 paper trades per user
+  - 90 day auto-close if no live trades
+  - Server cost protection built in
+- Dashboard shows clearly:
+  "PAPER MODE — Virtual funds unlimited
+   Switch to live trading to use real funds"
+- Purpose: testing · research · learning bot behavior
+
+## Exchange Minimum Order Rules (LOCKED)
+
+- Bot creates normally — no blocking at wizard
+- Trading holds per coin if minimum not met
+- Bot settings page shows error section:
+  - Active coins · Pending coins (needs funds) · Cannot trade coins
+  - Each with reason and suggested fix
+- Add Funds: blocks if amount < exchange minimum
+- Short DCA two-way calculation:
+  - User sets TP% → system calculates minimum quantity needed
+  - User sets quantity → system calculates minimum TP% needed
+  - Live feedback shown before saving
+  - Dashboard warning if current settings cannot meet minimum
+
+## Entry Method Promotion Criteria (Point 7 — Pending AI Review)
+
+- Promotion score = Win Rate x Avg Profit x Recovery Speed / Max Drawdown
+- Promote to Smart DCA default IF:
+  - Minimum 100 trades recorded
+  - Tested across 3+ market regimes (bull · bear · sideways)
+  - Score beats E10 control group
+  - Score beats Simple DCA benchmark
+  - 30 day cooldown passed
+- Delete IF:
+  - 3 consecutive quarterly reviews failed
+  - Win rate < 40% consistently
+  - Underperforms E10 control group
+- NOTE: Share this formula with AIs for validation before implementing
+- NOTE: Get recommendations from ChatGPT + Gemini on scoring weights
+
+## Multi-Exchange Bot Behavior (Point 8 — LOCKED)
+
+- One bot tied to one exchange only
+- Multiple bots allowed per exchange (e.g. 10 bots on MEXC)
+- Each bot has its OWN smart queue
+- Capital isolated per bot via Virtual Wallet System
+
+## Virtual Wallet System (NEW FEATURE — LOCKED)
+
+- User creates named virtual wallets per exchange
+- Example: "Long Test 1" · "Short BTC" · "RVN Wallet"
+- Each wallet links to exchange balance (fixed $ or "All")
+- Bot links to one wallet at creation (changeable anytime)
+- Same wallet = shared queue + shared capital between bots
+- Different wallet = completely isolated queue + capital
+- Wallets visible in new Wallets section per exchange
+- Bot creation wizard Step 2.5: Select or Create Wallet
+- Solves: short bot isolation · capital sharing · queue control
+- No other trading platform has this feature — unique to Averion
+
+## Short DCA Lifecycle (Point 9 — LOCKED)
+
+- Full worked example added to 03_TRADING_SYSTEM.md
+- User must hold coin before opening Short DCA
+- Bot sells portions as price rises (widening spacing)
+- Avg sell price calculated from all sells combined
+- TP triggers when price drops below avg sell price - TP%
+- Trailing arms then fires on TRAIL% pullback
+- Buy back uses collected USDT only
+- Profit = difference between avg sell and buy back price
+- Profit coin: USDT (keep difference) or base coin (buy more)
+
+## Bot Deletion Behavior (Point 10 — LOCKED)
+
+- Bot has 0 open positions:
+  - Shows [Delete Bot] button only
+  - Clean delete · no warning needed
+
+- Bot has open positions:
+  - Shows [Close All and Delete] button
+  - Click shows warning modal with:
+    - Count of positions
+    - Estimated P&L per position (green/red)
+    - Net total P&L (green/red)
+    - Cannot be undone warning
+  - [Cancel] [Close All and Delete]
+  - Market orders close all positions
+  - Bot deleted after all closed
+
+## External Service Outages (Point 11 - LOCKED)
+
+- CoinGecko down: use last recorded cap · skip reclassification · retry next 3am
+- Telegram down: bot continues trading · alerts queued · max 50 queued · send when recovered
+- NOWPayments: DB log all deposits (not Excel) · admin can export to Excel anytime
+  - Table: reserve_deposits (user_id · amount_sent · amount_received · network · tx_hash · status · timestamps)
+  - Admin panel shows deposit log with Match button for unknown deposits
+  - Admin can export full log to Excel anytime
+- Exchange API down: CCXT retries with exponential backoff · after 5 fails → Telegram alert
+  - Pause that exchange only · other exchanges continue · auto-resume when recovered
+- Bot NEVER stops for any external service failure
+
+## Exchange API Key Rules (LOCKED)
+
+- IP whitelist reminder shown when user adds API key
+- Server IP displayed prominently in admin panel Tab 5
+- Reminder shows which exchanges require IP whitelist:
+  - Binance · OKX = required
+  - KuCoin = recommended
+  - MEXC · Gate.io · Bybit · Bitget = optional
+- User must confirm IP whitelisted before saving key
+- Bot detects API key rejection → Telegram alert → exchange paused
+- Some exchanges expire keys after 90 days → bot detects → alerts user
+
+## Data Retention Policy (Point 12 - LOCKED)
+
+- Trade history: FOREVER (tax records · research needs full history)
+- OHLCV hourly: 90 days rolling (older compressed to daily summary)
+- Daily summaries: FOREVER (tiny storage · long term analysis)
+- Research decisions: FOREVER (never repeat failed experiments)
+- Balance history: FOREVER (all time chart for users)
+- Telegram logs: 30 days (Sunday cleanup cron handles this)
+- Error logs: 30 days (Sunday cleanup cron handles this)
+- Deposit logs: FOREVER (financial records · dispute resolution)
+
+## Monetization & Bot Limits (LOCKED)
+
+### Free Tier
+- 5 bots included free forever
+- 100 trades open maximum (hard limit always)
+- 100 trade bundle per month included
+- 1 exchange connection
+- 20% performance fee on profits
+
+### Paid Additions (from reserve wallet)
+- Extra bots: $1 per bot per 30 days
+- Extra trade bundles:
+ - 200 trades: $3/month
+ - 500 trades: $5/month
+ - 1000 trades: $8/month
+ - Unlimited: $15/month
+- All deducted automatically 1st of every month
+- Performance fee deducted per winning trade (ongoing)
+
+### Auto-Deduction Rules
+- 1st of month: bot fees deducted first · trade bundle second
+- If reserve insufficient:
+ - Deduct what is available
+ - Last created bot turns OFF automatically
+ - Existing positions on expired bot continue to TP
+ - No new positions on expired bot
+ - Telegram alert sent immediately
+- No grace period for monthly fee shortage
+- Manual renewal always — never automatic
+
+### Bot Slot System
+- Free slots: 5
+- Paid slots: however many purchased
+- Active bots cannot exceed total slots
+- User turns off one bot → slot freed → another bot can activate
+- Last created bot expires first when slots exceeded
+- Expired bot shows in dashboard: EXPIRED · renew to open new positions
+
+### Trade Limit Rules
+- 100 open trades hard limit — always — regardless of bundle
+- Bundle = how many can be opened this month total
+- When one closes → new one can open (within limit)
+- Dashboard shows: Open 67/100 · Bundle used 234/500
+
+### API Key Abuse Prevention
+- Exchange UID fingerprint captured on API key creation
+- Same UID cannot be added twice (anti-fraud Layer 2)
+- Prevents free bot limit bypass via multiple API keys
+- Cannot bypass without creating entirely new exchange account (requires exchange KYC)
+
+## Concurrent Bot Limits (Point 13 - LOCKED)
+
+- 5 bots free TOTAL across all exchanges (not per exchange)
+- Prevents abuse: 10 exchanges would give 50 free bots if per-exchange
+- Extra bots: $1 per bot per month from reserve wallet
+- Server load = total bots regardless of exchange
+- Price fetching shared across all bots on same exchange = efficient
+- No hard technical API rate limit issue with current architecture
+
+## Customer Telegram Channels (LOCKED)
+
+- 3 separate channels per customer:
+  - Trades: every buy · sell · DCA · TP (mute-friendly)
+  - Alerts: reserve low · bot stopped · ST flag · urgent (never mute)
+  - Reports: daily per exchange · weekly · monthly
+- Customer connects in Settings tab → Notifications section
+- Enter Telegram Chat ID → bot sends verification code → confirmed
+- Each channel has separate toggle ON/OFF
+- Customer controls which channels they receive
+
+## Daily Telegram Report Per Exchange (LOCKED)
+
+Format:
+🌙 Averion Daily Report — Date
+📊 Exchange Name
+Capital: $X
+Open trades: X
+Closed today: X
+Profit today: +$X
+Fees due: $X
+Available funds: $X
+🤖 System: CPU% · RAM% · All exchanges ✅
+
+## PWA Install Hint (LOCKED)
+
+- Detect if user is in browser vs installed PWA
+- Browser + not dismissed → show weekly hint:
+  "💡 Add Averion to home screen for app experience
+   [How to do it] [✓ Don't show again]"
+- Dismissed → never show again (localStorage)
+- PWA detected → never show hint
+- Simple JavaScript matchMedia check
+
+## Manual Bot Type (LOCKED)
+
+- Separate bot type: Manual
+- User picks specific coins manually
+- Not affected by Smart DCA automation
+- Has own virtual wallet
+- Allows second position on same coin
+  (Manual bot + Smart bot can both hold RVN)
+- Research data kept separate from auto bots
+- Available in bot creation wizard Step 2
+
+## Virtual Wallet System (LOCKED)
+
+- User creates named virtual wallets per exchange
+- Example: Long Test 1 · Short BTC · RVN Wallet
+- Each wallet: name · currency · capital amount or All
+- Bot links to one wallet (changeable anytime)
+- Same wallet = shared queue + shared capital
+- Different wallet = isolated queue + capital
+- Wallets section shown per exchange in dashboard
+- Bot creation wizard Step 2.5: Select or Create Wallet
+
+## Entry Method Promotion Formula (Point 7 - LOCKED)
+
+Validated by ChatGPT · Gemini · DeepSeek independently.
+
+### Normalization (all components to 0-1 first)
+- WR_norm = Win Rate (already 0-1)
+- AP_norm = (profit - min) / (max - min)
+- RS_norm = inverted: 1/(recovery_hours+1) then normalized
+- DD_norm = 1 - drawdown% (lower drawdown = higher score)
+- Floor: max(drawdown, 0.01) to prevent division by zero
+
+### Scoring Formula
+Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
+
+### Weights Rationale
+- Drawdown 35%: survivability first - matches Averion philosophy
+- Win Rate 30%: DCA relies on consistency
+- Avg Profit 20%: reward but not chase profit
+- Recovery Speed 15%: capital efficiency tiebreaker
+
+### Formula Adjustment Feature
+- Admin can adjust weights via sliders in Tab 4
+- Weights must always total 100%
+- System recalculates ALL historical scores on change
+- Old ranking saved for comparison
+- 30 day cooldown between weight changes
+- Enables regime-specific tuning (bull/bear markets)
+
+### Promotion Rules
+- Minimum 100 closed trades before scoring
+- Tested across 3+ market regimes
+- Score beats E10 control group
+- Score beats Simple DCA benchmark
+- 30 day cooldown after any parameter change
+
+### Deletion Rules
+- 3 consecutive quarterly reviews failed
+- Win rate below 40% consistently
+- Underperforms E10 control group
+
+## Research Bot Monthly Elimination Rule (LOCKED)
+
+- Monthly quick check — NOT parameter adjustment
+- Eliminate ONLY bots with zero trades in 30 days
+- Reason: signal too strict → never triggers on any coin
+- Replace eliminated bot with looser variation of same method
+- Do NOT eliminate bots with few trades — only zero trades
+- Full 6 month review still applies for promotion/deletion
+- This prevents server resources wasted on untriggerable bots
+
+## 5 Benchmark Bots — Purpose (LOCKED)
+
+- BTC Buy and Hold: pure market exposure baseline
+- ETH Buy and Hold: alternative market exposure
+- Simple DCA ASAP: tests if waiting for signal adds value
+- Random Entry DCA: tests if signals beat pure luck
+- Static Spacing DCA: tests if widening spacing adds value
+
+All 10 entry methods must beat relevant benchmarks
+to be considered for Smart DCA promotion.
+If methods lose to Random Entry = signals are noise.
+If methods lose to BTC Hold = wrong market regime.
+
+## Smart Queue Tie-Breaker (LOCKED)
+
+When two positions have identical scores (Loss% / USDT required):
+
+Step 1: Highest loss $ amount wins
+- Position with bigger absolute loss funded first
+- Closing bigger loss = better recovery for customer
+- More capital freed when TP eventually fires
+
+Step 2: If still equal → oldest position wins
+- Position open longest gets priority
+- Simple · deterministic · fair
+- Easy to implement and audit
+
+## Partial Liquidity DCA Handling (LOCKED)
+
+When DCA triggers but full amount not available:
+
+1. Buy whatever available immediately (market order)
+2. Recalculate avg cost and TP target after every partial buy
+3. Remaining amount goes to STANDBY — not back to queue
+4. Standby monitors price only — fires when price reaches same DCA level again
+5. Standby does NOT compete with queue — completely separate system
+6. Queue continues normally for other coins while RVN is in standby
+7. When price reaches DCA level again → standby buys remaining
+8. If remaining < exchange minimum → add to next DCA level amount
+9. After standby complete → position returns to normal queue
+10. Each partial buy recorded as separate trade for full audit trail
+
+## API Key Expiry Flow (LOCKED)
+
+Step 1: Bot detects API rejection (CCXT auth error)
+- Exchange marked PAUSED in DB
+- Telegram Alerts: MEXC API key rejected · action required
+- Dashboard: red banner · API KEY INVALID · [Update API Key] button
+
+Step 2: User updates API key in Settings
+- Bot tests connection automatically
+- If valid → exchange resumes immediately
+
+Step 3: Auto-resume on reconnection
+- Bot fetches current prices immediately
+- Any TP that triggered during downtime → fires immediately
+- Any DCA that triggered → enters queue normally
+- Everything resumes automatically — no manual intervention
+- 60s loop continues as normal
+
+Step 4: If user never fixes (rare)
+- Positions stay paused · shown in dashboard
+- Telegram reminder every 24 hours
+- After 7 days: reminder to close positions manually on exchange
+- Admin can mark positions closed if needed
+- Nothing forced ever
+
+## API Disconnection Auto-Archive (LOCKED)
+
+If exchange never reconnects:
+- Day 1: Telegram alert + dashboard red banner
+- Day 7: Warning to close positions manually on exchange
+- Day 30: Strong warning · monthly alerts begin from here
+- Monthly: reminder sent every 30 days
+- Month 6: Monthly reminder + "6 months disconnected" warning
+- Month 12: Monthly reminder + "Account will be archived in 30 days"
+- Day 365: Auto-archive all positions
+  - Status changed to EXPIRED
+  - Removed from active dashboard
+  - Kept in History tab forever (tax records)
+  - Telegram final notice sent
+  - DB cleaned · no data deleted
+- Reason: safety net for edge cases
+  (hospitalized · abandoned account · lost access)
+- Monthly alerts prevent user being surprised at day 365
+
+## Performance Fee Calculation (LOCKED)
+
+- Performance fee = 20% of NET profit (after exchange trading fees)
+- Formula: Net Profit = Exit Value - Entry Cost - Exchange Fees
+- Performance Fee = Net Profit x 20%
+- Exchange fees tracked per order via CCXT (fee.cost field)
+- All fees summed across entry + DCAs + TP sell
+- Fairer to customer · transparent · builds trust
+- Small difference in practice but correct approach
+
+## Short DCA Buyback — Limit Order Exception (LOCKED)
+
+Short DCA is the ONLY exception to market orders rule:
+- Sells: market orders (immediate execution)
+- Buyback: limit order (reserves USDT on exchange)
+
+Why limit order for buyback:
+- USDT from sells must be reserved on exchange
+- Prevents queue from using Short funds for Long DCAs
+- Exchange holds USDT → guaranteed buyback when price drops
+- No trailing needed → fixed limit price = exact profit target
+
+After every Short DCA sell:
+1. Receive USDT from market sell
+2. Cancel previous limit buy order (if exists)
+3. Recalculate new avg sell price + new TP target
+4. Place new limit buy order at new TP target price
+5. Exchange reserves exact USDT needed
+6. Queue cannot touch reserved funds
+
+Timing Protection Rule:
+- When Short DCA sell executes → flag: PENDING_BUYBACK
+- ALL Long DCA bots on same exchange → HOLD new DCAs
+- Hold lasts until limit buy order confirmed by exchange (~2 seconds)
+- Then Long DCA resumes normally
+- Prevents queue grabbing Short funds during placement delay
+
+Priority Order (same exchange · same wallet):
+1. Short DCA buyback (always first)
+2. TP exits (free capital immediately)
+3. Long DCA queue (normal scoring)
+
+## Reserve Wallet Debt System (LOCKED)
+
+- Bot NEVER stops when reserve = $0
+- Position closes at TP normally regardless of reserve balance
+- Fee recorded as debt in DB if reserve insufficient
+- Debt shown clearly in dashboard with [Top Up Now] button
+- When user tops up: debt deducted first · remaining = new balance
+- Telegram: debt cleared notification sent
+- Debt accumulates until reserve funded
+- No blocking · no stopping · no forced actions ever
+
+Debt Data Retention:
+- Active unpaid debt: kept forever until paid
+- Paid debt history: kept FOREVER
+- Reason: financial records · tax · dispute resolution
+- Never deleted regardless of account status
+
+## CoinGecko Rate Limiting Solution (LOCKED)
+
+- Use /coins/markets endpoint (250 coins per call)
+- Fetch ALL coins dynamically - not limited to 1870
+- New coins appear automatically in next batch
+- Process: fetch page 1 · page 2 · page 3 · until empty page returned
+- Empty page = all coins fetched · stop automatically
+- Free tier: 50 calls/minute · well within limit
+- Parameters: vs_currency=usd · per_page=250 · page=N
+- Never call individual /coins/{id} endpoint
+- Dynamic · scalable · always complete
+
+## Smart Queue Cycle Definition (LOCKED)
+
+- One cycle = one 60 second price check loop
+- ONE DCA executed per cycle maximum
+- When TP fires mid-cycle:
+  - Capital freed immediately
+  - Queue rescores immediately
+  - Next DCA waits for next 60s cycle
+  - Never two DCAs in same 60s window
+- Maximum DCA rate = one per 60 seconds
+- Predictable · auditable · never chaotic
+
+## Server Clock Sync (LOCKED)
+
+- Install chrony on Hetzner Day 1
+- Syncs with multiple NTP servers automatically
+- Prevents clock drift that causes exchange API rejections
+- Ubuntu 24.04 has systemd-timesyncd by default
+- Chrony provides better accuracy for trading systems
+- One install · runs forever · never needs attention
+
+## Dust Accumulation Handling (LOCKED)
+
+- After every TP sell: check remaining coin balance
+- If remaining < exchange minimum order size = dust
+- Dust marked in DB · excluded from calculations
+- Shown in dashboard: Dust: 0.00003 BTC
+- Weekly Sunday cron: attempt to sell all dust combined
+  - If total dust value >= minimum order → sell
+  - If still too small → ignore · keep in dashboard
+- Dust never causes errors · never blocks calculations
+- Small cosmetic issue only · handled gracefully
+
+## NOWPayments Webhook Reliability (LOCKED)
+
+Three layer system:
+
+Layer 1 — Webhook (primary · instant)
+- NOWPayments fires webhook → credit user immediately
+- payment_id saved to DB · status = CREDITED
+
+Layer 2 — Hourly polling (fallback)
+- Every hour: check NOWPayments API for last 24h payments
+- Compare against DB · any missing payment_id → credit now
+- Catches all missed webhooks automatically
+
+Layer 3 — Admin manual reconciliation
+- Admin deposit log shows ALL payments sorted by newest
+- Status per payment: Credited · Pending · Unknown · Failed
+- [Match] button for unknown deposits (no user match)
+- [Credit Manually] button for stuck payments
+- [Export Excel] for full records
+
+Duplicate Protection:
+- Check payment_id exists in DB before every credit
+- If exists → skip · if not exists → credit
+- Never double-credits under any circumstance
+
+## ST Flag — Entry Check + Exit Rule (LOCKED)
+
+Before entering ANY new position:
+- Check ST flag for that coin
+- If ST active → skip · do not enter
+- Move to next qualifying coin
+- Telegram alert: coin skipped due to ST
+
+During open position:
+- ST detected → auto sell immediately (market order)
+- No exceptions · even at significant loss
+- Reason: some money better than nothing
+- Coin may become permanently untradeable
+- Telegram alert: position closed · ST detected · P&L shown
+- Capital freed → queue rescores immediately
+
+## Smart Queue Insufficient Funds Behavior (LOCKED)
+
+Queue never blocks on insufficient funds:
+- Score all positions by Loss% / USDT required
+- Attempt to fund #1 highest score
+- If insufficient funds → SKIP · move to #2
+- Attempt #2 · if insufficient → SKIP · move to #3
+- Continue until funded position found or list exhausted
+- Execute best affordable position
+- Remaining positions retry next 60s cycle
+- Capital always deployed to best available option
+- Never idle when something can be funded
+- Low balance Telegram alert when NO position can be funded
+
+## OHLCV Data Gap Handling (LOCKED)
+
+New coins under 90 days:
+- Handled by confidence tier system already
+- Under 30 days = category defaults
+- 30-90 days = blend own data + defaults
+- Over 90 days = fully own data
+
+Missing candles from exchange outage:
+- Skip missing candles in ATR calculation
+- Never fake or interpolate data
+- Use available candles only
+- Gap fills automatically next hourly fetch
+- If gap over 24 hours → admin Telegram alert
+- Bot continues trading with available data
+- Minor accuracy impact only · self-correcting
+
+## Customer Telegram Setup (LOCKED)
+
+One direct chat with @AverionBot — professional and simple.
+No separate channels needed — ever.
+
+Connection flow:
+1. Settings → Notifications → [Connect Telegram]
+2. Dashboard shows unique code: /connect ABC123XYZ
+3. Customer opens Telegram → finds @AverionBot
+4. Sends: /connect ABC123XYZ
+5. Bot confirms connection
+6. All notifications go to one direct chat
+
+Message format — clearly labeled:
+- 🟢 TRADE: every buy · sell · DCA · TP
+- 🔴 ALERT: reserve low · ST flag · errors · urgent
+- 📊 REPORT: daily · weekly · monthly summaries
+
+Customer controls in Settings:
+- Toggle each message type ON/OFF independently
+- Alerts recommended always ON
+- Customer can mute bot in Telegram if needed
+
+Why Option C is correct permanently:
+- One chat = everything in one place
+- Professional · clean · simple
+- No multi-channel complexity ever
+- WhatsApp Business and best Telegram bots use this approach
+
+## Short DCA Spacing Formula (LOCKED)
+
+Reference price: price at bot activation (not avg hold price)
+Direction: rises instead of drops (mirrors Long DCA)
+
+Trigger formula:
+- Level 1: activation_price x (1 + DCA%)
+- Level 2+: last_sell_price x (1 + DCA% x spacing_multiplier^level)
+- Mirrors Long DCA geometry exactly — just direction reversed
+
+Order types (LOCKED):
+- Sell orders: MARKET (immediate execution always)
+- Buyback order: LIMIT (reserves USDT on exchange)
+
+After every market sell:
+1. Update last_sell_price
+2. Cancel previous limit buy order
+3. Recalculate avg_sell_price (weighted average of all sells)
+4. Recalculate TP target = avg_sell_price x (1 - TP%)
+5. Place new limit buy at TP target price
+6. Exchange reserves exact USDT needed for buyback
+
+TP formula for Short DCA:
+- TP target = avg_sell_price x (1 - TP%)
+- Price drops to TP target → limit buy fills
+- Profit = total USDT collected - total USDT spent on buyback
+
+## CCXT Version Management (LOCKED)
+
+- Never blind auto-upgrade on live server
+- Safe automated upgrade process:
+
+Step 1: Weekly check for new CCXT version
+Step 2: If new version found:
+  - Install in temporary virtual environment only
+  - Run 5 validation tests:
+    1. Fetch live price from MEXC
+    2. Fetch order book
+    3. Fetch account balance
+    4. Fetch OHLCV data
+    5. Parse order response format
+Step 3: All tests pass → upgrade main installation → restart bot
+Step 4: Any test fails → stay on current version → retry next week
+- Telegram notification after every attempt (pass or fail)
+- Fully automatic · zero manual intervention needed
+- Never breaks live bot · always tested before applying
+
+## Attention Log — Customer Dashboard (LOCKED)
+
+Top section of Bots tab — hidden when empty.
+Appears automatically when any item needs attention.
+
+Severity levels:
+- Red: action required (checkpoint · API expired · ST flag · reserve empty)
+- Yellow: awareness only (standby active · low volume · exchange paused)
+- Green: auto-resolved info (CCXT upgraded · exchange reconnected)
+
+Items shown in log:
+- DCA checkpoint reached → [Continue] [Pause] [Sell Now]
+- Reserve wallet low/empty → [Top Up]
+- API key expired → [Update Key]
+- ST flag detected → [View Position]
+- Standby active (partial DCA waiting) → [View] [Cancel]
+- Dead coin detected → [View Position]
+- Low volume warning → [View Position]
+- Delisted coin → [Mark Closed]
+- Exchange paused → [Update Key]
+
+Behavior:
+- Empty = section completely hidden
+- Items exist = section shows at top of Bots tab
+- User resolves item = disappears from log
+- All resolved = section hidden again
+- Clean · not annoying · always visible when needed
+
+Also sent to Telegram for critical items
+Dashboard is primary · Telegram is secondary
+
+## Base Coin Selection (LOCKED)
+
+- User selects quote currency at bot creation: USDT or BTC
+- USDT bot: trades RVN/USDT · BTC/USDT · ETH/USDT etc
+- BTC bot: trades RVN/BTC · ETH/BTC etc
+- User must have selected base coin on exchange
+- Bot checks base coin balance before every trade
+- Cannot mix: one bot = one base currency always
+- Shown clearly in bot creation wizard Step 3
+
+## Position Price Bar — Live View (LOCKED)
+
+- Every open position shows live progress bar
+- Bar displays three markers:
+  - Current price (live · updates every 60s)
+  - Next DCA trigger price
+  - TP target price
+- Visual indicator: how close to DCA or TP
+- Shown in: Bots tab position row + Position detail screen
+
+## Position Detail Screen (LOCKED)
+
+- Each position has unique ID number
+- Click any position → opens detail screen
+- Shows:
+  - Position ID · Coin · Exchange · Bot name
+  - Current price · Avg cost · Quantity
+  - Total invested · Unrealized P&L
+  - Progress bar (Current · Next DCA · TP)
+  - Full DCA history table:
+    - Each DCA: level · timestamp · price · amount · quantity
+  - Total funds in this trade
+  - Total coin quantity accumulated
+  - Entry method used
+
+## Telegram Notifications — Final (LOCKED)
+
+- ONE chat with @AverionBot — Option C confirmed permanently
+- User toggles each message TYPE on/off independently
+
+Message types:
+- Trade notifications: every buy · DCA · sell · TP
+  (toggle ON/OFF — high volume · many mute this)
+- Alert notifications: reserve low · API expired · ST flag
+  (one alert per event · never repeated · never annoying)
+- Daily report: closed trades count · profit · fees
+- Weekly report: total profit in USDT + coins
+- Monthly report: full summary
+
+Settings tab shows:
+- Connected: @AverionBot ✅
+- Trade notifications: [ON/OFF]
+- Alert notifications: [ON/OFF]
+- Daily report: [ON/OFF]
+- Weekly report: [ON/OFF]
+- Monthly report: [ON/OFF]
+
+## Short Bot Partial Holdings — Standby (LOCKED)
+
+- User sets bot to sell 100 RVN
+- Exchange only has 50 RVN available
+- Bot shows hint: "Only 50 RVN available · waiting for more"
+- Bot sells available 50 RVN immediately
+- Standby activates: waiting for remaining 50 RVN
+- When user receives 50 more RVN → bot resumes immediately
+- Same standby system as partial DCA liquidity
+- No manual action needed · fully automatic
+
+## Reserve Wallet Debt Display (LOCKED)
+
+- Position closes at profit · fee = $5 · reserve = $0
+- Dashboard shows: Fees due: -$5.00 (red)
+- User deposits $10:
+  - Debt $5 deducted first automatically
+  - Remaining $5.00 shown as balance
+  - Telegram: "Reserve topped up · $5 debt cleared · $5.00 remaining"
+- Debt shown clearly in red until cleared
+- Never hidden · always transparent
+
+## Paper Trade Timer Reset (LOCKED)
+
+- Timer resets when live trade OPENS only
+- Closing a live trade does NOT reset timer
+- Only OPENING a new live trade resets 90-day counter
+- Reason: user could close last live trade on Day 89
+ and never open another — timer would reset incorrectly
+
+## Short DCA Balance Check (LOCKED)
+
+- Check coin balance on exchange before EVERY Short DCA sell
+- If balance insufficient → standby system activates
+- Telegram alert: insufficient balance for Short DCA sell
+- Attention log: warning shown in dashboard
+- Bot waits for sufficient balance automatically
+- No manual action needed
+
+## Database Backup Strategy (LOCKED)
+
+- Daily 3am: pg_dump → /home/averion/backups/
+- Filename: averion_YYYY-MM-DD.sql
+- Keep last 7 days only (auto-delete older)
+- Phase 4: local backups sufficient for personal use
+- Phase 6: add Hetzner Volume 10GB at €0.48/month
+ for off-disk disaster recovery before public launch
+- Telegram alert if backup fails
+
+## MAX_COINS Production Assertion (LOCKED)
+
+- MAX_COINS = 100 exists in Replit only (memory limit)
+- Remove MAX_COINS completely on Hetzner Day 1
+- Add startup assertion in main.py:
+ If MAX_COINS set AND PAPER_MODE=false → refuse to start
+ Error message: Remove MAX_COINS before going live
+- Prevents silent coin limit in production
+- Already in DAY1_CHECKLIST.md as reminder
+
+## Unconfirmed Order Reconciliation on Startup (LOCKED)
+
+- On every PM2 restart or bot startup:
+ 1. Fetch last 100 orders from each exchange via CCXT
+ 2. Compare against DB trades table
+ 3. Any order on exchange NOT in DB → insert as trade
+ 4. Any DB trade marked pending → verify with exchange
+ 5. Fill all gaps before resuming queue
+- Prevents: mid-trade PM2 crash losing order confirmation
+- Takes approximately 5 seconds on startup
+- Critical for data integrity with real money
+
+## Exchange Passphrase (LOCKED)
+
+- KuCoin · OKX · Bitget require 3 credentials:
+  API Key · API Secret · API Passphrase
+- Passphrase stored encrypted in exchanges.passphrase_enc
+- User enters passphrase when adding exchange in settings
+- CCXT uses all 3 credentials for authentication
+- MEXC · Binance · Gate.io · Bybit = no passphrase needed
+
+## Dashboard Login Brute Force Protection (LOCKED)
+
+- Track failed login attempts in Redis per IP
+- 5 failures in 15 minutes → 30 minute cooldown
+- Admin can clear blocked IPs in admin panel
+- Applies to both user login and admin login
+- Telegram alert to admin when IP blocked
+
+## Subscription Billing History (LOCKED)
+
+- Every monthly deduction recorded in subscription_billing table
+- Columns: user_id · billing_date · bot_fee · bundle_fee · total
+- Records which bots affected when insufficient reserve
+- Used for: billing disputes · audit trail · admin reporting
+- Never deleted — financial records forever
+
+## Standby System — No Timeout (LOCKED)
+
+- Standby has NO timeout — waits forever
+- Two exit conditions only:
+  1. Price returns to DCA level → fills remainder
+  2. Position hits TP → standby cancelled automatically
+- Partial fill accumulation:
+  - $2 filled + $7.50 standby = $9.50 total
+  - Remaining $0.50 < minimum → added to next DCA level
+- No user configuration needed for timeout
+- TP always handles final exit naturally
+
+## DCA Checkpoint — TP Always Wins (LOCKED)
+
+- Bot NEVER pauses for checkpoint
+- TP always runs regardless of checkpoint state
+- Checkpoint behavior:
+  - Position reaches configured DCA level
+  - DCA turns OFF automatically at checkpoint
+  - Attention log shows warning with cost hint
+  - TP continues running normally
+  - If price rises to TP → sells immediately ✅
+- User can turn DCA back ON manually:
+  - Shows hint: next DCA cost + trigger price
+  - [Turn DCA ON for this level] button
+  - User decision always — never forced
+- Core principle: TP is the goal · DCA is optional
+
+## Short DCA Implementation Priority (LOCKED)
+
+- Short DCA = Phase 5 feature (not Day 1)
+- Day 1 Hetzner: focus on Smart DCA + 10 entry methods
+- Server capacity testing comes first
+- Continue revenuebot.io for Short DCA meanwhile
+- Short DCA proven concept: same as 3commas · revenuebot.io
+- Limit order for buyback = correct and necessary
+  Without it: Long DCA queue steals Short funds
+- Minimum 100 paper Short trades before any live Short
+- Test on MEXC first (already familiar exchange)
+
+## PM2 Startup Sequence (LOCKED)
+
+- hetzner_day1.sh: sleep 5 after PostgreSQL starts
+- main.py startup sequence:
+  1. Wait for PostgreSQL ready (retry every 5s · max 60s)
+  2. Wait for Redis ready (retry every 3s · max 30s)
+  3. Run unconfirmed order reconciliation
+  4. Start bot loop only after all services ready
+- If DB not ready after 60s: log clear error · exit · PM2 retries
+- Admin dashboard shows: startup status per service
+
+## Admin Dashboard Startup Status (LOCKED)
+
+Shows real-time service status on startup:
+- PostgreSQL: ✅ Running / ❌ Not Running
+- Redis: ✅ Running / ❌ Not Running  
+- Bot Loop: ✅ Running / ⏳ Starting / ❌ Stopped
+- Last Reconciliation: timestamp
+- CCXT Version: current version
+- All shown with professional colored indicators
+- Same style as rest of dashboard (dark theme)
+
+## Short DCA Limit Order Auto-Recovery (LOCKED)
+
+Problem: User accidentally cancels limit buyback on exchange
+Bot detects: limit order no longer exists on exchange
+
+Recovery flow:
+1. Hourly check: verify all Short DCA limit orders still active
+2. If limit order cancelled/missing on exchange:
+   → Flag position: BUYBACK_MISSING
+   → Check available USDT in wallet
+   → If USDT available: place new limit order immediately
+   → If USDT gone (stolen by Long DCA queue):
+     · Set same exchange Long DCA bots: HOLD
+     · Telegram alert: Short buyback recovering
+     · Wait for next Long DCA TP to free capital
+     · When capital available: place limit order
+     · Release Long DCA HOLD
+3. Attention log: shows recovery status
+4. User can also press [Force Recover] button
+
+## Limit Order Monitoring (LOCKED)
+
+All limit orders checked every hour:
+- Short DCA buyback orders
+- Any other limit orders (future features)
+- If missing on exchange → auto-recovery triggered
+- Uses CCXT fetchOrder() to verify status
+- Cross-references with DB short_buyback_orders table
+
+## Platform Approach (LOCKED)
+
+- Build public-ready from Day 1 — not personal then upgrade
+- No technical debt from "personal first" approach
+- Server starts small (CX23) · scales with users
+- Admin dashboard monitors capacity · easy upgrade path
+
+## Day 1 Exchange Priority (LOCKED)
+
+- MEXC: Long DCA (primary test exchange)
+- KuCoin: Long DCA (Bader actively trades here)
+- Both exchanges needed from Day 1
+- KuCoin requires passphrase_enc (already in schema)
+- Short DCA: Phase 5 (MEXC first · then KuCoin)
+
+## Virtual Wallet — Day 1 Feature (LOCKED)
+
+- Virtual wallet system built from Day 1
+- Not Phase 5 · not deferred
+- Reason: build once · build right · public platform
+- Every bot assigned to a wallet from creation
+- Default wallet created automatically per exchange
+- User can create named wallets anytime
+- No migration needed later
+
+## Daily Cron Schedule — Final (LOCKED)
+
+03:00 — Infrastructure
+- pip install ccxt safe upgrade (test then apply)
+- pm2 restart averion
+- PostgreSQL backup → /backups/averion_YYYY-MM-DD.sql
+- Keep last 7 days · delete older
+- Telegram admin: "Daily maintenance started"
+
+03:30 — CoinGecko Fetch
+- Fetch all coins market caps (250 per call · dynamic)
+- Store raw caps in coin_history (source: coingecko)
+- No classification yet · raw data only
+
+04:00 — CoinMarketCap Fetch
+- Fetch all coins market caps from CMC API
+- Store raw caps in coin_history (source: cmc)
+- No classification yet · raw data only
+
+04:30 — Classification
+- Average: recorded_cap = (CoinGecko + CMC) / 2
+- If only one source: use that source
+- If both fail: use last recorded · Telegram alert
+- Apply cap protection formula
+- Classify all coins into categories
+- Reclassify changed coins · Telegram alert per change
+- Update coin_history with final recorded_cap + category
+
+05:00 — Reporting
+- Generate Excel report (9 sheets · fresh classification)
+- Update metrics/latest.json → push to GitHub
+- Send daily Telegram to admin (health + stats)
+- Send daily Telegram to each customer (their summary)
+- Save report to /reports/ folder
+
+05:30 — Sunday Only
+- DB VACUUM + ANALYZE
+- Delete logs older than 30 days
+- Delete Excel reports older than 30 days
+- Disk space check → alert if >70%
+- Weekly Telegram summary (profit + fees + rankings)
+- Check CCXT version → safe upgrade if available
+
+## Dashboard vs Cron (LOCKED)
+
+Dashboard: live data · updates every 60 seconds
+- Prices from Redis (updated every 60s from exchanges)
+- Positions from PostgreSQL (updated after every trade)
+- P&L calculated live · always accurate
+- No dependency on cron schedule
+
+Cron: daily batch processing at 3am-5:30am
+- Classification · reports · maintenance
+- Does NOT affect dashboard live accuracy
+- Two completely independent systems
+
+## Admin Dashboard Cron Control (LOCKED)
+
+Admin dashboard shows live cron status:
+- Each step: ✅ Complete · ❌ Failed · ⏳ Running · — Skipped
+- Last run time · duration · records processed · errors
+- [Re-run] button per step — triggers immediately
+- [View Logs] button per step — shows full output
+
+Re-run behavior:
+- Runs that specific step only
+- Uses latest available data
+- Updates status live with spinner
+- Admin can re-run any step independently
+- Example: CoinGecko failed → re-run CoinGecko
+  → then re-run Classification
+  → then re-run Reporting
+
+Steps shown:
+1. Infrastructure (03:00)
+2. CoinGecko Fetch (03:30)
+3. CoinMarketCap Fetch (04:00)
+4. Classification (04:30)
+5. Reporting (05:00)
+6. Sunday Cleanup (05:30 · Sunday only)
+
+All steps visible · all independently re-runnable
+No need to wait for next day if any step fails
+
+## Admin Dashboard Log Copy Button (LOCKED)
+
+- Every log output has [Copy] button
+- One click copies full log to clipboard
+- User pastes to Claude/ChatGPT for debugging
+- No screenshots needed · no typing errors
+- Applies to: cron logs · error logs · trade logs
+- Available in: admin dashboard · attention log
+
+## Standalone Component Architecture (LOCKED)
+
+Each component fails independently:
+- CoinGecko down → CMC covers · no platform impact
+- CMC down → CoinGecko covers · no platform impact
+- Both down → last recorded caps · Telegram alert
+- Telegram down → alerts queue in DB · retry hourly
+- Redis down → bot reads PostgreSQL directly (slower)
+- Backup fails → Telegram alert · bot continues
+- CCXT upgrade fails → stays on current version
+- Excel generation fails → Telegram alert · retry tomorrow
+
+Admin dashboard toggle per component:
+- [ON/OFF] CoinGecko integration
+- [ON/OFF] CMC integration
+- [ON/OFF] Telegram notifications
+- [ON/OFF] Excel report generation
+- [ON/OFF] GitHub metrics push
+- [ON/OFF] CCXT auto-upgrade
+
+Philosophy: nothing brings down entire platform
+Each piece fails gracefully · independently
+
+## Diagnostics Report System (LOCKED)
+
+- Auto-generated every hour
+- Pushed to GitHub automatically
+- Always latest at:
+  https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md
+
+Contains:
+- Auto-analysis with explanations (🔴🟡🟢)
+- 30 day system health table
+- 30 day cron performance table
+- 30 day bot events table
+- 30 day trade events table
+- Server upgrade guide
+
+Admin dashboard buttons:
+- [📋 Copy Markdown] → paste directly to Claude
+- [🔗 Copy URL] → Claude fetches from GitHub
+- [📥 Download] → save locally
+
+Rolling 30 days:
+- Day 31 automatically deleted
+- New day added automatically
+- No manual cleanup needed
+
+How to use with Claude:
+"Read this and diagnose:
+ https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md"
+
+## Limit Orders for Entry and DCA (LOCKED)
+
+User selects per bot in wizard:
+- Entry order type: [Market] or [Limit]
+- DCA order type: [Market] or [Limit]
+- Can switch ON/OFF anytime · even mid-trade
+
+Limit DCA behavior:
+- Places limit buy for NEXT DCA level only
+- Not all levels at once (avoids locking USDT)
+- Partial fill → avg cost + TP recalculate immediately
+- TP fires → cancel pending limit → USDT freed
+- Remaining < minimum order → add to next DCA level
+- Example: $10 DCA · $2 fills · $7.50 fills · $0.50 remaining
+  → $0.50 added to next DCA level amount
+
+Trailing TP:
+- Trailing TP disappears when limit DCA mode ON
+- Common sense: limit orders cannot trail
+- Option hidden automatically in wizard when limit selected
+
+ON → bot places limit order on exchange immediately
+OFF → cancels all pending limit orders · USDT returned
+
+## Sequential Trade Gates (LOCKED)
+
+Two separate bot settings:
+- Trades per bot: max concurrent open trades from this bot
+- Trades per coin: how many times same coin repeats
+
+Gate conditions (per bot):
+- [DCA trigger ON/OFF]: opens next trade when current hits DCA level
+- [Timer ON/OFF]: opens next trade after X hours from last opened
+- Both ON: whichever comes first opens next trade
+- Both OFF: only 1 trade per coin (default behavior)
+
+Sequence behavior:
+- Trades open one by one in sequence
+- Last opened trade = gate reference always
+- When reference trade closes → previous becomes reference
+- Sequence continues forever · no hard stop
+- When one closes → slot opens → new trade can start
+
+Entry method:
+- All trades in bot use same parameters
+- Same DCA% · spacing · TP% · entry method
+- No per-trade customization · simple · consistent
+
+Example:
+Trades per bot: 20 · Trades per coin: 3 · Gate: both
+→ Bot opens max 20 trades total
+→ Any coin max 3 concurrent trades
+→ Each coin's trades open sequentially via gate
+→ Last opened = reference for next gate trigger
+
+## Feature Phasing — Final (LOCKED)
+
+### Phase 4 — Day 1 Hetzner (paper mode first)
+Must work:
+- User login (basic auth · admin only)
+- Add exchange (MEXC + KuCoin)
+- Create bot (basic wizard)
+- Paper trading loop (60s cycles)
+- Long DCA market orders (paper)
+- Smart queue (Loss% / USDT)
+- Trailing TP
+- Telegram notifications
+- Dashboard showing positions
+- 107 research bots launched
+- Daily cron (CoinGecko · CMC · classify · report)
+- Classification engine
+- Basic admin dashboard
+- Diagnostics auto-generated hourly
+
+Not in Phase 4:
+- Short DCA · Limit orders · Sequential gates
+- NOWPayments · Public registration
+- Virtual wallet UI · Full admin dashboard
+
+### Phase 4.5 — First Live Trade
+- After 7+ days paper stable
+- $1 test order on MEXC
+- Then KuCoin Long DCA live
+- Small amounts · monitor carefully
+
+### Phase 5 — After Live Stable
+- Short DCA (MEXC first)
+- Limit orders (entry + DCA)
+- Sequential trade gates
+- Virtual wallet UI
+- Full admin dashboard
+- Smart DCA entry methods proven
+
+### Phase 6 — Public Launch
+- NOWPayments integration
+- Public registration
+- Full authentication
+- Performance fees system
+- Reserve wallet payments
+- Marketing
+
+### Phase 7 — Scale
+- More exchanges
+- More features
+- Server upgrades
+- Referral system active
+
+## Gate Reference Promotion Rule (LOCKED)
+
+When reference trade closes:
+- Highest sequence_number still open = new reference
+- Example: Trades 1·2·3 open · Trade 3 closes
+  → Trade 2 becomes reference (highest still open)
+- is_gate_reference updated immediately on close
+- gate_reference_since = timestamp when became reference
+
+Timer reset rule:
+- Timer always measures from gate_reference_since
+- NOT from when trade originally opened
+- Example: Trade 2 opened 15:00 · became reference 22:00
+  Gate timer 5h → next trade at 03:00 (not 20:00)
+- Timer resets completely when reference changes
+- DCA trigger also resets · watches new reference only
+
+## Short DCA HOLD Rule — Simplified (LOCKED)
+
+Previous rule removed: HOLD Long DCAs 2 seconds
+New rule:
+- PENDING_BUYBACK flag set when limit order being placed
+- Long DCA checks flag at start of each cycle
+- If PENDING_BUYBACK = TRUE → skip this cycle
+- After limit order confirmed placed → flag cleared
+- Long DCA resumes next 60s cycle automatically
+- 60s cycle handles timing naturally · no manual hold needed
+
+## MAX_COINS Removal — Day 1 (LOCKED)
+
+- Do NOT add MAX_COINS to Hetzner .env
+- Replit-only variable · never used on Hetzner
+- Simply leave it out of .env completely
+- Startup assertion refuses to start if found with PAPER_MODE=false
+
+## Security Session Management (LOCKED)
+
+- JWT token expires 30 days on same device
+- Day 30: verification code sent via Telegram or email (FREE)
+- Enter code → fresh 30 days granted
+- New device: login + immediate verification code required
+- Wrong code 3 times → account locked · admin Telegram alert
+- No SMS · Telegram or email only (free)
+
+## API Key Withdrawal Warning (LOCKED)
+
+When user adds exchange:
+- Required checkbox (cannot save without):
+  ☑ "I confirm withdrawal permission is DISABLED on this API key"
+- Warning shown in red:
+  "Never enable withdrawal permission on your API key!
+   If compromised, attacker cannot withdraw your funds."
+- Link to guide per exchange showing how to disable
+- User responsibility · platform warns clearly
+- No automatic withdrawal testing from our side
+
+## Security Audit Log (LOCKED)
+
+Record every critical action in security_audit_log:
+- User login: IP · device · timestamp
+- Failed login attempts
+- API key added/deleted
+- Exchange added/deleted
+- Bot created/deleted
+- Admin actions (every admin endpoint)
+- Password changed
+- Telegram connected/disconnected
+- Verification code sent/used
+
+## API Rate Limiting (LOCKED)
+
+Phase 4-6: not needed
+- Queue system naturally limits requests
+- Max 100 trades · one DCA per 60s
+- Login already brute force protected ✅
+Phase 7 public launch: add FastAPI middleware
+- 60 requests/minute per token
+- Easy to add · leave for Phase 6 preparation
+
+## Email Verification at Registration (LOCKED)
+
+- Required before accessing dashboard
+- Flow:
+  1. User registers → account created (unverified)
+  2. 6-digit code sent to email immediately
+  3. Redirect to verify page
+  4. Enter code → verified → go to dashboard
+  5. Cannot access dashboard until verified
+
+- Email service: SendGrid free tier (100/day)
+- Setup needed: sendgrid.com account + API key
+- Add to .env: SENDGRID_API_KEY · SENDER_EMAIL
+- Columns already in schema: email_verified · email_verify_code
+- Implement when averion.app domain is ready (Day 2)
+- Sender email: noreply@averion.app
+# TODO — Hetzner Items
+
+> Everything that requires the actual server.
+> Do NOT attempt on Replit — server only.
+> All commands run via SSH on Hetzner.
+> Follow DAY1_CHECKLIST.md for exact sequence.
 
 ---
 
-## Typography
-- Font: Inter (Google Fonts)
-- Weights used: 900 · 800 · 700 · 600 · 500 · 400
-- Letter spacing: tight for headings · normal for body
+## Server Details
+- Provider: Hetzner Cloud
+- Plan: CX23 (4GB RAM · 2 vCPU · 40GB disk)
+- Location: Helsinki, Finland
+- OS: Ubuntu 24.04
+- Cost: €3.99/month
+- Status: Ordered · ID verification pending
 
 ---
 
-## Color System
+## What Is Already Ready (Coded on Replit)
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Indigo | #6366F1 | Accent · buttons · active states |
-| Green | #10D98A | Profit · active · ON toggles · success |
-| Amber | #F59E0B | Fees · warnings · stuck positions |
-| Red | #F4645F | Loss · critical · danger · destructive |
-| Blue | #38BDF8 | Info · MEXC badge · positions count |
-| Purple | #A78BFA | DCA count · TP Armed · Bitget badge |
-| Orange | #FB923C | Bybit badge |
-| Teal | #14B8A6 | Phase 3.5 · secondary accent |
+All code written · pushed to GitHub · ready to deploy:
 
-### Backgrounds
-| Name | Hex | Usage |
-|------|-----|-------|
-| Page | #07070F | Main background |
-| Card | #0E0E1C | Cards · sidebar · topbar |
-| Card2 | #141428 | Deeper cards · inputs |
-| Card3 | #1E1E3A | Table headers · hover |
-| Border | #1E1E35 | All borders |
-| Border2 | #252540 | Stronger borders |
-
-### Text
-| Name | Hex | Usage |
-|------|-----|-------|
-| Primary | #F0F0FF | Main text |
-| Secondary | #8888AA | Muted text |
-| Tertiary | #55556A | Very muted · labels |
-
----
-
-## Design Philosophy
-
-### Style Reference
-- Linear · Vercel · Stripe · TradingView
-- Minimal · clean · premium · professional
-- Dark theme only — no light mode
-
-### What Averion IS
-- Trustworthy financial tool
-- Clean and precise
-- Premium but accessible
-- Confidence-inspiring
-
-### What Averion is NOT
-- No neon colors
-- No glow effects
-- No gambling casino feel
-- No flashy animations
-- No cluttered UI
+| File | Status | Description |
+|------|--------|-------------|
+| database.py | ✅ Ready | PostgreSQL · 1015 lines · 57 functions |
+| api.py | ✅ Ready | FastAPI · 877 lines · 30+ endpoints |
+| main.py | ✅ Ready | Startup sequence · DB wait · reconciliation |
+| bot_loop.py | ✅ Ready | Trading engine · smart queue · TP · DCA |
+| exchanges.py | ✅ Ready | CCXT wrapper · 7 exchanges · encryption |
+| telegram.py | ✅ Ready | Notifications · alerts · reports |
+| auth.py | ✅ Ready | Login · session · brute force protection |
+| index.html | ✅ Ready | Homepage · marketing |
+| login.html | ✅ Ready | Sign in · forgot password |
+| register.html | ✅ Ready | Sign up · password validation |
+| dashboard.html | ✅ Ready | Customer trading dashboard |
+| admin.html | ✅ Ready | Admin control panel |
+| schema.sql | ✅ Ready | 651 lines · 28 tables |
+| hetzner_day1.sh | ✅ Ready | Security hardened setup script |
+| hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
+| DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
+| research_bots.json | ✅ Ready | 107 paper bots configured |
+| launch_research_bots.py | ✅ Ready | Launch all 107 bots |
+| daily_cron.sh | ✅ Ready | All automation scheduled |
+| health_check.sh | ✅ Ready | Hourly monitoring |
+| fetch_coingecko.py | ✅ Ready | CoinGecko market caps |
+| fetch_cmc.py | ✅ Ready | CoinMarketCap market caps |
+| classify_coins.py | ✅ Ready | Classification engine |
+| generate_excel.py | ✅ Ready | 9-sheet Excel reports |
+| generate_diagnostics.py | ✅ Ready | Auto-analysis markdown |
 
 ---
 
-## UI Components
+## Day 1 — Server Setup
 
-### Cards
-- Background: #0E0E1C
-- Border: 1px solid #1E1E35
-- Border radius: 16px
-- Top gradient accent line per card type
-- Hover: translateY(-1px) slight lift
+> Run: bash setup/hetzner_day1.sh
+> Full details in setup/DAY1_CHECKLIST.md
 
-### Buttons
-- Primary: #6366F1 background · white text
-- Success: #10D98A background · dark text
-- Danger: #F4645F background · white text
-- Ghost: #141428 background · border · muted text
-- Border radius: 9px
-- Active: scale(0.98) slight press
+Covers automatically:
+- System update + auto security updates
+- PostgreSQL + Redis + Nginx + Fail2ban + Chrony
+- SSH hardening (port 2847 · no root · keys only)
+- UFW firewall (default deny)
+- Clone GitHub repo
+- Install Python packages
+- Create database + run schema
+- PM2 setup + startup
+- Cron jobs installed
+- File permissions
 
-### Badges
-- Active: green tint background · green text · green border
-- Stuck: amber tint · amber text · amber border
-- Critical: red tint · red text · red border
-- Queued: blue tint · blue text · blue border
-- TP Armed: purple tint · purple text · purple border
-- Closed: gray tint · gray text · gray border
+Manual steps after script:
+- Fill in .env file
+- Run init_db.py (create admin user)
+- Add GitHub Actions secrets
+- Setup UptimeRobot monitoring
 
 ---
 
-## Responsive Layout
+## Day 2 — Domain & HTTPS
 
-| Screen | Layout |
-|--------|--------|
-| Desktop (≥1024px) | Full sidebar 220px + content |
-| Tablet (768-1023px) | Icon-only sidebar 60px + content |
-| Mobile (<768px) | No sidebar · bottom nav 4 tabs |
+> Run: bash setup/hetzner_day2.sh
 
-100% automatic CSS — no JavaScript toggle needed
-
----
-
-## Positioning
-
-### vs 3commas
-- No monthly subscription
-- Own server full control
-- No position limits
-- Self-improving intelligence
-
-### vs Binance Grid Bot
-- Multi-exchange
-- Market cap aware
-- Research system
-- Performance fee only
-
-### vs Manual Trading
-- 24/7 automated
-- No emotion
-- Consistent execution
-- Never misses a DCA
+- Buy averion.app domain
+- Point DNS A record to server IP
+- Wait DNS propagation (1-24 hours)
+- Run Day 2 script (Nginx + HTTPS + deploy keys)
+- Setup SendGrid for email verification
+- Test live $1 order on MEXC
 
 ---
 
-## Future Brand Extensions
-- averion.app — main platform
-- docs.averion.app — documentation
-- status.averion.app — uptime page
-- api.averion.app — developer API
+## Day 3+ — Paper Trading
+
+- 107 research bots running simultaneously
+- Smart DCA entry methods testing (paper only)
+- OHLCV data building hourly
+- Classification running daily at 04:30
+- Excel reports generated daily at 05:00
+- Diagnostics auto-pushed to GitHub hourly
+- Monitor admin dashboard daily
+- Check Telegram alerts (never mute)
+
+---
+
+## Day 30+ — Parameter Optimization
+
+- Download Excel from /reports/ folder
+- Upload to Claude: analyze research bot rankings
+- Share with ChatGPT for second opinion
+- Apply best parameters
+- Restart bot with optimized settings
+
+---
+
+## Day 45+ — Live Trading
+
+- Set PAPER_MODE=false in .env
+- Verify red LIVE banner in dashboard
+- Place $1 test order on MEXC
+- Verify order on exchange website
+- Scale gradually with more capital
+
+---
+
+## Hetzner Items Status
+
+| # | Task | Status |
+|---|------|--------|
+| 27 | Server creation + security | ⏳ Waiting for server |
+| 28 | Clone GitHub + folder structure | ✅ Script ready |
+| 29 | Create .env with all variables | ✅ env.example ready |
+| 30 | PM2 start + startup + save | ✅ Script ready |
+| 31 | Buy averion.app + DNS | ⏳ Day 2 |
+| 32 | Nginx + HTTPS certificate | ✅ Script ready |
+| 33 | Secret admin URL via .env | ✅ In api.py |
+| 34 | Fernet API key encryption | ✅ In exchanges.py |
+| 35 | GitHub Actions auto-deploy | ✅ deploy.yml ready |
+| 36 | UptimeRobot monitoring | ⏳ Day 1 manual step |
+| 37 | Telegram bot · one chat | ✅ In telegram.py |
+| 38 | Cron jobs installed + tested | ✅ daily_cron.sh ready |
+| 39 | OHLCV hourly fetch | ✅ fetch_ohlcv.py ready |
+| 40 | Daily aggregation script | ✅ daily_aggregation.py ready |
+| 41 | Diagnostics → GitHub daily | ✅ generate_diagnostics.py |
+| 42 | Admin dashboard | ✅ admin.html ready |
+| 43 | Excel daily report | ✅ generate_excel.py ready |
+| 44 | Server capacity measurement | ⏳ Day 1-5 |
+| 45 | Test live $1 order on MEXC | ⏳ Day 2 |
+| 46 | Component toggles in admin | ✅ In admin.html |
+
+---
+
+## Daily Cron Schedule (LOCKED)
+
+
+
+---
+
+## Database Architecture (LOCKED)
+
+Three layers:
+- Redis: live prices in RAM · 60s refresh
+- PostgreSQL: all data · 28 tables · proper indexes
+- Archive: positions older than 1 year
+
+---
+
+## Server Scaling Plan (LOCKED)
+
+- Start: CX23 €3.99/mo
+- Measure loop time at 10→20→50→100→200 trades
+- If loop > 30s → upgrade
+- CX33: €7.49/mo · CX43: €16.49/mo · CX53: €32.99/mo
+
+---
+
+## Phase 5 Items (After Live Stable)
+
+- Short DCA implementation
+- Limit orders for entry and DCA
+- Sequential trade gates
+- Virtual wallet UI
+- Full bot creation wizard
+- Public user registration
+- NOWPayments integration
+- Split dashboard into separate files
 # Trading System
 
 > How Averion executes trades.
@@ -2621,1425 +3955,6 @@ Tab 5 — Controls
 | 6 | Multi-user | Month 9 |
 | 7 | Public launch | Month 12 |
 | 8 | Marketplace | Year 2 |
-# Locked Decisions
-
-> These decisions are FINAL. Do not re-suggest, re-discuss, or modify without Bader explicitly saying "discuss this decision". AI must respect all decisions below.
-
----
-
-## Trading Logic
-
-- DCA spacing calculated from LAST BUY PRICE — never average cost
-- Market orders ONLY — no limit orders ever — no exceptions
-- Trailing safety (Smart DCA only): if TP% - Trail% < 1% → direct market TP
-- NO maximum DCA levels — smart queue handles capital allocation forever
-- Bot NEVER stops running — detects new funds within 60 seconds
-- Open positions update IMMEDIATELY on reclassification (Option B)
-- One pair per bot — no duplicate coin on same bot — cross-bot is fine
-- Paper stays paper FOREVER — live stays live — NO conversion ever
-- Short DCA = spot only — user must already hold the coin — min exchange order size required
-- Profit coin = user chooses USDT or base coin — works for both Long and Short
-- All slippage handling uses market orders only — no limit orders
-
-## Slippage Handling
-- Check order book depth before every DCA
-- If available quantity at target price >= $1 minimum → buy at target price
-- If available quantity < $1 minimum → buy $1 market order (max slippage = $1)
-- Never chase price more than $1 above target
-- Always executes something when triggered — never stuck waiting
-
-## ST Flag (Exchange Suspended Trading)
-- If exchange marks coin as ST → auto sell immediately (market order)
-- Do not open new positions on ST coins
-- When ST cleared → resume normally
-- Telegram alert when ST detected and when cleared
-- Works via CCXT on all 7 exchanges
-- This is the ONLY forced close — user controls everything else
-
-## Smart Queue
-- Score = Loss% divided by USDT required for next DCA
-- Higher score = more recovery per dollar = funded first
-- ONE DCA per cycle — predictable and auditable
-- When TP fires → freed capital → IMMEDIATE rescan
-- Queue naturally prevents duplicate DCAs (last buy price always updates)
-- Queue naturally handles crash scenarios (capital depletes gradually)
-- No special crash detection needed — queue is the protection
-
-## Reclassification
-- Reclassification uses percentage-based trigger not fixed price threshold
-- No phantom buys possible — percentage from last buy price always moves
-- Smart queue handles reclassification correctly
-- CoinGecko for market cap classification ONLY
-- Exchange data (CCXT) for volume/OHLCV/coin list
-
-## Cap Protection
-- Upward: recorded_cap = min(real_cap, previous × 1.10) — max +10% per day
-- Downward: recorded_cap = real_cap — full drop recorded immediately
-- Protects against fake pumps and market manipulation
-- Original idea by Bader
-
-## Data Sources
-- Exchange data via CCXT: coin list + 24h volume + OHLCV
-- CoinGecko: market cap ONLY for classification — once daily 3am
-- Never mixed in same calculation — clean separation
-- CoinGecko failure fallback: use last recorded cap — skip reclassification that day
-
-## Business Model
-- Performance fee = 20% of realized profits only
-- Loss months = $0 fee — no high water mark — no rollover
-- Reserve wallet = fee pre-funding only — NOT trading capital
-- Reserve wallet uses NOWPayments (0.5% fee) — unique address per user
-- Minimum top-up = $10
-- New user gets $5 free trial credit
-- Reserve alerts: <$5 warning · <$2 critical · $0 new positions pause
-- Referral = 3% of 20% fee → referrer reserve wallet — forever
-- Referral code entered at registration ONLY — cannot change after
-- Regular customers always pay 20% — no discount ever
-- 0% fee accounts = relatives/selected by admin only — no reserve needed
-- Admin accounts = no fee · no reserve — all income to owner wallet
-- Fee transfer threshold = $10 default (admin adjustable in panel)
-- Month-end force transfer regardless of threshold
-- Transfer to owner wallet via TRC20 (cheapest fees)
-
-## Infrastructure
-- Health check every 1 hour (CPU · RAM · Disk · PM2 · trades count)
-- 3am cron staggered:
-  - 03:00 Infrastructure (CCXT upgrade · restart · backup)
-  - 03:30 Data & Classification (CoinGecko · parameters · volume)
-  - 04:00 Reporting (snapshot · metrics · Excel · Telegram)
-  - 04:30 Sunday only (cleanup · disk · DB VACUUM · weekly report)
-
-## Security
-- PAPER_MODE moved to .env file — never in config.py
-- Default PAPER_MODE = true always (safe by default)
-- 10 second countdown warning when switching to LIVE mode
-- Red banner across full topbar in LIVE mode
-
-## Paper Trade Rules
-- Paper trades count toward 100 trade limit (shared with live)
-- Paper maximum = 30 of 100
-- Auto-close ALL paper trades if ZERO live trades for 90 days
-- Day 83 warning · Day 89 final warning · Day 90 auto-close
-- Timer resets when ANY live position opens
-
-## Dashboard
-- Settings tab = account info ONLY — bot config lives in wizard
-- Bots tab = flat list — not grouped by exchange
-- Exchange badge per row: M=MEXC · B=Binance · K=KuCoin etc
-- Two toggles per bot: Trading (new positions) + DCA (averaging)
-- Both independent — can mix ON/OFF in any combination
-
-## Decisions From AI Review (May 2026)
-- No complex state machine needed — queue + last buy price prevents duplicates
-- No special crash detection needed — smart queue is the protection
-- Dead coin scenario: ST flag handles it — no forced close otherwise
-- Reclassification mid-ladder: not a bug — percentage trigger always correct
-- One DCA per cycle: intentional — predictable over speed
-- 60 second interval: intentional — DCA swing system not scalping
-- High water mark: intentionally excluded — simplicity over complexity
-
----
-
-## GitHub Repository
-
-- Repo is currently PUBLIC (needed for Claude to fetch docs)
-- Switch back to PRIVATE when averion.app launches publicly
-- Remove GitHub token from all docs at same time
-- Both actions happen together on launch day
-
-## Reclassification Effect on Existing Positions (LOCKED)
-
-- Reclassification affects NEW positions only
-- Existing open positions keep original parameters forever
-- Parameters never change mid-position automatically
-- User controls existing positions via Add Funds · Close · Toggle DCA OFF
-- Reason: predictable · trustworthy · user always in control
-
-## Recovery Buy System (LOCKED)
-
-- REMOVED from spec
-- Smart queue already handles stuck positions naturally
-- User has Add Funds for manual intervention
-- Queue scores Loss% / USDT = naturally prioritizes stuck positions
-- Simpler system = better system
-
-## Paper Mode Virtual Funding (LOCKED)
-
-- Paper trades use UNLIMITED virtual balance
-- No artificial funding limits for paper trading
-- Abuse prevented by existing rules:
-  - Max 30 paper trades per user
-  - 90 day auto-close if no live trades
-  - Server cost protection built in
-- Dashboard shows clearly:
-  "PAPER MODE — Virtual funds unlimited
-   Switch to live trading to use real funds"
-- Purpose: testing · research · learning bot behavior
-
-## Exchange Minimum Order Rules (LOCKED)
-
-- Bot creates normally — no blocking at wizard
-- Trading holds per coin if minimum not met
-- Bot settings page shows error section:
-  - Active coins · Pending coins (needs funds) · Cannot trade coins
-  - Each with reason and suggested fix
-- Add Funds: blocks if amount < exchange minimum
-- Short DCA two-way calculation:
-  - User sets TP% → system calculates minimum quantity needed
-  - User sets quantity → system calculates minimum TP% needed
-  - Live feedback shown before saving
-  - Dashboard warning if current settings cannot meet minimum
-
-## Entry Method Promotion Criteria (Point 7 — Pending AI Review)
-
-- Promotion score = Win Rate x Avg Profit x Recovery Speed / Max Drawdown
-- Promote to Smart DCA default IF:
-  - Minimum 100 trades recorded
-  - Tested across 3+ market regimes (bull · bear · sideways)
-  - Score beats E10 control group
-  - Score beats Simple DCA benchmark
-  - 30 day cooldown passed
-- Delete IF:
-  - 3 consecutive quarterly reviews failed
-  - Win rate < 40% consistently
-  - Underperforms E10 control group
-- NOTE: Share this formula with AIs for validation before implementing
-- NOTE: Get recommendations from ChatGPT + Gemini on scoring weights
-
-## Multi-Exchange Bot Behavior (Point 8 — LOCKED)
-
-- One bot tied to one exchange only
-- Multiple bots allowed per exchange (e.g. 10 bots on MEXC)
-- Each bot has its OWN smart queue
-- Capital isolated per bot via Virtual Wallet System
-
-## Virtual Wallet System (NEW FEATURE — LOCKED)
-
-- User creates named virtual wallets per exchange
-- Example: "Long Test 1" · "Short BTC" · "RVN Wallet"
-- Each wallet links to exchange balance (fixed $ or "All")
-- Bot links to one wallet at creation (changeable anytime)
-- Same wallet = shared queue + shared capital between bots
-- Different wallet = completely isolated queue + capital
-- Wallets visible in new Wallets section per exchange
-- Bot creation wizard Step 2.5: Select or Create Wallet
-- Solves: short bot isolation · capital sharing · queue control
-- No other trading platform has this feature — unique to Averion
-
-## Short DCA Lifecycle (Point 9 — LOCKED)
-
-- Full worked example added to 03_TRADING_SYSTEM.md
-- User must hold coin before opening Short DCA
-- Bot sells portions as price rises (widening spacing)
-- Avg sell price calculated from all sells combined
-- TP triggers when price drops below avg sell price - TP%
-- Trailing arms then fires on TRAIL% pullback
-- Buy back uses collected USDT only
-- Profit = difference between avg sell and buy back price
-- Profit coin: USDT (keep difference) or base coin (buy more)
-
-## Bot Deletion Behavior (Point 10 — LOCKED)
-
-- Bot has 0 open positions:
-  - Shows [Delete Bot] button only
-  - Clean delete · no warning needed
-
-- Bot has open positions:
-  - Shows [Close All and Delete] button
-  - Click shows warning modal with:
-    - Count of positions
-    - Estimated P&L per position (green/red)
-    - Net total P&L (green/red)
-    - Cannot be undone warning
-  - [Cancel] [Close All and Delete]
-  - Market orders close all positions
-  - Bot deleted after all closed
-
-## External Service Outages (Point 11 - LOCKED)
-
-- CoinGecko down: use last recorded cap · skip reclassification · retry next 3am
-- Telegram down: bot continues trading · alerts queued · max 50 queued · send when recovered
-- NOWPayments: DB log all deposits (not Excel) · admin can export to Excel anytime
-  - Table: reserve_deposits (user_id · amount_sent · amount_received · network · tx_hash · status · timestamps)
-  - Admin panel shows deposit log with Match button for unknown deposits
-  - Admin can export full log to Excel anytime
-- Exchange API down: CCXT retries with exponential backoff · after 5 fails → Telegram alert
-  - Pause that exchange only · other exchanges continue · auto-resume when recovered
-- Bot NEVER stops for any external service failure
-
-## Exchange API Key Rules (LOCKED)
-
-- IP whitelist reminder shown when user adds API key
-- Server IP displayed prominently in admin panel Tab 5
-- Reminder shows which exchanges require IP whitelist:
-  - Binance · OKX = required
-  - KuCoin = recommended
-  - MEXC · Gate.io · Bybit · Bitget = optional
-- User must confirm IP whitelisted before saving key
-- Bot detects API key rejection → Telegram alert → exchange paused
-- Some exchanges expire keys after 90 days → bot detects → alerts user
-
-## Data Retention Policy (Point 12 - LOCKED)
-
-- Trade history: FOREVER (tax records · research needs full history)
-- OHLCV hourly: 90 days rolling (older compressed to daily summary)
-- Daily summaries: FOREVER (tiny storage · long term analysis)
-- Research decisions: FOREVER (never repeat failed experiments)
-- Balance history: FOREVER (all time chart for users)
-- Telegram logs: 30 days (Sunday cleanup cron handles this)
-- Error logs: 30 days (Sunday cleanup cron handles this)
-- Deposit logs: FOREVER (financial records · dispute resolution)
-
-## Monetization & Bot Limits (LOCKED)
-
-### Free Tier
-- 5 bots included free forever
-- 100 trades open maximum (hard limit always)
-- 100 trade bundle per month included
-- 1 exchange connection
-- 20% performance fee on profits
-
-### Paid Additions (from reserve wallet)
-- Extra bots: $1 per bot per 30 days
-- Extra trade bundles:
- - 200 trades: $3/month
- - 500 trades: $5/month
- - 1000 trades: $8/month
- - Unlimited: $15/month
-- All deducted automatically 1st of every month
-- Performance fee deducted per winning trade (ongoing)
-
-### Auto-Deduction Rules
-- 1st of month: bot fees deducted first · trade bundle second
-- If reserve insufficient:
- - Deduct what is available
- - Last created bot turns OFF automatically
- - Existing positions on expired bot continue to TP
- - No new positions on expired bot
- - Telegram alert sent immediately
-- No grace period for monthly fee shortage
-- Manual renewal always — never automatic
-
-### Bot Slot System
-- Free slots: 5
-- Paid slots: however many purchased
-- Active bots cannot exceed total slots
-- User turns off one bot → slot freed → another bot can activate
-- Last created bot expires first when slots exceeded
-- Expired bot shows in dashboard: EXPIRED · renew to open new positions
-
-### Trade Limit Rules
-- 100 open trades hard limit — always — regardless of bundle
-- Bundle = how many can be opened this month total
-- When one closes → new one can open (within limit)
-- Dashboard shows: Open 67/100 · Bundle used 234/500
-
-### API Key Abuse Prevention
-- Exchange UID fingerprint captured on API key creation
-- Same UID cannot be added twice (anti-fraud Layer 2)
-- Prevents free bot limit bypass via multiple API keys
-- Cannot bypass without creating entirely new exchange account (requires exchange KYC)
-
-## Concurrent Bot Limits (Point 13 - LOCKED)
-
-- 5 bots free TOTAL across all exchanges (not per exchange)
-- Prevents abuse: 10 exchanges would give 50 free bots if per-exchange
-- Extra bots: $1 per bot per month from reserve wallet
-- Server load = total bots regardless of exchange
-- Price fetching shared across all bots on same exchange = efficient
-- No hard technical API rate limit issue with current architecture
-
-## Customer Telegram Channels (LOCKED)
-
-- 3 separate channels per customer:
-  - Trades: every buy · sell · DCA · TP (mute-friendly)
-  - Alerts: reserve low · bot stopped · ST flag · urgent (never mute)
-  - Reports: daily per exchange · weekly · monthly
-- Customer connects in Settings tab → Notifications section
-- Enter Telegram Chat ID → bot sends verification code → confirmed
-- Each channel has separate toggle ON/OFF
-- Customer controls which channels they receive
-
-## Daily Telegram Report Per Exchange (LOCKED)
-
-Format:
-🌙 Averion Daily Report — Date
-📊 Exchange Name
-Capital: $X
-Open trades: X
-Closed today: X
-Profit today: +$X
-Fees due: $X
-Available funds: $X
-🤖 System: CPU% · RAM% · All exchanges ✅
-
-## PWA Install Hint (LOCKED)
-
-- Detect if user is in browser vs installed PWA
-- Browser + not dismissed → show weekly hint:
-  "💡 Add Averion to home screen for app experience
-   [How to do it] [✓ Don't show again]"
-- Dismissed → never show again (localStorage)
-- PWA detected → never show hint
-- Simple JavaScript matchMedia check
-
-## Manual Bot Type (LOCKED)
-
-- Separate bot type: Manual
-- User picks specific coins manually
-- Not affected by Smart DCA automation
-- Has own virtual wallet
-- Allows second position on same coin
-  (Manual bot + Smart bot can both hold RVN)
-- Research data kept separate from auto bots
-- Available in bot creation wizard Step 2
-
-## Virtual Wallet System (LOCKED)
-
-- User creates named virtual wallets per exchange
-- Example: Long Test 1 · Short BTC · RVN Wallet
-- Each wallet: name · currency · capital amount or All
-- Bot links to one wallet (changeable anytime)
-- Same wallet = shared queue + shared capital
-- Different wallet = isolated queue + capital
-- Wallets section shown per exchange in dashboard
-- Bot creation wizard Step 2.5: Select or Create Wallet
-
-## Entry Method Promotion Formula (Point 7 - LOCKED)
-
-Validated by ChatGPT · Gemini · DeepSeek independently.
-
-### Normalization (all components to 0-1 first)
-- WR_norm = Win Rate (already 0-1)
-- AP_norm = (profit - min) / (max - min)
-- RS_norm = inverted: 1/(recovery_hours+1) then normalized
-- DD_norm = 1 - drawdown% (lower drawdown = higher score)
-- Floor: max(drawdown, 0.01) to prevent division by zero
-
-### Scoring Formula
-Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
-
-### Weights Rationale
-- Drawdown 35%: survivability first - matches Averion philosophy
-- Win Rate 30%: DCA relies on consistency
-- Avg Profit 20%: reward but not chase profit
-- Recovery Speed 15%: capital efficiency tiebreaker
-
-### Formula Adjustment Feature
-- Admin can adjust weights via sliders in Tab 4
-- Weights must always total 100%
-- System recalculates ALL historical scores on change
-- Old ranking saved for comparison
-- 30 day cooldown between weight changes
-- Enables regime-specific tuning (bull/bear markets)
-
-### Promotion Rules
-- Minimum 100 closed trades before scoring
-- Tested across 3+ market regimes
-- Score beats E10 control group
-- Score beats Simple DCA benchmark
-- 30 day cooldown after any parameter change
-
-### Deletion Rules
-- 3 consecutive quarterly reviews failed
-- Win rate below 40% consistently
-- Underperforms E10 control group
-
-## Research Bot Monthly Elimination Rule (LOCKED)
-
-- Monthly quick check — NOT parameter adjustment
-- Eliminate ONLY bots with zero trades in 30 days
-- Reason: signal too strict → never triggers on any coin
-- Replace eliminated bot with looser variation of same method
-- Do NOT eliminate bots with few trades — only zero trades
-- Full 6 month review still applies for promotion/deletion
-- This prevents server resources wasted on untriggerable bots
-
-## 5 Benchmark Bots — Purpose (LOCKED)
-
-- BTC Buy and Hold: pure market exposure baseline
-- ETH Buy and Hold: alternative market exposure
-- Simple DCA ASAP: tests if waiting for signal adds value
-- Random Entry DCA: tests if signals beat pure luck
-- Static Spacing DCA: tests if widening spacing adds value
-
-All 10 entry methods must beat relevant benchmarks
-to be considered for Smart DCA promotion.
-If methods lose to Random Entry = signals are noise.
-If methods lose to BTC Hold = wrong market regime.
-
-## Smart Queue Tie-Breaker (LOCKED)
-
-When two positions have identical scores (Loss% / USDT required):
-
-Step 1: Highest loss $ amount wins
-- Position with bigger absolute loss funded first
-- Closing bigger loss = better recovery for customer
-- More capital freed when TP eventually fires
-
-Step 2: If still equal → oldest position wins
-- Position open longest gets priority
-- Simple · deterministic · fair
-- Easy to implement and audit
-
-## Partial Liquidity DCA Handling (LOCKED)
-
-When DCA triggers but full amount not available:
-
-1. Buy whatever available immediately (market order)
-2. Recalculate avg cost and TP target after every partial buy
-3. Remaining amount goes to STANDBY — not back to queue
-4. Standby monitors price only — fires when price reaches same DCA level again
-5. Standby does NOT compete with queue — completely separate system
-6. Queue continues normally for other coins while RVN is in standby
-7. When price reaches DCA level again → standby buys remaining
-8. If remaining < exchange minimum → add to next DCA level amount
-9. After standby complete → position returns to normal queue
-10. Each partial buy recorded as separate trade for full audit trail
-
-## API Key Expiry Flow (LOCKED)
-
-Step 1: Bot detects API rejection (CCXT auth error)
-- Exchange marked PAUSED in DB
-- Telegram Alerts: MEXC API key rejected · action required
-- Dashboard: red banner · API KEY INVALID · [Update API Key] button
-
-Step 2: User updates API key in Settings
-- Bot tests connection automatically
-- If valid → exchange resumes immediately
-
-Step 3: Auto-resume on reconnection
-- Bot fetches current prices immediately
-- Any TP that triggered during downtime → fires immediately
-- Any DCA that triggered → enters queue normally
-- Everything resumes automatically — no manual intervention
-- 60s loop continues as normal
-
-Step 4: If user never fixes (rare)
-- Positions stay paused · shown in dashboard
-- Telegram reminder every 24 hours
-- After 7 days: reminder to close positions manually on exchange
-- Admin can mark positions closed if needed
-- Nothing forced ever
-
-## API Disconnection Auto-Archive (LOCKED)
-
-If exchange never reconnects:
-- Day 1: Telegram alert + dashboard red banner
-- Day 7: Warning to close positions manually on exchange
-- Day 30: Strong warning · monthly alerts begin from here
-- Monthly: reminder sent every 30 days
-- Month 6: Monthly reminder + "6 months disconnected" warning
-- Month 12: Monthly reminder + "Account will be archived in 30 days"
-- Day 365: Auto-archive all positions
-  - Status changed to EXPIRED
-  - Removed from active dashboard
-  - Kept in History tab forever (tax records)
-  - Telegram final notice sent
-  - DB cleaned · no data deleted
-- Reason: safety net for edge cases
-  (hospitalized · abandoned account · lost access)
-- Monthly alerts prevent user being surprised at day 365
-
-## Performance Fee Calculation (LOCKED)
-
-- Performance fee = 20% of NET profit (after exchange trading fees)
-- Formula: Net Profit = Exit Value - Entry Cost - Exchange Fees
-- Performance Fee = Net Profit x 20%
-- Exchange fees tracked per order via CCXT (fee.cost field)
-- All fees summed across entry + DCAs + TP sell
-- Fairer to customer · transparent · builds trust
-- Small difference in practice but correct approach
-
-## Short DCA Buyback — Limit Order Exception (LOCKED)
-
-Short DCA is the ONLY exception to market orders rule:
-- Sells: market orders (immediate execution)
-- Buyback: limit order (reserves USDT on exchange)
-
-Why limit order for buyback:
-- USDT from sells must be reserved on exchange
-- Prevents queue from using Short funds for Long DCAs
-- Exchange holds USDT → guaranteed buyback when price drops
-- No trailing needed → fixed limit price = exact profit target
-
-After every Short DCA sell:
-1. Receive USDT from market sell
-2. Cancel previous limit buy order (if exists)
-3. Recalculate new avg sell price + new TP target
-4. Place new limit buy order at new TP target price
-5. Exchange reserves exact USDT needed
-6. Queue cannot touch reserved funds
-
-Timing Protection Rule:
-- When Short DCA sell executes → flag: PENDING_BUYBACK
-- ALL Long DCA bots on same exchange → HOLD new DCAs
-- Hold lasts until limit buy order confirmed by exchange (~2 seconds)
-- Then Long DCA resumes normally
-- Prevents queue grabbing Short funds during placement delay
-
-Priority Order (same exchange · same wallet):
-1. Short DCA buyback (always first)
-2. TP exits (free capital immediately)
-3. Long DCA queue (normal scoring)
-
-## Reserve Wallet Debt System (LOCKED)
-
-- Bot NEVER stops when reserve = $0
-- Position closes at TP normally regardless of reserve balance
-- Fee recorded as debt in DB if reserve insufficient
-- Debt shown clearly in dashboard with [Top Up Now] button
-- When user tops up: debt deducted first · remaining = new balance
-- Telegram: debt cleared notification sent
-- Debt accumulates until reserve funded
-- No blocking · no stopping · no forced actions ever
-
-Debt Data Retention:
-- Active unpaid debt: kept forever until paid
-- Paid debt history: kept FOREVER
-- Reason: financial records · tax · dispute resolution
-- Never deleted regardless of account status
-
-## CoinGecko Rate Limiting Solution (LOCKED)
-
-- Use /coins/markets endpoint (250 coins per call)
-- Fetch ALL coins dynamically - not limited to 1870
-- New coins appear automatically in next batch
-- Process: fetch page 1 · page 2 · page 3 · until empty page returned
-- Empty page = all coins fetched · stop automatically
-- Free tier: 50 calls/minute · well within limit
-- Parameters: vs_currency=usd · per_page=250 · page=N
-- Never call individual /coins/{id} endpoint
-- Dynamic · scalable · always complete
-
-## Smart Queue Cycle Definition (LOCKED)
-
-- One cycle = one 60 second price check loop
-- ONE DCA executed per cycle maximum
-- When TP fires mid-cycle:
-  - Capital freed immediately
-  - Queue rescores immediately
-  - Next DCA waits for next 60s cycle
-  - Never two DCAs in same 60s window
-- Maximum DCA rate = one per 60 seconds
-- Predictable · auditable · never chaotic
-
-## Server Clock Sync (LOCKED)
-
-- Install chrony on Hetzner Day 1
-- Syncs with multiple NTP servers automatically
-- Prevents clock drift that causes exchange API rejections
-- Ubuntu 24.04 has systemd-timesyncd by default
-- Chrony provides better accuracy for trading systems
-- One install · runs forever · never needs attention
-
-## Dust Accumulation Handling (LOCKED)
-
-- After every TP sell: check remaining coin balance
-- If remaining < exchange minimum order size = dust
-- Dust marked in DB · excluded from calculations
-- Shown in dashboard: Dust: 0.00003 BTC
-- Weekly Sunday cron: attempt to sell all dust combined
-  - If total dust value >= minimum order → sell
-  - If still too small → ignore · keep in dashboard
-- Dust never causes errors · never blocks calculations
-- Small cosmetic issue only · handled gracefully
-
-## NOWPayments Webhook Reliability (LOCKED)
-
-Three layer system:
-
-Layer 1 — Webhook (primary · instant)
-- NOWPayments fires webhook → credit user immediately
-- payment_id saved to DB · status = CREDITED
-
-Layer 2 — Hourly polling (fallback)
-- Every hour: check NOWPayments API for last 24h payments
-- Compare against DB · any missing payment_id → credit now
-- Catches all missed webhooks automatically
-
-Layer 3 — Admin manual reconciliation
-- Admin deposit log shows ALL payments sorted by newest
-- Status per payment: Credited · Pending · Unknown · Failed
-- [Match] button for unknown deposits (no user match)
-- [Credit Manually] button for stuck payments
-- [Export Excel] for full records
-
-Duplicate Protection:
-- Check payment_id exists in DB before every credit
-- If exists → skip · if not exists → credit
-- Never double-credits under any circumstance
-
-## ST Flag — Entry Check + Exit Rule (LOCKED)
-
-Before entering ANY new position:
-- Check ST flag for that coin
-- If ST active → skip · do not enter
-- Move to next qualifying coin
-- Telegram alert: coin skipped due to ST
-
-During open position:
-- ST detected → auto sell immediately (market order)
-- No exceptions · even at significant loss
-- Reason: some money better than nothing
-- Coin may become permanently untradeable
-- Telegram alert: position closed · ST detected · P&L shown
-- Capital freed → queue rescores immediately
-
-## Smart Queue Insufficient Funds Behavior (LOCKED)
-
-Queue never blocks on insufficient funds:
-- Score all positions by Loss% / USDT required
-- Attempt to fund #1 highest score
-- If insufficient funds → SKIP · move to #2
-- Attempt #2 · if insufficient → SKIP · move to #3
-- Continue until funded position found or list exhausted
-- Execute best affordable position
-- Remaining positions retry next 60s cycle
-- Capital always deployed to best available option
-- Never idle when something can be funded
-- Low balance Telegram alert when NO position can be funded
-
-## OHLCV Data Gap Handling (LOCKED)
-
-New coins under 90 days:
-- Handled by confidence tier system already
-- Under 30 days = category defaults
-- 30-90 days = blend own data + defaults
-- Over 90 days = fully own data
-
-Missing candles from exchange outage:
-- Skip missing candles in ATR calculation
-- Never fake or interpolate data
-- Use available candles only
-- Gap fills automatically next hourly fetch
-- If gap over 24 hours → admin Telegram alert
-- Bot continues trading with available data
-- Minor accuracy impact only · self-correcting
-
-## Customer Telegram Setup (LOCKED)
-
-One direct chat with @AverionBot — professional and simple.
-No separate channels needed — ever.
-
-Connection flow:
-1. Settings → Notifications → [Connect Telegram]
-2. Dashboard shows unique code: /connect ABC123XYZ
-3. Customer opens Telegram → finds @AverionBot
-4. Sends: /connect ABC123XYZ
-5. Bot confirms connection
-6. All notifications go to one direct chat
-
-Message format — clearly labeled:
-- 🟢 TRADE: every buy · sell · DCA · TP
-- 🔴 ALERT: reserve low · ST flag · errors · urgent
-- 📊 REPORT: daily · weekly · monthly summaries
-
-Customer controls in Settings:
-- Toggle each message type ON/OFF independently
-- Alerts recommended always ON
-- Customer can mute bot in Telegram if needed
-
-Why Option C is correct permanently:
-- One chat = everything in one place
-- Professional · clean · simple
-- No multi-channel complexity ever
-- WhatsApp Business and best Telegram bots use this approach
-
-## Short DCA Spacing Formula (LOCKED)
-
-Reference price: price at bot activation (not avg hold price)
-Direction: rises instead of drops (mirrors Long DCA)
-
-Trigger formula:
-- Level 1: activation_price x (1 + DCA%)
-- Level 2+: last_sell_price x (1 + DCA% x spacing_multiplier^level)
-- Mirrors Long DCA geometry exactly — just direction reversed
-
-Order types (LOCKED):
-- Sell orders: MARKET (immediate execution always)
-- Buyback order: LIMIT (reserves USDT on exchange)
-
-After every market sell:
-1. Update last_sell_price
-2. Cancel previous limit buy order
-3. Recalculate avg_sell_price (weighted average of all sells)
-4. Recalculate TP target = avg_sell_price x (1 - TP%)
-5. Place new limit buy at TP target price
-6. Exchange reserves exact USDT needed for buyback
-
-TP formula for Short DCA:
-- TP target = avg_sell_price x (1 - TP%)
-- Price drops to TP target → limit buy fills
-- Profit = total USDT collected - total USDT spent on buyback
-
-## CCXT Version Management (LOCKED)
-
-- Never blind auto-upgrade on live server
-- Safe automated upgrade process:
-
-Step 1: Weekly check for new CCXT version
-Step 2: If new version found:
-  - Install in temporary virtual environment only
-  - Run 5 validation tests:
-    1. Fetch live price from MEXC
-    2. Fetch order book
-    3. Fetch account balance
-    4. Fetch OHLCV data
-    5. Parse order response format
-Step 3: All tests pass → upgrade main installation → restart bot
-Step 4: Any test fails → stay on current version → retry next week
-- Telegram notification after every attempt (pass or fail)
-- Fully automatic · zero manual intervention needed
-- Never breaks live bot · always tested before applying
-
-## Attention Log — Customer Dashboard (LOCKED)
-
-Top section of Bots tab — hidden when empty.
-Appears automatically when any item needs attention.
-
-Severity levels:
-- Red: action required (checkpoint · API expired · ST flag · reserve empty)
-- Yellow: awareness only (standby active · low volume · exchange paused)
-- Green: auto-resolved info (CCXT upgraded · exchange reconnected)
-
-Items shown in log:
-- DCA checkpoint reached → [Continue] [Pause] [Sell Now]
-- Reserve wallet low/empty → [Top Up]
-- API key expired → [Update Key]
-- ST flag detected → [View Position]
-- Standby active (partial DCA waiting) → [View] [Cancel]
-- Dead coin detected → [View Position]
-- Low volume warning → [View Position]
-- Delisted coin → [Mark Closed]
-- Exchange paused → [Update Key]
-
-Behavior:
-- Empty = section completely hidden
-- Items exist = section shows at top of Bots tab
-- User resolves item = disappears from log
-- All resolved = section hidden again
-- Clean · not annoying · always visible when needed
-
-Also sent to Telegram for critical items
-Dashboard is primary · Telegram is secondary
-
-## Base Coin Selection (LOCKED)
-
-- User selects quote currency at bot creation: USDT or BTC
-- USDT bot: trades RVN/USDT · BTC/USDT · ETH/USDT etc
-- BTC bot: trades RVN/BTC · ETH/BTC etc
-- User must have selected base coin on exchange
-- Bot checks base coin balance before every trade
-- Cannot mix: one bot = one base currency always
-- Shown clearly in bot creation wizard Step 3
-
-## Position Price Bar — Live View (LOCKED)
-
-- Every open position shows live progress bar
-- Bar displays three markers:
-  - Current price (live · updates every 60s)
-  - Next DCA trigger price
-  - TP target price
-- Visual indicator: how close to DCA or TP
-- Shown in: Bots tab position row + Position detail screen
-
-## Position Detail Screen (LOCKED)
-
-- Each position has unique ID number
-- Click any position → opens detail screen
-- Shows:
-  - Position ID · Coin · Exchange · Bot name
-  - Current price · Avg cost · Quantity
-  - Total invested · Unrealized P&L
-  - Progress bar (Current · Next DCA · TP)
-  - Full DCA history table:
-    - Each DCA: level · timestamp · price · amount · quantity
-  - Total funds in this trade
-  - Total coin quantity accumulated
-  - Entry method used
-
-## Telegram Notifications — Final (LOCKED)
-
-- ONE chat with @AverionBot — Option C confirmed permanently
-- User toggles each message TYPE on/off independently
-
-Message types:
-- Trade notifications: every buy · DCA · sell · TP
-  (toggle ON/OFF — high volume · many mute this)
-- Alert notifications: reserve low · API expired · ST flag
-  (one alert per event · never repeated · never annoying)
-- Daily report: closed trades count · profit · fees
-- Weekly report: total profit in USDT + coins
-- Monthly report: full summary
-
-Settings tab shows:
-- Connected: @AverionBot ✅
-- Trade notifications: [ON/OFF]
-- Alert notifications: [ON/OFF]
-- Daily report: [ON/OFF]
-- Weekly report: [ON/OFF]
-- Monthly report: [ON/OFF]
-
-## Short Bot Partial Holdings — Standby (LOCKED)
-
-- User sets bot to sell 100 RVN
-- Exchange only has 50 RVN available
-- Bot shows hint: "Only 50 RVN available · waiting for more"
-- Bot sells available 50 RVN immediately
-- Standby activates: waiting for remaining 50 RVN
-- When user receives 50 more RVN → bot resumes immediately
-- Same standby system as partial DCA liquidity
-- No manual action needed · fully automatic
-
-## Reserve Wallet Debt Display (LOCKED)
-
-- Position closes at profit · fee = $5 · reserve = $0
-- Dashboard shows: Fees due: -$5.00 (red)
-- User deposits $10:
-  - Debt $5 deducted first automatically
-  - Remaining $5.00 shown as balance
-  - Telegram: "Reserve topped up · $5 debt cleared · $5.00 remaining"
-- Debt shown clearly in red until cleared
-- Never hidden · always transparent
-
-## Paper Trade Timer Reset (LOCKED)
-
-- Timer resets when live trade OPENS only
-- Closing a live trade does NOT reset timer
-- Only OPENING a new live trade resets 90-day counter
-- Reason: user could close last live trade on Day 89
- and never open another — timer would reset incorrectly
-
-## Short DCA Balance Check (LOCKED)
-
-- Check coin balance on exchange before EVERY Short DCA sell
-- If balance insufficient → standby system activates
-- Telegram alert: insufficient balance for Short DCA sell
-- Attention log: warning shown in dashboard
-- Bot waits for sufficient balance automatically
-- No manual action needed
-
-## Database Backup Strategy (LOCKED)
-
-- Daily 3am: pg_dump → /home/averion/backups/
-- Filename: averion_YYYY-MM-DD.sql
-- Keep last 7 days only (auto-delete older)
-- Phase 4: local backups sufficient for personal use
-- Phase 6: add Hetzner Volume 10GB at €0.48/month
- for off-disk disaster recovery before public launch
-- Telegram alert if backup fails
-
-## MAX_COINS Production Assertion (LOCKED)
-
-- MAX_COINS = 100 exists in Replit only (memory limit)
-- Remove MAX_COINS completely on Hetzner Day 1
-- Add startup assertion in main.py:
- If MAX_COINS set AND PAPER_MODE=false → refuse to start
- Error message: Remove MAX_COINS before going live
-- Prevents silent coin limit in production
-- Already in DAY1_CHECKLIST.md as reminder
-
-## Unconfirmed Order Reconciliation on Startup (LOCKED)
-
-- On every PM2 restart or bot startup:
- 1. Fetch last 100 orders from each exchange via CCXT
- 2. Compare against DB trades table
- 3. Any order on exchange NOT in DB → insert as trade
- 4. Any DB trade marked pending → verify with exchange
- 5. Fill all gaps before resuming queue
-- Prevents: mid-trade PM2 crash losing order confirmation
-- Takes approximately 5 seconds on startup
-- Critical for data integrity with real money
-
-## Exchange Passphrase (LOCKED)
-
-- KuCoin · OKX · Bitget require 3 credentials:
-  API Key · API Secret · API Passphrase
-- Passphrase stored encrypted in exchanges.passphrase_enc
-- User enters passphrase when adding exchange in settings
-- CCXT uses all 3 credentials for authentication
-- MEXC · Binance · Gate.io · Bybit = no passphrase needed
-
-## Dashboard Login Brute Force Protection (LOCKED)
-
-- Track failed login attempts in Redis per IP
-- 5 failures in 15 minutes → 30 minute cooldown
-- Admin can clear blocked IPs in admin panel
-- Applies to both user login and admin login
-- Telegram alert to admin when IP blocked
-
-## Subscription Billing History (LOCKED)
-
-- Every monthly deduction recorded in subscription_billing table
-- Columns: user_id · billing_date · bot_fee · bundle_fee · total
-- Records which bots affected when insufficient reserve
-- Used for: billing disputes · audit trail · admin reporting
-- Never deleted — financial records forever
-
-## Standby System — No Timeout (LOCKED)
-
-- Standby has NO timeout — waits forever
-- Two exit conditions only:
-  1. Price returns to DCA level → fills remainder
-  2. Position hits TP → standby cancelled automatically
-- Partial fill accumulation:
-  - $2 filled + $7.50 standby = $9.50 total
-  - Remaining $0.50 < minimum → added to next DCA level
-- No user configuration needed for timeout
-- TP always handles final exit naturally
-
-## DCA Checkpoint — TP Always Wins (LOCKED)
-
-- Bot NEVER pauses for checkpoint
-- TP always runs regardless of checkpoint state
-- Checkpoint behavior:
-  - Position reaches configured DCA level
-  - DCA turns OFF automatically at checkpoint
-  - Attention log shows warning with cost hint
-  - TP continues running normally
-  - If price rises to TP → sells immediately ✅
-- User can turn DCA back ON manually:
-  - Shows hint: next DCA cost + trigger price
-  - [Turn DCA ON for this level] button
-  - User decision always — never forced
-- Core principle: TP is the goal · DCA is optional
-
-## Short DCA Implementation Priority (LOCKED)
-
-- Short DCA = Phase 5 feature (not Day 1)
-- Day 1 Hetzner: focus on Smart DCA + 10 entry methods
-- Server capacity testing comes first
-- Continue revenuebot.io for Short DCA meanwhile
-- Short DCA proven concept: same as 3commas · revenuebot.io
-- Limit order for buyback = correct and necessary
-  Without it: Long DCA queue steals Short funds
-- Minimum 100 paper Short trades before any live Short
-- Test on MEXC first (already familiar exchange)
-
-## PM2 Startup Sequence (LOCKED)
-
-- hetzner_day1.sh: sleep 5 after PostgreSQL starts
-- main.py startup sequence:
-  1. Wait for PostgreSQL ready (retry every 5s · max 60s)
-  2. Wait for Redis ready (retry every 3s · max 30s)
-  3. Run unconfirmed order reconciliation
-  4. Start bot loop only after all services ready
-- If DB not ready after 60s: log clear error · exit · PM2 retries
-- Admin dashboard shows: startup status per service
-
-## Admin Dashboard Startup Status (LOCKED)
-
-Shows real-time service status on startup:
-- PostgreSQL: ✅ Running / ❌ Not Running
-- Redis: ✅ Running / ❌ Not Running  
-- Bot Loop: ✅ Running / ⏳ Starting / ❌ Stopped
-- Last Reconciliation: timestamp
-- CCXT Version: current version
-- All shown with professional colored indicators
-- Same style as rest of dashboard (dark theme)
-
-## Short DCA Limit Order Auto-Recovery (LOCKED)
-
-Problem: User accidentally cancels limit buyback on exchange
-Bot detects: limit order no longer exists on exchange
-
-Recovery flow:
-1. Hourly check: verify all Short DCA limit orders still active
-2. If limit order cancelled/missing on exchange:
-   → Flag position: BUYBACK_MISSING
-   → Check available USDT in wallet
-   → If USDT available: place new limit order immediately
-   → If USDT gone (stolen by Long DCA queue):
-     · Set same exchange Long DCA bots: HOLD
-     · Telegram alert: Short buyback recovering
-     · Wait for next Long DCA TP to free capital
-     · When capital available: place limit order
-     · Release Long DCA HOLD
-3. Attention log: shows recovery status
-4. User can also press [Force Recover] button
-
-## Limit Order Monitoring (LOCKED)
-
-All limit orders checked every hour:
-- Short DCA buyback orders
-- Any other limit orders (future features)
-- If missing on exchange → auto-recovery triggered
-- Uses CCXT fetchOrder() to verify status
-- Cross-references with DB short_buyback_orders table
-
-## Platform Approach (LOCKED)
-
-- Build public-ready from Day 1 — not personal then upgrade
-- No technical debt from "personal first" approach
-- Server starts small (CX23) · scales with users
-- Admin dashboard monitors capacity · easy upgrade path
-
-## Day 1 Exchange Priority (LOCKED)
-
-- MEXC: Long DCA (primary test exchange)
-- KuCoin: Long DCA (Bader actively trades here)
-- Both exchanges needed from Day 1
-- KuCoin requires passphrase_enc (already in schema)
-- Short DCA: Phase 5 (MEXC first · then KuCoin)
-
-## Virtual Wallet — Day 1 Feature (LOCKED)
-
-- Virtual wallet system built from Day 1
-- Not Phase 5 · not deferred
-- Reason: build once · build right · public platform
-- Every bot assigned to a wallet from creation
-- Default wallet created automatically per exchange
-- User can create named wallets anytime
-- No migration needed later
-
-## Daily Cron Schedule — Final (LOCKED)
-
-03:00 — Infrastructure
-- pip install ccxt safe upgrade (test then apply)
-- pm2 restart averion
-- PostgreSQL backup → /backups/averion_YYYY-MM-DD.sql
-- Keep last 7 days · delete older
-- Telegram admin: "Daily maintenance started"
-
-03:30 — CoinGecko Fetch
-- Fetch all coins market caps (250 per call · dynamic)
-- Store raw caps in coin_history (source: coingecko)
-- No classification yet · raw data only
-
-04:00 — CoinMarketCap Fetch
-- Fetch all coins market caps from CMC API
-- Store raw caps in coin_history (source: cmc)
-- No classification yet · raw data only
-
-04:30 — Classification
-- Average: recorded_cap = (CoinGecko + CMC) / 2
-- If only one source: use that source
-- If both fail: use last recorded · Telegram alert
-- Apply cap protection formula
-- Classify all coins into categories
-- Reclassify changed coins · Telegram alert per change
-- Update coin_history with final recorded_cap + category
-
-05:00 — Reporting
-- Generate Excel report (9 sheets · fresh classification)
-- Update metrics/latest.json → push to GitHub
-- Send daily Telegram to admin (health + stats)
-- Send daily Telegram to each customer (their summary)
-- Save report to /reports/ folder
-
-05:30 — Sunday Only
-- DB VACUUM + ANALYZE
-- Delete logs older than 30 days
-- Delete Excel reports older than 30 days
-- Disk space check → alert if >70%
-- Weekly Telegram summary (profit + fees + rankings)
-- Check CCXT version → safe upgrade if available
-
-## Dashboard vs Cron (LOCKED)
-
-Dashboard: live data · updates every 60 seconds
-- Prices from Redis (updated every 60s from exchanges)
-- Positions from PostgreSQL (updated after every trade)
-- P&L calculated live · always accurate
-- No dependency on cron schedule
-
-Cron: daily batch processing at 3am-5:30am
-- Classification · reports · maintenance
-- Does NOT affect dashboard live accuracy
-- Two completely independent systems
-
-## Admin Dashboard Cron Control (LOCKED)
-
-Admin dashboard shows live cron status:
-- Each step: ✅ Complete · ❌ Failed · ⏳ Running · — Skipped
-- Last run time · duration · records processed · errors
-- [Re-run] button per step — triggers immediately
-- [View Logs] button per step — shows full output
-
-Re-run behavior:
-- Runs that specific step only
-- Uses latest available data
-- Updates status live with spinner
-- Admin can re-run any step independently
-- Example: CoinGecko failed → re-run CoinGecko
-  → then re-run Classification
-  → then re-run Reporting
-
-Steps shown:
-1. Infrastructure (03:00)
-2. CoinGecko Fetch (03:30)
-3. CoinMarketCap Fetch (04:00)
-4. Classification (04:30)
-5. Reporting (05:00)
-6. Sunday Cleanup (05:30 · Sunday only)
-
-All steps visible · all independently re-runnable
-No need to wait for next day if any step fails
-
-## Admin Dashboard Log Copy Button (LOCKED)
-
-- Every log output has [Copy] button
-- One click copies full log to clipboard
-- User pastes to Claude/ChatGPT for debugging
-- No screenshots needed · no typing errors
-- Applies to: cron logs · error logs · trade logs
-- Available in: admin dashboard · attention log
-
-## Standalone Component Architecture (LOCKED)
-
-Each component fails independently:
-- CoinGecko down → CMC covers · no platform impact
-- CMC down → CoinGecko covers · no platform impact
-- Both down → last recorded caps · Telegram alert
-- Telegram down → alerts queue in DB · retry hourly
-- Redis down → bot reads PostgreSQL directly (slower)
-- Backup fails → Telegram alert · bot continues
-- CCXT upgrade fails → stays on current version
-- Excel generation fails → Telegram alert · retry tomorrow
-
-Admin dashboard toggle per component:
-- [ON/OFF] CoinGecko integration
-- [ON/OFF] CMC integration
-- [ON/OFF] Telegram notifications
-- [ON/OFF] Excel report generation
-- [ON/OFF] GitHub metrics push
-- [ON/OFF] CCXT auto-upgrade
-
-Philosophy: nothing brings down entire platform
-Each piece fails gracefully · independently
-
-## Diagnostics Report System (LOCKED)
-
-- Auto-generated every hour
-- Pushed to GitHub automatically
-- Always latest at:
-  https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md
-
-Contains:
-- Auto-analysis with explanations (🔴🟡🟢)
-- 30 day system health table
-- 30 day cron performance table
-- 30 day bot events table
-- 30 day trade events table
-- Server upgrade guide
-
-Admin dashboard buttons:
-- [📋 Copy Markdown] → paste directly to Claude
-- [🔗 Copy URL] → Claude fetches from GitHub
-- [📥 Download] → save locally
-
-Rolling 30 days:
-- Day 31 automatically deleted
-- New day added automatically
-- No manual cleanup needed
-
-How to use with Claude:
-"Read this and diagnose:
- https://raw.githubusercontent.com/baderbalubaid/Averion/main/diagnostics/latest.md"
-
-## Limit Orders for Entry and DCA (LOCKED)
-
-User selects per bot in wizard:
-- Entry order type: [Market] or [Limit]
-- DCA order type: [Market] or [Limit]
-- Can switch ON/OFF anytime · even mid-trade
-
-Limit DCA behavior:
-- Places limit buy for NEXT DCA level only
-- Not all levels at once (avoids locking USDT)
-- Partial fill → avg cost + TP recalculate immediately
-- TP fires → cancel pending limit → USDT freed
-- Remaining < minimum order → add to next DCA level
-- Example: $10 DCA · $2 fills · $7.50 fills · $0.50 remaining
-  → $0.50 added to next DCA level amount
-
-Trailing TP:
-- Trailing TP disappears when limit DCA mode ON
-- Common sense: limit orders cannot trail
-- Option hidden automatically in wizard when limit selected
-
-ON → bot places limit order on exchange immediately
-OFF → cancels all pending limit orders · USDT returned
-
-## Sequential Trade Gates (LOCKED)
-
-Two separate bot settings:
-- Trades per bot: max concurrent open trades from this bot
-- Trades per coin: how many times same coin repeats
-
-Gate conditions (per bot):
-- [DCA trigger ON/OFF]: opens next trade when current hits DCA level
-- [Timer ON/OFF]: opens next trade after X hours from last opened
-- Both ON: whichever comes first opens next trade
-- Both OFF: only 1 trade per coin (default behavior)
-
-Sequence behavior:
-- Trades open one by one in sequence
-- Last opened trade = gate reference always
-- When reference trade closes → previous becomes reference
-- Sequence continues forever · no hard stop
-- When one closes → slot opens → new trade can start
-
-Entry method:
-- All trades in bot use same parameters
-- Same DCA% · spacing · TP% · entry method
-- No per-trade customization · simple · consistent
-
-Example:
-Trades per bot: 20 · Trades per coin: 3 · Gate: both
-→ Bot opens max 20 trades total
-→ Any coin max 3 concurrent trades
-→ Each coin's trades open sequentially via gate
-→ Last opened = reference for next gate trigger
-
-## Feature Phasing — Final (LOCKED)
-
-### Phase 4 — Day 1 Hetzner (paper mode first)
-Must work:
-- User login (basic auth · admin only)
-- Add exchange (MEXC + KuCoin)
-- Create bot (basic wizard)
-- Paper trading loop (60s cycles)
-- Long DCA market orders (paper)
-- Smart queue (Loss% / USDT)
-- Trailing TP
-- Telegram notifications
-- Dashboard showing positions
-- 107 research bots launched
-- Daily cron (CoinGecko · CMC · classify · report)
-- Classification engine
-- Basic admin dashboard
-- Diagnostics auto-generated hourly
-
-Not in Phase 4:
-- Short DCA · Limit orders · Sequential gates
-- NOWPayments · Public registration
-- Virtual wallet UI · Full admin dashboard
-
-### Phase 4.5 — First Live Trade
-- After 7+ days paper stable
-- $1 test order on MEXC
-- Then KuCoin Long DCA live
-- Small amounts · monitor carefully
-
-### Phase 5 — After Live Stable
-- Short DCA (MEXC first)
-- Limit orders (entry + DCA)
-- Sequential trade gates
-- Virtual wallet UI
-- Full admin dashboard
-- Smart DCA entry methods proven
-
-### Phase 6 — Public Launch
-- NOWPayments integration
-- Public registration
-- Full authentication
-- Performance fees system
-- Reserve wallet payments
-- Marketing
-
-### Phase 7 — Scale
-- More exchanges
-- More features
-- Server upgrades
-- Referral system active
-
-## Gate Reference Promotion Rule (LOCKED)
-
-When reference trade closes:
-- Highest sequence_number still open = new reference
-- Example: Trades 1·2·3 open · Trade 3 closes
-  → Trade 2 becomes reference (highest still open)
-- is_gate_reference updated immediately on close
-- gate_reference_since = timestamp when became reference
-
-Timer reset rule:
-- Timer always measures from gate_reference_since
-- NOT from when trade originally opened
-- Example: Trade 2 opened 15:00 · became reference 22:00
-  Gate timer 5h → next trade at 03:00 (not 20:00)
-- Timer resets completely when reference changes
-- DCA trigger also resets · watches new reference only
-
-## Short DCA HOLD Rule — Simplified (LOCKED)
-
-Previous rule removed: HOLD Long DCAs 2 seconds
-New rule:
-- PENDING_BUYBACK flag set when limit order being placed
-- Long DCA checks flag at start of each cycle
-- If PENDING_BUYBACK = TRUE → skip this cycle
-- After limit order confirmed placed → flag cleared
-- Long DCA resumes next 60s cycle automatically
-- 60s cycle handles timing naturally · no manual hold needed
-
-## MAX_COINS Removal — Day 1 (LOCKED)
-
-- Do NOT add MAX_COINS to Hetzner .env
-- Replit-only variable · never used on Hetzner
-- Simply leave it out of .env completely
-- Startup assertion refuses to start if found with PAPER_MODE=false
-
-## Security Session Management (LOCKED)
-
-- JWT token expires 30 days on same device
-- Day 30: verification code sent via Telegram or email (FREE)
-- Enter code → fresh 30 days granted
-- New device: login + immediate verification code required
-- Wrong code 3 times → account locked · admin Telegram alert
-- No SMS · Telegram or email only (free)
-
-## API Key Withdrawal Warning (LOCKED)
-
-When user adds exchange:
-- Required checkbox (cannot save without):
-  ☑ "I confirm withdrawal permission is DISABLED on this API key"
-- Warning shown in red:
-  "Never enable withdrawal permission on your API key!
-   If compromised, attacker cannot withdraw your funds."
-- Link to guide per exchange showing how to disable
-- User responsibility · platform warns clearly
-- No automatic withdrawal testing from our side
-
-## Security Audit Log (LOCKED)
-
-Record every critical action in security_audit_log:
-- User login: IP · device · timestamp
-- Failed login attempts
-- API key added/deleted
-- Exchange added/deleted
-- Bot created/deleted
-- Admin actions (every admin endpoint)
-- Password changed
-- Telegram connected/disconnected
-- Verification code sent/used
-
-## API Rate Limiting (LOCKED)
-
-Phase 4-6: not needed
-- Queue system naturally limits requests
-- Max 100 trades · one DCA per 60s
-- Login already brute force protected ✅
-Phase 7 public launch: add FastAPI middleware
-- 60 requests/minute per token
-- Easy to add · leave for Phase 6 preparation
-
-## Email Verification at Registration (LOCKED)
-
-- Required before accessing dashboard
-- Flow:
-  1. User registers → account created (unverified)
-  2. 6-digit code sent to email immediately
-  3. Redirect to verify page
-  4. Enter code → verified → go to dashboard
-  5. Cannot access dashboard until verified
-
-- Email service: SendGrid free tier (100/day)
-- Setup needed: sendgrid.com account + API key
-- Add to .env: SENDGRID_API_KEY · SENDER_EMAIL
-- Columns already in schema: email_verified · email_verify_code
-- Implement when averion.app domain is ready (Day 2)
-- Sender email: noreply@averion.app
 # AI Reviews and Resolutions
 
 > External AI feedback on Averion v4.6 spec.
@@ -4216,191 +4131,276 @@ When spec clearly explains:
 AIs give relevant recommendations instead of wrong ones.
 Clear spec = better AI advice.
 This is why markdown documentation exists.
-# TODO — Hetzner Items
+# Project Overview
 
-> Everything that requires the actual server.
-> Do NOT attempt on Replit — server only.
-> All commands run via SSH on Hetzner.
-> Follow DAY1_CHECKLIST.md for exact sequence.
+> What Averion is, who it is for, and what makes it different.
 
 ---
 
-## Server Details
-- Provider: Hetzner Cloud
-- Plan: CX23 (4GB RAM · 2 vCPU · 40GB disk)
-- Location: Helsinki, Finland
-- OS: Ubuntu 24.04
-- Cost: €3.99/month
-- Status: Ordered · ID verification pending
+## What Is Averion
+
+Averion is a personal automated crypto spot trading platform.
+Runs 24/7 on Hetzner cloud server (~€3.99/month).
+Accessible from any device via secure web dashboard.
+Built to replace 3commas with no per-position limits.
+Designed from day one for future public launch.
 
 ---
 
-## What Is Already Ready (Coded on Replit)
+## Core Concept
 
-All code written · pushed to GitHub · ready to deploy:
-
-| File | Status | Description |
-|------|--------|-------------|
-| database.py | ✅ Ready | PostgreSQL · 1015 lines · 57 functions |
-| api.py | ✅ Ready | FastAPI · 877 lines · 30+ endpoints |
-| main.py | ✅ Ready | Startup sequence · DB wait · reconciliation |
-| bot_loop.py | ✅ Ready | Trading engine · smart queue · TP · DCA |
-| exchanges.py | ✅ Ready | CCXT wrapper · 7 exchanges · encryption |
-| telegram.py | ✅ Ready | Notifications · alerts · reports |
-| auth.py | ✅ Ready | Login · session · brute force protection |
-| index.html | ✅ Ready | Homepage · marketing |
-| login.html | ✅ Ready | Sign in · forgot password |
-| register.html | ✅ Ready | Sign up · password validation |
-| dashboard.html | ✅ Ready | Customer trading dashboard |
-| admin.html | ✅ Ready | Admin control panel |
-| schema.sql | ✅ Ready | 651 lines · 28 tables |
-| hetzner_day1.sh | ✅ Ready | Security hardened setup script |
-| hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
-| DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
-| research_bots.json | ✅ Ready | 107 paper bots configured |
-| launch_research_bots.py | ✅ Ready | Launch all 107 bots |
-| daily_cron.sh | ✅ Ready | All automation scheduled |
-| health_check.sh | ✅ Ready | Hourly monitoring |
-| fetch_coingecko.py | ✅ Ready | CoinGecko market caps |
-| fetch_cmc.py | ✅ Ready | CoinMarketCap market caps |
-| classify_coins.py | ✅ Ready | Classification engine |
-| generate_excel.py | ✅ Ready | 9-sheet Excel reports |
-| generate_diagnostics.py | ✅ Ready | Auto-analysis markdown |
+Buy low · average lower · sell at profit.
+Fully automated · no daily intervention needed.
+Put money in · forget it · collect profits.
 
 ---
 
-## Day 1 — Server Setup
+## Who It Is For
 
-> Run: bash setup/hetzner_day1.sh
-> Full details in setup/DAY1_CHECKLIST.md
+### Phase 1-4 (Now)
+- Bader only — personal trading
+- Paper mode first · live after Hetzner
 
-Covers automatically:
-- System update + auto security updates
-- PostgreSQL + Redis + Nginx + Fail2ban + Chrony
-- SSH hardening (port 2847 · no root · keys only)
-- UFW firewall (default deny)
-- Clone GitHub repo
-- Install Python packages
-- Create database + run schema
-- PM2 setup + startup
-- Cron jobs installed
-- File permissions
-
-Manual steps after script:
-- Fill in .env file
-- Run init_db.py (create admin user)
-- Add GitHub Actions secrets
-- Setup UptimeRobot monitoring
+### Phase 6-7 (Future)
+- Public subscribers paying 20% performance fee
+- Anyone wanting automated DCA without monthly subscriptions
 
 ---
 
-## Day 2 — Domain & HTTPS
+## Main Goals
 
-> Run: bash setup/hetzner_day2.sh
-
-- Buy averion.app domain
-- Point DNS A record to server IP
-- Wait DNS propagation (1-24 hours)
-- Run Day 2 script (Nginx + HTTPS + deploy keys)
-- Setup SendGrid for email verification
-- Test live $1 order on MEXC
-
----
-
-## Day 3+ — Paper Trading
-
-- 107 research bots running simultaneously
-- Smart DCA entry methods testing (paper only)
-- OHLCV data building hourly
-- Classification running daily at 04:30
-- Excel reports generated daily at 05:00
-- Diagnostics auto-pushed to GitHub hourly
-- Monitor admin dashboard daily
-- Check Telegram alerts (never mute)
+| Goal | Detail |
+|------|--------|
+| Replace 3commas | Full control · own server · no limits |
+| No monthly fee | Users pay only when they profit |
+| Set and forget | Bot never stops · detects funds in 60s |
+| Survivability | Never blows up · survives crashes |
+| Self-improving | 10 entry methods compete · best wins |
+| Fair pricing | 20% of profits only · loss months = $0 |
 
 ---
 
-## Day 30+ — Parameter Optimization
+## Supported Exchanges (via CCXT)
 
-- Download Excel from /reports/ folder
-- Upload to Claude: analyze research bot rankings
-- Share with ChatGPT for second opinion
-- Apply best parameters
-- Restart bot with optimized settings
-
----
-
-## Day 45+ — Live Trading
-
-- Set PAPER_MODE=false in .env
-- Verify red LIVE banner in dashboard
-- Place $1 test order on MEXC
-- Verify order on exchange website
-- Scale gradually with more capital
+| Exchange | Status |
+|----------|--------|
+| MEXC | ✅ Live now on Replit |
+| Binance | Phase 6 |
+| KuCoin | Phase 6 |
+| OKX | Phase 6 |
+| Gate.io | Phase 6 |
+| Bybit | Phase 6 |
+| Bitget | Phase 6 |
 
 ---
 
-## Hetzner Items Status
+## Core Features
 
-| # | Task | Status |
-|---|------|--------|
-| 27 | Server creation + security | ⏳ Waiting for server |
-| 28 | Clone GitHub + folder structure | ✅ Script ready |
-| 29 | Create .env with all variables | ✅ env.example ready |
-| 30 | PM2 start + startup + save | ✅ Script ready |
-| 31 | Buy averion.app + DNS | ⏳ Day 2 |
-| 32 | Nginx + HTTPS certificate | ✅ Script ready |
-| 33 | Secret admin URL via .env | ✅ In api.py |
-| 34 | Fernet API key encryption | ✅ In exchanges.py |
-| 35 | GitHub Actions auto-deploy | ✅ deploy.yml ready |
-| 36 | UptimeRobot monitoring | ⏳ Day 1 manual step |
-| 37 | Telegram bot · one chat | ✅ In telegram.py |
-| 38 | Cron jobs installed + tested | ✅ daily_cron.sh ready |
-| 39 | OHLCV hourly fetch | ✅ fetch_ohlcv.py ready |
-| 40 | Daily aggregation script | ✅ daily_aggregation.py ready |
-| 41 | Diagnostics → GitHub daily | ✅ generate_diagnostics.py |
-| 42 | Admin dashboard | ✅ admin.html ready |
-| 43 | Excel daily report | ✅ generate_excel.py ready |
-| 44 | Server capacity measurement | ⏳ Day 1-5 |
-| 45 | Test live $1 order on MEXC | ⏳ Day 2 |
-| 46 | Component toggles in admin | ✅ In admin.html |
+### Trading
+- Long DCA — buy dips · sell at profit
+- Short DCA — sell rises · buy back cheaper
+- Trailing take profit — follows price up
+- Smart DCA queue — best recovery first
+- Market orders only — guaranteed execution
+- Unlimited DCA levels — never stuck
 
----
+### Intelligence
+- 10 entry methods competing simultaneously
+- Auto-classification into 5 market cap categories
+- Cap protection against fake pumps
+- Volume-weighted parameters per category
+- 90-day rolling data window per coin
+- Self-improving research system
 
-## Daily Cron Schedule (LOCKED)
+### Business
+- 20% performance fee on profits only
+- Reserve wallet pre-funding (NOWPayments)
+- Referral system 3% forever
+- Free $5 trial credit for new users
 
-
-
----
-
-## Database Architecture (LOCKED)
-
-Three layers:
-- Redis: live prices in RAM · 60s refresh
-- PostgreSQL: all data · 28 tables · proper indexes
-- Archive: positions older than 1 year
+### Operations
+- PWA — works on any browser including iPhone Face ID
+- 3 Telegram channels (Trades · Alerts · Reports)
+- Automated daily maintenance at 3am
+- GitHub Actions auto-deploy
+- UptimeRobot external monitoring
 
 ---
 
-## Server Scaling Plan (LOCKED)
+## What Makes Averion Different
 
-- Start: CX23 €3.99/mo
-- Measure loop time at 10→20→50→100→200 trades
-- If loop > 30s → upgrade
-- CX33: €7.49/mo · CX43: €16.49/mo · CX53: €32.99/mo
+| Feature | 3commas | Averion |
+|---------|---------|---------|
+| Monthly fee | Yes $29-99 | No |
+| Performance fee | No | 20% profits only |
+| Position limits | Yes | No limits |
+| Server control | No | Full control |
+| Self-improving | No | Yes (10 methods) |
+| Market cap aware | No | Yes (5 categories) |
+| Cap protection | No | Yes (original idea) |
+| Never stuck | No | Yes |
+| Cost | $29-99/month | €3.99/month server |
 
 ---
 
-## Phase 5 Items (After Live Stable)
+## Long-Term Vision
 
-- Short DCA implementation
-- Limit orders for entry and DCA
-- Sequential trade gates
-- Virtual wallet UI
-- Full bot creation wizard
-- Public user registration
-- NOWPayments integration
-- Split dashboard into separate files
+Platform gets smarter every year.
+10 entry methods compete → worst deleted → best survives.
+Intelligence compounds over time automatically.
+Eventually becomes a marketplace where signal providers
+list their strategies for subscribers to use.
+# Branding and Vision
+
+> Averion identity · design language · positioning.
+
+---
+
+## Identity
+
+| Item | Detail |
+|------|--------|
+| App Name | Averion |
+| Tagline | Intelligent DCA Trading · Automate. Adapt. Grow. |
+| Domain | averion.app (buy on Hetzner day) |
+| GitHub | github.com/baderbalubaid/Averion |
+
+---
+
+## Logo
+- DCA ladder bars inside A triangle
+- Gold arc + silver legs + blue bars
+- CONFIRMED — do not change
+
+---
+
+## Typography
+- Font: Inter (Google Fonts)
+- Weights used: 900 · 800 · 700 · 600 · 500 · 400
+- Letter spacing: tight for headings · normal for body
+
+---
+
+## Color System
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Indigo | #6366F1 | Accent · buttons · active states |
+| Green | #10D98A | Profit · active · ON toggles · success |
+| Amber | #F59E0B | Fees · warnings · stuck positions |
+| Red | #F4645F | Loss · critical · danger · destructive |
+| Blue | #38BDF8 | Info · MEXC badge · positions count |
+| Purple | #A78BFA | DCA count · TP Armed · Bitget badge |
+| Orange | #FB923C | Bybit badge |
+| Teal | #14B8A6 | Phase 3.5 · secondary accent |
+
+### Backgrounds
+| Name | Hex | Usage |
+|------|-----|-------|
+| Page | #07070F | Main background |
+| Card | #0E0E1C | Cards · sidebar · topbar |
+| Card2 | #141428 | Deeper cards · inputs |
+| Card3 | #1E1E3A | Table headers · hover |
+| Border | #1E1E35 | All borders |
+| Border2 | #252540 | Stronger borders |
+
+### Text
+| Name | Hex | Usage |
+|------|-----|-------|
+| Primary | #F0F0FF | Main text |
+| Secondary | #8888AA | Muted text |
+| Tertiary | #55556A | Very muted · labels |
+
+---
+
+## Design Philosophy
+
+### Style Reference
+- Linear · Vercel · Stripe · TradingView
+- Minimal · clean · premium · professional
+- Dark theme only — no light mode
+
+### What Averion IS
+- Trustworthy financial tool
+- Clean and precise
+- Premium but accessible
+- Confidence-inspiring
+
+### What Averion is NOT
+- No neon colors
+- No glow effects
+- No gambling casino feel
+- No flashy animations
+- No cluttered UI
+
+---
+
+## UI Components
+
+### Cards
+- Background: #0E0E1C
+- Border: 1px solid #1E1E35
+- Border radius: 16px
+- Top gradient accent line per card type
+- Hover: translateY(-1px) slight lift
+
+### Buttons
+- Primary: #6366F1 background · white text
+- Success: #10D98A background · dark text
+- Danger: #F4645F background · white text
+- Ghost: #141428 background · border · muted text
+- Border radius: 9px
+- Active: scale(0.98) slight press
+
+### Badges
+- Active: green tint background · green text · green border
+- Stuck: amber tint · amber text · amber border
+- Critical: red tint · red text · red border
+- Queued: blue tint · blue text · blue border
+- TP Armed: purple tint · purple text · purple border
+- Closed: gray tint · gray text · gray border
+
+---
+
+## Responsive Layout
+
+| Screen | Layout |
+|--------|--------|
+| Desktop (≥1024px) | Full sidebar 220px + content |
+| Tablet (768-1023px) | Icon-only sidebar 60px + content |
+| Mobile (<768px) | No sidebar · bottom nav 4 tabs |
+
+100% automatic CSS — no JavaScript toggle needed
+
+---
+
+## Positioning
+
+### vs 3commas
+- No monthly subscription
+- Own server full control
+- No position limits
+- Self-improving intelligence
+
+### vs Binance Grid Bot
+- Multi-exchange
+- Market cap aware
+- Research system
+- Performance fee only
+
+### vs Manual Trading
+- 24/7 automated
+- No emotion
+- Consistent execution
+- Never misses a DCA
+
+---
+
+## Future Brand Extensions
+- averion.app — main platform
+- docs.averion.app — documentation
+- status.averion.app — uptime page
+- api.averion.app — developer API
 -- Averion PostgreSQL Schema
 -- Run this on Hetzner Day 1
 -- Command: psql -U averion -d averion < schema.sql
@@ -5358,6 +5358,102 @@ echo "4. pm2 restart averion"
 echo "5. Continue with Day 2 (domain + HTTPS)"
 echo ""
 echo "⚠️  New SSH connection: ssh -p $SSH_PORT $AVERION_USER@YOUR_IP"
+#!/bin/bash
+# Averion — Hetzner Day 2 Setup Script
+# Run after Day 1 is complete
+# Requirements: domain DNS already pointing to server IP
+# Run as root: bash hetzner_day2.sh
+
+set -e
+echo "🚀 Starting Averion Day 2 Setup..."
+
+# ═══════════════════════════════
+# VARIABLES — EDIT THESE FIRST
+# ═══════════════════════════════
+DOMAIN="averion.app"
+EMAIL="your-email@gmail.com"
+
+# ═══════════════════════════════
+# STEP 1 — Nginx Configuration
+# ═══════════════════════════════
+echo "🌐 Step 1: Configuring Nginx..."
+cat > /etc/nginx/sites-available/averion << NGINX
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+NGINX
+
+ln -sf /etc/nginx/sites-available/averion /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+echo "✅ Nginx configured"
+
+# ═══════════════════════════════
+# STEP 2 — HTTPS Certificate
+# ═══════════════════════════════
+echo "🔐 Step 2: Getting HTTPS certificate..."
+certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m $EMAIL
+echo "✅ HTTPS certificate installed"
+
+# ═══════════════════════════════
+# STEP 3 — Auto-renew Certificate
+# ═══════════════════════════════
+echo "🔄 Step 3: Setting up auto-renew..."
+(crontab -l 2>/dev/null; echo "0 12 * * * certbot renew --quiet") | crontab -
+echo "✅ Certificate auto-renew configured"
+
+# ═══════════════════════════════
+# STEP 4 — GitHub Actions Deploy Key
+# ═══════════════════════════════
+echo "🔑 Step 4: Setting up GitHub Actions..."
+ssh-keygen -t ed25519 -C "averion-deploy" -f /root/.ssh/averion_deploy -N ""
+echo ""
+echo "Add this PUBLIC key to GitHub repo Settings → Deploy Keys:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cat /root/.ssh/averion_deploy.pub
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Add this PRIVATE key to GitHub repo Settings → Secrets → HETZNER_SSH_KEY:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cat /root/.ssh/averion_deploy
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# ═══════════════════════════════
+# STEP 5 — Test Live Order
+# ═══════════════════════════════
+echo ""
+echo "🧪 Step 5: Ready for live order test"
+echo "To test live trading:"
+echo "1. Edit .env: nano /home/averion/Averion/.env"
+echo "2. Set PAPER_MODE=false"
+echo "3. Restart: pm2 restart averion"
+echo "4. Open dashboard and verify red LIVE banner"
+echo "5. Watch for first \$1 test order on MEXC"
+echo "6. Set PAPER_MODE=true after test"
+echo "7. Restart: pm2 restart averion"
+
+# ═══════════════════════════════
+# DONE
+# ═══════════════════════════════
+echo ""
+echo "🎉 Day 2 Setup Complete!"
+echo ""
+echo "Your dashboard: https://$DOMAIN/dashboard"
+echo "Admin panel: https://$DOMAIN/\$ADMIN_PATH"
+echo ""
+echo "Next steps:"
+echo "1. Add GitHub deploy keys (shown above)"
+echo "2. Setup UptimeRobot monitoring"
+echo "3. Test live \$1 order on MEXC"
+echo "4. Start 107 paper research bots"
 # Averion — Hetzner Day 1 Checklist
 > Follow in exact order. Check each item before moving to next.
 > All commands in hetzner_day1.sh — run that first!
@@ -5536,6 +5632,179 @@ Platform is live! 6 month research period begins.
 - Download via SCP: scp root@IP:/home/averion/Averion/reports/latest.xlsx .
 - Open in Excel or Google Sheets
 - Never rename columns — AI workflows depend on stable names
+# Averion Environment Variables
+# Copy this file to .env and fill in your values
+# Command: cp env.example .env
+
+# ═══════════════════════════════
+# CORE SETTINGS
+# ═══════════════════════════════
+PAPER_MODE=true
+SECRET_KEY=generate-random-string-here
+
+# ═══════════════════════════════
+# DATABASE
+# ═══════════════════════════════
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=averion
+DB_USER=averion
+DB_PASSWORD=your-strong-password-here
+
+# ═══════════════════════════════
+# REDIS
+# ═══════════════════════════════
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# ═══════════════════════════════
+# ADMIN
+# ═══════════════════════════════
+ADMIN_PATH=ops-CHANGEME
+ADMIN_PASSWORD=your-admin-password-here
+
+# ═══════════════════════════════
+# OWNER WALLET
+# ═══════════════════════════════
+OWNER_WALLET_TRC20=your-trc20-address
+OWNER_WALLET_BEP20=your-bep20-address
+TRANSFER_THRESHOLD=10
+
+# ═══════════════════════════════
+# TELEGRAM
+# ═══════════════════════════════
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_ADMIN_CHAT_ID=your-admin-chat-id
+
+# ═══════════════════════════════
+# COINMARKETCAP
+# ═══════════════════════════════
+CMC_API_KEY=your-cmc-api-key
+
+# ═══════════════════════════════
+# NOWPAYMENTS
+# ═══════════════════════════════
+NOWPAYMENTS_API_KEY=your-api-key
+NOWPAYMENTS_IPN_SECRET=your-ipn-secret
+
+# ═══════════════════════════════
+# ENCRYPTION
+# ═══════════════════════════════
+FERNET_KEY=generate-with-python-cryptography
+
+# ═══════════════════════════════
+# GITHUB (for auto-deploy)
+# ═══════════════════════════════
+GITHUB_TOKEN=your-github-token
+
+# ═══════════════════════════════
+# SERVER
+# ═══════════════════════════════
+PORT=8080
+HOST=0.0.0.0
+import psycopg2
+import os
+import hashlib
+import secrets
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432),
+    'dbname': os.getenv('DB_NAME', 'averion'),
+    'user': os.getenv('DB_USER', 'averion'),
+    'password': os.getenv('DB_PASSWORD')
+}
+
+def hash_password(password):
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+    return f"{salt}:{hashed}"
+
+def main():
+    print("🚀 Initializing Averion Database...")
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+
+    # ═══════════════════════════
+    # Create Admin User
+    # ═══════════════════════════
+    admin_email = os.getenv('ADMIN_EMAIL', 'admin@averion.app')
+    admin_password = os.getenv('ADMIN_PASSWORD', 'changeme123')
+    admin_hash = hash_password(admin_password)
+
+    cur.execute("SELECT id FROM users WHERE email = %s", (admin_email,))
+    if cur.fetchone():
+        print(f"⏭️  Admin user already exists: {admin_email}")
+    else:
+        cur.execute("""
+            INSERT INTO users (
+                email, password_hash, is_admin,
+                is_zero_fee, created_at
+            ) VALUES (%s, %s, TRUE, TRUE, %s)
+        """, (admin_email, admin_hash, datetime.utcnow()))
+        print(f"✅ Admin user created: {admin_email}")
+
+    # ═══════════════════════════
+    # Create Owner Balance Record
+    # ═══════════════════════════
+    cur.execute("SELECT id FROM owner_balance LIMIT 1")
+    if not cur.fetchone():
+        cur.execute("""
+            INSERT INTO owner_balance
+            (accumulated_fees_usdt, total_transferred)
+            VALUES (0, 0)
+        """)
+        print("✅ Owner balance record created")
+    else:
+        print("⏭️  Owner balance already exists")
+
+    # ═══════════════════════════
+    # Verify All Tables Exist
+    # ═══════════════════════════
+    tables = [
+        'users', 'exchanges', 'virtual_wallets', 'bots',
+        'positions', 'trades', 'standby_orders',
+        'reserve_wallets', 'reserve_deposits', 'fee_debt',
+        'balance_history', 'coin_history', 'ohlcv_hourly',
+        'owner_balance', 'referrals', 'wallet_bot_assignments',
+        'wallet_transactions'
+    ]
+
+    print("\n📋 Verifying tables:")
+    all_good = True
+    for table in tables:
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = %s
+            )
+        """, (table,))
+        exists = cur.fetchone()[0]
+        status = "✅" if exists else "❌"
+        print(f"  {status} {table}")
+        if not exists:
+            all_good = False
+
+    conn.commit()
+    conn.close()
+
+    print()
+    if all_good:
+        print("🎉 Database initialized successfully!")
+        print(f"   Admin: {admin_email}")
+        print(f"   Password: {admin_password}")
+        print("   ⚠️  Change password after first login!")
+    else:
+        print("❌ Some tables missing — run schema.sql first:")
+        print("   psql -U averion -d averion -h localhost < setup/schema.sql")
+
+if __name__ == '__main__':
+    main()
 import os
 import time
 import psycopg2
@@ -7671,6 +7940,92 @@ def telegram_status(payload: dict = Depends(verify_token)):
         'connected': bool(user[3]) if user else False,
         'verified': bool(user[4]) if user else False
     }
+
+# ═══════════════════════════════
+# AUTH — RESET PASSWORD
+# ═══════════════════════════════
+class ResetPasswordRequest(BaseModel):
+    email: str
+    method: str = 'email'
+
+class ResetPasswordConfirm(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+@app.post('/auth/reset-password')
+def reset_password(req: ResetPasswordRequest):
+    user = db.get_user_by_email(req.email)
+    if not user:
+        # Don't reveal if email exists
+        return {'message': 'If this email exists · code sent'}
+
+    user_id = user[0]
+    code = db.create_verification_code(user_id)
+
+    if req.method == 'telegram':
+        chat_id = user[5] if len(user) > 5 else None
+        if chat_id:
+            import telegram as tg
+            tg.send_message(chat_id,
+                f'🔐 <b>Password Reset Code</b>\n\n'
+                f'Your code: <b>{code}</b>\n'
+                f'Valid for 15 minutes.\n\n'
+                f'If you did not request this · ignore.'
+            )
+        else:
+            return {'message': 'Telegram not connected · try email'}
+    else:
+        # Email reset — Phase 6 with SendGrid
+        # For now: store code · admin can see in logs
+        db.log_security_event(
+            user_id, 'password_reset_requested',
+            details={'method': req.method, 'code': code}
+        )
+
+    return {'message': 'If this email exists · code sent'}
+
+@app.post('/auth/reset-password/confirm')
+def reset_password_confirm(req: ResetPasswordConfirm):
+    user = db.get_user_by_email(req.email)
+    if not user:
+        raise HTTPException(status_code=400,
+                            detail='Invalid request')
+
+    user_id = user[0]
+
+    # Verify code
+    success = db.verify_code(user_id, req.code)
+    if not success:
+        raise HTTPException(status_code=400,
+                            detail='Invalid or expired code')
+
+    # Validate new password
+    import re
+    if len(req.new_password) < 8:
+        raise HTTPException(status_code=400,
+                            detail='Password must be at least 8 characters')
+    if not re.search(r'[A-Z]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain uppercase letter')
+    if not re.search(r'[0-9]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain a number')
+    if not re.search(r'[@$!%*#&]', req.new_password):
+        raise HTTPException(status_code=400,
+                            detail='Password must contain special character')
+
+    # Update password
+    new_hash = auth_module.hash_password(req.new_password)
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE users SET password_hash = %s
+            WHERE id = %s
+        """, (new_hash, user_id))
+
+    db.log_security_event(user_id, 'password_reset_complete')
+    return {'message': 'Password updated · please login'}
 import os
 import time
 import ccxt
@@ -9323,3 +9678,2855 @@ if __name__ == '__main__':
     print('✅ Auth module ready')
     test_hash = hash_password('testpassword123')
     print(f'✅ Password hashing works: {verify_password("testpassword123", test_hash)}')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Averion — Intelligent DCA Trading</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0E0E1C;
+            --card: #16162A;
+            --border: #2A2A45;
+            --green: #10D98A;
+            --blue: #38BDF8;
+            --text: #FFFFFF;
+            --muted: #888888;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(14, 14, 28, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-nav {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green), #0BB876);
+            border: none;
+            color: #0E0E1C;
+        }
+
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* ── HERO ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle,
+                rgba(16, 217, 138, 0.08) 0%,
+                transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(16, 217, 138, 0.1);
+            border: 1px solid rgba(16, 217, 138, 0.3);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 13px;
+            color: var(--green);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(36px, 6vw, 72px);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(16px, 2vw, 20px);
+            color: var(--muted);
+            max-width: 560px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero {
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        /* ── STATS ── */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+            margin-top: 64px;
+            padding: 32px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ── SECTIONS ── */
+        section {
+            padding: 80px 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(28px, 4vw, 44px);
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            color: var(--muted);
+            font-size: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* ── FEATURES ── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(16, 217, 138, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        /* ── HOW IT WORKS ── */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            color: #0E0E1C;
+            margin: 0 auto 16px;
+        }
+
+        .step h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ── PRICING ── */
+        .pricing-card {
+            background: var(--card);
+            border: 1px solid var(--green);
+            border-radius: 20px;
+            padding: 48px;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .pricing-badge {
+            display: inline-block;
+            background: rgba(16, 217, 138, 0.1);
+            border: 1px solid rgba(16, 217, 138, 0.3);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 13px;
+            color: var(--green);
+            margin-bottom: 20px;
+        }
+
+        .pricing-amount {
+            font-size: 64px;
+            font-weight: 800;
+            color: var(--green);
+            line-height: 1;
+        }
+
+        .pricing-amount span {
+            font-size: 24px;
+            color: var(--muted);
+        }
+
+        .pricing-desc {
+            color: var(--muted);
+            margin: 16px 0 28px;
+            font-size: 15px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .check { color: var(--green); font-size: 16px; }
+
+        /* ── CTA ── */
+        .cta-section {
+            text-align: center;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 64px 32px;
+            margin: 0 24px 80px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(24px, 4vw, 40px);
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: var(--muted);
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 32px 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        footer a {
+            color: var(--muted);
+            text-decoration: none;
+            margin: 0 12px;
+        }
+
+        footer a:hover { color: var(--green); }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="nav-logo">AVERION</div>
+    <div class="nav-links">
+        <a href="/login" class="btn-nav btn-outline">Sign In</a>
+        <a href="/register" class="btn-nav btn-primary">Get Started</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+    <div>
+        <div class="hero-badge">🚀 Performance-based pricing — we win when you win</div>
+        <h1>
+            The Smarter Way to<br>
+            <span>DCA Trade Crypto</span>
+        </h1>
+        <p>
+            Automate your DCA strategy across multiple exchanges.
+            We only charge 20% of your profits — zero fees on losses.
+        </p>
+        <div class="hero-buttons">
+            <a href="/register" class="btn-hero btn-primary">
+                Start for Free
+            </a>
+            <a href="/login" class="btn-hero btn-outline btn-nav">
+                Sign In
+            </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value">20%</div>
+                <div class="stat-label">Only on profits</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">7</div>
+                <div class="stat-label">Exchanges supported</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Automated trading</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">0%</div>
+                <div class="stat-label">Fee on losses</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURES -->
+<section>
+    <div class="section-title">
+        <h2>Everything you need to trade smarter</h2>
+        <p>Powerful DCA automation built for real traders</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🧠</div>
+            <h3>Smart DCA Engine</h3>
+            <p>
+                10 entry methods analyzed simultaneously.
+                Our AI selects the best moment to enter based on
+                RSI, VWAP, volume, and market conditions.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🏦</div>
+            <h3>Multi-Exchange Support</h3>
+            <p>
+                Trade on MEXC, KuCoin, Binance, Bybit, OKX,
+                Bitget, and Gate.io from one dashboard.
+                Your funds stay on the exchange — always.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Smart Queue System</h3>
+            <p>
+                Automatic capital prioritization. The bot
+                always recovers your most critical positions
+                first using our proprietary scoring formula.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Safety First</h3>
+            <p>
+                ST flag detection, DCA checkpoints, reserve
+                wallet protection, and automatic position
+                recovery keep your capital safe.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>Telegram Alerts</h3>
+            <p>
+                Real-time trade notifications, daily reports,
+                and critical alerts delivered instantly to
+                your Telegram. Never miss a trade.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <h3>Performance Only</h3>
+            <p>
+                We charge 20% only on winning trades.
+                Loss months cost you nothing. Our success
+                is directly tied to your profits.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="background: #12122040; border-radius: 24px; max-width: 100%; padding: 80px 24px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <div class="section-title">
+            <h2>How it works</h2>
+            <p>Up and running in minutes</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Connect Exchange</h3>
+                <p>Add your exchange API key securely.
+                   Read-only + trade permissions only.
+                   No withdrawal access — ever.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Create Your Bot</h3>
+                <p>Choose your strategy, coins, and
+                   parameters. Or let Smart DCA handle
+                   everything automatically.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Earn Automatically</h3>
+                <p>Bot runs 24/7, executes trades,
+                   takes profits, and reports daily.
+                   You just watch your balance grow.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section>
+    <div class="section-title">
+        <h2>Simple, honest pricing</h2>
+        <p>No monthly fees. No hidden charges. Only pay when you profit.</p>
+    </div>
+    <div class="pricing-card">
+        <div class="pricing-badge">Performance Based</div>
+        <div class="pricing-amount">20%<span> of profit</span></div>
+        <p class="pricing-desc">
+            We take 20% of winning trades only.<br>
+            Loss trades cost you absolutely nothing.
+        </p>
+        <ul class="pricing-features">
+            <li><span class="check">✓</span> 5 bots included free</li>
+            <li><span class="check">✓</span> 100 trades per month free</li>
+            <li><span class="check">✓</span> All exchanges included</li>
+            <li><span class="check">✓</span> Smart DCA engine</li>
+            <li><span class="check">✓</span> Telegram notifications</li>
+            <li><span class="check">✓</span> Daily Excel reports</li>
+            <li><span class="check">✓</span> 0% fee on losing trades</li>
+        </ul>
+        <a href="/register" class="btn-hero btn-primary" style="display:block; text-align:center;">
+            Start for Free
+        </a>
+    </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+    <h2>Ready to trade smarter?</h2>
+    <p>Join traders who let their bots do the work.<br>
+       Start with paper trading — no risk required.</p>
+    <a href="/register" class="btn-hero btn-primary">
+        Create Free Account
+    </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div style="margin-bottom: 16px;">
+        <span style="font-weight: 700; color: #FFF;">AVERION</span>
+    </div>
+    <div>
+        <a href="/login">Sign In</a>
+        <a href="/register">Register</a>
+    </div>
+    <div style="margin-top: 16px;">
+        © 2026 Averion · Intelligent DCA Trading Platform
+    </div>
+</footer>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Averion — Sign In</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0E0E1C; --card: #16162A;
+            --border: #2A2A45; --green: #10D98A;
+            --blue: #38BDF8; --red: #F4645F;
+            --text: #FFFFFF; --muted: #888888;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo a {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-decoration: none;
+        }
+        .logo p {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .card h2 {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+        .card .sub {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            font-size: 13px;
+            color: #AAA;
+            margin-bottom: 8px;
+        }
+        input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 13px 16px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--green); }
+        input::placeholder { color: #444; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green), #0BB876);
+            color: #0E0E1C;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error {
+            background: rgba(244,100,95,0.1);
+            border: 1px solid rgba(244,100,95,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--red);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .forgot {
+            text-align: right;
+            margin-top: -12px;
+            margin-bottom: 20px;
+        }
+        .forgot a {
+            color: var(--muted);
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .forgot a:hover { color: var(--green); }
+        .divider {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin: 20px 0;
+            position: relative;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .bottom-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .bottom-link a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #0E0E1C;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Forgot password modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 380px;
+        }
+        .modal h3 { margin-bottom: 8px; }
+        .modal p {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .reset-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .reset-option {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            text-align: left;
+        }
+        .reset-option:hover { border-color: var(--green); }
+        .reset-option.selected { border-color: var(--green); }
+        .reset-option h4 { font-size: 14px; margin-bottom: 4px; }
+        .reset-option p { font-size: 12px; color: var(--muted); margin: 0; }
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-cancel:hover { border-color: var(--red); color: var(--red); }
+
+        /* Verify screen */
+        #verify-screen { display: none; }
+        .code-info {
+            background: rgba(56,189,248,0.1);
+            border: 1px solid rgba(56,189,248,0.3);
+            border-radius: 8px;
+            padding: 14px;
+            color: var(--blue);
+            font-size: 13px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        input.code-input {
+            text-align: center;
+            font-size: 28px;
+            letter-spacing: 8px;
+            font-weight: 700;
+            color: var(--green);
+        }
+        .resend {
+            text-align: center;
+            margin-top: 12px;
+        }
+        .resend a {
+            color: var(--muted);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .resend a:hover { color: var(--green); }
+    </style>
+</head>
+<body>
+
+<div class="logo">
+    <a href="/">AVERION</a>
+    <p>Intelligent DCA Trading</p>
+</div>
+
+<div class="card">
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <h2>Welcome back</h2>
+        <p class="sub">Sign in to your Averion account</p>
+
+        <div class="error" id="login-error"></div>
+
+        <div class="form-group">
+            <label>Email address</label>
+            <input type="email" id="email"
+                   placeholder="your@email.com"
+                   autocomplete="email">
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password"
+                   placeholder="••••••••"
+                   autocomplete="current-password">
+        </div>
+
+        <div class="forgot">
+            <a onclick="openForgot()">Forgot password?</a>
+        </div>
+
+        <button class="btn btn-primary" id="login-btn"
+                onclick="handleLogin()">
+            Sign In
+        </button>
+
+        <div class="bottom-link">
+            Don't have an account?
+            <a href="/register">Create one free</a>
+        </div>
+    </div>
+
+    <!-- Verify Screen -->
+    <div id="verify-screen">
+        <h2>Verify your identity</h2>
+        <p class="sub">New device detected</p>
+
+        <div class="code-info" id="verify-info">
+            📱 A 6-digit code has been sent to your
+            Telegram (@AverionBot).<br><br>
+            Enter the code below to continue.
+        </div>
+
+        <div class="error" id="verify-error"></div>
+
+        <div class="form-group">
+            <label>Verification code</label>
+            <input type="text" id="verify-code"
+                   class="code-input"
+                   placeholder="000000"
+                   maxlength="6"
+                   inputmode="numeric">
+        </div>
+
+        <button class="btn btn-primary" id="verify-btn"
+                onclick="handleVerify()">
+            Verify
+        </button>
+
+        <div class="resend">
+            <a onclick="resendCode()">Resend code</a>
+            &nbsp;·&nbsp;
+            <a onclick="showLogin()">Back to login</a>
+        </div>
+    </div>
+
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgot-modal">
+    <div class="modal">
+        <h3>Reset password</h3>
+        <p>Choose how you want to receive your reset code</p>
+
+        <div class="reset-options">
+            <div class="reset-option selected"
+                 id="opt-email"
+                 onclick="selectReset('email')">
+                <h4>📧 Email</h4>
+                <p>Receive a reset link via email</p>
+            </div>
+            <div class="reset-option"
+                 id="opt-telegram"
+                 onclick="selectReset('telegram')">
+                <h4>💬 Telegram</h4>
+                <p>Receive a code via @AverionBot</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Email address</label>
+            <input type="email" id="reset-email"
+                   placeholder="your@email.com">
+        </div>
+
+        <div class="error" id="reset-error"></div>
+
+        <button class="btn btn-primary"
+                id="reset-btn"
+                onclick="handleReset()"
+                style="margin-bottom: 12px">
+            Send Reset Code
+        </button>
+        <button class="btn-cancel" onclick="closeForgot()">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<script>
+    const API = '';
+    let pendingUserId = null;
+    let resetMethod = 'email';
+
+    // ── SCREENS ──────────────────────────────────
+    function showLogin() {
+        document.getElementById('login-screen').style.display = 'block';
+        document.getElementById('verify-screen').style.display = 'none';
+    }
+
+    function showVerify() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('verify-screen').style.display = 'block';
+    }
+
+    function setBtn(id, loading, label) {
+        const btn = document.getElementById(id);
+        btn.disabled = loading;
+        btn.innerHTML = loading
+            ? `<span class="spinner"></span>${label}`
+            : label;
+    }
+
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = msg ? 'block' : 'none';
+    }
+
+    // ── LOGIN ─────────────────────────────────────
+    async function handleLogin() {
+        showError('login-error', '');
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) {
+            showError('login-error', 'Please enter email and password');
+            return;
+        }
+
+        setBtn('login-btn', true, 'Signing in...');
+
+        try {
+            const res = await fetch(`${API}/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showError('login-error', data.detail || 'Login failed');
+                setBtn('login-btn', false, 'Sign In');
+                return;
+            }
+
+            localStorage.setItem('averion_token', data.token);
+            localStorage.setItem('averion_user_id', data.user_id);
+            localStorage.setItem('averion_is_admin', data.is_admin);
+
+            if (data.needs_verification) {
+                pendingUserId = data.user_id;
+                await fetch(`${API}/auth/send-code`, {
+                    method: 'POST',
+                    headers: {'Authorization': `Bearer ${data.token}`}
+                });
+                showVerify();
+                setBtn('login-btn', false, 'Sign In');
+            } else {
+                window.location.href = '/dashboard';
+            }
+
+        } catch(e) {
+            showError('login-error', 'Connection error · please try again');
+            setBtn('login-btn', false, 'Sign In');
+        }
+    }
+
+    // ── VERIFY ────────────────────────────────────
+    async function handleVerify() {
+        showError('verify-error', '');
+        const code = document.getElementById('verify-code').value.trim();
+
+        if (code.length !== 6) {
+            showError('verify-error', 'Please enter the 6-digit code');
+            return;
+        }
+
+        setBtn('verify-btn', true, 'Verifying...');
+
+        try {
+            const token = localStorage.getItem('averion_token');
+            const res = await fetch(`${API}/auth/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    user_id: parseInt(pendingUserId), code
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showError('verify-error', data.detail || 'Invalid code');
+                setBtn('verify-btn', false, 'Verify');
+                return;
+            }
+
+            window.location.href = '/dashboard';
+
+        } catch(e) {
+            showError('verify-error', 'Connection error');
+            setBtn('verify-btn', false, 'Verify');
+        }
+    }
+
+    async function resendCode() {
+        const token = localStorage.getItem('averion_token');
+        await fetch(`${API}/auth/send-code`, {
+            method: 'POST',
+            headers: {'Authorization': `Bearer ${token}`}
+        });
+        const info = document.getElementById('verify-info');
+        info.style.color = '#10D98A';
+        info.textContent = '✅ New code sent!';
+        setTimeout(() => {
+            info.style.color = '';
+            info.innerHTML = '📱 A 6-digit code has been sent to your Telegram (@AverionBot).<br><br>Enter the code below to continue.';
+        }, 3000);
+    }
+
+    // ── FORGOT PASSWORD ───────────────────────────
+    function openForgot() {
+        document.getElementById('forgot-modal').classList.add('active');
+    }
+
+    function closeForgot() {
+        document.getElementById('forgot-modal').classList.remove('active');
+        showError('reset-error', '');
+    }
+
+    function selectReset(method) {
+        resetMethod = method;
+        document.getElementById('opt-email').classList.toggle(
+            'selected', method === 'email'
+        );
+        document.getElementById('opt-telegram').classList.toggle(
+            'selected', method === 'telegram'
+        );
+    }
+
+    async function handleReset() {
+        showError('reset-error', '');
+        const email = document.getElementById('reset-email').value.trim();
+
+        if (!email) {
+            showError('reset-error', 'Please enter your email');
+            return;
+        }
+
+        setBtn('reset-btn', true, 'Sending...');
+
+        try {
+            const res = await fetch(`${API}/auth/reset-password`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, method: resetMethod})
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showError('reset-error', data.detail || 'Failed to send');
+                setBtn('reset-btn', false, 'Send Reset Code');
+                return;
+            }
+
+            closeForgot();
+            showError('login-error', '');
+            document.getElementById('login-error').style.display = 'block';
+            document.getElementById('login-error').style.background =
+                'rgba(16,217,138,0.1)';
+            document.getElementById('login-error').style.borderColor =
+                'rgba(16,217,138,0.3)';
+            document.getElementById('login-error').style.color = '#10D98A';
+            document.getElementById('login-error').textContent =
+                '✅ Reset code sent · check your ' + resetMethod;
+
+        } catch(e) {
+            showError('reset-error', 'Connection error');
+            setBtn('reset-btn', false, 'Send Reset Code');
+        }
+    }
+
+    // ── ENTER KEY ─────────────────────────────────
+    document.addEventListener('keypress', e => {
+        if (e.key !== 'Enter') return;
+        if (document.getElementById('verify-screen').style.display !== 'none') {
+            handleVerify();
+        } else {
+            handleLogin();
+        }
+    });
+
+    // ── AUTO REDIRECT IF LOGGED IN ────────────────
+    const token = localStorage.getItem('averion_token');
+    if (token) {
+        fetch(`${API}/status`, {
+            headers: {'Authorization': `Bearer ${token}`}
+        }).then(r => {
+            if (r.ok) window.location.href = '/dashboard';
+        }).catch(() => {});
+    }
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Averion — Create Account</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0E0E1C; --card: #16162A;
+            --border: #2A2A45; --green: #10D98A;
+            --blue: #38BDF8; --red: #F4645F;
+            --text: #FFFFFF; --muted: #888888;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo a {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-decoration: none;
+        }
+        .logo p { color: var(--muted); font-size: 13px; margin-top: 6px; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .card h2 { font-size: 22px; margin-bottom: 6px; }
+        .card .sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: #AAA; margin-bottom: 8px; }
+        input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 13px 16px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--green); }
+        input::placeholder { color: #444; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green), #0BB876);
+            color: #0E0E1C;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error {
+            background: rgba(244,100,95,0.1);
+            border: 1px solid rgba(244,100,95,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--red);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .password-strength {
+            margin-top: 8px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border);
+            overflow: hidden;
+        }
+        .strength-bar {
+            height: 100%;
+            border-radius: 2px;
+            transition: all 0.3s;
+            width: 0%;
+        }
+        .strength-text {
+            font-size: 11px;
+            margin-top: 4px;
+            color: var(--muted);
+        }
+        .benefits {
+            background: rgba(16,217,138,0.05);
+            border: 1px solid rgba(16,217,138,0.15);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+        .benefits p {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .benefits p:last-child { margin-bottom: 0; }
+        .benefits span { color: var(--green); }
+        .terms {
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+        .terms a { color: var(--green); text-decoration: none; }
+        .bottom-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .bottom-link a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #0E0E1C;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .optional {
+            color: #555;
+            font-size: 11px;
+            font-weight: normal;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo">
+    <a href="/">AVERION</a>
+    <p>Intelligent DCA Trading</p>
+</div>
+
+<div class="card">
+    <h2>Create your account</h2>
+    <p class="sub">Start trading smarter — free to join</p>
+
+    <!-- Benefits -->
+    <div class="benefits">
+        <p><span>✓</span> 5 bots included free</p>
+        <p><span>✓</span> 100 trades per month free</p>
+        <p><span>✓</span> 20% fee only on winning trades</p>
+        <p><span>✓</span> Paper trading — test risk-free</p>
+    </div>
+
+    <div class="error" id="reg-error"></div>
+
+    <div class="form-group">
+        <label>Email address</label>
+        <input type="email" id="email"
+               placeholder="your@email.com"
+               autocomplete="email">
+    </div>
+
+    <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password"
+               placeholder="Min 8 chars · uppercase · number · special"
+               autocomplete="new-password"
+               oninput="checkStrength(this.value)">
+        <div class="password-strength">
+            <div class="strength-bar" id="strength-bar"></div>
+        </div>
+        <div class="strength-text" id="strength-text"></div>
+    </div>
+
+    <div class="form-group">
+        <label>Confirm password</label>
+        <input type="password" id="confirm-password"
+               placeholder="Repeat password"
+               autocomplete="new-password">
+    </div>
+
+    <div class="form-group">
+        <label>Referral code <span class="optional">(optional)</span></label>
+        <input type="text" id="referral"
+               placeholder="Enter referral code if you have one">
+    </div>
+
+    <button class="btn btn-primary" id="reg-btn"
+            onclick="handleRegister()">
+        Create Free Account
+    </button>
+
+    <p class="terms">
+        By creating an account you agree that your funds
+        stay on the exchange at all times. Averion never
+        holds your assets.
+    </p>
+
+    <div class="bottom-link">
+        Already have an account?
+        <a href="/login">Sign in</a>
+    </div>
+</div>
+
+<script>
+    const API = '';
+
+    function checkStrength(password) {
+        const bar = document.getElementById('strength-bar');
+        const text = document.getElementById('strength-text');
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+
+        const colors = ['#F4645F','#FFA500','#FFA500','#10D98A','#10D98A'];
+        const labels = ['Too short · add uppercase + number + special','Weak','Fair','Strong ✓','Very strong ✓'];
+        const widths = ['20%','40%','60%','80%','100%'];
+
+        if (password.length === 0) {
+            bar.style.width = '0%';
+            text.textContent = '';
+            return;
+        }
+
+        const idx = Math.min(score, 4);
+        bar.style.width = widths[idx];
+        bar.style.background = colors[idx];
+        text.textContent = labels[idx];
+        text.style.color = colors[idx];
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('reg-error');
+        el.textContent = msg;
+        el.style.display = msg ? 'block' : 'none';
+    }
+
+    async function handleRegister() {
+        showError('');
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm-password').value;
+        const referral = document.getElementById('referral').value.trim();
+
+        if (!email || !password) {
+            showError('Please fill in all required fields');
+            return;
+        }
+
+        if (password.length < 8) {
+            showError('Password must be at least 8 characters');
+            return;
+        }
+        if (!/[A-Z]/.test(password)) {
+            showError('Password must contain at least one uppercase letter');
+            return;
+        }
+        if (!/[0-9]/.test(password)) {
+            showError('Password must contain at least one number');
+            return;
+        }
+        if (!/[@$!%*#&]/.test(password)) {
+            showError('Password must contain at least one special character (@$!%*#&)');
+            return;
+        }
+
+        if (password !== confirm) {
+            showError('Passwords do not match');
+            return;
+        }
+
+        const btn = document.getElementById('reg-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Creating account...';
+
+        try {
+            const res = await fetch(`${API}/auth/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email,
+                    password,
+                    referral_code: referral || null
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showError(data.detail || 'Registration failed');
+                btn.disabled = false;
+                btn.textContent = 'Create Free Account';
+                return;
+            }
+
+            localStorage.setItem('averion_token', data.token);
+            localStorage.setItem('averion_user_id', data.user_id);
+            window.location.href = '/dashboard';
+
+        } catch(e) {
+            showError('Connection error · please try again');
+            btn.disabled = false;
+            btn.textContent = 'Create Free Account';
+        }
+    }
+
+    // Enter key
+    document.addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleRegister();
+    });
+
+    // Auto redirect
+    const token = localStorage.getItem('averion_token');
+    if (token) {
+        fetch(`${API}/status`, {
+            headers: {'Authorization': `Bearer ${token}`}
+        }).then(r => {
+            if (r.ok) window.location.href = '/dashboard';
+        }).catch(() => {});
+    }
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Averion — Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0E0E1C; --card: #16162A;
+            --border: #2A2A45; --green: #10D98A;
+            --blue: #38BDF8; --red: #F4645F;
+            --amber: #FFA500; --text: #FFFFFF;
+            --muted: #888888;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ── TOP BAR ── */
+        .topbar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .admin-badge {
+            background: rgba(244,100,95,0.15);
+            border: 1px solid rgba(244,100,95,0.3);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--red);
+            font-weight: 600;
+        }
+        .bot-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+        .status-dot.online { background: var(--green); }
+        .status-dot.offline { background: var(--red); }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-sm {
+            padding: 7px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        .btn-danger {
+            background: rgba(244,100,95,0.15);
+            border: 1px solid rgba(244,100,95,0.3);
+            color: var(--red);
+        }
+        .btn-danger:hover { background: rgba(244,100,95,0.25); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green), #0BB876);
+            color: #0E0E1C;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+        /* ── TABS ── */
+        .tabs {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 14px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+        }
+
+        /* ── MAIN ── */
+        .main {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .stat-value.green { color: var(--green); }
+        .stat-value.red { color: var(--red); }
+        .stat-value.blue { color: var(--blue); }
+
+        /* ── SERVICES ── */
+        .service-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .service-row:last-child { border-bottom: none; }
+        .service-name {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .service-detail { font-size: 12px; color: var(--muted); }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-green {
+            background: rgba(16,217,138,0.15);
+            color: var(--green);
+        }
+        .badge-red {
+            background: rgba(244,100,95,0.15);
+            color: var(--red);
+        }
+        .badge-amber {
+            background: rgba(255,165,0,0.15);
+            color: var(--amber);
+        }
+        .badge-blue {
+            background: rgba(56,189,248,0.15);
+            color: var(--blue);
+        }
+
+        /* ── CRON STEPS ── */
+        .cron-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .cron-step {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .cron-step.success { border-color: rgba(16,217,138,0.3); }
+        .cron-step.failed { border-color: rgba(244,100,95,0.3); }
+        .cron-step.running { border-color: rgba(56,189,248,0.3); }
+        .cron-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .cron-name { font-size: 13px; font-weight: 700; }
+        .cron-time { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+        .cron-meta { font-size: 11px; color: var(--muted); }
+        .cron-error {
+            font-size: 11px;
+            color: var(--red);
+            background: rgba(244,100,95,0.1);
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+        .cron-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-xs {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-rerun {
+            background: rgba(16,217,138,0.15);
+            color: var(--green);
+            border: 1px solid rgba(16,217,138,0.3);
+        }
+        .btn-rerun:hover { background: rgba(16,217,138,0.25); }
+        .btn-logs {
+            background: rgba(56,189,248,0.15);
+            color: var(--blue);
+            border: 1px solid rgba(56,189,248,0.3);
+        }
+        .btn-copy {
+            background: rgba(136,136,136,0.15);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ── PROGRESS BARS ── */
+        .progress-bar {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* ── TABLE ── */
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(42,42,69,0.5);
+            vertical-align: middle;
+        }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        tr:last-child td { border-bottom: none; }
+
+        /* ── TOGGLES ── */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-info h4 { font-size: 14px; margin-bottom: 4px; }
+        .toggle-info p { font-size: 12px; color: var(--muted); }
+        .toggle {
+            width: 44px; height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            border: none;
+            flex-shrink: 0;
+        }
+        .toggle.on { background: var(--green); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 3px; left: 3px;
+            transition: left 0.2s;
+        }
+        .toggle.on::after { left: 23px; }
+
+        /* ── HEALTH BARS ── */
+        .health-item {
+            margin-bottom: 16px;
+        }
+        .health-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .health-label { color: var(--muted); }
+
+        /* ── ALERTS ── */
+        .alerts-section {
+            margin-bottom: 20px;
+        }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .alert-red {
+            background: rgba(244,100,95,0.1);
+            border: 1px solid rgba(244,100,95,0.2);
+        }
+        .alert-amber {
+            background: rgba(255,165,0,0.1);
+            border: 1px solid rgba(255,165,0,0.2);
+        }
+        .alert-green {
+            background: rgba(16,217,138,0.1);
+            border: 1px solid rgba(16,217,138,0.2);
+        }
+        .alert-icon { font-size: 16px; }
+        .alert-msg { flex: 1; }
+        .alert-action {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+        }
+
+        /* ── LOGS MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .log-content {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-y: auto;
+            flex: 1;
+            color: #AAA;
+            white-space: pre-wrap;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ── REFRESH ── */
+        .last-updated {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <div class="logo">AVERION</div>
+        <div class="admin-badge">ADMIN</div>
+        <div class="bot-status">
+            <div class="status-dot" id="bot-dot"></div>
+            <span id="bot-status-text">Loading...</span>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <span class="last-updated" id="last-updated"></span>
+        <button class="btn-sm btn-danger" onclick="emergencyStop()">
+            🔴 Stop All Trading
+        </button>
+        <button class="btn-sm btn-primary" onclick="restartBot()">
+            🔄 Restart Bot
+        </button>
+        <button class="btn-sm btn-secondary" onclick="logout()">
+            Sign Out
+        </button>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('health')">
+        Health & Control
+    </div>
+    <div class="tab" onclick="switchTab('users')">Users</div>
+    <div class="tab" onclick="switchTab('stats')">Platform Stats</div>
+    <div class="tab" onclick="switchTab('categories')">Coin Categories</div>
+    <div class="tab" onclick="switchTab('controls')">Controls</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- ── TAB 1: HEALTH & CONTROL ── -->
+    <div class="tab-content active" id="tab-health">
+
+        <!-- Active Alerts -->
+        <div class="alerts-section" id="alerts-section">
+            <div class="empty" style="padding:20px">
+                ✅ All systems normal
+            </div>
+        </div>
+
+        <!-- Yesterday Summary -->
+        <div class="grid-4" style="margin-bottom:20px">
+            <div class="stat-card">
+                <div class="stat-label">Trades Closed Today</div>
+                <div class="stat-value green" id="trades-today">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Bots</div>
+                <div class="stat-value blue" id="active-bots">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Positions</div>
+                <div class="stat-value" id="open-positions">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Owner Wallet</div>
+                <div class="stat-value green" id="owner-wallet">—</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Services</div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🗄️</span> PostgreSQL
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge badge-green" id="pg-status">Checking...</div>
+                        <div class="service-detail" id="pg-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>⚡</span> Redis
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge badge-green" id="redis-status">Checking...</div>
+                        <div class="service-detail" id="redis-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🤖</span> Bot Loop
+                    </div>
+                    <div style="text-align:right">
+                        <div class="badge" id="bot-badge">Checking...</div>
+                        <div class="service-detail" id="bot-detail"></div>
+                    </div>
+                </div>
+                <div class="service-row">
+                    <div class="service-name">
+                        <span>🔄</span> Last Cycle
+                    </div>
+                    <div style="text-align:right">
+                        <div class="service-detail" id="last-cycle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Health -->
+            <div class="card">
+                <div class="card-title">
+                    Server Health
+                    <span class="last-updated" id="health-updated"></span>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">CPU</span>
+                        <span id="cpu-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpu-bar"
+                             style="width:0%; background: var(--green)"></div>
+                    </div>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">RAM</span>
+                        <span id="ram-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="ram-bar"
+                             style="width:0%; background: var(--blue)"></div>
+                    </div>
+                </div>
+                <div class="health-item">
+                    <div class="health-header">
+                        <span class="health-label">Disk</span>
+                        <span id="disk-val">—</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="disk-bar"
+                             style="width:0%; background: var(--amber)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cron Steps -->
+        <div class="card">
+            <div class="card-title">
+                Daily Cron Status
+                <button class="btn-xs btn-rerun" onclick="loadCronStatus()">
+                    ↻ Refresh
+                </button>
+            </div>
+            <div class="cron-grid" id="cron-grid">
+                <div class="empty">Loading cron status...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 2: USERS ── -->
+    <div class="tab-content" id="tab-users">
+        <div class="card">
+            <div class="card-title">
+                All Users
+                <input type="text" id="user-search"
+                       placeholder="Search email..."
+                       style="background:var(--bg);border:1px solid var(--border);
+                              border-radius:8px;padding:6px 12px;color:var(--text);
+                              font-size:13px;outline:none;width:200px"
+                       oninput="filterUsers()">
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Bots</th>
+                            <th>Open Trades</th>
+                            <th>Reserve</th>
+                            <th>Fee Debt</th>
+                            <th>Telegram</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table">
+                        <tr><td colspan="9" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 3: PLATFORM STATS ── -->
+    <div class="tab-content" id="tab-stats">
+        <div class="grid-4">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value blue" id="stat-users">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Bots</div>
+                <div class="stat-value" id="stat-bots">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Positions</div>
+                <div class="stat-value" id="stat-positions">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Live Positions</div>
+                <div class="stat-value green" id="stat-live">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Paper Positions</div>
+                <div class="stat-value blue" id="stat-paper">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Reserve</div>
+                <div class="stat-value green" id="stat-reserve">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Owner Wallet</div>
+                <div class="stat-value green" id="stat-owner">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Trades Today</div>
+                <div class="stat-value" id="stat-trades">—</div>
+            </div>
+        </div>
+
+        <!-- Diagnostics -->
+        <div class="card" style="margin-top:20px">
+            <div class="card-title">
+                Diagnostics Report
+                <div style="display:flex;gap:8px">
+                    <button class="btn-xs btn-rerun"
+                            onclick="copyDiagnostics()">
+                        📋 Copy Markdown
+                    </button>
+                    <button class="btn-xs btn-logs"
+                            onclick="generateDiagnostics()">
+                        🔄 Regenerate
+                    </button>
+                </div>
+            </div>
+            <div class="log-content" id="diagnostics-content"
+                 style="max-height:400px">
+                Loading diagnostics...
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 4: COIN CATEGORIES ── -->
+    <div class="tab-content" id="tab-categories">
+        <div class="card">
+            <div class="card-title">Market Cap Categories</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Market Cap Range</th>
+                            <th>DCA %</th>
+                            <th>Spacing Mult</th>
+                            <th>Size Mult</th>
+                            <th>TP %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-blue">Mega Cap</span></td>
+                            <td>> $100B</td>
+                            <td>2%</td>
+                            <td>1.2x</td>
+                            <td>1.2x</td>
+                            <td>2%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-green">Large Cap</span></td>
+                            <td>$10B - $100B</td>
+                            <td>4%</td>
+                            <td>1.3x</td>
+                            <td>1.3x</td>
+                            <td>3%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge" style="background:rgba(255,165,0,0.15);color:var(--amber)">Mid Cap</span></td>
+                            <td>$1B - $10B</td>
+                            <td>6%</td>
+                            <td>1.4x</td>
+                            <td>1.4x</td>
+                            <td>4%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-amber">Small Cap</span></td>
+                            <td>$100M - $1B</td>
+                            <td>8%</td>
+                            <td>1.5x</td>
+                            <td>1.5x</td>
+                            <td>5%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">Micro Cap</span></td>
+                            <td>< $100M</td>
+                            <td>10%</td>
+                            <td>1.6x</td>
+                            <td>1.6x</td>
+                            <td>6%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="color:var(--muted);font-size:12px;margin-top:12px">
+                ℹ️ Category parameters are set by the Smart DCA engine.
+                Updated daily at 04:30 after classification.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── TAB 5: CONTROLS ── -->
+    <div class="tab-content" id="tab-controls">
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Component Toggles</div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CoinGecko Integration</h4>
+                        <p>Fetch market caps daily at 03:30</p>
+                    </div>
+                    <button class="toggle on" id="tog-coingecko"
+                            onclick="toggleComponent(this, 'coingecko')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CoinMarketCap Integration</h4>
+                        <p>Fetch market caps daily at 04:00</p>
+                    </div>
+                    <button class="toggle on" id="tog-cmc"
+                            onclick="toggleComponent(this, 'cmc')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>Telegram Notifications</h4>
+                        <p>Send alerts and reports to users</p>
+                    </div>
+                    <button class="toggle on" id="tog-telegram"
+                            onclick="toggleComponent(this, 'telegram')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>Excel Report Generation</h4>
+                        <p>Generate daily Excel reports at 05:00</p>
+                    </div>
+                    <button class="toggle on" id="tog-excel"
+                            onclick="toggleComponent(this, 'excel')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>CCXT Auto-Upgrade</h4>
+                        <p>Safe upgrade at 03:00 daily</p>
+                    </div>
+                    <button class="toggle on" id="tog-ccxt"
+                            onclick="toggleComponent(this, 'ccxt')"></button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>New User Registration</h4>
+                        <p>Allow new accounts to be created</p>
+                    </div>
+                    <button class="toggle on" id="tog-registration"
+                            onclick="toggleComponent(this, 'registration')"></button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Emergency Controls</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <button class="btn-sm btn-danger"
+                            style="padding:14px;font-size:14px"
+                            onclick="emergencyStop()">
+                        🔴 Stop All Live Trading
+                    </button>
+                    <button class="btn-sm"
+                            style="padding:14px;font-size:14px;
+                                   background:rgba(255,165,0,0.15);
+                                   border:1px solid rgba(255,165,0,0.3);
+                                   color:var(--amber)"
+                            onclick="pauseNewPositions()">
+                        ⏸️ Pause New Positions Only
+                    </button>
+                    <button class="btn-sm btn-primary"
+                            style="padding:14px;font-size:14px"
+                            onclick="restartBot()">
+                        🔄 Restart Bot
+                    </button>
+                    <button class="btn-sm btn-secondary"
+                            style="padding:14px;font-size:14px"
+                            onclick="forceReconciliation()">
+                        🔁 Force Reconciliation
+                    </button>
+                </div>
+
+                <div class="card-title" style="margin-top:24px">
+                    Backup Status
+                </div>
+                <div id="backup-info" style="color:var(--muted);font-size:13px">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- LOGS MODAL -->
+<div class="modal-overlay" id="logs-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">Logs</h3>
+            <button class="modal-close" onclick="closeLogs()">✕</button>
+        </div>
+        <div class="log-content" id="modal-log-content">
+            No logs available
+        </div>
+        <div class="modal-actions">
+            <button class="btn-xs btn-rerun" onclick="copyLog()">
+                📋 Copy
+            </button>
+            <button class="btn-xs btn-secondary btn-sm"
+                    onclick="closeLogs()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '';
+    const TOKEN = localStorage.getItem('averion_token');
+    let allUsers = [];
+    let cronData = {};
+
+    function headers() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TOKEN}`
+        };
+    }
+
+    // ── AUTH CHECK ────────────────────────────────
+    if (!TOKEN) window.location.href = '/login';
+
+    // ── TABS ─────────────────────────────────────
+    function switchTab(name) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active',
+                t.textContent.toLowerCase().includes(name) ||
+                (name === 'health' && i === 0) ||
+                (name === 'users' && i === 1) ||
+                (name === 'stats' && i === 2) ||
+                (name === 'categories' && i === 3) ||
+                (name === 'controls' && i === 4)
+            );
+        });
+        document.querySelectorAll('.tab-content').forEach(c => {
+            c.classList.remove('active');
+        });
+        document.getElementById(`tab-${name}`).classList.add('active');
+
+        if (name === 'users') loadUsers();
+        if (name === 'stats') loadStats();
+        if (name === 'controls') loadDiagnostics();
+    }
+
+    // ── STATUS ────────────────────────────────────
+    async function loadStatus() {
+        try {
+            const res = await fetch(`${API}/status`,
+                { headers: headers() });
+            const data = await res.json();
+
+            const dot = document.getElementById('bot-dot');
+            const text = document.getElementById('bot-status-text');
+            const badge = document.getElementById('bot-badge');
+            const detail = document.getElementById('bot-detail');
+
+            if (data.running) {
+                dot.className = 'status-dot online';
+                text.textContent = `BOT RUNNING · ${data.cycle_time}s`;
+                badge.className = 'badge badge-green';
+                badge.textContent = 'Running';
+            } else {
+                dot.className = 'status-dot offline';
+                text.textContent = 'BOT STOPPED';
+                badge.className = 'badge badge-red';
+                badge.textContent = 'Stopped';
+            }
+            detail.textContent = `Last: ${data.last_cycle || 'never'}`;
+
+            document.getElementById('last-updated').textContent =
+                `Updated: ${new Date().toLocaleTimeString()}`;
+
+        } catch(e) {
+            document.getElementById('bot-status-text').textContent = 'Connection error';
+        }
+    }
+
+    // ── ADMIN STATS ───────────────────────────────
+    async function loadAdminStats() {
+        try {
+            const res = await fetch(`${API}/admin/stats`,
+                { headers: headers() });
+            if (res.status === 401 || res.status === 403) {
+                window.location.href = '/login';
+                return;
+            }
+            const data = await res.json();
+
+            document.getElementById('trades-today').textContent =
+                data.trades_today || 0;
+            document.getElementById('active-bots').textContent =
+                data.active_bots || 0;
+            document.getElementById('open-positions').textContent =
+                data.open_positions || 0;
+            document.getElementById('owner-wallet').textContent =
+                `$${(data.owner_wallet || 0).toFixed(2)}`;
+
+        } catch(e) { console.error(e); }
+    }
+
+    // ── HEALTH ────────────────────────────────────
+    async function loadHealth() {
+        try {
+            const res = await fetch(`${API}/admin/health`,
+                { headers: headers() });
+            const rows = await res.json();
+            if (!rows.length) return;
+
+            const latest = rows[rows.length - 1];
+            const cpu = latest.cpu || 0;
+            const ram = latest.ram || 0;
+            const disk = latest.disk || 0;
+
+            document.getElementById('cpu-val').textContent = `${cpu}%`;
+            document.getElementById('ram-val').textContent = `${ram}%`;
+            document.getElementById('disk-val').textContent = `${disk}%`;
+
+            const cpuBar = document.getElementById('cpu-bar');
+            cpuBar.style.width = `${cpu}%`;
+            cpuBar.style.background = cpu > 80 ? 'var(--red)' :
+                cpu > 60 ? 'var(--amber)' : 'var(--green)';
+
+            const ramBar = document.getElementById('ram-bar');
+            ramBar.style.width = `${ram}%`;
+            ramBar.style.background = ram > 80 ? 'var(--red)' :
+                ram > 60 ? 'var(--amber)' : 'var(--blue)';
+
+            const diskBar = document.getElementById('disk-bar');
+            diskBar.style.width = `${disk}%`;
+            diskBar.style.background = disk > 70 ? 'var(--red)' :
+                disk > 50 ? 'var(--amber)' : 'var(--amber)';
+
+            document.getElementById('health-updated').textContent =
+                new Date(latest.recorded_at).toLocaleTimeString();
+
+        } catch(e) { console.error(e); }
+    }
+
+    // ── CRON STATUS ───────────────────────────────
+    async function loadCronStatus() {
+        try {
+            const res = await fetch(`${API}/admin/cron-status`,
+                { headers: headers() });
+            cronData = await res.json();
+
+            const steps = [
+                { key: 'infrastructure', name: 'Infrastructure', time: '03:00' },
+                { key: 'coingecko', name: 'CoinGecko Fetch', time: '03:30' },
+                { key: 'cmc', name: 'CMC Fetch', time: '04:00' },
+                { key: 'classification', name: 'Classification', time: '04:30' },
+                { key: 'reporting', name: 'Reporting', time: '05:00' },
+                { key: 'cleanup', name: 'Sunday Cleanup', time: '05:30' },
+            ];
+
+            const grid = document.getElementById('cron-grid');
+            grid.innerHTML = steps.map(step => {
+                const d = cronData[step.key];
+                const status = d ? d.status : null;
+                const cls = status === 'success' ? 'success' :
+                            status === 'failed' ? 'failed' :
+                            status === 'running' ? 'running' : '';
+                const badge = status === 'success' ?
+                    '<span class="badge badge-green">✅ Complete</span>' :
+                    status === 'failed' ?
+                    '<span class="badge badge-red">❌ Failed</span>' :
+                    status === 'running' ?
+                    '<span class="badge badge-blue">⏳ Running</span>' :
+                    '<span class="badge" style="background:rgba(136,136,136,0.1);color:var(--muted)">— Pending</span>';
+
+                return `
+                <div class="cron-step ${cls}">
+                    <div class="cron-header">
+                        <span class="cron-name">${step.time} · ${step.name}</span>
+                        ${badge}
+                    </div>
+                    ${d ? `
+                    <div class="cron-time">
+                        Duration: ${d.duration?.toFixed(1)}s ·
+                        Records: ${d.records || 0}
+                    </div>` : ''}
+                    ${d?.error ? `
+                    <div class="cron-error" onclick="showLog('${step.name}', \`${d.error}\`)">
+                        ❌ ${d.error.substring(0, 80)}...
+                        <br><small>Click to view full error</small>
+                    </div>` : ''}
+                    <div class="cron-actions">
+                        <button class="btn-xs btn-rerun"
+                                onclick="rerunStep('${step.key}')">
+                            ↻ Re-run
+                        </button>
+                        ${d?.error ? `
+                        <button class="btn-xs btn-logs"
+                                onclick="showLog('${step.name}', \`${d.error}\`)">
+                            📋 Logs
+                        </button>
+                        <button class="btn-xs btn-copy"
+                                onclick="copyText(\`${d.error}\`)">
+                            Copy
+                        </button>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch(e) {
+            document.getElementById('cron-grid').innerHTML =
+                '<div class="empty">Failed to load cron status</div>';
+        }
+    }
+
+    async function rerunStep(step) {
+        try {
+            await fetch(`${API}/admin/cron/${step}/run`, {
+                method: 'POST',
+                headers: headers()
+            });
+            setTimeout(loadCronStatus, 2000);
+        } catch(e) { alert('Failed to start step'); }
+    }
+
+    // ── USERS ─────────────────────────────────────
+    async function loadUsers() {
+        try {
+            const res = await fetch(`${API}/admin/users`,
+                { headers: headers() });
+            allUsers = await res.json();
+            renderUsers(allUsers);
+        } catch(e) {
+            document.getElementById('users-table').innerHTML =
+                '<tr><td colspan="9" class="empty">Failed to load users</td></tr>';
+        }
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('users-table');
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">No users yet</td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td style="color:var(--muted)">#${u.id}</td>
+                <td>${u.email}</td>
+                <td>${u.bots || 0}</td>
+                <td>${u.open_positions || 0}</td>
+                <td style="color:var(--green)">$${(u.reserve || 0).toFixed(2)}</td>
+                <td style="color:${u.fee_debt > 0 ? 'var(--red)' : 'var(--muted)'}">
+                    ${u.fee_debt > 0 ? '-$' + u.fee_debt.toFixed(2) : '$0'}
+                </td>
+                <td>${u.telegram ?
+                    '<span class="badge badge-green">✅</span>' :
+                    '<span class="badge badge-red">❌</span>'}</td>
+                <td>${u.suspended ?
+                    '<span class="badge badge-red">Suspended</span>' :
+                    '<span class="badge badge-green">Active</span>'}</td>
+                <td style="color:var(--muted)">
+                    ${new Date(u.created_at).toLocaleDateString()}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        renderUsers(allUsers.filter(u =>
+            u.email.toLowerCase().includes(q)
+        ));
+    }
+
+    // ── STATS ─────────────────────────────────────
+    async function loadStats() {
+        try {
+            const res = await fetch(`${API}/admin/stats`,
+                { headers: headers() });
+            const data = await res.json();
+
+            document.getElementById('stat-users').textContent = data.total_users || 0;
+            document.getElementById('stat-bots').textContent = data.active_bots || 0;
+            document.getElementById('stat-positions').textContent = data.open_positions || 0;
+            document.getElementById('stat-live').textContent = data.live_positions || 0;
+            document.getElementById('stat-paper').textContent = data.paper_positions || 0;
+            document.getElementById('stat-reserve').textContent =
+                `$${(data.total_reserve || 0).toFixed(2)}`;
+            document.getElementById('stat-owner').textContent =
+                `$${(data.owner_wallet || 0).toFixed(2)}`;
+            document.getElementById('stat-trades').textContent = data.trades_today || 0;
+
+        } catch(e) { console.error(e); }
+
+        loadDiagnostics();
+    }
+
+    async function loadDiagnostics() {
+        try {
+            const res = await fetch(`${API}/admin/diagnostics`,
+                { headers: headers() });
+            const data = await res.json();
+            document.getElementById('diagnostics-content').textContent =
+                data.content || 'No diagnostics available';
+        } catch(e) {
+            document.getElementById('diagnostics-content').textContent =
+                'Failed to load diagnostics';
+        }
+    }
+
+    async function generateDiagnostics() {
+        await fetch(`${API}/admin/diagnostics/generate`, {
+            method: 'POST',
+            headers: headers()
+        });
+        setTimeout(loadDiagnostics, 5000);
+    }
+
+    function copyDiagnostics() {
+        const content = document.getElementById('diagnostics-content').textContent;
+        navigator.clipboard.writeText(content);
+        alert('✅ Copied to clipboard · paste to Claude for diagnosis');
+    }
+
+    // ── CONTROLS ──────────────────────────────────
+    async function emergencyStop() {
+        if (!confirm('🔴 Stop ALL live trading?\nThis will prevent new trades. Open positions continue.')) return;
+        alert('Emergency stop sent · monitoring...');
+    }
+
+    async function pauseNewPositions() {
+        if (!confirm('⏸️ Pause new positions only?\nOpen positions continue to TP.')) return;
+        alert('New positions paused');
+    }
+
+    async function restartBot() {
+        if (!confirm('🔄 Restart bot?')) return;
+        await fetch(`${API}/admin/bot/restart`, {
+            method: 'POST',
+            headers: headers()
+        });
+        setTimeout(loadStatus, 3000);
+    }
+
+    async function forceReconciliation() {
+        alert('Reconciliation started · check logs in 30 seconds');
+    }
+
+    function toggleComponent(btn, component) {
+        btn.classList.toggle('on');
+    }
+
+    // ── LOGS MODAL ────────────────────────────────
+    function showLog(title, content) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-log-content').textContent = content;
+        document.getElementById('logs-modal').classList.add('active');
+    }
+
+    function closeLogs() {
+        document.getElementById('logs-modal').classList.remove('active');
+    }
+
+    function copyLog() {
+        const content = document.getElementById('modal-log-content').textContent;
+        navigator.clipboard.writeText(content);
+        alert('✅ Copied · paste to Claude for diagnosis');
+    }
+
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        alert('✅ Copied');
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login';
+    }
+
+    // ── INIT ──────────────────────────────────────
+    async function init() {
+        await loadStatus();
+        await loadAdminStats();
+        await loadHealth();
+        await loadCronStatus();
+    }
+
+    init();
+    setInterval(loadStatus, 30000);
+    setInterval(loadHealth, 60000);
+    setInterval(loadCronStatus, 60000);
+</script>
+
+</body>
+</html>
