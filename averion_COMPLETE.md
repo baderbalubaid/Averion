@@ -1540,12 +1540,43 @@ Phase 7 public launch: add FastAPI middleware
   4. Enter code → verified → go to dashboard
   5. Cannot access dashboard until verified
 
-- Email service: SendGrid free tier (100/day)
-- Setup needed: sendgrid.com account + API key
-- Add to .env: SENDGRID_API_KEY · SENDER_EMAIL
+- Email service: Resend free tier (3,000/month forever)
+- Setup needed: resend.com account + API key
+- Add to .env: RESEND_API_KEY · SENDER_EMAIL
 - Columns already in schema: email_verified · email_verify_code
 - Implement when averion.app domain is ready (Day 2)
 - Sender email: noreply@averion.app
+
+## Email Architecture (LOCKED)
+
+### Domain (LOCKED)
+- One domain only: averionbot.com
+- Dashboard: averionbot.com/dashboard
+- Admin: averionbot.com/ops-XXXX
+- API: averionbot.com/api
+
+### Two Email Systems
+
+Human email (Google Workspace):
+- admin@averionbot.com
+- support@averionbot.com
+- billing@averionbot.com
+- $6/mo per user
+
+Automated email (Resend):
+- noreply@averionbot.com
+- Free: 3,000/month · 100/day
+- verification · reset · reports · alerts
+
+### EmailProvider Abstraction (LOCKED)
+- All email through email_service.py
+- Never call Resend directly
+- Switching provider = change one file only
+
+### Marketing Email (Future)
+- Phase 6+: Brevo or MailerLite
+- Separate from transactional
+- Transactional stays on Resend forever
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -5690,10 +5721,11 @@ TELEGRAM_ADMIN_CHAT_ID=your-admin-chat-id
 CMC_API_KEY=your-cmc-api-key
 
 # ═══════════════════════════════
-# EMAIL (Phase 6 · Day 2)
+# EMAIL
 # ═══════════════════════════════
-SENDGRID_API_KEY=your-sendgrid-api-key
-SENDER_EMAIL=noreply@averion.app
+# Get free API key at resend.com (3,000/month free)
+RESEND_API_KEY=your-resend-api-key
+SENDER_EMAIL=noreply@averionbot.com
 
 # ═══════════════════════════════
 # NOWPAYMENTS (Phase 7)
@@ -9373,6 +9405,7 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import database as db
 import telegram as tg
+import email_service as email_svc
 
 load_dotenv()
 
@@ -9646,8 +9679,15 @@ def register_user(email: str, password: str,
         details={'email': email, 'referral': referral_code}
     )
 
+    # Send welcome email
+    email_svc.send_welcome_email(email)
+
+    # Send verification code
+    code = db.create_verification_code(user_id)
+    email_svc.send_verification_email(email, code)
+
     token = create_token(user_id, False)
-    return {'token': token, 'user_id': user_id}, None
+    return {'token': token, 'user_id': user_id, 'needs_email_verification': True}, None
 
 # ═══════════════════════════════
 # PASSWORD CHANGE
