@@ -120,7 +120,7 @@
 ## GitHub Repository
 
 - Repo is currently PUBLIC (needed for Claude to fetch docs)
-- Switch back to PRIVATE when averion.app launches publicly
+- Switch back to PRIVATE when averionbot.com launches publicly
 - Remove GitHub token from all docs at same time
 - Both actions happen together on launch day
 
@@ -1415,8 +1415,8 @@ Phase 7 public launch: add FastAPI middleware
 - Setup needed: resend.com account + API key
 - Add to .env: RESEND_API_KEY · SENDER_EMAIL
 - Columns already in schema: email_verified · email_verify_code
-- Implement when averion.app domain is ready (Day 2)
-- Sender email: noreply@averion.app
+- Implement when averionbot.com domain is ready (Day 2)
+- Sender email: noreply@averionbot.com
 
 ## Email Architecture (LOCKED)
 
