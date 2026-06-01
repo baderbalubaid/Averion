@@ -251,3 +251,52 @@ Last 5 closed positions:
 - 4 cards fit in 2×2 grid on small screen
 - All sections stack vertically
 - Large tap targets · no tiny buttons
+
+## Customer Dashboard — History Tab (LOCKED)
+
+### Summary Bar (top)
+- Total closed positions · Win rate % · Total profit · Total fees paid
+
+### Filters
+- Date: [All] [This Month] [Last Month] [Custom date range]
+- Coin: [All Coins ▼] searchable dropdown
+- Exchange: [All Exchanges ▼]
+- Result: [All] [Wins Only] [Losses Only]
+
+### Table Columns (in order)
+1. Coin
+2. Exchange
+3. Direction (Long/Short)
+4. Entry Date
+5. Exit Date
+6. Hold Time (hours/days)
+7. Total Invested
+8. Gross Profit
+9. Exchange Fees
+10. Performance Fee (20%)
+11. Net Profit
+12. ROI %
+13. Exit Reason (TP · Manual · ST flag)
+14. DCA Levels Used
+15. Entry Method
+16. Bot Name
+
+### Row Behavior
+- Green row = profitable trade
+- Red row = loss trade
+- Tap row → opens Position Detail Screen
+  (full DCA history · all individual orders)
+
+### Bottom Actions
+- [📥 Export CSV] → download for tax records
+- Pagination: 50 rows per page
+
+### Position Detail Screen (from tap)
+- Position ID · Coin · Exchange · Bot name
+- Entry method used
+- Progress bar: Entry → DCA levels → Exit
+- Full DCA history table:
+  Level · Date · Price · Amount · Quantity
+- Summary: total invested · avg cost · exit price
+- All fees breakdown
+- Final net profit
