@@ -481,3 +481,303 @@ def admin_run_cron_step(step: str,
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
+
+# ═══════════════════════════════
+# EXCHANGES — ADD / TEST / DELETE
+# ═══════════════════════════════
+class ExchangeCreate(BaseModel):
+   exchange: str
+   custom_name: str
+   api_key: str
+   secret: str
+   passphrase: Optional[str] = None
+   ip_whitelist_confirmed: bool = False
+
+@app.post('/exchanges')
+def add_exchange(req: ExchangeCreate,
+                payload: dict = Depends(verify_token)):
+   from cryptography.fernet import Fernet
+   import base64
+
+   fernet_key = os.getenv('FERNET_KEY')
+   if not fernet_key:
+       raise HTTPException(status_code=500,
+                           detail='Encryption not configured')
+
+   f = Fernet(fernet_key.encode())
+   api_key_enc = f.encrypt(req.api_key.encode()).decode()
+   secret_enc = f.encrypt(req.secret.encode()).decode()
+   passphrase_enc = None
+   if req.passphrase:
+       passphrase_enc = f.encrypt(req.passphrase.encode()).decode()
+
+   exchange_id = db.add_exchange(
+       payload['user_id'], req.exchange, req.custom_name,
+       api_key_enc, secret_enc, passphrase_enc
+   )
+
+   # Confirm IP whitelist
+   if req.ip_whitelist_confirmed:
+       with db.get_db() as conn:
+           cur = conn.cursor()
+           cur.execute("""
+               UPDATE exchanges SET ip_whitelist_confirmed = TRUE
+               WHERE id = %s
+           """, (exchange_id,))
+
+   return {'message': 'Exchange added', 'exchange_id': exchange_id}
+
+@app.post('/exchanges/{exchange_id}/test')
+def test_exchange(exchange_id: int,
+                 payload: dict = Depends(verify_token)):
+   from cryptography.fernet import Fernet
+   import ccxt
+
+   exc = db.get_exchange_by_id(exchange_id)
+   if not exc or exc[1] != payload['user_id']:
+       raise HTTPException(status_code=404,
+                           detail='Exchange not found')
+
+   fernet_key = os.getenv('FERNET_KEY')
+   f = Fernet(fernet_key.encode())
+
+   try:
+       api_key = f.decrypt(exc[3].encode()).decode()
+       secret = f.decrypt(exc[4].encode()).decode()
+       passphrase = None
+       if exc[5]:
+           passphrase = f.decrypt(exc[5].encode()).decode()
+
+       exchange_class = getattr(ccxt, exc[2])
+       config = {
+           'apiKey': api_key,
+           'secret': secret,
+           'enableRateLimit': True
+       }
+       if passphrase:
+           config['password'] = passphrase
+
+       exchange = exchange_class(config)
+       balance = exchange.fetch_balance()
+       usdt = balance.get('USDT', {}).get('free', 0)
+
+       # Update last connected
+       with db.get_db() as conn:
+           cur = conn.cursor()
+           cur.execute("""
+               UPDATE exchanges SET last_connected_at = NOW()
+               WHERE id = %s
+           """, (exchange_id,))
+
+       return {
+           'success': True,
+           'balance_usdt': round(float(usdt), 2),
+           'message': f'✅ Connected · Balance: ${usdt:.2f} USDT'
+       }
+
+   except ccxt.AuthenticationError:
+       return {
+           'success': False,
+           'message': '❌ Invalid API key or secret'
+       }
+   except ccxt.ExchangeError as e:
+       return {
+           'success': False,
+           'message': f'❌ Exchange error: {str(e)[:100]}'
+       }
+   except Exception as e:
+       return {
+           'success': False,
+           'message': f'❌ Error: {str(e)[:100]}'
+       }
+
+@app.delete('/exchanges/{exchange_id}')
+def delete_exchange(exchange_id: int,
+                   payload: dict = Depends(verify_token)):
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           UPDATE exchanges SET active = FALSE
+           WHERE id = %s AND user_id = %s
+       """, (exchange_id, payload['user_id']))
+   return {'message': 'Exchange removed'}
+
+# ═══════════════════════════════
+# BOTS — CREATE / DELETE
+# ═══════════════════════════════
+class BotCreate(BaseModel):
+   exchange_id: int
+   wallet_id: int
+   name: str
+   method: str
+   direction: str
+   base_order: float = 1.0
+   dca_percent: float = 7.0
+   spacing_multiplier: float = 1.4
+   size_multiplier: float = 1.5
+   take_profit_percent: float = 5.0
+   trailing_percent: float = 2.0
+   base_coin: str = 'USDT'
+   is_paper: bool = True
+   trades_per_bot: int = 1
+   trades_per_coin: int = 1
+   gate_dca_enabled: bool = False
+   gate_timer_enabled: bool = False
+   gate_timer_hours: int = 5
+   order_entry_type: str = 'market'
+   order_dca_type: str = 'market'
+
+@app.post('/bots')
+def create_bot(req: BotCreate,
+              payload: dict = Depends(verify_token)):
+   bot_id = db.create_bot(
+       payload['user_id'], req.exchange_id, req.wallet_id,
+       req.name, req.method, req.direction, req.base_order,
+       req.dca_percent, req.spacing_multiplier,
+       req.size_multiplier, req.take_profit_percent,
+       req.trailing_percent, req.base_coin, req.is_paper,
+       req.trades_per_bot, req.trades_per_coin,
+       req.gate_dca_enabled, req.gate_timer_enabled,
+       req.gate_timer_hours, req.order_entry_type,
+       req.order_dca_type
+   )
+   return {'message': 'Bot created', 'bot_id': bot_id}
+
+@app.delete('/bots/{bot_id}')
+def delete_bot(bot_id: int,
+              payload: dict = Depends(verify_token)):
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       # Check ownership
+       cur.execute("""
+           SELECT id FROM bots
+           WHERE id = %s AND user_id = %s
+       """, (bot_id, payload['user_id']))
+       if not cur.fetchone():
+           raise HTTPException(status_code=404,
+                               detail='Bot not found')
+       # Soft delete
+       cur.execute("""
+           UPDATE bots SET status = 'deleted'
+           WHERE id = %s
+       """, (bot_id,))
+   return {'message': f'Bot {bot_id} deleted'}
+
+# ═══════════════════════════════
+# VIRTUAL WALLETS
+# ═══════════════════════════════
+class WalletCreate(BaseModel):
+   exchange_id: int
+   name: str
+   currency: str = 'USDT'
+   allocation_type: str = 'fixed'
+   allocation_amount: float = 0
+
+@app.get('/wallets')
+def get_wallets(payload: dict = Depends(verify_token)):
+   wallets = db.get_user_wallets(payload['user_id'])
+   return [{'id': w[0], 'name': w[1], 'currency': w[2],
+             'allocation_type': w[3],
+             'allocation_amount': float(w[4] or 0),
+             'current_balance': float(w[5] or 0),
+             'standby_reserved': float(w[6] or 0),
+             'exchange': w[7],
+             'exchange_name': w[8]} for w in wallets]
+
+@app.post('/wallets')
+def create_wallet(req: WalletCreate,
+                 payload: dict = Depends(verify_token)):
+   wallet_id = db.create_wallet(
+       payload['user_id'], req.exchange_id, req.name,
+       req.currency, req.allocation_type, req.allocation_amount
+   )
+   return {'message': 'Wallet created', 'wallet_id': wallet_id}
+
+# ═══════════════════════════════
+# ADMIN — CRON STATUS
+# ═══════════════════════════════
+@app.get('/admin/cron-status')
+def admin_cron_status(payload: dict = Depends(require_admin)):
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT DISTINCT ON (step)
+               step, status, duration_seconds,
+               records_processed, error_message,
+               completed_at
+           FROM performance_timing
+           WHERE completed_at > NOW() - INTERVAL '48 hours'
+           ORDER BY step, completed_at DESC
+       """)
+       rows = cur.fetchall()
+
+   steps = {
+       'infrastructure': None,
+       'coingecko': None,
+       'cmc': None,
+       'classification': None,
+       'reporting': None,
+       'cleanup': None
+   }
+
+   for r in rows:
+       step = r[0]
+       if step in steps:
+           steps[step] = {
+               'step': step,
+               'status': r[1],
+               'duration': float(r[2] or 0),
+               'records': r[3],
+               'error': r[4],
+               'completed_at': str(r[5])
+           }
+
+   return steps
+
+# ═══════════════════════════════
+# ADMIN — DIAGNOSTICS
+# ═══════════════════════════════
+@app.get('/admin/diagnostics')
+def admin_diagnostics(payload: dict = Depends(require_admin)):
+   try:
+       with open('diagnostics/latest.md', 'r') as f:
+           content = f.read()
+       return {'content': content, 'available': True}
+   except:
+       return {'content': 'No diagnostics available yet',
+               'available': False}
+
+@app.post('/admin/diagnostics/generate')
+def generate_diagnostics(payload: dict = Depends(require_admin)):
+   import subprocess
+   subprocess.Popen(['python3',
+                     'automation/generate_diagnostics.py'])
+   return {'message': 'Diagnostics generation started'}
+
+# ═══════════════════════════════
+# ADMIN — SYSTEM HEALTH
+# ═══════════════════════════════
+@app.get('/admin/health')
+def admin_health(payload: dict = Depends(require_admin)):
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT cpu_percent, ram_percent, disk_percent,
+                  redis_mb, pg_connections, bot_cycle_time,
+                  active_bots, open_positions, recorded_at
+           FROM system_health
+           ORDER BY recorded_at DESC LIMIT 168
+       """)
+       rows = cur.fetchall()
+
+   return [{
+       'cpu': float(r[0] or 0),
+       'ram': float(r[1] or 0),
+       'disk': float(r[2] or 0),
+       'redis_mb': float(r[3] or 0),
+       'pg_conn': r[4],
+       'cycle_time': float(r[5] or 0),
+       'active_bots': r[6],
+       'open_positions': r[7],
+       'recorded_at': str(r[8])
+   } for r in rows]
