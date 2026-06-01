@@ -180,7 +180,7 @@ def send_telegram(msg):
 # ═══════════════════════════════
 def bot_loop(redis_client):
     print("🚀 Bot loop starting...")
-    send_telegram(f"🚀 Averion started · {'PAPER' if PAPER_MODE else 'LIVE'} mode · {datetime.utcnow()}")
+    tg.admin_bot_started(PAPER_MODE)
 
     cycle = 0
     while True:
@@ -205,7 +205,7 @@ def bot_loop(redis_client):
 
         except KeyboardInterrupt:
             print("🛑 Bot stopped manually")
-            send_telegram("🛑 Averion stopped manually")
+            tg.admin_bot_stopped("manual")
             break
         except Exception as e:
             print(f"❌ Loop error: {e}")
@@ -239,5 +239,5 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f"❌ FATAL: {e}")
-        send_telegram(f"❌ Averion failed to start: {e}")
+        tg.admin_error(str(e))
         exit(1)
