@@ -1,317 +1,483 @@
+import os
+import hashlib
+import secrets
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from datetime import datetime, timezone
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from database import get_db, init_db
-from datetime import datetime, timezone
-import threading
+from typing import Optional
+from dotenv import load_dotenv
 import uvicorn
-import ccxt
+import redis
+import jwt
 
+import database as db
+
+load_dotenv()
+
+PAPER_MODE = os.getenv('PAPER_MODE', 'true').lower() == 'true'
+SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
+ADMIN_PATH = os.getenv('ADMIN_PATH', 'ops-admin')
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+
+# ═══════════════════════════════
+# STARTUP
+# ═══════════════════════════════
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    db.init_pool()
+    print('✅ API started')
     yield
 
-app = FastAPI(title="Averion Bot API", lifespan=lifespan)
+app = FastAPI(title='Averion API', lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=['*'],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
-bot_running = True
-stop_event  = threading.Event()
-exchange    = ccxt.mexc({'enableRateLimit': True})
+# ═══════════════════════════════
+# REDIS CLIENT
+# ═══════════════════════════════
+def get_redis():
+    return redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        password=REDIS_PASSWORD,
+        decode_responses=True
+    )
 
-# ── HELPERS ───────────────────────────────────────────────
-def days_open(opened_at_str):
-    """Calculate days since position opened."""
-    if not opened_at_str:
-        return 0
+# ═══════════════════════════════
+# AUTH HELPERS
+# ═══════════════════════════════
+security = HTTPBearer()
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256(f'{salt}{password}'.encode()).hexdigest()
+    return f'{salt}:{hashed}'
+
+def verify_password(password: str, stored: str) -> bool:
     try:
-        opened = datetime.fromisoformat(str(opened_at_str))
-        if opened.tzinfo is None:
-            opened = opened.replace(tzinfo=timezone.utc)
-        delta = datetime.now(timezone.utc) - opened
-        return delta.days
+        salt, hashed = stored.split(':')
+        return hashlib.sha256(
+            f'{salt}{password}'.encode()
+        ).hexdigest() == hashed
     except:
-        return 0
+        return False
 
-# ── DASHBOARD ─────────────────────────────────────────────
-@app.get("/dashboard")
+def create_token(user_id: int, is_admin: bool) -> str:
+    return jwt.encode(
+        {'user_id': user_id, 'is_admin': is_admin},
+        SECRET_KEY, algorithm='HS256'
+    )
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            SECRET_KEY, algorithms=['HS256']
+        )
+        return payload
+    except:
+        raise HTTPException(status_code=401, detail='Invalid token')
+
+def require_admin(payload: dict = Depends(verify_token)):
+    if not payload.get('is_admin'):
+        raise HTTPException(status_code=403, detail='Admin only')
+    return payload
+
+# ═══════════════════════════════
+# BRUTE FORCE PROTECTION
+# ═══════════════════════════════
+def check_brute_force(ip: str) -> bool:
+    r = get_redis()
+    key = f'login_fails:{ip}'
+    fails = r.get(key)
+    return int(fails) >= 5 if fails else False
+
+def record_login_fail(ip: str):
+    r = get_redis()
+    key = f'login_fails:{ip}'
+    r.incr(key)
+    r.expire(key, 1800)  # 30 minutes
+
+def clear_login_fails(ip: str):
+    r = get_redis()
+    r.delete(f'login_fails:{ip}')
+
+# ═══════════════════════════════
+# STATIC FILES
+# ═══════════════════════════════
+@app.get('/dashboard')
 def dashboard():
-    return FileResponse("dashboard.html")
+    return FileResponse('dashboard.html')
 
-# ── STATUS ────────────────────────────────────────────────
-@app.get("/status")
-def get_status():
-    try:
-        ticker = exchange.fetch_ticker('BTC/USDT')
-        price  = ticker['last']
-    except:
-        price = 0
+@app.get(f'/{ADMIN_PATH}')
+def admin_dashboard():
+    return FileResponse('admin.html')
+
+# ═══════════════════════════════
+# AUTH ENDPOINTS
+# ═══════════════════════════════
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post('/auth/login')
+def login(req: LoginRequest, request: Request):
+    ip = request.client.host
+
+    # Check brute force
+    if check_brute_force(ip):
+        raise HTTPException(
+            status_code=429,
+            detail='Too many failed attempts · try again in 30 minutes'
+        )
+
+    user = db.get_user_by_email(req.email)
+    if not user or not verify_password(req.password, user[2]):
+        record_login_fail(ip)
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+
+    if user[6]:  # is_suspended
+        raise HTTPException(status_code=403, detail='Account suspended')
+
+    clear_login_fails(ip)
+    token = create_token(user[0], user[3])  # id, is_admin
+
     return {
-        "running":   bot_running,
-        "btc_price": price,
-        "mode":      "paper",
+        'token': token,
+        'user_id': user[0],
+        'email': user[1],
+        'is_admin': user[3]
     }
 
-# ── POSITIONS ─────────────────────────────────────────────
-@app.get("/positions")
-def get_positions():
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("SELECT * FROM positions WHERE status='open'")
-    rows = c.fetchall()
-    conn.close()
+# ═══════════════════════════════
+# STATUS
+# ═══════════════════════════════
+@app.get('/status')
+def get_status():
+    r = get_redis()
+    bot_status = r.get('bot:status') or 'unknown'
+    cycle_time = r.get('bot:cycle_time') or '0'
+    last_cycle = r.get('bot:last_cycle') or 'never'
 
-    positions = []
-    for row in rows:
+    btc_price = 0
+    try:
+        btc_price = float(r.get('price:BTC/USDT') or 0)
+    except:
+        pass
+
+    return {
+        'running': bot_status == 'running',
+        'bot_status': bot_status,
+        'cycle_time': cycle_time,
+        'last_cycle': last_cycle,
+        'btc_price': btc_price,
+        'mode': 'paper' if PAPER_MODE else 'live'
+    }
+
+# ═══════════════════════════════
+# POSITIONS
+# ═══════════════════════════════
+@app.get('/positions')
+def get_positions(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    r = get_redis()
+
+    positions = db.get_open_positions()
+    result = []
+
+    for p in positions:
+        if p[2] != user_id:  # user_id check
+            continue
+
+        coin = p[4]
+        current_price = 0
         try:
-            ticker        = exchange.fetch_ticker(row["coin"])
-            current_price = ticker['last']
+            current_price = float(
+                r.get(f'price:{coin}/USDT') or p[7] or 0
+            )
         except:
-            current_price = row["avg_cost"]
+            current_price = float(p[7] or 0)
 
-        pnl     = (current_price - row["avg_cost"]) * row["quantity"]
-        pnl_pct = ((current_price - row["avg_cost"]) / row["avg_cost"]) * 100 if row["avg_cost"] else 0
+        avg_cost = float(p[7] or 0)
+        quantity = float(p[8] or 0)
+        invested = float(p[9] or 0)
 
-        positions.append({
-            "id":            row["id"],
-            "coin":          row["coin"],
-            "avg_cost":      row["avg_cost"],
-            "quantity":      row["quantity"],
-            "total_invested":row["total_invested"],
-            "dca_count":     row["dca_count"],
-            "opened_at":     row["opened_at"],
-            "current_price": current_price,
-            "pnl":           round(pnl, 4),
-            "pnl_pct":       round(pnl_pct, 2),
-            "days_open":     days_open(row["opened_at"]),
-            "tp_armed":      bool(row["tp_armed"]) if "tp_armed" in row.keys() else False,
-            "queued":        bool(row["queued"])    if "queued"   in row.keys() else False,
+        pnl = (current_price - avg_cost) * quantity
+        pnl_pct = ((current_price - avg_cost) / avg_cost * 100
+                   ) if avg_cost else 0
+
+        result.append({
+            'id': p[0],
+            'bot_id': p[1],
+            'coin': coin,
+            'direction': p[5],
+            'status': p[6],
+            'avg_cost': avg_cost,
+            'quantity': quantity,
+            'total_invested': invested,
+            'dca_count': p[10],
+            'last_buy_price': float(p[11] or 0),
+            'tp_armed': p[12],
+            'current_price': current_price,
+            'pnl': round(pnl, 4),
+            'pnl_pct': round(pnl_pct, 2),
+            'category': p[17],
+            'is_paper': p[18],
+            'base_coin': p[19],
+            'opened_at': str(p[26])
         })
-    return positions
 
-# ── TRADES ────────────────────────────────────────────────
-@app.get("/trades")
-def get_trades():
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("SELECT * FROM trades ORDER BY timestamp DESC LIMIT 50")
-    rows = c.fetchall()
-    conn.close()
-    trades = []
-    for row in rows:
-        trades.append({
-            "id":          row["id"],
-            "position_id": row["position_id"],
-            "coin":        row["coin"] if "coin" in row.keys() else "",
-            "side":        row["side"],
-            "price":       row["price"],
-            "quantity":    row["quantity"],
-            "usdt_amount": row["usdt_amount"],
-            "reason":      row["reason"],
-            "timestamp":   row["timestamp"],
-        })
-    return trades
+    return result
 
-# ── HISTORY (Item 1) ──────────────────────────────────────
-@app.get("/history")
-def get_history():
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("""
-        SELECT p.*, t.price as exit_price, t.timestamp as closed_at_trade
-        FROM positions p
-        LEFT JOIN trades t ON t.position_id = p.id AND t.reason IN ('tp','manual')
-        WHERE p.status = 'closed'
-        ORDER BY p.closed_at DESC
-        LIMIT 200
-    """)
-    rows = c.fetchall()
-    conn.close()
-    history = []
-    for row in rows:
-        entry_price = row["avg_cost"] or 0
-        exit_price  = row["exit_price"] or row["avg_cost"] or 0
-        realized_pnl = (exit_price - entry_price) * (row["quantity"] or 0)
-        history.append({
-            "id":           row["id"],
-            "coin":         row["coin"],
-            "exchange":     "MEXC",
-            "dca_count":    row["dca_count"],
-            "total_invested":row["total_invested"],
-            "entry_price":  entry_price,
-            "avg_cost":     entry_price,
-            "exit_price":   exit_price,
-            "exit_reason":  "closed",
-            "realized_pnl": round(realized_pnl, 4),
-            "opened_at":    row["opened_at"],
-            "closed_at":    row["closed_at"],
-            "days_held":    days_open(row["opened_at"]),
-        })
-    return history
+@app.get('/positions/{position_id}')
+def get_position_detail(position_id: int,
+                         payload: dict = Depends(verify_token)):
+    trades = db.get_position_trades(position_id)
+    return {
+        'position_id': position_id,
+        'trades': [{
+            'id': t[0],
+            'side': t[1],
+            'price': float(t[2]),
+            'quantity': float(t[3]),
+            'usdt_amount': float(t[4]),
+            'exchange_fee': float(t[5] or 0),
+            'reason': t[6],
+            'order_type': t[7],
+            'dca_level': t[8],
+            'timestamp': str(t[9])
+        } for t in trades]
+    }
 
-# ── BALANCE HISTORY (for chart) ───────────────────────────
-@app.get("/balance-history")
-def get_balance_history(exchange_id: str = "mexc", days: int = 30):
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("""
-        SELECT value_usdt, recorded_at
-        FROM balance_history
-        WHERE exchange = ?
-        ORDER BY recorded_at ASC
-        LIMIT ?
-    """, (exchange_id, days))
-    rows = c.fetchall()
-    conn.close()
-    return [{"value": row["value_usdt"], "date": row["recorded_at"]} for row in rows]
+@app.post('/positions/{position_id}/close')
+def close_position(position_id: int,
+                    payload: dict = Depends(verify_token)):
+    db.close_position(position_id, 'manual')
+    db.add_attention_log(
+        payload['user_id'], 'green',
+        'manual_close', f'Position {position_id} closed manually',
+        position_id=position_id
+    )
+    return {'message': f'Position {position_id} closed'}
 
-# ── CONFIG GET (Item 2) ───────────────────────────────────
-@app.get("/config")
-def get_config():
-    try:
-        from config import (DCA_PERCENT, TAKE_PROFIT_PERCENT, TRAILING_PERCENT,
-                            BASE_ORDER_USDT, CHECK_INTERVAL, SPACING_MULTIPLIER,
-                            SIZE_MULTIPLIER, PAPER_MODE, MAX_DCA_ORDERS)
-        return {
-            "paper_mode":          PAPER_MODE,
-            "dca_percent":         DCA_PERCENT,
-            "spacing_multiplier":  SPACING_MULTIPLIER,
-            "size_multiplier":     SIZE_MULTIPLIER,
-            "take_profit_percent": TAKE_PROFIT_PERCENT,
-            "trailing_percent":    TRAILING_PERCENT,
-            "base_order_usdt":     BASE_ORDER_USDT,
-            "check_interval":      CHECK_INTERVAL,
-            "max_dca_orders":      MAX_DCA_ORDERS,
-        }
-    except Exception as e:
-        return {"error": str(e)}
+# ═══════════════════════════════
+# TRADES / HISTORY
+# ═══════════════════════════════
+@app.get('/trades')
+def get_trades(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT t.id, t.coin, t.side, t.price,
+                   t.quantity, t.usdt_amount, t.reason,
+                   t.exchange_fee, t.dca_level, t.timestamp
+            FROM trades t
+            WHERE t.user_id = %s
+            ORDER BY t.timestamp DESC LIMIT 100
+        """, (user_id,))
+        rows = cur.fetchall()
+    return [{'id': r[0], 'coin': r[1], 'side': r[2],
+              'price': float(r[3]), 'quantity': float(r[4]),
+              'usdt_amount': float(r[5]), 'reason': r[6],
+              'fee': float(r[7] or 0), 'dca_level': r[8],
+              'timestamp': str(r[9])} for r in rows]
 
-# ── CONFIG POST (Item 2) ──────────────────────────────────
-class ConfigUpdate(BaseModel):
-    paper_mode:          bool  = True
-    dca_percent:         float = 7.0
-    spacing_multiplier:  float = 1.4
-    size_multiplier:     float = 1.5
-    take_profit_percent: float = 5.0
-    trailing_percent:    float = 2.0
-    base_order_usdt:     float = 1.0
-    check_interval:      int   = 60
-    max_dca_orders:      int   = 10
+@app.get('/history')
+def get_history(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, p.coin, p.direction, p.avg_cost,
+                   p.dca_count, p.total_invested,
+                   p.opened_at, p.closed_at, p.close_reason,
+                   p.category, p.entry_method, p.base_coin,
+                   e.exchange
+            FROM positions p
+            JOIN exchanges e ON e.id = p.exchange_id
+            WHERE p.user_id = %s AND p.status = 'closed'
+            ORDER BY p.closed_at DESC LIMIT 200
+        """, (user_id,))
+        rows = cur.fetchall()
+    return [{'id': r[0], 'coin': r[1], 'direction': r[2],
+              'avg_cost': float(r[3] or 0),
+              'dca_count': r[4],
+              'total_invested': float(r[5] or 0),
+              'opened_at': str(r[6]), 'closed_at': str(r[7]),
+              'close_reason': r[8], 'category': r[9],
+              'entry_method': r[10], 'base_coin': r[11],
+              'exchange': r[12]} for r in rows]
 
-@app.post("/config")
-def update_config(cfg: ConfigUpdate):
-    try:
-        lines = [
-            f"PAPER_MODE          = {cfg.paper_mode}",
-            f"QUOTE               = 'USDT'",
-            f"BASE_ORDER_USDT     = {cfg.base_order_usdt}",
-            f"DCA_PERCENT         = {cfg.dca_percent}",
-            f"SPACING_MULTIPLIER  = {cfg.spacing_multiplier}",
-            f"SIZE_MULTIPLIER     = {cfg.size_multiplier}",
-            f"TAKE_PROFIT_PERCENT = {cfg.take_profit_percent}",
-            f"TRAILING_PERCENT    = {cfg.trailing_percent}",
-            f"MAX_DCA_ORDERS      = {cfg.max_dca_orders}",
-            f"CHECK_INTERVAL      = {cfg.check_interval}",
-            f"AUTO_COINS          = True",
-            f"MAX_COINS           = 100",
-        ]
-        with open("config.py", "w") as f:
-            f.write("\n".join(lines) + "\n")
-        return {"message": "Config saved — restart bot to apply"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ═══════════════════════════════
+# BOTS
+# ═══════════════════════════════
+@app.get('/bots')
+def get_bots(payload: dict = Depends(verify_token)):
+    bots = db.get_user_bots(payload['user_id'])
+    return [{'id': b[0], 'name': b[1], 'method': b[2],
+              'direction': b[3], 'trading_on': b[4],
+              'dca_on': b[5], 'is_paper': b[6],
+              'status': b[7], 'expires_at': str(b[8]),
+              'auto_renew': b[9], 'base_coin': b[10],
+              'trades_per_bot': b[11],
+              'trades_per_coin': b[12],
+              'gate_dca_enabled': b[13],
+              'gate_timer_enabled': b[14],
+              'gate_timer_hours': b[15],
+              'order_entry_type': b[16],
+              'order_dca_type': b[17],
+              'exchange': b[18],
+              'exchange_name': b[19]} for b in bots]
 
-# ── BOT CONTROLS ──────────────────────────────────────────
-@app.post("/start")
-def start_bot():
-    global bot_running, stop_event
-    if bot_running:
-        return {"message": "Bot already running"}
-    stop_event  = threading.Event()
-    bot_running = True
-    import main
-    t = threading.Thread(target=main.run_bot, daemon=True)
-    t.start()
-    return {"message": "Bot started"}
+class BotToggle(BaseModel):
+    trading_on: Optional[bool] = None
+    dca_on: Optional[bool] = None
 
-@app.post("/stop")
-def stop_bot():
-    global bot_running
-    bot_running = False
-    stop_event.set()
-    return {"message": "Bot stopped"}
+@app.post('/bots/{bot_id}/toggle')
+def toggle_bot(bot_id: int, toggle: BotToggle,
+               payload: dict = Depends(verify_token)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        if toggle.trading_on is not None:
+            cur.execute("""
+                UPDATE bots SET trading_on = %s
+                WHERE id = %s AND user_id = %s
+            """, (toggle.trading_on, bot_id, payload['user_id']))
+        if toggle.dca_on is not None:
+            cur.execute("""
+                UPDATE bots SET dca_on = %s
+                WHERE id = %s AND user_id = %s
+            """, (toggle.dca_on, bot_id, payload['user_id']))
+    return {'message': 'Bot updated'}
 
-# ── CLOSE POSITION ────────────────────────────────────────
-@app.post("/positions/{position_id}/close")
-def close_position(position_id: int):
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("SELECT * FROM positions WHERE id=?", (position_id,))
-    pos  = c.fetchone()
-    if not pos:
-        raise HTTPException(status_code=404, detail="Position not found")
-    try:
-        ticker = exchange.fetch_ticker(pos["coin"])
-        price  = ticker['last']
-    except:
-        price  = pos["avg_cost"]
-    qty    = pos["quantity"]
-    pnl    = (price - pos["avg_cost"]) * qty
-    c.execute("""UPDATE positions SET status='closed', closed_at=CURRENT_TIMESTAMP
-                 WHERE id=?""", (position_id,))
-    c.execute("""INSERT INTO trades (position_id, coin, side, price, quantity,
-                 usdt_amount, reason, paper) VALUES (?,?,?,?,?,?,?,1)""",
-              (position_id, pos["coin"], "sell", price, qty,
-               round(price * qty, 4), "manual"))
-    conn.commit()
-    conn.close()
-    return {"message": f"Position {position_id} closed", "pnl": round(pnl, 4)}
+# ═══════════════════════════════
+# EXCHANGES
+# ═══════════════════════════════
+@app.get('/exchanges')
+def get_exchanges(payload: dict = Depends(verify_token)):
+    exchanges = db.get_user_exchanges(payload['user_id'])
+    return [{'id': e[0], 'exchange': e[1],
+              'custom_name': e[2], 'active': e[3],
+              'paused': e[4] is not None,
+              'pause_reason': e[5],
+              'last_connected': str(e[6]),
+              'ip_confirmed': e[7]} for e in exchanges]
 
-# ── ADD FUNDS ─────────────────────────────────────────────
-@app.post("/positions/{position_id}/add")
-def add_funds(position_id: int, amount: float = 1.0):
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("SELECT * FROM positions WHERE id=?", (position_id,))
-    pos  = c.fetchone()
-    if not pos:
-        raise HTTPException(status_code=404, detail="Position not found")
-    try:
-        ticker = exchange.fetch_ticker(pos["coin"])
-        price  = ticker['last']
-    except:
-        price  = pos["avg_cost"]
-    qty      = amount / price
-    new_total = pos["total_invested"] + amount
-    new_qty   = pos["quantity"] + qty
-    new_avg   = new_total / new_qty
-    c.execute("""UPDATE positions SET avg_cost=?, quantity=?, total_invested=?
-                 WHERE id=?""", (new_avg, new_qty, new_total, position_id))
-    c.execute("""INSERT INTO trades (position_id, coin, side, price, quantity,
-                 usdt_amount, reason, paper) VALUES (?,?,?,?,?,?,?,1)""",
-              (position_id, pos["coin"], "buy", price, qty, amount, "manual"))
-    conn.commit()
-    conn.close()
-    return {"message": f"Added ${amount}", "new_avg": round(new_avg, 6)}
+# ═══════════════════════════════
+# ATTENTION LOG
+# ═══════════════════════════════
+@app.get('/attention-log')
+def get_attention_log(payload: dict = Depends(verify_token)):
+    logs = db.get_user_attention_logs(payload['user_id'])
+    return [{'id': l[0], 'severity': l[1],
+              'item_type': l[2], 'message': l[3],
+              'bot_id': l[4], 'position_id': l[5],
+              'created_at': str(l[6])} for l in logs]
 
-# ── RECORD BALANCE (called daily by bot) ──────────────────
-@app.post("/record-balance")
-def record_balance(value: float, exchange_id: str = "mexc"):
-    conn = get_db()
-    c    = conn.cursor()
-    c.execute("INSERT INTO balance_history (exchange, value_usdt) VALUES (?,?)",
-              (exchange_id, value))
-    conn.commit()
-    conn.close()
-    return {"message": "Balance recorded"}
+@app.post('/attention-log/{log_id}/resolve')
+def resolve_log(log_id: int, action: str = 'dismissed',
+                payload: dict = Depends(verify_token)):
+    db.resolve_attention_log(log_id, action)
+    return {'message': 'Resolved'}
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+# ═══════════════════════════════
+# RESERVE WALLET
+# ═══════════════════════════════
+@app.get('/reserve-wallet')
+def get_reserve(payload: dict = Depends(verify_token)):
+    wallet = db.get_reserve_wallet(payload['user_id'])
+    if not wallet:
+        return {'balance': 0, 'total_deposited': 0}
+    return {
+        'id': wallet[0],
+        'balance': float(wallet[1]),
+        'total_deposited': float(wallet[2]),
+        'total_deducted': float(wallet[3])
+    }
+
+# ═══════════════════════════════
+# BALANCE HISTORY
+# ═══════════════════════════════
+@app.get('/balance-history')
+def get_balance_history(exchange_id: int = 1, days: int = 30,
+                         payload: dict = Depends(verify_token)):
+    rows = db.get_balance_history(exchange_id, days)
+    return [{'value': float(r[0]), 'date': str(r[1])}
+            for r in rows]
+
+# ═══════════════════════════════
+# ADMIN ENDPOINTS
+# ═══════════════════════════════
+@app.get('/admin/stats')
+def admin_stats(payload: dict = Depends(require_admin)):
+    stats = db.get_platform_stats()
+    r = get_redis()
+    return {
+        'total_users': stats[0],
+        'active_bots': stats[1],
+        'open_positions': stats[2],
+        'live_positions': stats[3],
+        'paper_positions': stats[4],
+        'total_reserve': float(stats[5] or 0),
+        'owner_balance': float(stats[6] or 0),
+        'trades_today': stats[7],
+        'bot_status': r.get('bot:status') or 'unknown',
+        'cycle_time': r.get('bot:cycle_time') or '0',
+        'last_cycle': r.get('bot:last_cycle') or 'never'
+    }
+
+@app.get('/admin/users')
+def admin_users(payload: dict = Depends(require_admin)):
+    users = db.get_all_users_admin()
+    return [{'id': u[0], 'email': u[1],
+              'created_at': str(u[2]),
+              'suspended': u[3],
+              'telegram': u[4],
+              'bots': u[5],
+              'open_positions': u[6],
+              'reserve': float(u[7] or 0),
+              'fee_debt': float(u[8] or 0)} for u in users]
+
+@app.post('/admin/bot/restart')
+def admin_restart_bot(payload: dict = Depends(require_admin)):
+    import subprocess
+    subprocess.run(['pm2', 'restart', 'averion'])
+    return {'message': 'Bot restarting'}
+
+@app.post('/admin/cron/{step}/run')
+def admin_run_cron_step(step: str,
+                         payload: dict = Depends(require_admin)):
+    import subprocess
+    scripts = {
+        'infrastructure': 'automation/daily_cron.sh',
+        'coingecko': 'automation/fetch_coingecko.py',
+        'cmc': 'automation/fetch_cmc.py',
+        'classification': 'automation/classify_coins.py',
+        'reporting': 'automation/daily_aggregation.py',
+        'diagnostics': 'automation/generate_diagnostics.py'
+    }
+    if step not in scripts:
+        raise HTTPException(status_code=404, detail='Unknown step')
+
+    script = scripts[step]
+    if script.endswith('.py'):
+        subprocess.Popen(['python3', script])
+    else:
+        subprocess.Popen(['bash', script])
+
+    return {'message': f'Step {step} started'}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
