@@ -131,7 +131,7 @@ True set and forget — no monthly invoices.
 |-------|--------|---------|
 | 1 | Email + Phone KYC | Duplicate identities |
 | 2 | Exchange API UID fingerprint | Same exchange account |
-| 3 | Stripe payment method | Same card/bank |
+| 3 | Reserve wallet minimum $10 | Prevents throwaway accounts · Phase 7: NOWPayments KYC |
 | 4 | IP + Device fingerprint | Same device (admin review) |
 | 5 | Cross-exchange blacklist | All exchanges blocked |
 
