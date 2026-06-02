@@ -1545,3 +1545,43 @@ From bot dashboard:
 - Available in bot creation wizard Step 2
 - All standard features apply:
  DCA · TP · smart queue · Telegram alerts · history
+
+## Market Regime Classification (LOCKED)
+
+### Why This Matters
+Research promotion requires 3+ regimes tested.
+Without tagging · bull-market bot gets promoted incorrectly.
+180 days of data becomes untrustworthy.
+
+### Daily Regime Determination (runs at 04:30 cron)
+After classification · determine daily regime:
+
+Bull Market:
+- BTC 7-day change > +5%
+- AND market volatility < 60%
+
+Bear Market:
+- BTC 7-day change < -5%
+- OR market volatility > 80%
+
+Sideways:
+- Everything else
+
+### Storage
+- Written to market_regimes table daily
+- research_scores.regimes_tested JSONB updated
+- Promotion BLOCKED if fewer than 3 regimes tested
+
+### Promotion Score = MEDIAN (LOCKED)
+- Use MEDIAN across all coins tested · NOT mean/sum
+- Prevents one lucky/unlucky altcoin skewing results
+- Example: method trades 50 coins
+  · 1 coin 10x's → mean distorted · median accurate
+- generate_metrics.py must calculate median per method
+- This is the most important research integrity rule
+
+### Regime Tagging in Research Scores
+- regimes_tested JSONB stores array of regimes seen
+- Example: ["bull", "bear", "sideways"]
+- Minimum 3 unique regimes before promotion eligible
+- Bot can run 180 days all bull → no promotion possible
