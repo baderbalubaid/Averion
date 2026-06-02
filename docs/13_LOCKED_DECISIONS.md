@@ -23,8 +23,8 @@
 ## Slippage Handling
 - Check order book depth before every DCA
 - If available quantity at target price >= $1 minimum → buy at target price
-- If available quantity < $1 minimum → buy $1 market order (max slippage = $1)
-- Never chase price more than $1 above target
+- If available quantity < exchange pair minimum → buy at exchange minimum order size (not $1 · exchanges reject orders below their minimum)
+- Never chase price more than exchange minimum above target
 - Always executes something when triggered — never stuck waiting
 
 ## ST Flag (Exchange Suspended Trading)
