@@ -68,7 +68,7 @@ Build once · Build right · Public platform from Day 1
 
 ## 18 Rules Never To Break
 1. DCA spacing from LAST BUY PRICE — not average cost
-2. Market orders ONLY — exception: Short DCA buyback uses limit order to reserve funds
+2. Market orders are the default for guaranteed execution — exceptions: Short DCA buyback uses limit order · users may enable limit entry/DCA per bot in wizard
 3. 20% fee on REALIZED profits only — loss months = $0
 4. User funds ALWAYS on their exchange — Averion never holds
 5. Paper stays paper FOREVER — live stays live — no conversion

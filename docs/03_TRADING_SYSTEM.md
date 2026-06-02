@@ -30,8 +30,9 @@
 ---
 
 ## Order Types
-- Market orders ONLY — always — no exceptions ever
-- No limit orders — no stale orders — guaranteed execution
+- Market orders are the default — guaranteed execution always
+- Limit orders optional per bot: entry + DCA (user selects in wizard)
+- Short DCA buyback: limit order only (reserves USDT on exchange)
 - Guaranteed execution > perfect price — always
 
 ---

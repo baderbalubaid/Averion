@@ -7,7 +7,9 @@
 ## Trading Logic
 
 - DCA spacing calculated from LAST BUY PRICE — never average cost
-- Market orders ONLY — no limit orders ever — no exceptions
+- Market orders are the default for guaranteed execution
+- Limit orders available per bot via wizard (entry + DCA)
+- Short DCA buyback always uses limit order (reserve USDT)
 - Trailing safety (Smart DCA only): if TP% - Trail% < 1% → direct market TP
 - NO maximum DCA levels — smart queue handles capital allocation forever
 - Bot NEVER stops running — detects new funds within 60 seconds
