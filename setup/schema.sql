@@ -470,11 +470,7 @@ ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;
 ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS alert_count INTEGER DEFAULT 0;
 
 -- Bot slot tracking per user
-ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS trade_alerts_on BOOLEAN DEFAULT TRUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS report_alerts_on BOOLEAN DEFAULT TRUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_alerts_on BOOLEAN DEFAULT TRUE;
+-- Telegram fields live in user_telegram table (single source of truth)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_slots_total INTEGER DEFAULT 5;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trades_used_this_month INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS next_billing_date DATE;
