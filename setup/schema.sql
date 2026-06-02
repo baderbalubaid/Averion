@@ -243,6 +243,7 @@ CREATE TABLE coin_history (
     exchange VARCHAR(50),
     real_cap DECIMAL(30,2),
     recorded_cap DECIMAL(30,2),
+    source VARCHAR(20) DEFAULT 'averaged',
     category VARCHAR(20),
     volume_24h DECIMAL(30,2),
     confidence_days INTEGER DEFAULT 0,
