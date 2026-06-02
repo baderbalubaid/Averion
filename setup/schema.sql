@@ -266,6 +266,7 @@ CREATE TABLE ohlcv_hourly (
     close DECIMAL(20,8),
     volume DECIMAL(30,8),
     atr_14 DECIMAL(20,8),
+    volatility_30d DECIMAL(20,8),
     UNIQUE(coin, exchange, timestamp)
 );
 

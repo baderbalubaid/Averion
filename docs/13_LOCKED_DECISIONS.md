@@ -18,7 +18,7 @@
 - Paper stays paper FOREVER — live stays live — NO conversion ever
 - Short DCA = spot only — user must already hold the coin — min exchange order size required
 - Profit coin = user chooses USDT or base coin — works for both Long and Short
-- All slippage handling uses market orders only — no limit orders
+- All slippage handling uses market orders by default · limit orders available per bot setting
 
 ## Slippage Handling
 - Check order book depth before every DCA
@@ -1397,9 +1397,10 @@ Phase 4-6: not needed
 - Queue system naturally limits requests
 - Max 100 trades · one DCA per 60s
 - Login already brute force protected ✅
-Phase 7 public launch: add FastAPI middleware
+Before Phase 6 public launch: add FastAPI middleware
 - 60 requests/minute per token
-- Easy to add · leave for Phase 6 preparation
+- Easy to add · implement in Phase 5 preparation
+- Also before Phase 6: Fernet key rotation · session token hashing · withdrawal validation
 
 ## Email Verification at Registration (LOCKED)
 

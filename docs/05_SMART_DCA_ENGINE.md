@@ -1,7 +1,7 @@
 # Smart DCA Engine
 
 > The brain of Averion.
-> Auto-classification · 10 entry methods · research system · equations.
+> Auto-classification · 14 entry methods · research system · equations.
 
 ---
 

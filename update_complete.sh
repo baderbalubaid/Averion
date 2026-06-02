@@ -26,6 +26,7 @@ docs/15_TODO_REPLIT.md \
     setup/env.example \
     setup/init_db.py \
 setup/launch_research_bots.py \
+setup/launch_research_bots.py \
 setup/research_bots.json \
     main.py database.py api.py bot_loop.py \
 config.py dca_logic.py write_dashboard.py \

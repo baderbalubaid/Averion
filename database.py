@@ -161,6 +161,16 @@ def get_user_bots(user_id):
         """, (user_id,))
         return cur.fetchall()
 
+# Column order reference for bot_loop.py:
+# 0=id 1=user_id 2=exchange_id 3=name 4=method 5=direction
+# 6=trading_on 7=dca_on 8=is_paper 9=base_coin 10=dca_percent
+# 11=spacing_mult 12=size_mult 13=take_profit 14=trailing
+# 15=base_order 16=trades_per_bot 17=trades_per_coin
+# 18=gate_dca_on 19=gate_timer_on 20=gate_timer_hours
+# 21=order_entry_type 22=order_dca_type
+# 23=checkpoint_level 24=checkpoint_on
+# 25=exchange 26=api_key_enc 27=secret_enc
+# 28=passphrase_enc 29=paused_at
 def get_active_bots():
     with get_db() as conn:
         cur = conn.cursor()
@@ -1044,3 +1054,42 @@ def verify_code(user_id, code):
             WHERE id = %s
         """, (user_id,))
         return True
+
+def write_market_regime(date, regime, btc_24h, btc_7d, volatility):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO market_regimes
+                (date, regime, btc_24h_change, btc_7d_change, market_volatility)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (date) DO UPDATE SET
+                regime = EXCLUDED.regime,
+                btc_24h_change = EXCLUDED.btc_24h_change,
+                btc_7d_change = EXCLUDED.btc_7d_change,
+                market_volatility = EXCLUDED.market_volatility
+        """, (date, regime, btc_24h, btc_7d, volatility))
+        conn.commit()
+
+def get_market_regime(date=None):
+    with get_db() as conn:
+        cur = conn.cursor()
+        if date:
+            cur.execute("""
+                SELECT date, regime, btc_7d_change, market_volatility
+                FROM market_regimes WHERE date = %s
+            """, (date,))
+        else:
+            cur.execute("""
+                SELECT date, regime, btc_7d_change, market_volatility
+                FROM market_regimes ORDER BY date DESC LIMIT 1
+            """)
+        return cur.fetchone()
+
+def get_regime_history(days=180):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT date, regime FROM market_regimes
+            ORDER BY date DESC LIMIT %s
+        """, (days,))
+        return cur.fetchall()
