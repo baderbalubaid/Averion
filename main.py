@@ -3,6 +3,7 @@ import time
 import psycopg2
 import redis
 import ccxt
+import exchanges as exchanges_module
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -104,7 +105,7 @@ def reconcile_orders():
                 # Initialize CCXT exchange
                 exchange_class = getattr(ccxt, exc_name)
                 config = {
-                    'apiKey': api_key,
+                    'apiKey': exchanges_module.decrypt(api_key),
                     'secret': secret
                 }
                 if passphrase:
