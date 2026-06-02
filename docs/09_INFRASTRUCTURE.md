@@ -54,24 +54,38 @@
 - DB backup → /backups/averion_YYYY-MM-DD.db
 - Keep last 7 days only
 
-#### 03:30 — Data & Classification
-- CoinGecko scan → market cap fetch
-- Cap protection formula applied
-- Classify/reclassify all coins
-- Parameter recalculation (ATR + median bounce)
-- Volume-weighted category update
+#### 03:30 — CoinGecko Fetch
+- Fetch all coins market caps (250 per call · dynamic)
+- Store raw caps in coin_history (source: coingecko)
+- No classification yet · raw data only
 
-#### 04:00 — Reporting
-- Balance snapshot → balance_history table
-- metrics/latest.json → pushed to GitHub
-- Excel report generation (4 sheets)
-- Telegram daily report → Reports channel
+#### 04:00 — CoinMarketCap Fetch
+- Fetch all coins market caps from CMC API
+- Store raw caps in coin_history (source: cmc)
+- No classification yet · raw data only
 
-#### 04:30 — Sunday Only
-- Log cleanup (files >30 days old)
-- Disk check (alert if >70%)
+#### 04:30 — Classification
+- Average: recorded_cap = (CoinGecko + CMC) / 2
+- If only one source: use that source
+- If both fail: use last recorded · Telegram alert
+- Apply cap protection formula
+- Classify all coins into categories
+- Reclassify changed coins · Telegram alert per change
+
+#### 05:00 — Reporting
+- Generate Excel report (9 sheets · fresh classification)
+- Update metrics/latest.json → push to GitHub
+- Send daily Telegram to admin (health + stats)
+- Send daily Telegram to each customer (their summary)
+- Save report to /reports/ folder
+
+#### 05:30 — Sunday Only
 - DB VACUUM + ANALYZE
-- Weekly Telegram report
+- Delete logs older than 30 days
+- Delete Excel reports older than 30 days
+- Disk space check → alert if >70%
+- Weekly Telegram summary (profit + fees + rankings)
+- Check CCXT version → safe upgrade if available
 
 ### Monthly 1st 5am
 - Full system report
