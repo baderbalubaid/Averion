@@ -6512,6 +6512,34 @@ Platform is live! 6 month research period begins.
 - Download via SCP: scp root@IP:/home/averion/Averion/reports/latest.xlsx .
 - Open in Excel or Google Sheets
 - Never rename columns — AI workflows depend on stable names
+
+## Email Deliverability Setup (Day 2 — CRITICAL)
+
+Do this right after buying averionbot.com domain:
+
+### Step 1 — Verify domain in Resend
+- Login to resend.com
+- Domains → Add Domain → averionbot.com
+- Resend will give you DNS records to add
+
+### Step 2 — Add DNS records in domain registrar
+
+
+### Step 3 — Verify in Resend dashboard
+- Wait 10-30 minutes for DNS propagation
+- Resend dashboard → Domain → Verify
+- All 3 records must show ✅
+
+### Step 4 — Test email
+- Send test from Resend dashboard
+- Check inbox AND junk
+- If junk → check DNS records again
+
+### Why This Matters
+- Without SPF/DKIM → emails go to junk
+- With proper setup → mostly inbox
+- New domain takes 2-3 months to build reputation
+- Resend has best deliverability of free email services
 # Averion Environment Variables
 # Copy this file to .env and fill in your values
 # Command: cp setup/env.example .env
