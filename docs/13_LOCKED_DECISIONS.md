@@ -1589,41 +1589,33 @@ Sideways:
 ## Short Research Bots (LOCKED)
 
 ### Structure
-- 144 Short paper bots mirroring Long research grid
-- Same 14 entry methods · same parameter variations
-- 5 selected coins only (Short needs focused data)
-- Suggested coins: BTC · ETH + 3 high-liquidity alts
+- 144 Short paper bots · same methods as Long grid
+- 5 selected coins only: BTC · ETH + 3 high-liquidity alts
 - All paper mode · virtual balance · no real coins needed
 - direction = 'short' tagged in research_scores
+- Completely separate research from Long bots
+
+### One Winner — Smart DCA (Short)
+- Same promotion formula as Long
+- Median score across all 5 coins → one winner
+- Winner becomes Smart DCA (Short) engine
+- Long has its own Smart winner · Short has its own
+- Two separate smart engines · never mixed
 
 ### Trade Count
-- 144 bots × 5 coins = 720 paper short trades running
-- Completely separate from Long research bots
-- Separate research_scores entries per direction
+- 144 bots × 5 coins = 720 paper short trades
+- Data collected over same 6 month period as Long
 
-### 5 Separate Reports
-- One report per coin after 6 months
-- Each report shows:
-  · Best entry method for this coin Short
-  · Best DCA% · spacing · TP% for this coin
-  · Comparison against Long results same coin
-- Admin sees all 5 reports in Tab 4
-- Telegram weekly summary per coin
-
-### Why 5 Coins Only
-- Short DCA needs more time per trade
-- Fewer coins = faster statistically valid conclusions
-- BTC + ETH = most liquid = cleanest data
-- 3 additional alts = diversity without noise
-- Coins selected by admin before research starts
+### Reports
+- One combined Short research report
+- Shows all 14 methods ranked by median score
+- Winner declared after 6 months · same rules as Long
+- Admin sees Long + Short results in Tab 4
 
 ### Short Research Logs
 - Separate log file: research_short.log
 - Separate metrics: metrics/short_latest.json
-- Pushed to GitHub same as Long metrics
-- Admin dashboard Tab 4 shows both Long + Short
-
----
+- Pushed to GitHub alongside Long metrics
 
 ## Custom Entry Method (LOCKED)
 
