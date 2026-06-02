@@ -1610,6 +1610,110 @@ Automated email (Resend):
 - Phase 6+: Brevo or MailerLite
 - Separate from transactional
 - Transactional stays on Resend forever
+
+## Manual Bot — Full Specification (LOCKED)
+
+### What is Manual Bot
+- Separate bot type where user manually selects
+ which coin to open a position on
+- Not affected by Smart DCA automation or signals
+- User has full control over every position opened
+- All standard features work: DCA · TP · queue · alerts
+
+### Bot Creation (one time setup)
+User sets defaults when creating bot:
+- Name · Exchange · Direction (Long/Short)
+- Select Virtual Wallet
+- Default base order size ($)
+- Default DCA %
+- Default spacing multiplier
+- Default size multiplier
+- Default TP %
+- Default trailing %
+- Default trades per coin (e.g. 1)
+- OR toggle Smart DCA ON:
+ → Spacing + TP calculated automatically
+ → User can still override per position
+
+### Opening a Position (real time)
+From bot dashboard:
+1. Search bar → type coin name (fast search)
+2. Coin appears with current live price
+3. All default parameters pre-filled
+4. User can override ANY field before firing:
+  - Order size
+  - DCA %
+  - Spacing multiplier
+  - TP %
+  - Trailing %
+  - Trades per coin (override for this position only)
+5. Smart DCA selected + user enters TP%:
+  → User value OVERWRITES smart calculation
+6. Hint shown if order size < exchange minimum
+7. [Open Position] → market order fires immediately
+8. Position tracked normally with all features
+
+### Trades Per Coin Override (LOCKED)
+- Default trades per coin set at bot creation
+- When opening position user can change it
+- Example:
+ · Default = 1 · RVN already open
+ · User wants second RVN position
+ · Changes trades per coin to 2 for this open
+ · System allows it · two positions tracked separately
+ · Each has own DCA · TP · history
+- Gives expert users full control
+- Safe defaults protect beginners
+
+### Manual Bot Rules (LOCKED)
+- Has own virtual wallet (isolated capital)
+- Allows multiple positions on same coin
+ (unlike auto bots which enforce one pair per bot)
+- Research data kept separate from auto bots
+- Manual positions do NOT affect Smart DCA research scores
+- Available in bot creation wizard Step 2
+- All standard features apply:
+ DCA · TP · smart queue · Telegram alerts · history
+
+## Market Regime Classification (LOCKED)
+
+### Why This Matters
+Research promotion requires 3+ regimes tested.
+Without tagging · bull-market bot gets promoted incorrectly.
+180 days of data becomes untrustworthy.
+
+### Daily Regime Determination (runs at 04:30 cron)
+After classification · determine daily regime:
+
+Bull Market:
+- BTC 7-day change > +5%
+- AND market volatility < 60%
+
+Bear Market:
+- BTC 7-day change < -5%
+- OR market volatility > 80%
+
+Sideways:
+- Everything else
+
+### Storage
+- Written to market_regimes table daily
+- research_scores.regimes_tested JSONB updated
+- Promotion BLOCKED if fewer than 3 regimes tested
+
+### Promotion Score = MEDIAN (LOCKED)
+- Use MEDIAN across all coins tested · NOT mean/sum
+- Prevents one lucky/unlucky altcoin skewing results
+- Example: method trades 50 coins
+  · 1 coin 10x's → mean distorted · median accurate
+- generate_metrics.py must calculate median per method
+- This is the most important research integrity rule
+
+### Regime Tagging in Research Scores
+- regimes_tested JSONB stores array of regimes seen
+- Example: ["bull", "bear", "sideways"]
+- Minimum 3 unique regimes before promotion eligible
+- Bot can run 180 days all bull → no promotion possible
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -2533,6 +2637,136 @@ Mathematical progression — no random values
 | E10-10 | 15% | 24h |
 | E10-11 | 5% | 48h |
 | E10-12 | 10% | 48h |
+
+## New Entry Methods — E11 to E14 (Added After AI Review)
+
+### E11 — QFL Base Bounce (9 bots)
+Concept: Price breaks below historical base → enter on rejection
+Most important parameter: Base Break %
+
+| Bot | Base Break % | Notes |
+|-----|-------------|-------|
+| E11-1 | 2% | Aggressive · many entries |
+| E11-2 | 3% | Standard micro crack |
+| E11-3 | 4% | Moderate break |
+| E11-4 | 5% | Strong break required |
+| E11-5 | 6% | High conviction |
+| E11-6 | 8% | Deep liquidation |
+| E11-7 | 10% | Major capitulation |
+| E11-8 | 12% | Extreme event |
+| E11-9 | 15% | Ultra conservative |
+
+Fixed: Base Age=72h · Volume Filter=1.5x · Reclaim required
+
+Entry logic:
+- Identify base from 72h OHLCV consolidation
+- Price breaks below base by Break%
+- Volume spike >= 1.5x average
+- Close back above base → entry
+
+---
+
+### E12 — Support/Resistance Reclaim (9 bots)
+Concept: Price breaks support → reclaims it → entry
+Most important parameter: Reclaim Distance %
+
+| Bot | Reclaim % | Touch Count | Volume |
+|-----|-----------|-------------|--------|
+| E12-1 | 0.5% | 2 | 1.2x |
+| E12-2 | 1.0% | 2 | 1.4x |
+| E12-3 | 1.5% | 3 | 1.6x |
+| E12-4 | 2.0% | 3 | 1.8x |
+| E12-5 | 2.5% | 4 | 2.0x |
+| E12-6 | 3.0% | 4 | 2.2x |
+| E12-7 | 3.5% | 5 | 2.4x |
+| E12-8 | 4.0% | 5 | 2.6x |
+| E12-9 | 5.0% | 6 | 3.0x |
+
+Fixed: Lookback=30 days · Confirmation=1 candle close above
+
+Entry logic:
+- Find support from swing lows over 30 days
+- Price breaks below support
+- Closes back above support by Reclaim%
+- Volume >= required · Touch Count prior tests confirmed
+
+---
+
+### E13 — EMA + MACD + RSI Confluence (10 bots)
+Concept: Three confirmations before entry
+Most important parameter: EMA pair (trend speed)
+
+| Bot | Fast EMA | Slow EMA | RSI Max |
+|-----|----------|----------|---------|
+| E13-1 | 9 | 21 | 35 |
+| E13-2 | 10 | 24 | 37 |
+| E13-3 | 12 | 26 | 39 |
+| E13-4 | 14 | 30 | 41 |
+| E13-5 | 16 | 34 | 43 |
+| E13-6 | 18 | 40 | 45 |
+| E13-7 | 20 | 50 | 47 |
+| E13-8 | 22 | 55 | 49 |
+| E13-9 | 24 | 60 | 51 |
+| E13-10 | 26 | 70 | 53 |
+
+Fixed: MACD 12/26/9 · Price above EMA200 · Histogram rising 2 candles
+
+Entry logic:
+- Price above EMA200 (macro bull)
+- Fast EMA crosses above Slow EMA
+- MACD line above signal · histogram rising
+- RSI <= RSI Max threshold
+- All conditions met → entry
+
+---
+
+### E14 — Stoch RSI Pullback + Trend Filter (9 bots)
+Concept: Oversold Stoch RSI during uptrend
+Most important parameter: Oversold threshold + Trend EMA
+
+| Bot | Stoch RSI Oversold | Trend EMA | Recovery |
+|-----|-------------------|-----------|----------|
+| E14-1 | 10 | 50 | 1 close |
+| E14-2 | 12 | 55 | 1 close |
+| E14-3 | 14 | 60 | 1 close |
+| E14-4 | 16 | 65 | 2 closes |
+| E14-5 | 18 | 70 | 2 closes |
+| E14-6 | 20 | 75 | 2 closes |
+| E14-7 | 22 | 80 | 2 closes |
+| E14-8 | 24 | 90 | 3 closes |
+| E14-9 | 26 | 100 | 3 closes |
+
+Fixed: Stoch RSI 14 period · %K crosses above %D as trigger
+
+Entry logic:
+- Price above Trend EMA (uptrend confirmed)
+- Stoch RSI %K drops below oversold threshold
+- %K crosses above %D from oversold zone
+- Recovery closes confirmed → entry
+
+---
+
+### Updated Research Bot Count
+
+| Method | Bots |
+|--------|------|
+| E1 VWAP+RSI | 12 |
+| E2 Panic Exhaustion | 9 |
+| E3 Volume Climax | 12 |
+| E4 Time-Cycle Window | 9 |
+| E5 Multi-Timeframe | 12 |
+| E6 Z-Score Statistical | 9 |
+| E7 Volatility Squeeze | 9 |
+| E8 Swing Structure | 9 |
+| E9 Sequential Candle | 9 |
+| E10 Pure Drop (control) | 12 |
+| E11 QFL Base Bounce | 9 |
+| E12 S/R Reclaim | 9 |
+| E13 EMA+MACD+RSI | 10 |
+| E14 Stoch RSI Pullback | 9 |
+| Benchmarks | 5 |
+| **TOTAL** | **144** |
+
 # Business Model
 
 > How Averion makes money.
@@ -5148,6 +5382,25 @@ SELECT 'Security tables added!' AS result;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
 
+
+-- ═══════════════════════════════
+-- MARKET REGIMES
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS market_regimes (
+    id SERIAL PRIMARY KEY,
+    date DATE NOT NULL UNIQUE,
+    regime VARCHAR(20) NOT NULL,
+    btc_24h_change DECIMAL(10,4),
+    btc_7d_change DECIMAL(10,4),
+    market_volatility DECIMAL(10,4),
+    determination_method VARCHAR(50) DEFAULT 'auto',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_regimes_date
+ON market_regimes(date);
+
+SELECT 'market_regimes table created!' AS result;
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
@@ -5883,7 +6136,8 @@ def main():
         'user_subscriptions', 'subscription_billing',
         'exchange_coin_limits', 'short_buyback_orders',
         'trade_bundles', 'pending_limit_orders',
-        'security_audit_log'
+        'security_audit_log',
+        'market_regimes'
     ]
 
     print("\n📋 Verifying tables:")
