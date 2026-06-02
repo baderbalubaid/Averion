@@ -122,7 +122,7 @@ CREATE TABLE positions (
     queued BOOLEAN DEFAULT FALSE,
     standby_amount DECIMAL(20,8) DEFAULT 0,
     standby_price DECIMAL(20,8),
-    standby_timeout_at TIMESTAMP,
+    standby_created_at TIMESTAMP,
     dust_amount DECIMAL(20,8) DEFAULT 0,
     dust_currency VARCHAR(20),
     is_manual BOOLEAN DEFAULT FALSE,
