@@ -107,6 +107,21 @@ def clear_login_fails(ip: str):
 def dashboard():
     return FileResponse('dashboard.html')
 
+@app.get('/auth/email-verified')
+def check_email_verified(payload: dict = Depends(verify_token)):
+    user = db.get_user_by_id(payload['user_id'])
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+    # user[3] = is_admin · check email_verified separately
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT email_verified FROM users WHERE id = %s
+        """, (payload['user_id'],))
+        row = cur.fetchone()
+        verified = row[0] if row else False
+    return {'email_verified': verified}
+
 @app.get(f'/{ADMIN_PATH}')
 def admin_dashboard():
     return FileResponse('admin.html')
