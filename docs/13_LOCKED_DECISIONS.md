@@ -1481,3 +1481,67 @@ Automated email (Resend):
 - Phase 6+: Brevo or MailerLite
 - Separate from transactional
 - Transactional stays on Resend forever
+
+## Manual Bot — Full Specification (LOCKED)
+
+### What is Manual Bot
+- Separate bot type where user manually selects
+ which coin to open a position on
+- Not affected by Smart DCA automation or signals
+- User has full control over every position opened
+- All standard features work: DCA · TP · queue · alerts
+
+### Bot Creation (one time setup)
+User sets defaults when creating bot:
+- Name · Exchange · Direction (Long/Short)
+- Select Virtual Wallet
+- Default base order size ($)
+- Default DCA %
+- Default spacing multiplier
+- Default size multiplier
+- Default TP %
+- Default trailing %
+- Default trades per coin (e.g. 1)
+- OR toggle Smart DCA ON:
+ → Spacing + TP calculated automatically
+ → User can still override per position
+
+### Opening a Position (real time)
+From bot dashboard:
+1. Search bar → type coin name (fast search)
+2. Coin appears with current live price
+3. All default parameters pre-filled
+4. User can override ANY field before firing:
+  - Order size
+  - DCA %
+  - Spacing multiplier
+  - TP %
+  - Trailing %
+  - Trades per coin (override for this position only)
+5. Smart DCA selected + user enters TP%:
+  → User value OVERWRITES smart calculation
+6. Hint shown if order size < exchange minimum
+7. [Open Position] → market order fires immediately
+8. Position tracked normally with all features
+
+### Trades Per Coin Override (LOCKED)
+- Default trades per coin set at bot creation
+- When opening position user can change it
+- Example:
+ · Default = 1 · RVN already open
+ · User wants second RVN position
+ · Changes trades per coin to 2 for this open
+ · System allows it · two positions tracked separately
+ · Each has own DCA · TP · history
+- Gives expert users full control
+- Safe defaults protect beginners
+
+### Manual Bot Rules (LOCKED)
+- Has own virtual wallet (isolated capital)
+- Allows multiple positions on same coin
+ (unlike auto bots which enforce one pair per bot)
+- Research data kept separate from auto bots
+- Manual positions do NOT affect Smart DCA research scores
+- Available in bot creation wizard Step 2
+- All standard features apply:
+ DCA · TP · smart queue · Telegram alerts · history
