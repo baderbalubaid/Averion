@@ -72,6 +72,10 @@ def rotate_fernet_key():
         env_path = '/home/averion/Averion/.env'
         set_key(env_path, 'FERNET_KEY', new_key)
         print(f"✅ FERNET_KEY rotated · {len(rows)} keys re-encrypted")
+    # CRITICAL: restart PM2 immediately so new key loads into RAM
+    import subprocess
+    subprocess.run(['pm2', 'restart', 'averion'], check=True)
+    print("✅ PM2 restarted · new key active in RAM")
 
         # Alert admin
         tg.send_admin(

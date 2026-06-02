@@ -199,6 +199,7 @@ DKIM:
 DMARC:
 - Type: TXT · Name: _dmarc
 - Value: v=DMARC1; p=none; rua=mailto:admin@averionbot.com
+  NOTE: After 30 days upgrade to p=quarantine · after 60 days p=reject
 
 
 ### Step 3 — Verify in Resend dashboard

@@ -109,7 +109,7 @@ def reconcile_orders():
                     'secret': secret
                 }
                 if passphrase:
-                    config['password'] = passphrase
+                    config['password'] = exchanges_module.decrypt(passphrase)
 
                 exchange = exchange_class(config)
 
@@ -274,3 +274,21 @@ if __name__ == '__main__':
         print(f"❌ FATAL: {e}")
         tg.admin_error(str(e))
         exit(1)
+
+def clear_stale_pending_buyback():
+    """Clear PENDING_BUYBACK flags older than 60 seconds"""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE positions
+            SET pending_buyback = FALSE,
+                pending_buyback_since = NULL
+            WHERE pending_buyback = TRUE
+            AND pending_buyback_since < NOW() - INTERVAL '60 seconds'
+        """)
+        count = cur.rowcount
+        conn.commit()
+        if count > 0:
+            print(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags')
+            import telegram as tg
+            tg.send_admin(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags on startup')

@@ -98,3 +98,6 @@ if [ "$(date +%u)" = "7" ]; then
 fi
 
 echo "=== Daily Cron Complete $(date) ===" | tee -a $LOG_DIR/daily.log
+
+# Check 90-day paper trade timer
+python3 /home/averion/Averion/automation/check_paper_timer.py >> /var/log/averion/paper_timer.log 2>&1
