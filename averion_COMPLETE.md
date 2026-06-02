@@ -127,6 +127,183 @@ Build once · Build right · Public platform from Day 1
 ├── generate_metrics.py
 ├── generate_excel.py (9 sheets)
 └── generate_diagnostics.py (auto-analysis)
+# Bader Personal Notes
+
+> My thoughts · questions · ideas · reminders.
+> Claude reads this and matches with project spec.
+> Cross off items when discussed and locked.
+
+---
+
+## Ideas to Discuss
+
+- [x] Daily Telegram report per exchange format
+- [x] 3 customer Telegram channels (how customers connect)
+- [x] Manual trade entry option in Smart bot
+- [x] Manual bot type (separate from Smart)
+- [x] PWA install hint with dismiss button
+- [x] Short DCA two-way minimum calculation (done in Point 6)
+
+---
+
+## Questions I Have
+
+- [x] How does multi-exchange work — one bot or multiple?
+- [x] Can same bot trade on Binance AND MEXC?
+- [x] What happens when user deletes a bot with open positions?
+
+---
+
+## Reminders
+
+- [ ] Switch GitHub repo to private when averionbot.com launches
+- [ ] Remove token from docs on launch day
+- [ ] Generate new token and update .env on Hetzner
+
+---
+
+## Decisions Pending (Not Yet Locked)
+
+- [x] Entry method promotion criteria (Point 7)
+- [x] External service outage behavior (Point 11)
+- [x] Data retention policy (Point 12)
+
+---
+
+## Recently Locked (Cross Check)
+
+- [x] ST flag = only forced close
+- [x] Slippage = $1 max market order
+- [x] Short DCA = spot only · user must hold
+- [x] Paper mode = unlimited virtual funds
+- [x] Recovery buy = REMOVED
+- [x] Reclassification = new positions only
+- [x] TP recalculates after every buy
+- [x] Exchange minimums = bot creates · trading holds
+- [x] PAPER_MODE in .env default true
+- [x] 3am cron staggered schedule
+- [x] Health check every hour
+- [x] NOWPayments for reserve wallet
+- [x] Transfer threshold $10 admin adjustable
+# TODO — Replit Items
+
+> All items below done via Replit terminal only.
+> User is NOT a coder — provide exact commands.
+> Always push to GitHub after every change.
+> One command at a time — verify each result.
+
+---
+
+## Completed Items ✅
+
+| Item | What | File | Status |
+|------|------|------|--------|
+| 1-3 | Fix endpoints · balance_history table | api.py + db | ✅ |
+| 4-6 | Mobile responsive · Home tab · Exchange cards | dashboard | ✅ |
+| 7-8 | Settings tab · History tab | dashboard | ✅ |
+| 9-10 | Bots tab L1+L2 · positions table | dashboard | ✅ |
+| 11-12 | Exchange Detail · Capital chart | dashboard | ✅ |
+| 13-15 | Days Open · TP Armed · Queued flags | api.py | ✅ |
+| 16-17 | History date range · fees 20% + net profit | dashboard | ✅ |
+| 18 | requirements.txt | new file | ✅ |
+| 19 | .env.example | new file | ✅ |
+| 20 | .gitignore | new file | ✅ |
+| 21 | README.md | new file | ✅ |
+| 22 | automation/daily_cron.sh | new file | ✅ |
+| 23 | automation/weekly_cron.sh | new file | ✅ |
+
+---
+
+## ✅ Item 24 — Bots Tab Flat List (COMPLETE)
+
+### What It Is
+Complete redesign of the Bots tab.
+Change from grouped-by-exchange layout
+to a clean flat list with one row per bot.
+
+### Why Previous Attempts Failed
+Terminal paste mode corrupted Python script quotes.
+Patching existing file = dangerous.
+New approach = write complete new dashboard.html.
+
+### Exact Approach
+1. Claude writes complete new dashboard.html from scratch
+2. Includes ALL existing tabs unchanged
+3. Only Bots tab section is new design
+4. Single Python script writes entire file
+5. No patching · no find/replace · no quote issues
+
+### New Bots Tab Design
+
+#### Desktop Layout
+
+
+#### Exchange Badges
+- [M] MEXC = Blue #38BDF8
+- [B] Binance = Amber #F59E0B
+- [K] KuCoin = Green #10D98A
+- [O] OKX = White #E2E8F0
+- [G] Gate.io = Blue lighter
+- [By] Bybit = Orange #FB923C
+- [Bg] Bitget = Purple #A78BFA
+
+#### Two Toggles Per Bot (inline)
+- T = Trading toggle (opens new positions)
+- DCA = DCA toggle (averages existing)
+- Green when ON · Gray when OFF
+
+#### Kebab Menu (⋯)
+- Edit bot settings
+- Duplicate bot
+- Delete bot
+
+#### Mobile Layout
+- 2-line condensed row
+- Both toggles still visible inline
+- Exchange badge visible
+
+### How To Start This Item
+Tell Claude in new chat:
+"Item 24 is COMPLETE — do not work on this.
+Read 00_START_HERE.md and 15_TODO_REPLIT.md from GitHub first.
+Then help me code it via Replit terminal."
+
+---
+
+## 🔴 Item 25 — After Item 24
+
+Generate updated documentation after Item 24 confirmed working.
+Share with ChatGPT and Gemini for review.
+
+---
+
+## 🔴 Item 26 — Dashboard Comment Markers
+
+Add clear section markers to dashboard.html:
+- Makes finding sections easy
+- Safe terminal editing
+- Preparation for Hetzner split
+
+Example markers:
+
+
+---
+
+## Replit Workflow Rules
+
+1. Always backup before changes:
+   python3 -c "import shutil;shutil.copy('dashboard.html','dashboard_backup.html')"
+
+2. Always push after every change:
+   git add . && git commit -m "message" && git push https://baderbalubaid:YOUR_TOKEN@github.com/baderbalubaid/Averion.git main
+
+3. Always verify push worked:
+   git log --oneline -3
+
+4. Test dashboard after every change:
+   Open dashboard URL in browser
+   Check all tabs still work
+   Check BTC price showing
 # Locked Decisions
 
 > These decisions are FINAL. Do not re-suggest, re-discuss, or modify without Bader explicitly saying "discuss this decision". AI must respect all decisions below.
@@ -6463,6 +6640,344 @@ def main():
 
 if __name__ == '__main__':
     main()
+import psycopg2
+import json
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432),
+    'dbname': os.getenv('DB_NAME', 'averion'),
+    'user': os.getenv('DB_USER', 'averion'),
+    'password': os.getenv('DB_PASSWORD')
+}
+
+def load_config():
+    with open('setup/research_bots.json') as f:
+        return json.load(f)
+
+def get_admin_user(cur):
+    cur.execute("SELECT id FROM users WHERE is_admin = TRUE LIMIT 1")
+    row = cur.fetchone()
+    if not row:
+        raise Exception("No admin user found. Create admin user first.")
+    return row[0]
+
+def get_exchange_id(cur, user_id):
+    cur.execute("""
+        SELECT id FROM exchanges 
+        WHERE user_id = %s AND active = TRUE 
+        LIMIT 1
+    """, (user_id,))
+    row = cur.fetchone()
+    if not row:
+        raise Exception("No active exchange found. Add exchange first.")
+    return row[0]
+
+def bot_exists(cur, bot_id):
+    cur.execute("SELECT id FROM bots WHERE name LIKE %s", (f'%{bot_id}%',))
+    return cur.fetchone() is not None
+
+def create_benchmark_bot(cur, bench, user_id, exchange_id):
+    if bot_exists(cur, bench['id']):
+        print(f"⏭️  Skipping {bench['id']} — already exists")
+        return
+
+    cur.execute("""
+        INSERT INTO bots (
+            user_id, exchange_id, name, method,
+            is_paper, status, max_trades, created_at
+        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10, %s)
+    """, (
+        user_id, exchange_id,
+        bench['name'],
+        bench['method'],
+        datetime.utcnow()
+    ))
+    print(f"✅ Created benchmark: {bench['name']}")
+
+def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
+    bot_id = bot['id']
+    bot_name = f"{method_id} — {method_name} — {bot_id}"
+
+    if bot_exists(cur, bot_id):
+        print(f"⏭️  Skipping {bot_id} — already exists")
+        return
+
+    params = json.dumps(bot)
+
+    cur.execute("""
+        INSERT INTO bots (
+            user_id, exchange_id, name, method,
+            is_paper, status, max_trades,
+            dca_percent, spacing_multiplier,
+            size_multiplier, take_profit_percent,
+            created_at
+        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10,
+                  7.0, 1.4, 1.5, 5.0, %s)
+    """, (
+        user_id, exchange_id,
+        bot_name, method_id.lower(),
+        datetime.utcnow()
+    ))
+    print(f"✅ Created: {bot_name}")
+
+def main():
+    print(f"🚀 Launching research bots — {datetime.utcnow()}")
+    config = load_config()
+
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+
+    user_id = get_admin_user(cur)
+    exchange_id = get_exchange_id(cur, user_id)
+
+    print(f"👤 Admin user: {user_id}")
+    print(f"📊 Exchange: {exchange_id}")
+    print()
+
+    # Create benchmark bots
+    print("--- Creating 5 Benchmark Bots ---")
+    for bench in config['benchmarks']:
+        create_benchmark_bot(cur, bench, user_id, exchange_id)
+
+    # Create method bots
+    total = 0
+    for method_id, method_data in config['methods'].items():
+        print(f"\n--- Creating {method_id} bots ({method_data['name']}) ---")
+        for bot in method_data['bots']:
+            create_method_bot(
+                cur, method_id,
+                method_data['name'],
+                bot, user_id, exchange_id
+            )
+            total += 1
+
+    conn.commit()
+    conn.close()
+
+    print(f"\n🎉 Research bots launched!")
+    print(f"✅ Benchmarks: 5")
+    print(f"✅ Method bots: {total}")
+    print(f"✅ Total: {total + 5}")
+    print(f"\nNext: Monitor dashboard → scale trades gradually")
+    print(f"Start: 10 trades/bot → 20 → 50 → 100 → 200")
+
+if __name__ == '__main__':
+    main()
+{
+ "research_period_days": 180,
+ "scaling": {
+   "start_trades": 10,
+   "step_trades": 10,
+   "max_trades": 200,
+   "measure_loop_time": true
+ },
+ "benchmarks": [
+   {
+     "id": "BENCH-BTC-HOLD",
+     "name": "Benchmark — BTC Buy and Hold",
+     "method": "hold",
+     "coin": "BTC/USDT",
+     "is_paper": true
+   },
+   {
+     "id": "BENCH-ETH-HOLD",
+     "name": "Benchmark — ETH Buy and Hold",
+     "method": "hold",
+     "coin": "ETH/USDT",
+     "is_paper": true
+   },
+   {
+     "id": "BENCH-SIMPLE-DCA",
+     "name": "Benchmark — Simple DCA ASAP",
+     "method": "asap",
+     "dca_percent": 7.0,
+     "spacing_multiplier": 1.4,
+     "size_multiplier": 1.5,
+     "take_profit_percent": 5.0,
+     "is_paper": true
+   },
+   {
+     "id": "BENCH-RANDOM",
+     "name": "Benchmark — Random Entry DCA",
+     "method": "random",
+     "dca_percent": 7.0,
+     "spacing_multiplier": 1.4,
+     "size_multiplier": 1.5,
+     "take_profit_percent": 5.0,
+     "is_paper": true
+   },
+   {
+     "id": "BENCH-STATIC",
+     "name": "Benchmark — Static Spacing DCA",
+     "method": "static",
+     "dca_percent": 7.0,
+     "spacing_multiplier": 1.0,
+     "size_multiplier": 1.0,
+     "take_profit_percent": 5.0,
+     "is_paper": true
+   }
+ ],
+ "methods": {
+   "E1": {
+     "name": "VWAP + RSI Deviation",
+     "bots": [
+       {"id": "E1-1", "rsi": 25, "vwap": 4.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-2", "rsi": 30, "vwap": 4.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-3", "rsi": 35, "vwap": 4.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-4", "rsi": 25, "vwap": 3.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-5", "rsi": 30, "vwap": 3.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-6", "rsi": 35, "vwap": 3.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-7", "rsi": 25, "vwap": 2.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-8", "rsi": 30, "vwap": 2.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-9", "rsi": 35, "vwap": 2.0, "atr": 1.5, "bounce": 65},
+       {"id": "E1-10", "rsi": 30, "vwap": 3.0, "atr": 1.3, "bounce": 65},
+       {"id": "E1-11", "rsi": 30, "vwap": 3.0, "atr": 1.5, "bounce": 55},
+       {"id": "E1-12", "rsi": 35, "vwap": 2.0, "atr": 1.3, "bounce": 55}
+     ]
+   },
+   "E2": {
+     "name": "Panic Exhaustion",
+     "bots": [
+       {"id": "E2-1", "volume": 1.5, "bb_sigma": 2.0, "recovery": 0.5},
+       {"id": "E2-2", "volume": 2.0, "bb_sigma": 2.0, "recovery": 0.5},
+       {"id": "E2-3", "volume": 3.0, "bb_sigma": 2.0, "recovery": 0.5},
+       {"id": "E2-4", "volume": 1.5, "bb_sigma": 2.5, "recovery": 0.5},
+       {"id": "E2-5", "volume": 2.0, "bb_sigma": 2.5, "recovery": 0.5},
+       {"id": "E2-6", "volume": 3.0, "bb_sigma": 2.5, "recovery": 0.5},
+       {"id": "E2-7", "volume": 2.0, "bb_sigma": 2.0, "recovery": 1.0},
+       {"id": "E2-8", "volume": 2.0, "bb_sigma": 2.5, "recovery": 1.0},
+       {"id": "E2-9", "volume": 3.0, "bb_sigma": 2.5, "recovery": 1.0}
+     ]
+   },
+   "E3": {
+     "name": "Volume Climax",
+     "bots": [
+       {"id": "E3-1", "volume_mult": 3, "range_atr": 2.0, "close_pos": 40},
+       {"id": "E3-2", "volume_mult": 4, "range_atr": 2.0, "close_pos": 40},
+       {"id": "E3-3", "volume_mult": 5, "range_atr": 2.0, "close_pos": 40},
+       {"id": "E3-4", "volume_mult": 3, "range_atr": 2.5, "close_pos": 50},
+       {"id": "E3-5", "volume_mult": 4, "range_atr": 2.5, "close_pos": 50},
+       {"id": "E3-6", "volume_mult": 5, "range_atr": 2.5, "close_pos": 50},
+       {"id": "E3-7", "volume_mult": 3, "range_atr": 3.0, "close_pos": 60},
+       {"id": "E3-8", "volume_mult": 4, "range_atr": 3.0, "close_pos": 60},
+       {"id": "E3-9", "volume_mult": 5, "range_atr": 3.0, "close_pos": 60},
+       {"id": "E3-10", "volume_mult": 4, "range_atr": 2.0, "close_pos": 60},
+       {"id": "E3-11", "volume_mult": 4, "range_atr": 3.0, "close_pos": 40},
+       {"id": "E3-12", "volume_mult": 5, "range_atr": 3.0, "close_pos": 50}
+     ]
+   },
+   "E4": {
+     "name": "Time-Cycle Window",
+     "bots": [
+       {"id": "E4-1", "window_hours": 1, "sma_length": 24},
+       {"id": "E4-2", "window_hours": 1, "sma_length": 48},
+       {"id": "E4-3", "window_hours": 1, "sma_length": 72},
+       {"id": "E4-4", "window_hours": 2, "sma_length": 24},
+       {"id": "E4-5", "window_hours": 2, "sma_length": 48},
+       {"id": "E4-6", "window_hours": 2, "sma_length": 72},
+       {"id": "E4-7", "window_hours": 4, "sma_length": 24},
+       {"id": "E4-8", "window_hours": 4, "sma_length": 48},
+       {"id": "E4-9", "window_hours": 4, "sma_length": 72}
+     ]
+   },
+   "E5": {
+     "name": "Multi-Timeframe Alignment",
+     "bots": [
+       {"id": "E5-1", "macro_ema": 144, "pullback_ema": 12, "rsi": 35},
+       {"id": "E5-2", "macro_ema": 144, "pullback_ema": 24, "rsi": 40},
+       {"id": "E5-3", "macro_ema": 144, "pullback_ema": 36, "rsi": 45},
+       {"id": "E5-4", "macro_ema": 168, "pullback_ema": 12, "rsi": 35},
+       {"id": "E5-5", "macro_ema": 168, "pullback_ema": 24, "rsi": 40},
+       {"id": "E5-6", "macro_ema": 168, "pullback_ema": 36, "rsi": 45},
+       {"id": "E5-7", "macro_ema": 200, "pullback_ema": 12, "rsi": 35},
+       {"id": "E5-8", "macro_ema": 200, "pullback_ema": 24, "rsi": 40},
+       {"id": "E5-9", "macro_ema": 200, "pullback_ema": 36, "rsi": 45},
+       {"id": "E5-10", "macro_ema": 168, "pullback_ema": 24, "rsi": 35},
+       {"id": "E5-11", "macro_ema": 168, "pullback_ema": 24, "rsi": 45},
+       {"id": "E5-12", "macro_ema": 200, "pullback_ema": 36, "rsi": 40}
+     ]
+   },
+   "E6": {
+     "name": "Z-Score Statistical",
+     "bots": [
+       {"id": "E6-1", "z_trigger": -2.0, "lookback_hours": 96},
+       {"id": "E6-2", "z_trigger": -2.5, "lookback_hours": 96},
+       {"id": "E6-3", "z_trigger": -3.0, "lookback_hours": 96},
+       {"id": "E6-4", "z_trigger": -2.0, "lookback_hours": 168},
+       {"id": "E6-5", "z_trigger": -2.5, "lookback_hours": 168},
+       {"id": "E6-6", "z_trigger": -3.0, "lookback_hours": 168},
+       {"id": "E6-7", "z_trigger": -2.0, "lookback_hours": 336},
+       {"id": "E6-8", "z_trigger": -2.5, "lookback_hours": 336},
+       {"id": "E6-9", "z_trigger": -3.0, "lookback_hours": 336}
+     ]
+   },
+   "E7": {
+     "name": "Volatility Squeeze",
+     "bots": [
+       {"id": "E7-1", "squeeze_hours": 8, "volume_filter": 1.0},
+       {"id": "E7-2", "squeeze_hours": 12, "volume_filter": 1.0},
+       {"id": "E7-3", "squeeze_hours": 24, "volume_filter": 1.0},
+       {"id": "E7-4", "squeeze_hours": 8, "volume_filter": 1.5},
+       {"id": "E7-5", "squeeze_hours": 12, "volume_filter": 1.5},
+       {"id": "E7-6", "squeeze_hours": 24, "volume_filter": 1.5},
+       {"id": "E7-7", "squeeze_hours": 8, "volume_filter": 2.0},
+       {"id": "E7-8", "squeeze_hours": 12, "volume_filter": 2.0},
+       {"id": "E7-9", "squeeze_hours": 24, "volume_filter": 2.0}
+     ]
+   },
+   "E8": {
+     "name": "Swing Structure Shift",
+     "bots": [
+       {"id": "E8-1", "swing_candles": 2, "vwap_hours": 12},
+       {"id": "E8-2", "swing_candles": 2, "vwap_hours": 24},
+       {"id": "E8-3", "swing_candles": 2, "vwap_hours": 48},
+       {"id": "E8-4", "swing_candles": 3, "vwap_hours": 12},
+       {"id": "E8-5", "swing_candles": 3, "vwap_hours": 24},
+       {"id": "E8-6", "swing_candles": 3, "vwap_hours": 48},
+       {"id": "E8-7", "swing_candles": 5, "vwap_hours": 12},
+       {"id": "E8-8", "swing_candles": 5, "vwap_hours": 24},
+       {"id": "E8-9", "swing_candles": 5, "vwap_hours": 48}
+     ]
+   },
+   "E9": {
+     "name": "Sequential Candle Decay",
+     "bots": [
+       {"id": "E9-1", "red_candles": 5, "reversal_volume": 1.0},
+       {"id": "E9-2", "red_candles": 6, "reversal_volume": 1.0},
+       {"id": "E9-3", "red_candles": 7, "reversal_volume": 1.0},
+       {"id": "E9-4", "red_candles": 5, "reversal_volume": 1.5},
+       {"id": "E9-5", "red_candles": 6, "reversal_volume": 1.5},
+       {"id": "E9-6", "red_candles": 7, "reversal_volume": 1.5},
+       {"id": "E9-7", "red_candles": 5, "reversal_volume": 2.0},
+       {"id": "E9-8", "red_candles": 6, "reversal_volume": 2.0},
+       {"id": "E9-9", "red_candles": 7, "reversal_volume": 2.0}
+     ]
+   },
+   "E10": {
+     "name": "Pure Drop Threshold",
+     "bots": [
+       {"id": "E10-1", "drop_percent": 3.0, "lookback_hours": 12},
+       {"id": "E10-2", "drop_percent": 5.0, "lookback_hours": 12},
+       {"id": "E10-3", "drop_percent": 7.0, "lookback_hours": 12},
+       {"id": "E10-4", "drop_percent": 10.0, "lookback_hours": 12},
+       {"id": "E10-5", "drop_percent": 15.0, "lookback_hours": 12},
+       {"id": "E10-6", "drop_percent": 3.0, "lookback_hours": 24},
+       {"id": "E10-7", "drop_percent": 5.0, "lookback_hours": 24},
+       {"id": "E10-8", "drop_percent": 7.0, "lookback_hours": 24},
+       {"id": "E10-9", "drop_percent": 10.0, "lookback_hours": 24},
+       {"id": "E10-10", "drop_percent": 15.0, "lookback_hours": 24},
+       {"id": "E10-11", "drop_percent": 5.0, "lookback_hours": 48},
+       {"id": "E10-12", "drop_percent": 10.0, "lookback_hours": 48}
+     ]
+   }
+ }
+}
 import os
 import time
 import psycopg2
@@ -9380,7 +9895,43 @@ def run_bot():
 if __name__ == '__main__':
     db.init_pool()
     run_bot()
-import os
+# Averion Bot Configuration
+
+# Auto-fetch all coins from exchange
+AUTO_COINS = True
+QUOTE = "USDT"
+
+# Keep this for backward compatibility
+COIN = "BTC/USDT"
+
+PAPER_MODE = True
+BASE_ORDER_USDT = 1.0
+DCA_PERCENT = 7.0
+SPACING_MULTIPLIER = 1.4
+SIZE_MULTIPLIER = 1.5
+TAKE_PROFIT_PERCENT = 5.0
+TRAILING_PERCENT = 2.0
+CHECK_INTERVAL = 60
+MAX_DCA_ORDERS = 10
+EXCHANGE = "mexc"
+from decimal import Decimal
+
+def calc_new_average(total_invested, quantity):
+    if quantity == 0:
+        return 0
+    return total_invested / quantity
+
+def should_dca(avg_cost, current_price, dca_percent):
+    trigger = avg_cost * (1 - dca_percent / 100)
+    return current_price <= trigger
+
+def should_take_profit(avg_cost, current_price, tp_percent):
+    target = avg_cost * (1 + tp_percent / 100)
+    return current_price >= target
+
+def calc_quantity(usdt_amount, price):
+    return usdt_amount / price
+404: Not Foundimport os
 import ccxt
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv

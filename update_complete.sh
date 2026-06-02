@@ -2,6 +2,8 @@
 cd ~/workspace
 
 cat docs/00_START_HERE.md \
+docs/00_BADER_NOTES.md \
+docs/15_TODO_REPLIT.md \
     docs/13_LOCKED_DECISIONS.md \
     docs/16_TODO_HETZNER.md \
     docs/03_TRADING_SYSTEM.md \
@@ -23,7 +25,10 @@ cat docs/00_START_HERE.md \
     setup/DAY1_CHECKLIST.md \
     setup/env.example \
     setup/init_db.py \
+setup/launch_research_bots.py \
+setup/research_bots.json \
     main.py database.py api.py bot_loop.py \
+config.py dca_logic.py write_dashboard.py \
     exchanges.py telegram.py auth.py email_service.py \
     index.html login.html register.html dashboard.html admin.html \
     > averion_COMPLETE.md
