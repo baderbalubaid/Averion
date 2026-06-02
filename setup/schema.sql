@@ -472,7 +472,7 @@ ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS alert_count INTEGER DEFAULT 0;
 -- Bot slot tracking per user
 -- Telegram fields live in user_telegram table (single source of truth)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_slots_total INTEGER DEFAULT 5;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS trades_used_this_month INTEGER DEFAULT 0;
+-- trades_used_this_month lives in user_subscriptions only
 ALTER TABLE users ADD COLUMN IF NOT EXISTS next_billing_date DATE;
 
 SELECT 'Schema updates applied successfully!' AS result;
