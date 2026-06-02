@@ -135,6 +135,8 @@ CREATE TABLE positions (
     short_buyback_order_id VARCHAR(100),
     short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
     pending_buyback BOOLEAN DEFAULT FALSE
+    profit_coin VARCHAR(10) DEFAULT 'USDT',
+    base_coin VARCHAR(10) DEFAULT 'USDT',
 );
 
 -- ═══════════════════════════════
