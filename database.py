@@ -183,6 +183,7 @@ def get_active_bots():
             WHERE b.status = 'active'
             AND b.trading_on = TRUE
             AND e.paused_at IS NULL
+            AND (b.expires_at IS NULL OR b.expires_at > NOW())
             ORDER BY b.id ASC
         """)
         return cur.fetchall()
