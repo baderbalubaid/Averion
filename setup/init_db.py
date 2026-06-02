@@ -67,7 +67,13 @@ def main():
         'reserve_wallets', 'reserve_deposits', 'fee_debt',
         'balance_history', 'coin_history', 'ohlcv_hourly',
         'owner_balance', 'referrals', 'wallet_bot_assignments',
-        'wallet_transactions'
+        'wallet_transactions', 'user_telegram', 'attention_log',
+        'notification_queue', 'positions_archive',
+        'strategy_versions', 'research_scores',
+        'user_subscriptions', 'subscription_billing',
+        'exchange_coin_limits', 'short_buyback_orders',
+        'trade_bundles', 'pending_limit_orders',
+        'security_audit_log'
     ]
 
     print("\n📋 Verifying tables:")
