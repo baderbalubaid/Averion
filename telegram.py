@@ -367,3 +367,24 @@ if __name__ == '__main__':
         print(f'Bot token: {BOT_TOKEN[:10]}...')
     else:
         print('⚠️ No bot token configured')
+
+def admin_bot_started(paper_mode):
+    mode = "📄 PAPER MODE" if paper_mode else "💰 LIVE MODE"
+    msg = f"🟢 Averion Bot Started\n{mode}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_bot_stopped(reason):
+    msg = f"🔴 Averion Bot Stopped\nReason: {reason}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_cron_started(step):
+    msg = f"⚙️ Cron Started: {step}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_cron_finished(step, duration, records):
+    msg = f"✅ Cron Done: {step}\nDuration: {duration:.1f}s · Records: {records}"
+    send_admin(msg)
+
+def admin_cron_failed(step, error):
+    msg = f"❌ Cron Failed: {step}\nError: {error}"
+    send_admin(msg)
