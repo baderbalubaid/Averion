@@ -658,3 +658,22 @@ SELECT 'Security tables added!' AS result;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
 
+
+-- ═══════════════════════════════
+-- MARKET REGIMES
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS market_regimes (
+    id SERIAL PRIMARY KEY,
+    date DATE NOT NULL UNIQUE,
+    regime VARCHAR(20) NOT NULL,
+    btc_24h_change DECIMAL(10,4),
+    btc_7d_change DECIMAL(10,4),
+    market_volatility DECIMAL(10,4),
+    determination_method VARCHAR(50) DEFAULT 'auto',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_regimes_date
+ON market_regimes(date);
+
+SELECT 'market_regimes table created!' AS result;
