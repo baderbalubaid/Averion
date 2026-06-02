@@ -109,13 +109,15 @@ All alerts → Telegram Alerts channel immediately
 
 ---
 
-## 3 Telegram Channels (LOCKED)
+## Telegram Setup (LOCKED)
 
-| Channel | Content | Volume Setting |
-|---------|---------|---------------|
-| Trades | Every buy · sell · DCA · TP | MUTE — check weekly |
-| Alerts | Server down · errors · crashes · ST flag · floor hit | MAX VOLUME — NEVER MUTE |
-| Reports | Daily · weekly · monthly reports | Normal — morning coffee |
+- ONE direct chat with @AverionBot per customer
+- Message types labeled clearly in one chat:
+ - 🟢 TRADE: every buy · sell · DCA · TP
+ - 🔴 ALERT: reserve low · ST flag · errors · urgent
+ - 📊 REPORT: daily · weekly · monthly summaries
+- Customer toggles each message type ON/OFF independently
+- Admin alerts go to admin Telegram separately
 
 ### Config in .env
 ---
