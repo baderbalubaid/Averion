@@ -1585,3 +1585,136 @@ Sideways:
 - Example: ["bull", "bear", "sideways"]
 - Minimum 3 unique regimes before promotion eligible
 - Bot can run 180 days all bull → no promotion possible
+
+## Short Research Bots (LOCKED)
+
+### Structure
+- 144 Short paper bots mirroring Long research grid
+- Same 14 entry methods · same parameter variations
+- 5 selected coins only (Short needs focused data)
+- Suggested coins: BTC · ETH + 3 high-liquidity alts
+- All paper mode · virtual balance · no real coins needed
+- direction = 'short' tagged in research_scores
+
+### Trade Count
+- 144 bots × 5 coins = 720 paper short trades running
+- Completely separate from Long research bots
+- Separate research_scores entries per direction
+
+### 5 Separate Reports
+- One report per coin after 6 months
+- Each report shows:
+  · Best entry method for this coin Short
+  · Best DCA% · spacing · TP% for this coin
+  · Comparison against Long results same coin
+- Admin sees all 5 reports in Tab 4
+- Telegram weekly summary per coin
+
+### Why 5 Coins Only
+- Short DCA needs more time per trade
+- Fewer coins = faster statistically valid conclusions
+- BTC + ETH = most liquid = cleanest data
+- 3 additional alts = diversity without noise
+- Coins selected by admin before research starts
+
+### Short Research Logs
+- Separate log file: research_short.log
+- Separate metrics: metrics/short_latest.json
+- Pushed to GitHub same as Long metrics
+- Admin dashboard Tab 4 shows both Long + Short
+
+---
+
+## Custom Entry Method (LOCKED)
+
+### What It Is
+- User-defined entry signal built in bot wizard
+- Available alongside: Smart DCA · ASAP · Mean Reversion
+- User selects which indicators to use + thresholds
+- Saved as named preset · reusable across bots
+
+### Entry Method Selection in Wizard Step 3
+○ Smart DCA (auto · best research winner)
+○ ASAP (immediate · no signal wait)
+○ Mean Reversion (E1 preset · RSI+VWAP)
+○ Custom Entry ← user builds own signal
+
+### Custom Entry Builder
+User selects indicators to include:
+- ☑ RSI · set threshold (e.g. < 35)
+- ☑ EMA · set fast/slow (e.g. 9/21)
+- ☑ MACD · crossover required ON/OFF
+- ☑ Volume spike · set multiplier (e.g. 1.5x)
+- ☑ Stoch RSI · set oversold level (e.g. 20)
+- ☑ Bollinger Band · price below lower band
+
+Confluence setting:
+- Any 1 condition met → entry
+- Any 2 conditions met → entry
+- Any 3 conditions met → entry
+- ALL conditions met → entry (strictest)
+
+### Saving Custom Entry
+- User names the setup: "My Setup 1"
+- Saved to user account
+- Reusable when creating future bots
+- Editable anytime (affects new positions only)
+- Multiple saved setups allowed
+
+### Research Tracking
+- Custom entry bots tagged: entry_method = 'custom'
+- Parameters stored in bots table as JSONB
+- Not included in Smart DCA promotion research
+- User's own data · private to their account
+
+---
+
+## Admin Copy Bot System (LOCKED)
+
+### Option A — Copy Specific Bot
+- [Copy Bot] button on any bot in admin user view
+- Creates identical bot on admin account with:
+  · Same entry method
+  · Same DCA% · spacing · TP% · trailing
+  · Same exchange type
+  · Same virtual wallet type
+  · Admin's own API key used
+  · Admin sets own order size
+- Live mirror behavior:
+  · Source bot opens position → admin bot opens same coin
+  · Source bot closes position → admin bot closes too
+  · Admin can also close manually anytime
+  · If admin closes manually → source bot unaffected
+- Mirror status shown on bot card: MIRRORING @username
+- Stop mirror anytime → [Stop Mirror] button
+- Existing positions continue to TP after stop
+
+### Option B — Mirror Exchange
+- [Mirror Exchange] button in admin user detail page
+- Select user + which exchange to mirror
+- Behavior:
+  · Every new bot user creates on that exchange
+    → auto-creates identical bot on admin account
+  · Every position user opens → admin opens same
+  · Every close → admin closes same
+  · Admin uses own API key + own order sizes
+- Admin can pause mirror anytime
+- Existing positions continue normally after pause
+- New bots stop being created after pause
+
+### Both Options Rules (LOCKED)
+- Admin only · never visible to regular users
+- Admin account = 0% fee · no reserve needed
+- Mirror data shown in admin Tab 5:
+  · Which users being mirrored
+  · Which bots being copied
+  · P&L from mirrored positions
+  · [Stop] button per mirror
+- Copy Bot and Mirror Exchange independent
+  · Can use both simultaneously
+  · Can mirror exchange AND copy specific bots
+    from different users at same time
+
+### DB Tables Needed
+- bot_mirrors: bot_id · source_bot_id · admin_id · active
+- exchange_mirrors: exchange_id · source_user_id · admin_id · active
