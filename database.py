@@ -1093,3 +1093,52 @@ def get_regime_history(days=180):
             ORDER BY date DESC LIMIT %s
         """, (days,))
         return cur.fetchall()
+
+def regenerate_verification_code(user_id):
+   """Generate new 6-digit code · invalidate old one · track resend count"""
+   import random
+   code = str(random.randint(100000, 999999))
+   with get_db() as conn:
+       cur = conn.cursor()
+       # Check resend count in last hour
+       cur.execute("""
+           SELECT resend_count, resend_reset_at
+           FROM users WHERE id = %s
+       """, (user_id,))
+       row = cur.fetchone()
+       if row:
+           count = row[0] or 0
+           reset_at = row[1]
+           from datetime import datetime, timezone
+           now = datetime.now(timezone.utc)
+           # Reset count if more than 1 hour passed
+           if reset_at and (now - reset_at.replace(tzinfo=timezone.utc)).seconds > 3600:
+               count = 0
+           if count >= 5:
+               return None, 'too_many_attempts'
+       # Update code and increment resend count
+       cur.execute("""
+           UPDATE users SET
+               verification_code = %s,
+               verification_expires_at = NOW() + INTERVAL '30 minutes',
+               resend_count = COALESCE(resend_count, 0) + 1,
+               resend_reset_at = CASE
+                   WHEN resend_reset_at IS NULL
+                   OR NOW() - resend_reset_at > INTERVAL '1 hour'
+                   THEN NOW() ELSE resend_reset_at END,
+               last_resend_at = NOW()
+           WHERE id = %s
+           RETURNING verification_code
+       """, (code, user_id))
+       conn.commit()
+       return code, 'ok'
+
+def get_last_resend_time(user_id):
+   """Get when last resend was sent"""
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT last_resend_at, resend_count
+           FROM users WHERE id = %s
+       """, (user_id,))
+       return cur.fetchone()

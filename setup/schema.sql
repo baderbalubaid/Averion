@@ -662,6 +662,9 @@ SELECT 'Security tables added!' AS result;
 -- EMAIL VERIFICATION COLUMNS
 -- ═══════════════════════════════
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS resend_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS resend_reset_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_resend_at TIMESTAMP;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
 
 

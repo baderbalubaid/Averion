@@ -976,3 +976,38 @@ def reset_password_confirm(req: ResetPasswordConfirm):
 
     db.log_security_event(user_id, 'password_reset_complete')
     return {'message': 'Password updated · please login'}
+
+@app.post('/auth/resend-verification')
+def resend_verification(payload: dict = Depends(verify_token)):
+   from datetime import datetime, timezone
+   user_id = payload['user_id']
+
+   # Check if already verified
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("SELECT email_verified, email FROM users WHERE id = %s", (user_id,))
+       row = cur.fetchone()
+       if not row:
+           raise HTTPException(status_code=404, detail='User not found')
+       if row[0]:
+           return {'status': 'already_verified'}
+       email = row[1]
+
+   # Check 2 minute cooldown
+   last = db.get_last_resend_time(user_id)
+   if last and last[0]:
+       now = datetime.now(timezone.utc)
+       last_time = last[0].replace(tzinfo=timezone.utc)
+       seconds_ago = (now - last_time).seconds
+       if seconds_ago < 120:
+           remaining = 120 - seconds_ago
+           return {'status': 'cooldown', 'seconds_remaining': remaining}
+
+   # Generate new code
+   code, result = db.regenerate_verification_code(user_id)
+   if result == 'too_many_attempts':
+       raise HTTPException(status_code=429, detail='Too many resend attempts · try again in 1 hour')
+
+   # Send email
+   email_svc.send_verification_email(email, code)
+   return {'status': 'sent', 'message': 'New verification code sent'}
