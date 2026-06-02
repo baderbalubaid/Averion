@@ -128,25 +128,57 @@ def reconcile_orders():
 
                     if not cur.fetchone():
                         # Order on exchange but not in DB
+                        # Look up position to get user_id and bot_id
+                        symbol = order.get('symbol', '')
+                        coin = symbol.split('/')[0] if '/' in symbol else symbol
+                        order_time = datetime.utcfromtimestamp(
+                            order.get('timestamp', 0) / 1000
+                        ) if order.get('timestamp') else datetime.utcnow()
+
+                        cur.execute("""
+                            SELECT id, user_id, bot_id
+                            FROM positions
+                            WHERE exchange_id = %s
+                            AND coin = %s
+                            AND status = 'open'
+                            ORDER BY ABS(EXTRACT(EPOCH FROM
+                                (opened_at - %s::timestamp)))
+                            LIMIT 1
+                        """, (exc_id, coin, order_time))
+                        pos = cur.fetchone()
+
+                        if not pos:
+                            print(f"⚠️ Skipping orphan order {order_id} · no matching position found")
+                            continue
+
+                        position_id = pos[0]
+                        user_id = pos[1]
+                        bot_id = pos[2]
+
                         print(f"⚠️ Missing order found: {order_id} on {exc_name}")
                         cur.execute("""
                             INSERT INTO trades (
+                                position_id, bot_id, user_id,
                                 exchange_id, coin, side, price,
                                 quantity, usdt_amount, order_type,
-                                exchange_order_id, timestamp, is_paper
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE)
+                                exchange_order_id, is_paper,
+                                timestamp
+                            ) VALUES (
+                                %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, FALSE, %s
+                            )
                         """, (
-                            exc_id,
-                            order.get('symbol', '').replace('/USDT', ''),
+                            position_id, bot_id, user_id,
+                            exc_id, coin,
                             order.get('side'),
-                            order.get('price') or 0,
+                            order.get('average') or order.get('price') or 0,
                             order.get('filled') or 0,
                             order.get('cost') or 0,
                             order.get('type'),
                             order_id,
-                            datetime.utcnow()
+                            order_time
                         ))
-                        print(f"✅ Reconciled: {order_id}")
+                        print(f"✅ Reconciled: {order_id} → position #{position_id}")
 
                 conn.commit()
                 print(f"✅ Reconciliation complete for {exc_name}")
