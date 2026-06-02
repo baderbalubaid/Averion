@@ -169,11 +169,7 @@
   - Live feedback shown before saving
   - Dashboard warning if current settings cannot meet minimum
 
-## Entry Method Promotion Criteria (Point 7 — SUPERSEDED)
 
-> This section is REPLACED by "Entry Method Promotion Formula (Point 7 - LOCKED)" below.
-> Formula validated by ChatGPT · Gemini · DeepSeek · Claude independently.
-> Do not implement from this section.
 
 ## Multi-Exchange Bot Behavior (Point 8 — LOCKED)
 
@@ -398,9 +394,13 @@ Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
 
 ### Promotion Rules
 - Minimum 100 closed trades before scoring
+- Below 30 trades: score = 0 · not eligible regardless of win rate
+- 30-99 trades: score calculated but marked PROVISIONAL · cannot promote
+- 100+ trades: full promotion eligibility
 - Tested across 3+ market regimes
-- Score beats E10 control group
-- Score beats Simple DCA benchmark
+- Score beats E10 control group (promotion score must be > E10 score)
+- Score beats Simple DCA benchmark (promotion score must be > Simple DCA score)
+- "Beat" = higher normalized promotion score · not just higher return
 - 30 day cooldown after any parameter change
 
 ### Deletion Rules
@@ -614,7 +614,7 @@ Priority Order (same exchange · same wallet):
 - If remaining < exchange minimum order size = dust
 - Dust marked in DB · excluded from calculations
 - Shown in dashboard: Dust: 0.00003 BTC
-- Weekly Sunday cron: attempt to sell all dust combined
+- Weekly Sunday cron: attempt to sell each coin's dust individually (NOT combined)
   - If total dust value >= minimum order → sell
   - If still too small → ignore · keep in dashboard
 - Dust never causes errors · never blocks calculations
@@ -1601,7 +1601,8 @@ Sideways:
 
 ### Reports
 - One combined Short research report
-- Shows all 14 methods ranked by median score
+- Shows all 14 entry methods + 5 benchmarks ranked by median score
+- Benchmarks visible for comparison · not promotion-eligible
 - Winner declared after 6 months · same rules as Long
 - Admin sees Long + Short results in Tab 4
 
@@ -1852,3 +1853,37 @@ Verify page shows countdown timer + resend button:
 - After 5 resends in 1 hour → show message:
  "Too many attempts · try again in 1 hour"
 - Resend available on verify page only · not after verified
+
+## Dead Coin Terminal State (LOCKED)
+
+### Position Status Values
+- active: position open · trading normally
+- standby: waiting for partial DCA completion
+- tp_fired: TP triggered · closing in progress
+- closed: position closed · profit/loss recorded
+- dead: coin delisted without ST flag · no recovery possible
+- archived: auto-archived after 365 days disconnected
+
+### Dead Coin Flow (No ST Flag)
+When exchange removes pair without ST warning:
+1. CCXT returns error on price fetch for that coin
+2. After 3 consecutive failures → mark position: dead
+3. Dashboard shows: DEAD COIN · [Mark Closed Manually] button
+4. Attention log: red warning · manual action required
+5. User goes to exchange · closes position manually
+6. User clicks [Mark Closed Manually] in dashboard
+7. Position status → archived · P&L estimated from last known price
+8. Capital freed from virtual wallet
+
+### DB Status Values (LOCKED)
+positions.status:
+- 'open' → active trading
+- 'standby' → partial DCA waiting
+- 'closed' → normal close · TP or manual
+- 'dead' → coin delisted · no trading possible
+- 'archived' → historical record only
+
+### Source of Truth (LOCKED)
+PostgreSQL is the source of truth.
+Exchange state is reconciled against DB on every startup.
+In any conflict: DB wins · exchange state verified · never assumed.

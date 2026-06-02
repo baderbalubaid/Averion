@@ -107,7 +107,7 @@ Build once · Build right · Public platform from Day 1
 └── 16_TODO_HETZNER.md (active — next steps)
 
 /setup
-├── schema.sql (651 lines · 28 tables)
+├── schema.sql · 36 tables
 ├── hetzner_day1.sh (security hardened)
 ├── hetzner_day2.sh
 ├── DAY1_CHECKLIST.md
