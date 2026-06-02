@@ -1417,6 +1417,31 @@ Phase 7 public launch: add FastAPI middleware
 - Implement when averionbot.com domain is ready (Day 2)
 - Sender email: noreply@averionbot.com
 
+
+## CoinGecko + CMC Averaging Formula (LOCKED)
+
+### Formula (step by step)
+1. Fetch market cap from CoinGecko
+2. Fetch market cap from CoinMarketCap
+3. Both available → average = (CoinGecko + CMC) / 2
+4. Only CoinGecko available → use CoinGecko cap
+5. Only CMC available → use CMC cap
+6. Both failed → use last recorded cap · Telegram alert
+7. If they disagree by more than 100% → use the LOWER value
+  (conservative · survivability first · prevents fake cap inflation)
+
+### Why lower value on disagreement
+- Protects against data errors classifying coin too high
+- A Micro Cap classified as Small Cap = wider DCA spacing = less risk
+- A Small Cap classified as Micro Cap = tighter DCA spacing = more trades
+- Better to be conservative than aggressive on cap classification
+
+### Example
+- CoinGecko: $50M · CMC: $120M · Difference: 140% > 100%
+- Use lower: $50M → Micro Cap parameters applied ✅
+- CoinGecko: $50M · CMC: $60M · Difference: 20% < 100%  
+- Use average: $55M → Micro Cap parameters applied ✅
+
 ## Email Architecture (LOCKED)
 
 ### Domain (LOCKED)
