@@ -135,6 +135,7 @@ CREATE TABLE positions (
     short_buyback_order_id VARCHAR(100),
     short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
     pending_buyback BOOLEAN DEFAULT FALSE,
+    pending_buyback_since TIMESTAMP,
     profit_coin VARCHAR(10) DEFAULT 'USDT',
     base_coin VARCHAR(10) DEFAULT 'USDT'
 );
@@ -158,6 +159,7 @@ CREATE TABLE trades (
     reason VARCHAR(50),
     order_type VARCHAR(20) DEFAULT 'market',
     exchange_order_id VARCHAR(100),
+    client_order_id VARCHAR(100),
     is_paper BOOLEAN DEFAULT TRUE,
     dca_level INTEGER DEFAULT 0,
     timestamp TIMESTAMP DEFAULT NOW()
