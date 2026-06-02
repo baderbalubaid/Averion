@@ -178,7 +178,7 @@ Three layers:
 - Short DCA implementation
 - Limit orders for entry and DCA
 - Sequential trade gates
-- Virtual wallet UI
+- Virtual wallet UI (already Day 1 · see Phase 4)
 - Full bot creation wizard
 - Public user registration
 - NOWPayments integration

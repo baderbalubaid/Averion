@@ -965,6 +965,7 @@ Settings tab shows:
 ## Standby System — No Timeout (LOCKED)
 
 - Standby has NO timeout — waits forever
+- standby_timeout_at column renamed to standby_created_at in DB (audit only · never used as timeout)
 - Two exit conditions only:
   1. Price returns to DCA level → fills remainder
   2. Position hits TP → standby cancelled automatically
