@@ -1378,7 +1378,8 @@ All limit orders checked every hour:
 ## Daily Cron Schedule — Final (LOCKED)
 
 03:00 — Infrastructure
-- pip install ccxt safe upgrade (test then apply)
+- Check CCXT version number only · log if update available
+- Full CCXT upgrade runs Sunday 05:30 only (not daily)
 - pm2 restart averion
 - PostgreSQL backup → /backups/averion_YYYY-MM-DD.sql
 - Keep last 7 days · delete older
@@ -2193,6 +2194,100 @@ positions.status:
 PostgreSQL is the source of truth.
 Exchange state is reconciled against DB on every startup.
 In any conflict: DB wins · exchange state verified · never assumed.
+
+## Research Bot Lifecycle Policy (LOCKED)
+
+### Philosophy
+Research never fully stops — platform always self-improving.
+No other DCA platform continuously validates its own algorithm.
+This is a permanent competitive advantage.
+
+### Phase 1 — Months 1-6 (Full Grid)
+- All 144 bots running simultaneously
+- Monthly elimination: replace zero-trade bots only
+- At 6 months: winner selected → Smart DCA default
+- Data kept forever — never deleted
+
+### Phase 2 — Months 7-12 (Validation)
+- Keep top 30% bots running (~45 bots)
+- Drop obvious losers (worst scores · zero trades)
+- Monitor: does winner still beat benchmarks?
+- If new method overtakes → promote new winner
+
+### Phase 3 — Annual Review (Ongoing Forever)
+- Is current Smart DCA winner still winning?
+- Did market regime change favor different method?
+- Promote new winner if consistently better
+- Research cycle repeats indefinitely
+
+### Bot Count Over Time
+- Month 1-6: 144 bots (full grid)
+- Month 7-12: ~45 bots (top 30%)
+- Year 2+: ~20 bots (champion + challengers)
+- Never drop below 5 bots (always have competition)
+
+### Admin Paper Trade Limit (LOCKED)
+- Regular users: 30 paper trades maximum
+- Admin account: UNLIMITED paper trades
+- Research bots run under admin account
+- is_admin check skips paper limit entirely
+- Research trades tagged: is_research = TRUE
+- Research data kept FOREVER · never purged
+- Storage cost = negligible (< 5MB per year)
+
+### Research Data Retention
+- All research trades: kept FOREVER
+- Reason: baseline for future comparisons
+- Reason: proof of why winner was selected
+- Reason: regime history invaluable long term
+- research_scores table: never delete rows
+- Only add · never remove historical data
+
+## Fee Debt vs Subscription Shortage — Clear Distinction (LOCKED)
+
+Two completely different systems · never confused:
+
+### Performance Fee Debt
+- Triggered when: position closes at profit · reserve insufficient
+- Bot status: stays ON · never changes
+- Effect: no NEW positions open
+- Resolution: user tops up → debt cleared → resumes automatically
+- Example: won $50 · owe $10 fee · reserve = $0
+  → bot ON · no new trades · debt shown in red
+
+### Subscription/Slot Fee Shortage  
+- Triggered when: 1st of month · reserve cannot cover bot fees
+- Bot status: changes to EXPIRED (last created bot first)
+- Effect: bot turns OFF · existing positions continue to TP
+- Resolution: user tops up + manually reactivates bot
+- Example: 3 bots · $3 due · reserve = $1.50
+  → last created bot → EXPIRED
+  → first 2 bots continue normally
+
+### Why Different Behavior
+- Performance fee = earned by platform from profits
+  Bot staying ON generates more profits = more fees eventually
+- Subscription fee = flat monthly charge
+  Cannot justify keeping bot active if user won't pay flat fee
+  User made conscious decision to not maintain reserve
+
+## Smart Queue Recalculation Triggers (LOCKED)
+
+Queue recalculates at start of EVERY 60-second cycle.
+No manual trigger needed · always fresh.
+
+### Events that affect next cycle score:
+- User adds funds → wallet balance updates → next cycle uses new balance
+- Position closes (TP) → capital freed → next cycle rescores
+- DCA toggle ON/OFF → next cycle includes/excludes position
+- New position opens → next cycle adds to queue
+- User changes bot params → next cycle uses new params
+
+### All changes take effect: next 60-second cycle
+- Maximum delay: 60 seconds
+- No manual refresh needed
+- No restart needed
+- Queue always reflects current state
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -5815,6 +5910,7 @@ SELECT 'Multi-trade gate and limit order columns added!' AS result;
 
 -- Gate reference tracking
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS is_research BOOLEAN DEFAULT FALSE;
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS gate_reference_since TIMESTAMP;
 
 -- Pending limit orders
@@ -6089,7 +6185,8 @@ ufw default allow outgoing
 ufw allow $SSH_PORT/tcp comment 'SSH custom port'
 ufw allow 80/tcp comment 'HTTP'
 ufw allow 443/tcp comment 'HTTPS'
-ufw allow 8080/tcp comment 'Averion dashboard'
+# Port 8080 NOT opened to public - Nginx proxies from 80/443 to localhost:8080
+# ufw allow 8080/tcp  ← NEVER open this - bypasses Nginx SSL and CORS
 ufw --force enable
 echo "✅ UFW firewall configured"
 
@@ -7039,215 +7136,925 @@ def main():
 if __name__ == '__main__':
     main()
 {
- "research_period_days": 180,
- "scaling": {
-   "start_trades": 10,
-   "step_trades": 10,
-   "max_trades": 200,
-   "measure_loop_time": true
- },
- "benchmarks": [
-   {
-     "id": "BENCH-BTC-HOLD",
-     "name": "Benchmark — BTC Buy and Hold",
-     "method": "hold",
-     "coin": "BTC/USDT",
-     "is_paper": true
-   },
-   {
-     "id": "BENCH-ETH-HOLD",
-     "name": "Benchmark — ETH Buy and Hold",
-     "method": "hold",
-     "coin": "ETH/USDT",
-     "is_paper": true
-   },
-   {
-     "id": "BENCH-SIMPLE-DCA",
-     "name": "Benchmark — Simple DCA ASAP",
-     "method": "asap",
-     "dca_percent": 7.0,
-     "spacing_multiplier": 1.4,
-     "size_multiplier": 1.5,
-     "take_profit_percent": 5.0,
-     "is_paper": true
-   },
-   {
-     "id": "BENCH-RANDOM",
-     "name": "Benchmark — Random Entry DCA",
-     "method": "random",
-     "dca_percent": 7.0,
-     "spacing_multiplier": 1.4,
-     "size_multiplier": 1.5,
-     "take_profit_percent": 5.0,
-     "is_paper": true
-   },
-   {
-     "id": "BENCH-STATIC",
-     "name": "Benchmark — Static Spacing DCA",
-     "method": "static",
-     "dca_percent": 7.0,
-     "spacing_multiplier": 1.0,
-     "size_multiplier": 1.0,
-     "take_profit_percent": 5.0,
-     "is_paper": true
-   }
- ],
- "methods": {
-   "E1": {
-     "name": "VWAP + RSI Deviation",
-     "bots": [
-       {"id": "E1-1", "rsi": 25, "vwap": 4.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-2", "rsi": 30, "vwap": 4.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-3", "rsi": 35, "vwap": 4.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-4", "rsi": 25, "vwap": 3.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-5", "rsi": 30, "vwap": 3.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-6", "rsi": 35, "vwap": 3.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-7", "rsi": 25, "vwap": 2.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-8", "rsi": 30, "vwap": 2.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-9", "rsi": 35, "vwap": 2.0, "atr": 1.5, "bounce": 65},
-       {"id": "E1-10", "rsi": 30, "vwap": 3.0, "atr": 1.3, "bounce": 65},
-       {"id": "E1-11", "rsi": 30, "vwap": 3.0, "atr": 1.5, "bounce": 55},
-       {"id": "E1-12", "rsi": 35, "vwap": 2.0, "atr": 1.3, "bounce": 55}
-     ]
-   },
-   "E2": {
-     "name": "Panic Exhaustion",
-     "bots": [
-       {"id": "E2-1", "volume": 1.5, "bb_sigma": 2.0, "recovery": 0.5},
-       {"id": "E2-2", "volume": 2.0, "bb_sigma": 2.0, "recovery": 0.5},
-       {"id": "E2-3", "volume": 3.0, "bb_sigma": 2.0, "recovery": 0.5},
-       {"id": "E2-4", "volume": 1.5, "bb_sigma": 2.5, "recovery": 0.5},
-       {"id": "E2-5", "volume": 2.0, "bb_sigma": 2.5, "recovery": 0.5},
-       {"id": "E2-6", "volume": 3.0, "bb_sigma": 2.5, "recovery": 0.5},
-       {"id": "E2-7", "volume": 2.0, "bb_sigma": 2.0, "recovery": 1.0},
-       {"id": "E2-8", "volume": 2.0, "bb_sigma": 2.5, "recovery": 1.0},
-       {"id": "E2-9", "volume": 3.0, "bb_sigma": 2.5, "recovery": 1.0}
-     ]
-   },
-   "E3": {
-     "name": "Volume Climax",
-     "bots": [
-       {"id": "E3-1", "volume_mult": 3, "range_atr": 2.0, "close_pos": 40},
-       {"id": "E3-2", "volume_mult": 4, "range_atr": 2.0, "close_pos": 40},
-       {"id": "E3-3", "volume_mult": 5, "range_atr": 2.0, "close_pos": 40},
-       {"id": "E3-4", "volume_mult": 3, "range_atr": 2.5, "close_pos": 50},
-       {"id": "E3-5", "volume_mult": 4, "range_atr": 2.5, "close_pos": 50},
-       {"id": "E3-6", "volume_mult": 5, "range_atr": 2.5, "close_pos": 50},
-       {"id": "E3-7", "volume_mult": 3, "range_atr": 3.0, "close_pos": 60},
-       {"id": "E3-8", "volume_mult": 4, "range_atr": 3.0, "close_pos": 60},
-       {"id": "E3-9", "volume_mult": 5, "range_atr": 3.0, "close_pos": 60},
-       {"id": "E3-10", "volume_mult": 4, "range_atr": 2.0, "close_pos": 60},
-       {"id": "E3-11", "volume_mult": 4, "range_atr": 3.0, "close_pos": 40},
-       {"id": "E3-12", "volume_mult": 5, "range_atr": 3.0, "close_pos": 50}
-     ]
-   },
-   "E4": {
-     "name": "Time-Cycle Window",
-     "bots": [
-       {"id": "E4-1", "window_hours": 1, "sma_length": 24},
-       {"id": "E4-2", "window_hours": 1, "sma_length": 48},
-       {"id": "E4-3", "window_hours": 1, "sma_length": 72},
-       {"id": "E4-4", "window_hours": 2, "sma_length": 24},
-       {"id": "E4-5", "window_hours": 2, "sma_length": 48},
-       {"id": "E4-6", "window_hours": 2, "sma_length": 72},
-       {"id": "E4-7", "window_hours": 4, "sma_length": 24},
-       {"id": "E4-8", "window_hours": 4, "sma_length": 48},
-       {"id": "E4-9", "window_hours": 4, "sma_length": 72}
-     ]
-   },
-   "E5": {
-     "name": "Multi-Timeframe Alignment",
-     "bots": [
-       {"id": "E5-1", "macro_ema": 144, "pullback_ema": 12, "rsi": 35},
-       {"id": "E5-2", "macro_ema": 144, "pullback_ema": 24, "rsi": 40},
-       {"id": "E5-3", "macro_ema": 144, "pullback_ema": 36, "rsi": 45},
-       {"id": "E5-4", "macro_ema": 168, "pullback_ema": 12, "rsi": 35},
-       {"id": "E5-5", "macro_ema": 168, "pullback_ema": 24, "rsi": 40},
-       {"id": "E5-6", "macro_ema": 168, "pullback_ema": 36, "rsi": 45},
-       {"id": "E5-7", "macro_ema": 200, "pullback_ema": 12, "rsi": 35},
-       {"id": "E5-8", "macro_ema": 200, "pullback_ema": 24, "rsi": 40},
-       {"id": "E5-9", "macro_ema": 200, "pullback_ema": 36, "rsi": 45},
-       {"id": "E5-10", "macro_ema": 168, "pullback_ema": 24, "rsi": 35},
-       {"id": "E5-11", "macro_ema": 168, "pullback_ema": 24, "rsi": 45},
-       {"id": "E5-12", "macro_ema": 200, "pullback_ema": 36, "rsi": 40}
-     ]
-   },
-   "E6": {
-     "name": "Z-Score Statistical",
-     "bots": [
-       {"id": "E6-1", "z_trigger": -2.0, "lookback_hours": 96},
-       {"id": "E6-2", "z_trigger": -2.5, "lookback_hours": 96},
-       {"id": "E6-3", "z_trigger": -3.0, "lookback_hours": 96},
-       {"id": "E6-4", "z_trigger": -2.0, "lookback_hours": 168},
-       {"id": "E6-5", "z_trigger": -2.5, "lookback_hours": 168},
-       {"id": "E6-6", "z_trigger": -3.0, "lookback_hours": 168},
-       {"id": "E6-7", "z_trigger": -2.0, "lookback_hours": 336},
-       {"id": "E6-8", "z_trigger": -2.5, "lookback_hours": 336},
-       {"id": "E6-9", "z_trigger": -3.0, "lookback_hours": 336}
-     ]
-   },
-   "E7": {
-     "name": "Volatility Squeeze",
-     "bots": [
-       {"id": "E7-1", "squeeze_hours": 8, "volume_filter": 1.0},
-       {"id": "E7-2", "squeeze_hours": 12, "volume_filter": 1.0},
-       {"id": "E7-3", "squeeze_hours": 24, "volume_filter": 1.0},
-       {"id": "E7-4", "squeeze_hours": 8, "volume_filter": 1.5},
-       {"id": "E7-5", "squeeze_hours": 12, "volume_filter": 1.5},
-       {"id": "E7-6", "squeeze_hours": 24, "volume_filter": 1.5},
-       {"id": "E7-7", "squeeze_hours": 8, "volume_filter": 2.0},
-       {"id": "E7-8", "squeeze_hours": 12, "volume_filter": 2.0},
-       {"id": "E7-9", "squeeze_hours": 24, "volume_filter": 2.0}
-     ]
-   },
-   "E8": {
-     "name": "Swing Structure Shift",
-     "bots": [
-       {"id": "E8-1", "swing_candles": 2, "vwap_hours": 12},
-       {"id": "E8-2", "swing_candles": 2, "vwap_hours": 24},
-       {"id": "E8-3", "swing_candles": 2, "vwap_hours": 48},
-       {"id": "E8-4", "swing_candles": 3, "vwap_hours": 12},
-       {"id": "E8-5", "swing_candles": 3, "vwap_hours": 24},
-       {"id": "E8-6", "swing_candles": 3, "vwap_hours": 48},
-       {"id": "E8-7", "swing_candles": 5, "vwap_hours": 12},
-       {"id": "E8-8", "swing_candles": 5, "vwap_hours": 24},
-       {"id": "E8-9", "swing_candles": 5, "vwap_hours": 48}
-     ]
-   },
-   "E9": {
-     "name": "Sequential Candle Decay",
-     "bots": [
-       {"id": "E9-1", "red_candles": 5, "reversal_volume": 1.0},
-       {"id": "E9-2", "red_candles": 6, "reversal_volume": 1.0},
-       {"id": "E9-3", "red_candles": 7, "reversal_volume": 1.0},
-       {"id": "E9-4", "red_candles": 5, "reversal_volume": 1.5},
-       {"id": "E9-5", "red_candles": 6, "reversal_volume": 1.5},
-       {"id": "E9-6", "red_candles": 7, "reversal_volume": 1.5},
-       {"id": "E9-7", "red_candles": 5, "reversal_volume": 2.0},
-       {"id": "E9-8", "red_candles": 6, "reversal_volume": 2.0},
-       {"id": "E9-9", "red_candles": 7, "reversal_volume": 2.0}
-     ]
-   },
-   "E10": {
-     "name": "Pure Drop Threshold",
-     "bots": [
-       {"id": "E10-1", "drop_percent": 3.0, "lookback_hours": 12},
-       {"id": "E10-2", "drop_percent": 5.0, "lookback_hours": 12},
-       {"id": "E10-3", "drop_percent": 7.0, "lookback_hours": 12},
-       {"id": "E10-4", "drop_percent": 10.0, "lookback_hours": 12},
-       {"id": "E10-5", "drop_percent": 15.0, "lookback_hours": 12},
-       {"id": "E10-6", "drop_percent": 3.0, "lookback_hours": 24},
-       {"id": "E10-7", "drop_percent": 5.0, "lookback_hours": 24},
-       {"id": "E10-8", "drop_percent": 7.0, "lookback_hours": 24},
-       {"id": "E10-9", "drop_percent": 10.0, "lookback_hours": 24},
-       {"id": "E10-10", "drop_percent": 15.0, "lookback_hours": 24},
-       {"id": "E10-11", "drop_percent": 5.0, "lookback_hours": 48},
-       {"id": "E10-12", "drop_percent": 10.0, "lookback_hours": 48}
-     ]
-   }
- }
-}
-import os
+  "research_period_days": 180,
+  "scaling": {
+    "start_trades": 10,
+    "step_trades": 10,
+    "max_trades": 200,
+    "measure_loop_time": true
+  },
+  "benchmarks": [
+    {
+      "id": "BENCH-BTC-HOLD",
+      "name": "Benchmark \u2014 BTC Buy and Hold",
+      "method": "hold",
+      "coin": "BTC/USDT",
+      "is_paper": true
+    },
+    {
+      "id": "BENCH-ETH-HOLD",
+      "name": "Benchmark \u2014 ETH Buy and Hold",
+      "method": "hold",
+      "coin": "ETH/USDT",
+      "is_paper": true
+    },
+    {
+      "id": "BENCH-SIMPLE-DCA",
+      "name": "Benchmark \u2014 Simple DCA ASAP",
+      "method": "asap",
+      "dca_percent": 7.0,
+      "spacing_multiplier": 1.4,
+      "size_multiplier": 1.5,
+      "take_profit_percent": 5.0,
+      "is_paper": true
+    },
+    {
+      "id": "BENCH-RANDOM",
+      "name": "Benchmark \u2014 Random Entry DCA",
+      "method": "random",
+      "dca_percent": 7.0,
+      "spacing_multiplier": 1.4,
+      "size_multiplier": 1.5,
+      "take_profit_percent": 5.0,
+      "is_paper": true
+    },
+    {
+      "id": "BENCH-STATIC",
+      "name": "Benchmark \u2014 Static Spacing DCA",
+      "method": "static",
+      "dca_percent": 7.0,
+      "spacing_multiplier": 1.0,
+      "size_multiplier": 1.0,
+      "take_profit_percent": 5.0,
+      "is_paper": true
+    }
+  ],
+  "methods": {
+    "E1": {
+      "name": "VWAP + RSI Deviation",
+      "bots": [
+        {
+          "id": "E1-1",
+          "rsi": 25,
+          "vwap": 4.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-2",
+          "rsi": 30,
+          "vwap": 4.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-3",
+          "rsi": 35,
+          "vwap": 4.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-4",
+          "rsi": 25,
+          "vwap": 3.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-5",
+          "rsi": 30,
+          "vwap": 3.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-6",
+          "rsi": 35,
+          "vwap": 3.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-7",
+          "rsi": 25,
+          "vwap": 2.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-8",
+          "rsi": 30,
+          "vwap": 2.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-9",
+          "rsi": 35,
+          "vwap": 2.0,
+          "atr": 1.5,
+          "bounce": 65
+        },
+        {
+          "id": "E1-10",
+          "rsi": 30,
+          "vwap": 3.0,
+          "atr": 1.3,
+          "bounce": 65
+        },
+        {
+          "id": "E1-11",
+          "rsi": 30,
+          "vwap": 3.0,
+          "atr": 1.5,
+          "bounce": 55
+        },
+        {
+          "id": "E1-12",
+          "rsi": 35,
+          "vwap": 2.0,
+          "atr": 1.3,
+          "bounce": 55
+        }
+      ]
+    },
+    "E2": {
+      "name": "Panic Exhaustion",
+      "bots": [
+        {
+          "id": "E2-1",
+          "volume": 1.5,
+          "bb_sigma": 2.0,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-2",
+          "volume": 2.0,
+          "bb_sigma": 2.0,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-3",
+          "volume": 3.0,
+          "bb_sigma": 2.0,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-4",
+          "volume": 1.5,
+          "bb_sigma": 2.5,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-5",
+          "volume": 2.0,
+          "bb_sigma": 2.5,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-6",
+          "volume": 3.0,
+          "bb_sigma": 2.5,
+          "recovery": 0.5
+        },
+        {
+          "id": "E2-7",
+          "volume": 2.0,
+          "bb_sigma": 2.0,
+          "recovery": 1.0
+        },
+        {
+          "id": "E2-8",
+          "volume": 2.0,
+          "bb_sigma": 2.5,
+          "recovery": 1.0
+        },
+        {
+          "id": "E2-9",
+          "volume": 3.0,
+          "bb_sigma": 2.5,
+          "recovery": 1.0
+        }
+      ]
+    },
+    "E3": {
+      "name": "Volume Climax",
+      "bots": [
+        {
+          "id": "E3-1",
+          "volume_mult": 3,
+          "range_atr": 2.0,
+          "close_pos": 40
+        },
+        {
+          "id": "E3-2",
+          "volume_mult": 4,
+          "range_atr": 2.0,
+          "close_pos": 40
+        },
+        {
+          "id": "E3-3",
+          "volume_mult": 5,
+          "range_atr": 2.0,
+          "close_pos": 40
+        },
+        {
+          "id": "E3-4",
+          "volume_mult": 3,
+          "range_atr": 2.5,
+          "close_pos": 50
+        },
+        {
+          "id": "E3-5",
+          "volume_mult": 4,
+          "range_atr": 2.5,
+          "close_pos": 50
+        },
+        {
+          "id": "E3-6",
+          "volume_mult": 5,
+          "range_atr": 2.5,
+          "close_pos": 50
+        },
+        {
+          "id": "E3-7",
+          "volume_mult": 3,
+          "range_atr": 3.0,
+          "close_pos": 60
+        },
+        {
+          "id": "E3-8",
+          "volume_mult": 4,
+          "range_atr": 3.0,
+          "close_pos": 60
+        },
+        {
+          "id": "E3-9",
+          "volume_mult": 5,
+          "range_atr": 3.0,
+          "close_pos": 60
+        },
+        {
+          "id": "E3-10",
+          "volume_mult": 4,
+          "range_atr": 2.0,
+          "close_pos": 60
+        },
+        {
+          "id": "E3-11",
+          "volume_mult": 4,
+          "range_atr": 3.0,
+          "close_pos": 40
+        },
+        {
+          "id": "E3-12",
+          "volume_mult": 5,
+          "range_atr": 3.0,
+          "close_pos": 50
+        }
+      ]
+    },
+    "E4": {
+      "name": "Time-Cycle Window",
+      "bots": [
+        {
+          "id": "E4-1",
+          "window_hours": 1,
+          "sma_length": 24
+        },
+        {
+          "id": "E4-2",
+          "window_hours": 1,
+          "sma_length": 48
+        },
+        {
+          "id": "E4-3",
+          "window_hours": 1,
+          "sma_length": 72
+        },
+        {
+          "id": "E4-4",
+          "window_hours": 2,
+          "sma_length": 24
+        },
+        {
+          "id": "E4-5",
+          "window_hours": 2,
+          "sma_length": 48
+        },
+        {
+          "id": "E4-6",
+          "window_hours": 2,
+          "sma_length": 72
+        },
+        {
+          "id": "E4-7",
+          "window_hours": 4,
+          "sma_length": 24
+        },
+        {
+          "id": "E4-8",
+          "window_hours": 4,
+          "sma_length": 48
+        },
+        {
+          "id": "E4-9",
+          "window_hours": 4,
+          "sma_length": 72
+        }
+      ]
+    },
+    "E5": {
+      "name": "Multi-Timeframe Alignment",
+      "bots": [
+        {
+          "id": "E5-1",
+          "macro_ema": 144,
+          "pullback_ema": 12,
+          "rsi": 35
+        },
+        {
+          "id": "E5-2",
+          "macro_ema": 144,
+          "pullback_ema": 24,
+          "rsi": 40
+        },
+        {
+          "id": "E5-3",
+          "macro_ema": 144,
+          "pullback_ema": 36,
+          "rsi": 45
+        },
+        {
+          "id": "E5-4",
+          "macro_ema": 168,
+          "pullback_ema": 12,
+          "rsi": 35
+        },
+        {
+          "id": "E5-5",
+          "macro_ema": 168,
+          "pullback_ema": 24,
+          "rsi": 40
+        },
+        {
+          "id": "E5-6",
+          "macro_ema": 168,
+          "pullback_ema": 36,
+          "rsi": 45
+        },
+        {
+          "id": "E5-7",
+          "macro_ema": 200,
+          "pullback_ema": 12,
+          "rsi": 35
+        },
+        {
+          "id": "E5-8",
+          "macro_ema": 200,
+          "pullback_ema": 24,
+          "rsi": 40
+        },
+        {
+          "id": "E5-9",
+          "macro_ema": 200,
+          "pullback_ema": 36,
+          "rsi": 45
+        },
+        {
+          "id": "E5-10",
+          "macro_ema": 168,
+          "pullback_ema": 24,
+          "rsi": 35
+        },
+        {
+          "id": "E5-11",
+          "macro_ema": 168,
+          "pullback_ema": 24,
+          "rsi": 45
+        },
+        {
+          "id": "E5-12",
+          "macro_ema": 200,
+          "pullback_ema": 36,
+          "rsi": 40
+        }
+      ]
+    },
+    "E6": {
+      "name": "Z-Score Statistical",
+      "bots": [
+        {
+          "id": "E6-1",
+          "z_trigger": -2.0,
+          "lookback_hours": 96
+        },
+        {
+          "id": "E6-2",
+          "z_trigger": -2.5,
+          "lookback_hours": 96
+        },
+        {
+          "id": "E6-3",
+          "z_trigger": -3.0,
+          "lookback_hours": 96
+        },
+        {
+          "id": "E6-4",
+          "z_trigger": -2.0,
+          "lookback_hours": 168
+        },
+        {
+          "id": "E6-5",
+          "z_trigger": -2.5,
+          "lookback_hours": 168
+        },
+        {
+          "id": "E6-6",
+          "z_trigger": -3.0,
+          "lookback_hours": 168
+        },
+        {
+          "id": "E6-7",
+          "z_trigger": -2.0,
+          "lookback_hours": 336
+        },
+        {
+          "id": "E6-8",
+          "z_trigger": -2.5,
+          "lookback_hours": 336
+        },
+        {
+          "id": "E6-9",
+          "z_trigger": -3.0,
+          "lookback_hours": 336
+        }
+      ]
+    },
+    "E7": {
+      "name": "Volatility Squeeze",
+      "bots": [
+        {
+          "id": "E7-1",
+          "squeeze_hours": 8,
+          "volume_filter": 1.0
+        },
+        {
+          "id": "E7-2",
+          "squeeze_hours": 12,
+          "volume_filter": 1.0
+        },
+        {
+          "id": "E7-3",
+          "squeeze_hours": 24,
+          "volume_filter": 1.0
+        },
+        {
+          "id": "E7-4",
+          "squeeze_hours": 8,
+          "volume_filter": 1.5
+        },
+        {
+          "id": "E7-5",
+          "squeeze_hours": 12,
+          "volume_filter": 1.5
+        },
+        {
+          "id": "E7-6",
+          "squeeze_hours": 24,
+          "volume_filter": 1.5
+        },
+        {
+          "id": "E7-7",
+          "squeeze_hours": 8,
+          "volume_filter": 2.0
+        },
+        {
+          "id": "E7-8",
+          "squeeze_hours": 12,
+          "volume_filter": 2.0
+        },
+        {
+          "id": "E7-9",
+          "squeeze_hours": 24,
+          "volume_filter": 2.0
+        }
+      ]
+    },
+    "E8": {
+      "name": "Swing Structure Shift",
+      "bots": [
+        {
+          "id": "E8-1",
+          "swing_candles": 2,
+          "vwap_hours": 12
+        },
+        {
+          "id": "E8-2",
+          "swing_candles": 2,
+          "vwap_hours": 24
+        },
+        {
+          "id": "E8-3",
+          "swing_candles": 2,
+          "vwap_hours": 48
+        },
+        {
+          "id": "E8-4",
+          "swing_candles": 3,
+          "vwap_hours": 12
+        },
+        {
+          "id": "E8-5",
+          "swing_candles": 3,
+          "vwap_hours": 24
+        },
+        {
+          "id": "E8-6",
+          "swing_candles": 3,
+          "vwap_hours": 48
+        },
+        {
+          "id": "E8-7",
+          "swing_candles": 5,
+          "vwap_hours": 12
+        },
+        {
+          "id": "E8-8",
+          "swing_candles": 5,
+          "vwap_hours": 24
+        },
+        {
+          "id": "E8-9",
+          "swing_candles": 5,
+          "vwap_hours": 48
+        }
+      ]
+    },
+    "E9": {
+      "name": "Sequential Candle Decay",
+      "bots": [
+        {
+          "id": "E9-1",
+          "red_candles": 5,
+          "reversal_volume": 1.0
+        },
+        {
+          "id": "E9-2",
+          "red_candles": 6,
+          "reversal_volume": 1.0
+        },
+        {
+          "id": "E9-3",
+          "red_candles": 7,
+          "reversal_volume": 1.0
+        },
+        {
+          "id": "E9-4",
+          "red_candles": 5,
+          "reversal_volume": 1.5
+        },
+        {
+          "id": "E9-5",
+          "red_candles": 6,
+          "reversal_volume": 1.5
+        },
+        {
+          "id": "E9-6",
+          "red_candles": 7,
+          "reversal_volume": 1.5
+        },
+        {
+          "id": "E9-7",
+          "red_candles": 5,
+          "reversal_volume": 2.0
+        },
+        {
+          "id": "E9-8",
+          "red_candles": 6,
+          "reversal_volume": 2.0
+        },
+        {
+          "id": "E9-9",
+          "red_candles": 7,
+          "reversal_volume": 2.0
+        }
+      ]
+    },
+    "E10": {
+      "name": "Pure Drop Threshold",
+      "bots": [
+        {
+          "id": "E10-1",
+          "drop_percent": 3.0,
+          "lookback_hours": 12
+        },
+        {
+          "id": "E10-2",
+          "drop_percent": 5.0,
+          "lookback_hours": 12
+        },
+        {
+          "id": "E10-3",
+          "drop_percent": 7.0,
+          "lookback_hours": 12
+        },
+        {
+          "id": "E10-4",
+          "drop_percent": 10.0,
+          "lookback_hours": 12
+        },
+        {
+          "id": "E10-5",
+          "drop_percent": 15.0,
+          "lookback_hours": 12
+        },
+        {
+          "id": "E10-6",
+          "drop_percent": 3.0,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E10-7",
+          "drop_percent": 5.0,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E10-8",
+          "drop_percent": 7.0,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E10-9",
+          "drop_percent": 10.0,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E10-10",
+          "drop_percent": 15.0,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E10-11",
+          "drop_percent": 5.0,
+          "lookback_hours": 48
+        },
+        {
+          "id": "E10-12",
+          "drop_percent": 10.0,
+          "lookback_hours": 48
+        }
+      ]
+    },
+    "E11": {
+      "name": "QFL Base Bounce",
+      "most_important_param": "base_break_pct",
+      "fixed": {
+        "base_age_hours": 72,
+        "volume_filter": 1.5,
+        "reclaim_required": true
+      },
+      "bots": [
+        {
+          "id": "E11-1",
+          "base_break_pct": 2
+        },
+        {
+          "id": "E11-2",
+          "base_break_pct": 3
+        },
+        {
+          "id": "E11-3",
+          "base_break_pct": 4
+        },
+        {
+          "id": "E11-4",
+          "base_break_pct": 5
+        },
+        {
+          "id": "E11-5",
+          "base_break_pct": 6
+        },
+        {
+          "id": "E11-6",
+          "base_break_pct": 8
+        },
+        {
+          "id": "E11-7",
+          "base_break_pct": 10
+        },
+        {
+          "id": "E11-8",
+          "base_break_pct": 12
+        },
+        {
+          "id": "E11-9",
+          "base_break_pct": 15
+        }
+      ]
+    },
+    "E12": {
+      "name": "Support/Resistance Reclaim",
+      "most_important_param": "reclaim_pct",
+      "fixed": {
+        "lookback_days": 30,
+        "confirm_candles": 1
+      },
+      "bots": [
+        {
+          "id": "E12-1",
+          "reclaim_pct": 0.5,
+          "touch_count": 2,
+          "volume": 1.2
+        },
+        {
+          "id": "E12-2",
+          "reclaim_pct": 1.0,
+          "touch_count": 2,
+          "volume": 1.4
+        },
+        {
+          "id": "E12-3",
+          "reclaim_pct": 1.5,
+          "touch_count": 3,
+          "volume": 1.6
+        },
+        {
+          "id": "E12-4",
+          "reclaim_pct": 2.0,
+          "touch_count": 3,
+          "volume": 1.8
+        },
+        {
+          "id": "E12-5",
+          "reclaim_pct": 2.5,
+          "touch_count": 4,
+          "volume": 2.0
+        },
+        {
+          "id": "E12-6",
+          "reclaim_pct": 3.0,
+          "touch_count": 4,
+          "volume": 2.2
+        },
+        {
+          "id": "E12-7",
+          "reclaim_pct": 3.5,
+          "touch_count": 5,
+          "volume": 2.4
+        },
+        {
+          "id": "E12-8",
+          "reclaim_pct": 4.0,
+          "touch_count": 5,
+          "volume": 2.6
+        },
+        {
+          "id": "E12-9",
+          "reclaim_pct": 5.0,
+          "touch_count": 6,
+          "volume": 3.0
+        }
+      ]
+    },
+    "E13": {
+      "name": "EMA + MACD + RSI Confluence",
+      "most_important_param": "ema_pair",
+      "fixed": {
+        "macd": "12/26/9",
+        "price_above_ema200": true,
+        "histogram_rising_candles": 2
+      },
+      "bots": [
+        {
+          "id": "E13-1",
+          "fast_ema": 9,
+          "slow_ema": 21,
+          "rsi_max": 35
+        },
+        {
+          "id": "E13-2",
+          "fast_ema": 10,
+          "slow_ema": 24,
+          "rsi_max": 37
+        },
+        {
+          "id": "E13-3",
+          "fast_ema": 12,
+          "slow_ema": 26,
+          "rsi_max": 39
+        },
+        {
+          "id": "E13-4",
+          "fast_ema": 14,
+          "slow_ema": 30,
+          "rsi_max": 41
+        },
+        {
+          "id": "E13-5",
+          "fast_ema": 16,
+          "slow_ema": 34,
+          "rsi_max": 43
+        },
+        {
+          "id": "E13-6",
+          "fast_ema": 18,
+          "slow_ema": 40,
+          "rsi_max": 45
+        },
+        {
+          "id": "E13-7",
+          "fast_ema": 20,
+          "slow_ema": 50,
+          "rsi_max": 47
+        },
+        {
+          "id": "E13-8",
+          "fast_ema": 22,
+          "slow_ema": 55,
+          "rsi_max": 49
+        },
+        {
+          "id": "E13-9",
+          "fast_ema": 24,
+          "slow_ema": 60,
+          "rsi_max": 51
+        },
+        {
+          "id": "E13-10",
+          "fast_ema": 26,
+          "slow_ema": 70,
+          "rsi_max": 53
+        }
+      ]
+    },
+    "E14": {
+      "name": "Stoch RSI Pullback + Trend Filter",
+      "most_important_param": "stoch_oversold",
+      "fixed": {
+        "stoch_period": 14,
+        "trigger": "k_crosses_above_d"
+      },
+      "bots": [
+        {
+          "id": "E14-1",
+          "stoch_oversold": 10,
+          "trend_ema": 50,
+          "recovery_closes": 1
+        },
+        {
+          "id": "E14-2",
+          "stoch_oversold": 12,
+          "trend_ema": 55,
+          "recovery_closes": 1
+        },
+        {
+          "id": "E14-3",
+          "stoch_oversold": 14,
+          "trend_ema": 60,
+          "recovery_closes": 1
+        },
+        {
+          "id": "E14-4",
+          "stoch_oversold": 16,
+          "trend_ema": 65,
+          "recovery_closes": 2
+        },
+        {
+          "id": "E14-5",
+          "stoch_oversold": 18,
+          "trend_ema": 70,
+          "recovery_closes": 2
+        },
+        {
+          "id": "E14-6",
+          "stoch_oversold": 20,
+          "trend_ema": 75,
+          "recovery_closes": 2
+        },
+        {
+          "id": "E14-7",
+          "stoch_oversold": 22,
+          "trend_ema": 80,
+          "recovery_closes": 2
+        },
+        {
+          "id": "E14-8",
+          "stoch_oversold": 24,
+          "trend_ema": 90,
+          "recovery_closes": 3
+        },
+        {
+          "id": "E14-9",
+          "stoch_oversold": 26,
+          "trend_ema": 100,
+          "recovery_closes": 3
+        }
+      ]
+    }
+  }
+}import os
 import time
 import psycopg2
 import redis
@@ -12629,7 +13436,7 @@ if __name__ == '__main__':
 </div>
 
 <script>
-    const API = '';
+    const API = window.location.origin;
     let pendingUserId = null;
     let resetMethod = 'email';
     let resetEmail = '';
@@ -13197,7 +14004,7 @@ if __name__ == '__main__':
 </div>
 
 <script>
-    const API = '';
+    const API = window.location.origin;
 
     function checkStrength(password) {
         const bar = document.getElementById('strength-bar');
@@ -14296,7 +15103,7 @@ tr:hover td{background:#6366F106}
 <!-- ══          JAVASCRIPT START           ══ -->
 <!-- ═══════════════════════════════════════ -->
 <script>
-const API = 'https://bbd72f98-d728-46fe-81c6-af97d0011150-00-1c2g4v036wde1.sisko.replit.dev:8080';
+const API = window.location.origin;
 
 const EXC = {
   mexc:    {name:'MEXC',    bg:'#1E3A5F',text:'#38BDF8',logo:'M',pass:false},
@@ -16090,7 +16897,7 @@ setInterval(loadAll, 15000);
 </div>
 
 <script>
-    const API = '';
+    const API = window.location.origin;
     const TOKEN = localStorage.getItem('averion_token');
     let allUsers = [];
     let cronData = {};

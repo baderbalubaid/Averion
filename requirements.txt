@@ -8,3 +8,5 @@ python-dotenv==1.0.0
 requests==2.31.0
 uvicorn==0.48.0
 redis==8.0.0
+
+bcrypt
