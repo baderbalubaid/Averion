@@ -2230,7 +2230,7 @@ All code written · pushed to GitHub · ready to deploy:
 | register.html | ✅ Ready | Sign up · password validation |
 | dashboard.html | ✅ Ready | Customer trading dashboard |
 | admin.html | ✅ Ready | Admin control panel |
-| schema.sql | ✅ Ready | 651 lines · 28 tables |
+| schema.sql | ✅ Ready | 651 lines · 36 tables |
 | hetzner_day1.sh | ✅ Ready | Security hardened setup script |
 | hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
 | DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
@@ -2354,7 +2354,7 @@ Manual steps after script:
 
 Three layers:
 - Redis: live prices in RAM · 60s refresh
-- PostgreSQL: all data · 28 tables · proper indexes
+- PostgreSQL: all data · 36 tables · proper indexes
 - Archive: positions older than 1 year
 
 ---
@@ -2462,7 +2462,7 @@ Three layers:
 
 ## Slippage Handling (LOCKED)
 
-All orders are market orders. Before every DCA:
+Market order mode: Before every DCA (limit orders handled separately):
 
 1. Check order book depth at target price
 2. If available >= $1 minimum → buy at target price ✅
@@ -4291,7 +4291,7 @@ Split to professional structure on Hetzner Day 1 only.
 6. Save any new trades to DB
 7. Sleep until next cycle
 
-## Virtual Wallet Tables (Phase 5)
+## Virtual Wallet Tables (Day 1 — LOCKED)
 
 ### virtual_wallets
 - id · user_id · exchange_id
@@ -4325,7 +4325,7 @@ Split to professional structure on Hetzner Day 1 only.
 - wallet_id: links position to virtual wallet
 - standby_amount: remaining USDT in standby (0 if none)
 - standby_price: target price to trigger standby buy
-- standby_timeout_at: when standby expires
+- standby_created_at: when standby was created (audit only · no timeout ever)
 - dust_amount: remaining coin balance below minimum order
 - dust_currency: which coin is dust
 - is_manual: boolean — manual bot position or smart bot
@@ -4350,8 +4350,8 @@ Split to professional structure on Hetzner Day 1 only.
 - standby_amount (USDT remaining to buy)
 - target_price (DCA level price to trigger)
 - dca_level (which level this standby is for)
-- timeout_at (when standby expires)
-- created_at · triggered_at · expired_at
+- standby_created_at (when standby was created · audit only)
+- created_at · triggered_at · standby_cancelled_at
 - status: active · triggered · expired · cancelled
 
 ### Redis Key Structure
@@ -8666,6 +8666,59 @@ def get_last_resend_time(user_id):
            FROM users WHERE id = %s
        """, (user_id,))
        return cur.fetchone()
+
+def get_btc_7d_change():
+    """Get BTC 7-day price change percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                ((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC' ORDER BY timestamp DESC LIMIT 1) -
+                 (SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '7 days'
+                  ORDER BY timestamp DESC LIMIT 1)) /
+                NULLIF((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '7 days'
+                  ORDER BY timestamp DESC LIMIT 1), 0) * 100
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0
+
+def get_btc_24h_change():
+    """Get BTC 24-hour price change percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                ((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC' ORDER BY timestamp DESC LIMIT 1) -
+                 (SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '24 hours'
+                  ORDER BY timestamp DESC LIMIT 1)) /
+                NULLIF((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '24 hours'
+                  ORDER BY timestamp DESC LIMIT 1), 0) * 100
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0
+
+def get_market_volatility():
+    """Get market volatility from BTC ATR as percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT atr_14 / NULLIF(close, 0) * 100
+            FROM ohlcv_hourly
+            WHERE coin = 'BTC'
+            ORDER BY timestamp DESC LIMIT 1
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0
 import os
 import hashlib
 import secrets
@@ -9781,9 +9834,10 @@ def calculate_score(position, current_price, bot):
     avg_cost = float(position[7] or 0)
     total_invested = float(position[9] or 0)
     dca_count = position[10]
-
-    size_mult = float(bot[12] or 1.5)
-    base_order = float(bot[13] or 1.0)
+    dca_percent = float(bot[10] or 7.0)
+    spacing_mult = float(bot[11] or 1.4)
+    size_mult = float(bot[12] or 1.0)
+    take_profit = float(bot[13] or 3.0)
 
     if avg_cost == 0 or current_price == 0:
         return 0
@@ -9934,8 +9988,8 @@ def check_tp(position, current_price, bot):
     quantity = float(position[8] or 0)
     tp_armed = position[12]
     peak_price = float(position[13] or 0)
-    tp_percent = float(bot[14] or 5.0)
-    trailing_percent = float(bot[15] or 2.0)
+    tp_percent = float(bot[13] or 5.0)
+    trailing_percent = float(bot[14] or 2.0)
 
     if avg_cost == 0:
         return False
@@ -10046,9 +10100,9 @@ def try_open_position(bot, exchange_obj, tickers, r):
             break
 
 def check_gate_conditions(bot, coin, open_positions):
-    gate_dca = bot[16]
-    gate_timer = bot[17]
-    gate_hours = bot[18] or 5
+    gate_dca = bot[18]
+    gate_timer = bot[19]
+    gate_hours = bot[20] or 5
 
     if not gate_dca and not gate_timer:
         return True  # No gate · always tradeable
