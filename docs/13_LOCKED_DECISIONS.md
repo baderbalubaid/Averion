@@ -561,20 +561,32 @@ Priority Order (same exchange · same wallet):
 
 ## Reserve Wallet Debt System (LOCKED)
 
-- Bot NEVER stops when reserve = $0
-- Position closes at TP normally regardless of reserve balance
-- Fee recorded as debt in DB if reserve insufficient
-- Debt shown clearly in dashboard with [Top Up Now] button
-- When user tops up: debt deducted first · remaining = new balance
-- Telegram: debt cleared notification sent
-- Debt accumulates until reserve funded
-- No blocking · no stopping · no forced actions ever
+- Position closes at profit → fee calculated (profit × 20%)
+- Reserve has enough → fee deducted immediately ✅
+- Reserve empty or insufficient → fee recorded as debt
 
-Debt Data Retention:
-- Active unpaid debt: kept forever until paid
-- Paid debt history: kept FOREVER
-- Reason: financial records · tax · dispute resolution
-- Never deleted regardless of account status
+### When debt exists (even $0.01):
+- Bot remains ON — status never changes
+- NO new positions open — zero new trades fire
+- Existing open positions continue normally to TP
+- Dashboard shows debt in RED with [Top Up Now] button
+- Telegram alert sent immediately when debt created
+- Telegram reminder every 7 days while debt unpaid
+
+### When user tops up:
+- Debt deducted first automatically
+- Remaining amount = new reserve balance
+- New positions resume automatically — no manual action needed
+- Telegram: debt cleared · balance shown · trading resumed
+
+### Rules (LOCKED):
+- Even $0.01 debt = no new positions · no exceptions
+- Bot status stays ON — user never needs to restart
+- No debt write-off ever — must be paid in full
+- No maximum debt limit
+- 0% fee accounts (family/admin): no fees · no debt · no reserve needed
+- Debt history kept FOREVER (financial records · tax · disputes)
+- Active unpaid debt kept forever until paid
 
 ## CoinGecko Rate Limiting Solution (LOCKED)
 
