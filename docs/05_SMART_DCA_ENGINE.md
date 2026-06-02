@@ -183,7 +183,10 @@ Worst deleted · best becomes Smart DCA default.
 - Candle range > 2.5x ATR · close in upper 50%
 
 ### E4 — Time-Cycle Window
-- Sunday UTC 22:00-23:00 only
+- Three weekly windows (LOCKED):
+  · Sunday UTC 22:00-23:00
+  · Monday UTC 00:00-02:00
+  · Wednesday UTC 12:00-14:00
 - Close < SMA(Close, 48)
 
 ### E5 — Multi-Timeframe Alignment

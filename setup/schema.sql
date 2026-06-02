@@ -474,7 +474,7 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_level_reached INTEGER 
 
 -- Virtual wallet standby reserved amount
 ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS standby_reserved DECIMAL(20,8) DEFAULT 0;
-    committed_usdt DECIMAL(20,8) DEFAULT 0,
+ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS committed_usdt DECIMAL(20,8) DEFAULT 0;
 
 -- API key expiry tracking
 -- key_expires_at already in base CREATE TABLE
@@ -510,7 +510,7 @@ SELECT 'Base coin and position detail columns added!' AS result;
 
 -- Research bot market regime tracking
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regimes_tested JSONB DEFAULT '[]';
-    replacement_bot BOOLEAN DEFAULT FALSE,
+ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS replacement_bot BOOLEAN DEFAULT FALSE;
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS bundle_period VARCHAR(7);
 
 -- Subscription billing history

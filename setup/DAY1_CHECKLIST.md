@@ -187,6 +187,18 @@ Do this right after buying averionbot.com domain:
 - Resend will give you DNS records to add
 
 ### Step 2 — Add DNS records in domain registrar
+Copy these 3 records from Resend dashboard and add to your DNS:
+
+SPF:
+- Type: TXT · Name: @ · Value: v=spf1 include:spf.resend.com ~all
+
+DKIM:
+- Type: TXT · Name: resend._domainkey
+- Value: (copy exact value from Resend dashboard)
+
+DMARC:
+- Type: TXT · Name: _dmarc
+- Value: v=DMARC1; p=none; rua=mailto:admin@averionbot.com
 
 
 ### Step 3 — Verify in Resend dashboard

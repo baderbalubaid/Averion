@@ -97,7 +97,7 @@ Most common: Trading OFF + DCA ON (ride only mode)
 - Paper = identical server load as live trade
 - Auto-close ALL paper trades if ZERO live trades for 90 days
 - Day 83 warning Telegram · Day 89 final warning · Day 90 auto-close
-- Timer resets when ANY live position opens
+- Timer resets when a NEW live position OPENS (opening only · not closing)
 - Prevents server abuse by inactive users
 
 ---
