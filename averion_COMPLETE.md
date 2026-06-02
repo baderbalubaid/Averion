@@ -6764,6 +6764,30 @@ DMARC:
 - With proper setup → mostly inbox
 - New domain takes 2-3 months to build reputation
 - Resend has best deliverability of free email services
+
+## Day 2 — Split Fernet Key (FREE · 30 min · SECURITY)
+
+### Why do this
+Full FERNET_KEY in .env = one file = one risk
+Split key = hacker needs server AND Hetzner account
+Hetzner Secrets = free · included with your server
+
+### Steps
+1. Hetzner Console → Security → Secrets → Create Secret
+   Name: averion_fernet_part_b · leave value empty for now
+
+2. Hetzner Console → Security → API Tokens → Create Token
+   Name: averion-secrets · Permission: Read/Write
+
+3. Add to .env:
+   HETZNER_API_TOKEN=your_token_here
+   HETZNER_SECRET_ID=your_secret_id_here
+
+4. Run:
+   python3 /home/averion/Averion/automation/split_fernet_key.py
+
+5. Verify:
+   python3 -c "from exchanges import get_fernet; print('✅ Split key working')"
 # Averion Environment Variables
 # Copy this file to .env and fill in your values
 # Command: cp setup/env.example .env
@@ -8136,6 +8160,7 @@ import time
 import psycopg2
 import redis
 import ccxt
+import exchanges as exchanges_module
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -8237,7 +8262,7 @@ def reconcile_orders():
                 # Initialize CCXT exchange
                 exchange_class = getattr(ccxt, exc_name)
                 config = {
-                    'apiKey': api_key,
+                    'apiKey': exchanges_module.decrypt(api_key),
                     'secret': secret
                 }
                 if passphrase:
@@ -11345,10 +11370,23 @@ load_dotenv()
 # FERNET ENCRYPTION
 # ═══════════════════════════════
 def get_fernet():
-   key = os.getenv('FERNET_KEY')
-   if not key:
-       raise Exception('FERNET_KEY not set in .env')
-   return Fernet(key.encode())
+   # Full key mode (Day 1)
+   full_key = os.getenv('FERNET_KEY')
+   if full_key:
+       return Fernet(full_key.encode())
+   # Split key mode (Day 2+ · more secure)
+   part_a = os.getenv('FERNET_KEY_PART_A')
+   hetzner_token = os.getenv('HETZNER_API_TOKEN')
+   secret_id = os.getenv('HETZNER_SECRET_ID')
+   if part_a and hetzner_token and secret_id:
+       import requests
+       res = requests.get(
+           f'https://api.hetzner.cloud/v1/secrets/{secret_id}',
+           headers={'Authorization': f'Bearer {hetzner_token}'}
+       )
+       part_b = res.json()['secret']['value']
+       return Fernet((part_a + part_b).encode())
+   raise Exception('No Fernet key found · set FERNET_KEY or split key vars in .env')
 
 def encrypt(text: str) -> str:
    return get_fernet().encrypt(text.encode()).decode()
@@ -12069,6 +12107,7 @@ def admin_cron_failed(step, error):
     send_admin(msg)
 import os
 import hashlib
+import bcrypt
 import secrets
 import jwt
 from datetime import datetime, timezone, timedelta
