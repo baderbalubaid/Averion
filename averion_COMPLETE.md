@@ -68,7 +68,7 @@ Build once · Build right · Public platform from Day 1
 
 ## 18 Rules Never To Break
 1. DCA spacing from LAST BUY PRICE — not average cost
-2. Market orders ONLY — exception: Short DCA buyback uses limit order to reserve funds
+2. Market orders are the default for guaranteed execution — exceptions: Short DCA buyback uses limit order · users may enable limit entry/DCA per bot in wizard
 3. 20% fee on REALIZED profits only — loss months = $0
 4. User funds ALWAYS on their exchange — Averion never holds
 5. Paper stays paper FOREVER — live stays live — no conversion
@@ -77,7 +77,7 @@ Build once · Build right · Public platform from Day 1
 8. Classification automated daily — CoinGecko + CMC averaged
 9. NO max DCA levels — smart queue handles capital forever
 10. Bot NEVER stops — put money and forget it
-11. Reclassification affects NEW positions only — existing keep original params
+11. Reclassification affects NEW positions only — existing positions keep original params FOREVER (Option A · LOCKED)
 12. Smart DCA = fully automated — customers see results only
 13. Trailing safety Smart DCA: TP%-Trail%<1% → direct market TP
 14. One pair per bot — no duplicate coin on same bot
@@ -136,11 +136,13 @@ Build once · Build right · Public platform from Day 1
 ## Trading Logic
 
 - DCA spacing calculated from LAST BUY PRICE — never average cost
-- Market orders ONLY — no limit orders ever — no exceptions
+- Market orders are the default for guaranteed execution
+- Limit orders available per bot via wizard (entry + DCA)
+- Short DCA buyback always uses limit order (reserve USDT)
 - Trailing safety (Smart DCA only): if TP% - Trail% < 1% → direct market TP
 - NO maximum DCA levels — smart queue handles capital allocation forever
 - Bot NEVER stops running — detects new funds within 60 seconds
-- Open positions update IMMEDIATELY on reclassification (Option B)
+- Open positions are NOT affected by reclassification (Option A)
 - One pair per bot — no duplicate coin on same bot — cross-bot is fine
 - Paper stays paper FOREVER — live stays live — NO conversion ever
 - Short DCA = spot only — user must already hold the coin — min exchange order size required
@@ -457,14 +459,11 @@ Build once · Build right · Public platform from Day 1
 
 ## Customer Telegram Channels (LOCKED)
 
-- 3 separate channels per customer:
-  - Trades: every buy · sell · DCA · TP (mute-friendly)
-  - Alerts: reserve low · bot stopped · ST flag · urgent (never mute)
-  - Reports: daily per exchange · weekly · monthly
-- Customer connects in Settings tab → Notifications section
-- Enter Telegram Chat ID → bot sends verification code → confirmed
-- Each channel has separate toggle ON/OFF
-- Customer controls which channels they receive
+- ONE direct chat with @AverionBot — not separate channels
+- Old 3-channel design removed — Option C confirmed permanently
+- See "Customer Telegram Setup" section for full details
+- Message types: TRADE · ALERT · REPORT — all in one chat
+- Customer toggles each type ON/OFF independently
 
 ## Daily Telegram Report Per Exchange (LOCKED)
 
@@ -502,10 +501,7 @@ Available funds: $X
 
 ## Virtual Wallet System (LOCKED)
 
-- User creates named virtual wallets per exchange
-- Example: Long Test 1 · Short BTC · RVN Wallet
-- Each wallet: name · currency · capital amount or All
-- Bot links to one wallet (changeable anytime)
+- See full definition above in "Virtual Wallet System (NEW FEATURE)"
 - Same wallet = shared queue + shared capital
 - Different wallet = isolated queue + capital
 - Wallets section shown per exchange in dashboard
@@ -691,20 +687,32 @@ Priority Order (same exchange · same wallet):
 
 ## Reserve Wallet Debt System (LOCKED)
 
-- Bot NEVER stops when reserve = $0
-- Position closes at TP normally regardless of reserve balance
-- Fee recorded as debt in DB if reserve insufficient
-- Debt shown clearly in dashboard with [Top Up Now] button
-- When user tops up: debt deducted first · remaining = new balance
-- Telegram: debt cleared notification sent
-- Debt accumulates until reserve funded
-- No blocking · no stopping · no forced actions ever
+- Position closes at profit → fee calculated (profit × 20%)
+- Reserve has enough → fee deducted immediately ✅
+- Reserve empty or insufficient → fee recorded as debt
 
-Debt Data Retention:
-- Active unpaid debt: kept forever until paid
-- Paid debt history: kept FOREVER
-- Reason: financial records · tax · dispute resolution
-- Never deleted regardless of account status
+### When debt exists (even $0.01):
+- Bot remains ON — status never changes
+- NO new positions open — zero new trades fire
+- Existing open positions continue normally to TP
+- Dashboard shows debt in RED with [Top Up Now] button
+- Telegram alert sent immediately when debt created
+- Telegram reminder every 7 days while debt unpaid
+
+### When user tops up:
+- Debt deducted first automatically
+- Remaining amount = new reserve balance
+- New positions resume automatically — no manual action needed
+- Telegram: debt cleared · balance shown · trading resumed
+
+### Rules (LOCKED):
+- Even $0.01 debt = no new positions · no exceptions
+- Bot status stays ON — user never needs to restart
+- No debt write-off ever — must be paid in full
+- No maximum debt limit
+- 0% fee accounts (family/admin): no fees · no debt · no reserve needed
+- Debt history kept FOREVER (financial records · tax · disputes)
+- Active unpaid debt kept forever until paid
 
 ## CoinGecko Rate Limiting Solution (LOCKED)
 
@@ -1547,6 +1555,31 @@ Phase 7 public launch: add FastAPI middleware
 - Implement when averionbot.com domain is ready (Day 2)
 - Sender email: noreply@averionbot.com
 
+
+## CoinGecko + CMC Averaging Formula (LOCKED)
+
+### Formula (step by step)
+1. Fetch market cap from CoinGecko
+2. Fetch market cap from CoinMarketCap
+3. Both available → average = (CoinGecko + CMC) / 2
+4. Only CoinGecko available → use CoinGecko cap
+5. Only CMC available → use CMC cap
+6. Both failed → use last recorded cap · Telegram alert
+7. If they disagree by more than 100% → use the LOWER value
+  (conservative · survivability first · prevents fake cap inflation)
+
+### Why lower value on disagreement
+- Protects against data errors classifying coin too high
+- A Micro Cap classified as Small Cap = wider DCA spacing = less risk
+- A Small Cap classified as Micro Cap = tighter DCA spacing = more trades
+- Better to be conservative than aggressive on cap classification
+
+### Example
+- CoinGecko: $50M · CMC: $120M · Difference: 140% > 100%
+- Use lower: $50M → Micro Cap parameters applied ✅
+- CoinGecko: $50M · CMC: $60M · Difference: 20% < 100%  
+- Use average: $55M → Micro Cap parameters applied ✅
+
 ## Email Architecture (LOCKED)
 
 ### Domain (LOCKED)
@@ -1794,8 +1827,9 @@ Three layers:
 ---
 
 ## Order Types
-- Market orders ONLY — always — no exceptions ever
-- No limit orders — no stale orders — guaranteed execution
+- Market orders are the default — guaranteed execution always
+- Limit orders optional per bot: entry + DCA (user selects in wizard)
+- Short DCA buyback: limit order only (reserves USDT on exchange)
 - Guaranteed execution > perfect price — always
 
 ---
@@ -2197,6 +2231,12 @@ Updates daily at 3am as volumes shift.
 - Skip reclassification that day
 - Telegram alert: CoinGecko failed — using last recorded caps
 - Retry next 3am automatically
+
+### Averaging Formula (LOCKED)
+- Both sources: recorded_cap = (CoinGecko + CMC) / 2
+- One source only: use available source
+- Both failed: use last recorded cap
+- Disagreement > 100%: use LOWER value (conservative)
 
 ### New Coin Tiered Confidence
 | History | Approach | Badge |
@@ -2626,7 +2666,7 @@ True set and forget — no monthly invoices.
 |-------|--------|---------|
 | 1 | Email + Phone KYC | Duplicate identities |
 | 2 | Exchange API UID fingerprint | Same exchange account |
-| 3 | Stripe payment method | Same card/bank |
+| 3 | Reserve wallet minimum $10 | Prevents throwaway accounts · Phase 7: NOWPayments KYC |
 | 4 | IP + Device fingerprint | Same device (admin review) |
 | 5 | Cross-exchange blacklist | All exchanges blocked |
 
@@ -3256,24 +3296,38 @@ Note: Trailing % field hidden when Limit DCA mode ON
 - DB backup → /backups/averion_YYYY-MM-DD.db
 - Keep last 7 days only
 
-#### 03:30 — Data & Classification
-- CoinGecko scan → market cap fetch
-- Cap protection formula applied
-- Classify/reclassify all coins
-- Parameter recalculation (ATR + median bounce)
-- Volume-weighted category update
+#### 03:30 — CoinGecko Fetch
+- Fetch all coins market caps (250 per call · dynamic)
+- Store raw caps in coin_history (source: coingecko)
+- No classification yet · raw data only
 
-#### 04:00 — Reporting
-- Balance snapshot → balance_history table
-- metrics/latest.json → pushed to GitHub
-- Excel report generation (4 sheets)
-- Telegram daily report → Reports channel
+#### 04:00 — CoinMarketCap Fetch
+- Fetch all coins market caps from CMC API
+- Store raw caps in coin_history (source: cmc)
+- No classification yet · raw data only
 
-#### 04:30 — Sunday Only
-- Log cleanup (files >30 days old)
-- Disk check (alert if >70%)
+#### 04:30 — Classification
+- Average: recorded_cap = (CoinGecko + CMC) / 2
+- If only one source: use that source
+- If both fail: use last recorded · Telegram alert
+- Apply cap protection formula
+- Classify all coins into categories
+- Reclassify changed coins · Telegram alert per change
+
+#### 05:00 — Reporting
+- Generate Excel report (9 sheets · fresh classification)
+- Update metrics/latest.json → push to GitHub
+- Send daily Telegram to admin (health + stats)
+- Send daily Telegram to each customer (their summary)
+- Save report to /reports/ folder
+
+#### 05:30 — Sunday Only
 - DB VACUUM + ANALYZE
-- Weekly Telegram report
+- Delete logs older than 30 days
+- Delete Excel reports older than 30 days
+- Disk space check → alert if >70%
+- Weekly Telegram summary (profit + fees + rankings)
+- Check CCXT version → safe upgrade if available
 
 ### Monthly 1st 5am
 - Full system report
@@ -3297,13 +3351,15 @@ All alerts → Telegram Alerts channel immediately
 
 ---
 
-## 3 Telegram Channels (LOCKED)
+## Telegram Setup (LOCKED)
 
-| Channel | Content | Volume Setting |
-|---------|---------|---------------|
-| Trades | Every buy · sell · DCA · TP | MUTE — check weekly |
-| Alerts | Server down · errors · crashes · ST flag · floor hit | MAX VOLUME — NEVER MUTE |
-| Reports | Daily · weekly · monthly reports | Normal — morning coffee |
+- ONE direct chat with @AverionBot per customer
+- Message types labeled clearly in one chat:
+ - 🟢 TRADE: every buy · sell · DCA · TP
+ - 🔴 ALERT: reserve low · ST flag · errors · urgent
+ - 📊 REPORT: daily · weekly · monthly summaries
+- Customer toggles each message type ON/OFF independently
+- Admin alerts go to admin Telegram separately
 
 ### Config in .env
 ---
@@ -4475,6 +4531,11 @@ CREATE TABLE exchanges (
     pause_type VARCHAR(20),
     reconnect_attempts INTEGER DEFAULT 0,
     last_connected_at TIMESTAMP,
+    passphrase_enc TEXT,
+    ip_whitelist_confirmed BOOLEAN DEFAULT FALSE,
+    key_expires_at TIMESTAMP,
+    last_alert_sent_at TIMESTAMP,
+    alert_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -4564,6 +4625,8 @@ CREATE TABLE positions (
     short_buyback_order_id VARCHAR(100),
     short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
     pending_buyback BOOLEAN DEFAULT FALSE
+    profit_coin VARCHAR(10) DEFAULT 'USDT',
+    base_coin VARCHAR(10) DEFAULT 'USDT',
 );
 
 -- ═══════════════════════════════
@@ -4899,18 +4962,14 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_level_reached INTEGER 
 ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS standby_reserved DECIMAL(20,8) DEFAULT 0;
 
 -- API key expiry tracking
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS key_expires_at TIMESTAMP;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS alert_count INTEGER DEFAULT 0;
+-- key_expires_at already in base CREATE TABLE
+-- last_alert_sent_at already in base CREATE TABLE
+-- alert_count already in base CREATE TABLE
 
 -- Bot slot tracking per user
-ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS trade_alerts_on BOOLEAN DEFAULT TRUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS report_alerts_on BOOLEAN DEFAULT TRUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_alerts_on BOOLEAN DEFAULT TRUE;
+-- Telegram fields live in user_telegram table (single source of truth)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_slots_total INTEGER DEFAULT 5;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS trades_used_this_month INTEGER DEFAULT 0;
+-- trades_used_this_month lives in user_subscriptions only
 ALTER TABLE users ADD COLUMN IF NOT EXISTS next_billing_date DATE;
 
 SELECT 'Schema updates applied successfully!' AS result;
@@ -4931,8 +4990,8 @@ SELECT 'Base coin and position detail columns added!' AS result;
 -- ═══════════════════════════════
 
 -- Exchange passphrase (KuCoin · OKX · Bitget)
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS passphrase_enc TEXT;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS ip_whitelist_confirmed BOOLEAN DEFAULT FALSE;
+-- passphrase_enc already in base CREATE TABLE
+-- ip_whitelist_confirmed already in base CREATE TABLE
 
 -- Research bot market regime tracking
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regimes_tested JSONB DEFAULT '[]';
@@ -5083,6 +5142,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP;
 
 SELECT 'Security tables added!' AS result;
+-- ═══════════════════════════════
+-- EMAIL VERIFICATION COLUMNS
+-- ═══════════════════════════════
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
+
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
@@ -5812,7 +5877,13 @@ def main():
         'reserve_wallets', 'reserve_deposits', 'fee_debt',
         'balance_history', 'coin_history', 'ohlcv_hourly',
         'owner_balance', 'referrals', 'wallet_bot_assignments',
-        'wallet_transactions'
+        'wallet_transactions', 'user_telegram', 'attention_log',
+        'notification_queue', 'positions_archive',
+        'strategy_versions', 'research_scores',
+        'user_subscriptions', 'subscription_billing',
+        'exchange_coin_limits', 'short_buyback_orders',
+        'trade_bundles', 'pending_limit_orders',
+        'security_audit_log'
     ]
 
     print("\n📋 Verifying tables:")
@@ -5975,25 +6046,57 @@ def reconcile_orders():
 
                     if not cur.fetchone():
                         # Order on exchange but not in DB
+                        # Look up position to get user_id and bot_id
+                        symbol = order.get('symbol', '')
+                        coin = symbol.split('/')[0] if '/' in symbol else symbol
+                        order_time = datetime.utcfromtimestamp(
+                            order.get('timestamp', 0) / 1000
+                        ) if order.get('timestamp') else datetime.utcnow()
+
+                        cur.execute("""
+                            SELECT id, user_id, bot_id
+                            FROM positions
+                            WHERE exchange_id = %s
+                            AND coin = %s
+                            AND status = 'open'
+                            ORDER BY ABS(EXTRACT(EPOCH FROM
+                                (opened_at - %s::timestamp)))
+                            LIMIT 1
+                        """, (exc_id, coin, order_time))
+                        pos = cur.fetchone()
+
+                        if not pos:
+                            print(f"⚠️ Skipping orphan order {order_id} · no matching position found")
+                            continue
+
+                        position_id = pos[0]
+                        user_id = pos[1]
+                        bot_id = pos[2]
+
                         print(f"⚠️ Missing order found: {order_id} on {exc_name}")
                         cur.execute("""
                             INSERT INTO trades (
+                                position_id, bot_id, user_id,
                                 exchange_id, coin, side, price,
                                 quantity, usdt_amount, order_type,
-                                exchange_order_id, timestamp, is_paper
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE)
+                                exchange_order_id, is_paper,
+                                timestamp
+                            ) VALUES (
+                                %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, FALSE, %s
+                            )
                         """, (
-                            exc_id,
-                            order.get('symbol', '').replace('/USDT', ''),
+                            position_id, bot_id, user_id,
+                            exc_id, coin,
                             order.get('side'),
-                            order.get('price') or 0,
+                            order.get('average') or order.get('price') or 0,
                             order.get('filled') or 0,
                             order.get('cost') or 0,
                             order.get('type'),
                             order_id,
-                            datetime.utcnow()
+                            order_time
                         ))
-                        print(f"✅ Reconciled: {order_id}")
+                        print(f"✅ Reconciled: {order_id} → position #{position_id}")
 
                 conn.commit()
                 print(f"✅ Reconciliation complete for {exc_name}")
@@ -6147,11 +6250,13 @@ def get_user_by_id(user_id):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, email, is_admin, is_zero_fee,
-                   is_suspended, telegram_chat_id,
-                   telegram_verified, bot_slots_total,
-                   trades_used_this_month, next_billing_date
-            FROM users WHERE id = %s
+            SELECT u.id, u.email, u.is_admin, u.is_zero_fee,
+                   u.is_suspended, t.chat_id,
+                   t.verified, u.bot_slots_total,
+                   u.trades_used_this_month, u.next_billing_date
+            FROM users u
+            LEFT JOIN user_telegram t ON t.user_id = u.id
+            WHERE u.id = %s
         """, (user_id,))
         return cur.fetchone()
 
@@ -6271,6 +6376,7 @@ def get_active_bots():
             WHERE b.status = 'active'
             AND b.trading_on = TRUE
             AND e.paused_at IS NULL
+            AND (b.expires_at IS NULL OR b.expires_at > NOW())
             ORDER BY b.id ASC
         """)
         return cur.fetchall()
@@ -6683,6 +6789,33 @@ def record_bot_event(bot_id, user_id, event_type,
             DELETE FROM bot_events
             WHERE recorded_at < NOW() - INTERVAL '30 days'
         """)
+
+
+def get_user_trade_usage(user_id):
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT trades_used_this_month,
+                  free_trade_bundle + paid_trade_bundle as total_bundle
+           FROM user_subscriptions
+           WHERE user_id = %s
+       """, (user_id,))
+       row = cur.fetchone()
+       if not row:
+           return {'used': 0, 'total': 100}
+       return {
+           'used': row[0] or 0,
+           'total': row[1] or 100
+       }
+
+def increment_trade_usage(user_id):
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           UPDATE user_subscriptions
+           SET trades_used_this_month = trades_used_this_month + 1
+           WHERE user_id = %s
+       """, (user_id,))
 
 if __name__ == '__main__':
     init_pool()
@@ -7099,7 +7232,8 @@ def verify_code(user_id, code):
             UPDATE users SET
                 last_verified_at = NOW(),
                 verification_code = NULL,
-                verification_expires_at = NULL
+                verification_expires_at = NULL,
+                email_verified = TRUE
             WHERE id = %s
         """, (user_id,))
         return True
@@ -7211,6 +7345,21 @@ def clear_login_fails(ip: str):
 @app.get('/dashboard')
 def dashboard():
     return FileResponse('dashboard.html')
+
+@app.get('/auth/email-verified')
+def check_email_verified(payload: dict = Depends(verify_token)):
+    user = db.get_user_by_id(payload['user_id'])
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+    # user[3] = is_admin · check email_verified separately
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT email_verified FROM users WHERE id = %s
+        """, (payload['user_id'],))
+        row = cur.fetchone()
+        verified = row[0] if row else False
+    return {'email_verified': verified}
 
 @app.get(f'/{ADMIN_PATH}')
 def admin_dashboard():
