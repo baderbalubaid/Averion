@@ -596,6 +596,33 @@ def record_bot_event(bot_id, user_id, event_type,
             WHERE recorded_at < NOW() - INTERVAL '30 days'
         """)
 
+
+def get_user_trade_usage(user_id):
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT trades_used_this_month,
+                  free_trade_bundle + paid_trade_bundle as total_bundle
+           FROM user_subscriptions
+           WHERE user_id = %s
+       """, (user_id,))
+       row = cur.fetchone()
+       if not row:
+           return {'used': 0, 'total': 100}
+       return {
+           'used': row[0] or 0,
+           'total': row[1] or 100
+       }
+
+def increment_trade_usage(user_id):
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           UPDATE user_subscriptions
+           SET trades_used_this_month = trades_used_this_month + 1
+           WHERE user_id = %s
+       """, (user_id,))
+
 if __name__ == '__main__':
     init_pool()
     print('✅ Database module ready')
