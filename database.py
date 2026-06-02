@@ -1009,7 +1009,8 @@ def verify_code(user_id, code):
             UPDATE users SET
                 last_verified_at = NOW(),
                 verification_code = NULL,
-                verification_expires_at = NULL
+                verification_expires_at = NULL,
+                email_verified = TRUE
             WHERE id = %s
         """, (user_id,))
         return True

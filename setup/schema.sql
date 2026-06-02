@@ -649,3 +649,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP;
 
 SELECT 'Security tables added!' AS result;
+-- ═══════════════════════════════
+-- EMAIL VERIFICATION COLUMNS
+-- ═══════════════════════════════
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
+
