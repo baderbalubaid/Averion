@@ -1840,6 +1840,97 @@ Confluence setting:
 ### DB Tables Needed
 - bot_mirrors: bot_id · source_bot_id · admin_id · active
 - exchange_mirrors: exchange_id · source_user_id · admin_id · active
+
+## Dust Handling — Per Coin Only (LOCKED)
+
+- Dust evaluated and sold PER INDIVIDUAL ASSET only
+- Cannot combine dust from different coins into one order
+- Example: 0.00003 BTC dust + 0.4 RVN dust = TWO separate checks
+- Sunday cron checks each coin's dust value independently:
+ · If RVN dust value >= exchange minimum → market sell RVN
+ · If BTC dust value >= exchange minimum → market sell BTC
+ · If still too small → keep waiting · check next Sunday
+- No cross-asset bundling ever · exchanges don't support it
+- Each coin sold back to its quote currency (USDT) separately
+
+---
+
+## E4 Time-Cycle Window — Extended (LOCKED)
+
+- Original E4 fired Sunday UTC 22:00-23:00 only
+- Problem: max 26 opportunities in 6 months · never reaches 100 trades
+- Fix: E4 now fires on THREE weekly windows:
+ · Sunday UTC 22:00-23:00
+ · Monday UTC 00:00-02:00
+ · Wednesday UTC 12:00-14:00
+- This gives ~78 opportunities in 6 months · enough for evaluation
+- All other E4 parameters unchanged
+- Still tests time-cycle hypothesis · just more data points
+
+---
+
+## Research Replacement Bot Scoring (LOCKED)
+
+- Monthly elimination: replace zero-trade bots with looser variation
+- Replacement bots are EXCLUDED from promotion scoring
+- Replacement bot must complete a FULL 6-month cycle before eligible
+- Tagged in research_scores: replacement_bot = TRUE
+- Promotion only considers bots that ran full period from Day 1
+- Reason: prevents artificially high scores from partial periods
+- Replacement bots still tracked · data kept · just not promoted
+
+---
+
+## PENDING_BUYBACK Deadlock Protection (LOCKED)
+
+Problem:
+- Server crashes after Short DCA sell fires
+- But before limit buy order placed on exchange
+- PENDING_BUYBACK flag stuck TRUE in DB forever
+- ALL Long DCA bots on same exchange frozen indefinitely
+
+Solution — Two layer protection:
+
+Layer 1: 60 second timeout
+- PENDING_BUYBACK flag auto-clears after 60 seconds
+- Next bot loop cycle checks: if flag > 60s old → clear it
+- Long DCA resumes automatically
+
+Layer 2: Startup reconciliation
+- On every PM2 restart · check all PENDING_BUYBACK flags
+- For each flag: verify limit order exists on exchange
+- If limit order confirmed → keep flag until filled
+- If no limit order found → clear flag · place new limit order
+- If USDT insufficient → alert admin · clear flag
+
+DB column needed:
+- positions.pending_buyback_since TIMESTAMP
+- Set when flag = TRUE · cleared when flag = FALSE
+- Used to detect stale flags older than 60 seconds
+
+---
+
+## Client Order ID Convention (LOCKED)
+
+All orders submitted via CCXT must use clientOrderId:
+
+Format: avr_{bot_id}_{position_id}_{dca_level}_{timestamp}
+
+Example: avr_42_187_3_1748293847
+
+Benefits:
+- Startup reconciliation can parse owner from exchange order
+- No guessing which bot or position owns an unconfirmed order
+- Works across all 7 exchanges that support clientOrderId
+- Exchanges that don't support it: fall back to symbol+timestamp match
+
+Implementation:
+- CCXT params: {'clientOrderId': f'avr_{bot_id}_{position_id}_{level}_{int(time.time())}'}
+- Stored in trades.client_order_id column
+- Reconciliation parses this string to map back to position
+
+DB column needed:
+- trades.client_order_id VARCHAR(100)
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -4985,6 +5076,7 @@ CREATE TABLE positions (
     short_buyback_order_id VARCHAR(100),
     short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
     pending_buyback BOOLEAN DEFAULT FALSE,
+    pending_buyback_since TIMESTAMP,
     profit_coin VARCHAR(10) DEFAULT 'USDT',
     base_coin VARCHAR(10) DEFAULT 'USDT'
 );
@@ -5008,6 +5100,7 @@ CREATE TABLE trades (
     reason VARCHAR(50),
     order_type VARCHAR(20) DEFAULT 'market',
     exchange_order_id VARCHAR(100),
+    client_order_id VARCHAR(100),
     is_paper BOOLEAN DEFAULT TRUE,
     dca_level INTEGER DEFAULT 0,
     timestamp TIMESTAMP DEFAULT NOW()
