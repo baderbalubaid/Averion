@@ -60,9 +60,10 @@ def get_user_by_id(user_id):
             SELECT u.id, u.email, u.is_admin, u.is_zero_fee,
                    u.is_suspended, t.chat_id,
                    t.verified, u.bot_slots_total,
-                   u.trades_used_this_month, u.next_billing_date
+                   COALESCE(s.trades_used_this_month, 0), u.next_billing_date
             FROM users u
             LEFT JOIN user_telegram t ON t.user_id = u.id
+            LEFT JOIN user_subscriptions s ON s.user_id = u.id
             WHERE u.id = %s
         """, (user_id,))
         return cur.fetchone()

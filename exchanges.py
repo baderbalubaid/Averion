@@ -145,7 +145,7 @@ def fetch_ticker(exchange_obj, symbol):
 # ═══════════════════════════════
 # ORDER EXECUTION
 # ═══════════════════════════════
-def market_buy(exchange_obj, symbol, usdt_amount):
+def market_buy(exchange_obj, symbol, usdt_amount, bot_id=None, position_id=None, dca_level=0):
    try:
        order = exchange_obj.create_market_buy_order(
            symbol, None,

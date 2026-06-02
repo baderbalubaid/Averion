@@ -2033,3 +2033,64 @@ Exchange minimum required permissions:
 - Layer 3: Stolen key = only works from our IP
 - All 3 together = customer API keys effectively protected
 - Even insider threat = limited to 30-day window
+
+## Performance Fee Timing (LOCKED)
+
+Fee deducted IMMEDIATELY on every profitable trade close.
+No monthly netting. No holdback. No escrow.
+
+### Rule
+- Position closes at profit → fee = profit × 20%
+- Fee deducted from reserve immediately
+- If reserve insufficient → fee recorded as debt
+- Loss trades → $0 fee · no discussion · no exception
+
+### Why immediate
+- Simpler to implement and audit
+- No complex monthly reconciliation
+- Customer always knows exactly what they owe
+- Profitable trade = we earned it · take it now
+
+### Examples
+- Win $50 → fee $10 → deducted immediately
+- Win $1 → fee $0.20 → deducted immediately
+- Lose $100 → fee $0 → nothing touched
+- Win $200 then lose $1000 same month → fee = $40 (on the $200 win only)
+
+## Research Account Separation (LOCKED)
+
+### Two Admin Accounts
+1. Admin account (Bader personal)
+   - Login: admin@averionbot.com
+   - Personal bots · no research bots
+   - Normal admin dashboard access
+   - Balance separate from research
+
+2. Research account (automated)
+   - Login: research@averionbot.com
+   - ALL 144 research bots run here
+   - Visible in admin dashboard Tab 4 only
+   - No personal trading ever
+   - is_research = TRUE on all positions/trades
+
+### Why Separate
+- Research data never mixes with personal data
+- Reports are clean and independent
+- Research balance = virtual only
+- Personal balance = real money tracked separately
+- Admin can view research from dashboard but never confused
+
+### Setup
+- Created automatically in init_db.py on Day 1
+- Password set in .env: RESEARCH_ACCOUNT_PASSWORD
+- launch_research_bots.py uses research account
+
+## Manual Bot Queue Behavior (LOCKED)
+
+- Manual bot shares queue with Smart DCA bots (same wallet)
+- Manual positions compete equally by Loss% / USDT score
+- Manual DCA option available per position
+- User controls manual DCA timing directly
+- No special priority for manual over smart
+- Reason: shared wallet = shared queue = fair competition
+- User can always use separate wallet to isolate manual bot

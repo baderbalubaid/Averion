@@ -368,11 +368,6 @@ if __name__ == '__main__':
     else:
         print('⚠️ No bot token configured')
 
-def admin_bot_started(paper_mode):
-    mode = "📄 PAPER MODE" if paper_mode else "💰 LIVE MODE"
-    msg = f"🟢 Averion Bot Started\n{mode}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
-    send_admin(msg)
-
 def admin_bot_stopped(reason):
     msg = f"🔴 Averion Bot Stopped\nReason: {reason}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
     send_admin(msg)

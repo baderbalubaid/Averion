@@ -491,6 +491,7 @@ SELECT 'Schema updates applied successfully!' AS result;
 
 -- Base coin support
 ALTER TABLE bots ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS bot_params JSONB DEFAULT '{}';
 
 -- Position detail enhancements
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS dca_level_price DECIMAL(20,8);
