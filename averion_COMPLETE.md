@@ -324,7 +324,7 @@ Example markers:
 - Paper stays paper FOREVER — live stays live — NO conversion ever
 - Short DCA = spot only — user must already hold the coin — min exchange order size required
 - Profit coin = user chooses USDT or base coin — works for both Long and Short
-- All slippage handling uses market orders only — no limit orders
+- All slippage handling uses market orders by default · limit orders available per bot setting
 
 ## Slippage Handling
 - Check order book depth before every DCA
@@ -1703,9 +1703,10 @@ Phase 4-6: not needed
 - Queue system naturally limits requests
 - Max 100 trades · one DCA per 60s
 - Login already brute force protected ✅
-Phase 7 public launch: add FastAPI middleware
+Before Phase 6 public launch: add FastAPI middleware
 - 60 requests/minute per token
-- Easy to add · leave for Phase 6 preparation
+- Easy to add · implement in Phase 5 preparation
+- Also before Phase 6: Fernet key rotation · session token hashing · withdrawal validation
 
 ## Email Verification at Registration (LOCKED)
 
@@ -2637,7 +2638,7 @@ Most common: Trading OFF + DCA ON (ride only mode)
 # Smart DCA Engine
 
 > The brain of Averion.
-> Auto-classification · 10 entry methods · research system · equations.
+> Auto-classification · 14 entry methods · research system · equations.
 
 ---
 
@@ -4581,7 +4582,7 @@ Tab 5 — Controls
 
 ---
 
-## Phase 4 — Live Trading ⏳ NEXT
+## Phase 4 — Hetzner Setup + Paper Trading ⏳ NEXT
 **Goal:** First real order on Hetzner server
 
 ### Replit remaining (before Hetzner):
@@ -4607,7 +4608,7 @@ Tab 5 — Controls
 
 ### Days 3-16:
 - Paper trading 24/7
-- All 10 entry methods collecting data
+- All 14 entry methods collecting data
 - Excel reports generated daily
 - Monitor health checks
 
@@ -4621,7 +4622,7 @@ Tab 5 — Controls
 **Goal:** Full adaptive platform
 
 - Smart DCA queue (Loss% ÷ USDT scoring)
-- 10 entry methods running simultaneously
+- 14 entry methods running simultaneously
 - Research system + MoM + decision history
 - Auto-classification engine
 - Cap protection system
@@ -4915,7 +4916,7 @@ Put money in · forget it · collect profits.
 | No monthly fee | Users pay only when they profit |
 | Set and forget | Bot never stops · detects funds in 60s |
 | Survivability | Never blows up · survives crashes |
-| Self-improving | 10 entry methods compete · best wins |
+| Self-improving | 14 entry methods compete · best wins |
 | Fair pricing | 20% of profits only · loss months = $0 |
 
 ---
@@ -4945,7 +4946,7 @@ Put money in · forget it · collect profits.
 - Unlimited DCA levels — never stuck
 
 ### Intelligence
-- 10 entry methods competing simultaneously
+- 14 entry methods competing simultaneously
 - Auto-classification into 5 market cap categories
 - Cap protection against fake pumps
 - Volume-weighted parameters per category
@@ -4986,7 +4987,7 @@ Put money in · forget it · collect profits.
 ## Long-Term Vision
 
 Platform gets smarter every year.
-10 entry methods compete → worst deleted → best survives.
+14 entry methods compete → worst deleted → best survives.
 Intelligence compounds over time automatically.
 Eventually becomes a marketplace where signal providers
 list their strategies for subscribers to use.
@@ -5409,6 +5410,7 @@ CREATE TABLE ohlcv_hourly (
     close DECIMAL(20,8),
     volume DECIMAL(30,8),
     atr_14 DECIMAL(20,8),
+    volatility_30d DECIMAL(20,8),
     UNIQUE(coin, exchange, timestamp)
 );
 
@@ -6801,6 +6803,135 @@ def main():
 
 if __name__ == '__main__':
     main()
+import psycopg2
+import json
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432),
+    'dbname': os.getenv('DB_NAME', 'averion'),
+    'user': os.getenv('DB_USER', 'averion'),
+    'password': os.getenv('DB_PASSWORD')
+}
+
+def load_config():
+    with open('setup/research_bots.json') as f:
+        return json.load(f)
+
+def get_admin_user(cur):
+    cur.execute("SELECT id FROM users WHERE is_admin = TRUE LIMIT 1")
+    row = cur.fetchone()
+    if not row:
+        raise Exception("No admin user found. Create admin user first.")
+    return row[0]
+
+def get_exchange_id(cur, user_id):
+    cur.execute("""
+        SELECT id FROM exchanges 
+        WHERE user_id = %s AND active = TRUE 
+        LIMIT 1
+    """, (user_id,))
+    row = cur.fetchone()
+    if not row:
+        raise Exception("No active exchange found. Add exchange first.")
+    return row[0]
+
+def bot_exists(cur, bot_id):
+    cur.execute("SELECT id FROM bots WHERE name LIKE %s", (f'%{bot_id}%',))
+    return cur.fetchone() is not None
+
+def create_benchmark_bot(cur, bench, user_id, exchange_id):
+    if bot_exists(cur, bench['id']):
+        print(f"⏭️  Skipping {bench['id']} — already exists")
+        return
+
+    cur.execute("""
+        INSERT INTO bots (
+            user_id, exchange_id, name, method,
+            is_paper, status, max_trades, created_at
+        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10, %s)
+    """, (
+        user_id, exchange_id,
+        bench['name'],
+        bench['method'],
+        datetime.utcnow()
+    ))
+    print(f"✅ Created benchmark: {bench['name']}")
+
+def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
+    bot_id = bot['id']
+    bot_name = f"{method_id} — {method_name} — {bot_id}"
+
+    if bot_exists(cur, bot_id):
+        print(f"⏭️  Skipping {bot_id} — already exists")
+        return
+
+    params = json.dumps(bot)
+
+    cur.execute("""
+        INSERT INTO bots (
+            user_id, exchange_id, name, method,
+            is_paper, status, max_trades,
+            dca_percent, spacing_multiplier,
+            size_multiplier, take_profit_percent,
+            created_at
+        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10,
+                  7.0, 1.4, 1.5, 5.0, %s)
+    """, (
+        user_id, exchange_id,
+        bot_name, method_id.lower(),
+        datetime.utcnow()
+    ))
+    print(f"✅ Created: {bot_name}")
+
+def main():
+    print(f"🚀 Launching research bots — {datetime.utcnow()}")
+    config = load_config()
+
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+
+    user_id = get_admin_user(cur)
+    exchange_id = get_exchange_id(cur, user_id)
+
+    print(f"👤 Admin user: {user_id}")
+    print(f"📊 Exchange: {exchange_id}")
+    print()
+
+    # Create benchmark bots
+    print("--- Creating 5 Benchmark Bots ---")
+    for bench in config['benchmarks']:
+        create_benchmark_bot(cur, bench, user_id, exchange_id)
+
+    # Create method bots
+    total = 0
+    for method_id, method_data in config['methods'].items():
+        print(f"\n--- Creating {method_id} bots ({method_data['name']}) ---")
+        for bot in method_data['bots']:
+            create_method_bot(
+                cur, method_id,
+                method_data['name'],
+                bot, user_id, exchange_id
+            )
+            total += 1
+
+    conn.commit()
+    conn.close()
+
+    print(f"\n🎉 Research bots launched!")
+    print(f"✅ Benchmarks: 5")
+    print(f"✅ Method bots: {total}")
+    print(f"✅ Total: {total + 5}")
+    print(f"\nNext: Monitor dashboard → scale trades gradually")
+    print(f"Start: 10 trades/bot → 20 → 50 → 100 → 200")
+
+if __name__ == '__main__':
+    main()
 {
  "research_period_days": 180,
  "scaling": {
@@ -7448,6 +7579,16 @@ def get_user_bots(user_id):
         """, (user_id,))
         return cur.fetchall()
 
+# Column order reference for bot_loop.py:
+# 0=id 1=user_id 2=exchange_id 3=name 4=method 5=direction
+# 6=trading_on 7=dca_on 8=is_paper 9=base_coin 10=dca_percent
+# 11=spacing_mult 12=size_mult 13=take_profit 14=trailing
+# 15=base_order 16=trades_per_bot 17=trades_per_coin
+# 18=gate_dca_on 19=gate_timer_on 20=gate_timer_hours
+# 21=order_entry_type 22=order_dca_type
+# 23=checkpoint_level 24=checkpoint_on
+# 25=exchange 26=api_key_enc 27=secret_enc
+# 28=passphrase_enc 29=paused_at
 def get_active_bots():
     with get_db() as conn:
         cur = conn.cursor()
@@ -8331,6 +8472,45 @@ def verify_code(user_id, code):
             WHERE id = %s
         """, (user_id,))
         return True
+
+def write_market_regime(date, regime, btc_24h, btc_7d, volatility):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO market_regimes
+                (date, regime, btc_24h_change, btc_7d_change, market_volatility)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (date) DO UPDATE SET
+                regime = EXCLUDED.regime,
+                btc_24h_change = EXCLUDED.btc_24h_change,
+                btc_7d_change = EXCLUDED.btc_7d_change,
+                market_volatility = EXCLUDED.market_volatility
+        """, (date, regime, btc_24h, btc_7d, volatility))
+        conn.commit()
+
+def get_market_regime(date=None):
+    with get_db() as conn:
+        cur = conn.cursor()
+        if date:
+            cur.execute("""
+                SELECT date, regime, btc_7d_change, market_volatility
+                FROM market_regimes WHERE date = %s
+            """, (date,))
+        else:
+            cur.execute("""
+                SELECT date, regime, btc_7d_change, market_volatility
+                FROM market_regimes ORDER BY date DESC LIMIT 1
+            """)
+        return cur.fetchone()
+
+def get_regime_history(days=180):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT date, regime FROM market_regimes
+            ORDER BY date DESC LIMIT %s
+        """, (days,))
+        return cur.fetchall()
 import os
 import hashlib
 import secrets
@@ -9411,8 +9591,7 @@ def calculate_score(position, current_price, bot):
     avg_cost = float(position[7] or 0)
     total_invested = float(position[9] or 0)
     dca_count = position[10]
-    dca_percent = float(bot[10] or 7.0)
-    spacing_mult = float(bot[11] or 1.4)
+
     size_mult = float(bot[12] or 1.5)
     base_order = float(bot[13] or 1.0)
 
@@ -9601,12 +9780,16 @@ def try_open_position(bot, exchange_obj, tickers, r):
     user_id = bot[1]
     exchange_id = bot[2]
     coin_category = db.get_all_coin_categories()
-    base_order = float(bot[13] or 1.0)
     method = bot[4]
     direction = bot[5]
-    base_coin = bot[10]
-    trades_per_bot = bot[11] or 1
-    trades_per_coin = bot[12] or 1
+    base_coin = bot[9]
+
+    size_mult = float(bot[12] or 1.0)
+    take_profit = float(bot[13] or 3.0)
+    trailing = float(bot[14] or 1.0)
+    base_order = float(bot[15] or 10.0)
+    trades_per_bot = bot[16] or 1
+    trades_per_coin = bot[17] or 1
 
     # Check max trades per bot
     open_positions = db.get_open_positions(bot_id=bot_id)
