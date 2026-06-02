@@ -175,7 +175,7 @@
 6. Save any new trades to DB
 7. Sleep until next cycle
 
-## Virtual Wallet Tables (Phase 5)
+## Virtual Wallet Tables (Day 1 — LOCKED)
 
 ### virtual_wallets
 - id · user_id · exchange_id
@@ -209,7 +209,7 @@
 - wallet_id: links position to virtual wallet
 - standby_amount: remaining USDT in standby (0 if none)
 - standby_price: target price to trigger standby buy
-- standby_timeout_at: when standby expires
+- standby_created_at: when standby was created (audit only · no timeout ever)
 - dust_amount: remaining coin balance below minimum order
 - dust_currency: which coin is dust
 - is_manual: boolean — manual bot position or smart bot
@@ -234,8 +234,8 @@
 - standby_amount (USDT remaining to buy)
 - target_price (DCA level price to trigger)
 - dca_level (which level this standby is for)
-- timeout_at (when standby expires)
-- created_at · triggered_at · expired_at
+- standby_created_at (when standby was created · audit only)
+- created_at · triggered_at · standby_cancelled_at
 - status: active · triggered · expired · cancelled
 
 ### Redis Key Structure

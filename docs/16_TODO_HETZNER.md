@@ -35,7 +35,7 @@ All code written · pushed to GitHub · ready to deploy:
 | register.html | ✅ Ready | Sign up · password validation |
 | dashboard.html | ✅ Ready | Customer trading dashboard |
 | admin.html | ✅ Ready | Admin control panel |
-| schema.sql | ✅ Ready | 651 lines · 28 tables |
+| schema.sql | ✅ Ready | 651 lines · 36 tables |
 | hetzner_day1.sh | ✅ Ready | Security hardened setup script |
 | hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
 | DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
@@ -159,7 +159,7 @@ Manual steps after script:
 
 Three layers:
 - Redis: live prices in RAM · 60s refresh
-- PostgreSQL: all data · 28 tables · proper indexes
+- PostgreSQL: all data · 36 tables · proper indexes
 - Archive: positions older than 1 year
 
 ---

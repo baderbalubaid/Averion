@@ -82,7 +82,7 @@
 
 ## Slippage Handling (LOCKED)
 
-All orders are market orders. Before every DCA:
+Market order mode: Before every DCA (limit orders handled separately):
 
 1. Check order book depth at target price
 2. If available >= $1 minimum → buy at target price ✅

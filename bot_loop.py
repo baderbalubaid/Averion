@@ -100,9 +100,10 @@ def calculate_score(position, current_price, bot):
     avg_cost = float(position[7] or 0)
     total_invested = float(position[9] or 0)
     dca_count = position[10]
-
-    size_mult = float(bot[12] or 1.5)
-    base_order = float(bot[13] or 1.0)
+    dca_percent = float(bot[10] or 7.0)
+    spacing_mult = float(bot[11] or 1.4)
+    size_mult = float(bot[12] or 1.0)
+    take_profit = float(bot[13] or 3.0)
 
     if avg_cost == 0 or current_price == 0:
         return 0
@@ -253,8 +254,8 @@ def check_tp(position, current_price, bot):
     quantity = float(position[8] or 0)
     tp_armed = position[12]
     peak_price = float(position[13] or 0)
-    tp_percent = float(bot[14] or 5.0)
-    trailing_percent = float(bot[15] or 2.0)
+    tp_percent = float(bot[13] or 5.0)
+    trailing_percent = float(bot[14] or 2.0)
 
     if avg_cost == 0:
         return False
@@ -365,9 +366,9 @@ def try_open_position(bot, exchange_obj, tickers, r):
             break
 
 def check_gate_conditions(bot, coin, open_positions):
-    gate_dca = bot[16]
-    gate_timer = bot[17]
-    gate_hours = bot[18] or 5
+    gate_dca = bot[18]
+    gate_timer = bot[19]
+    gate_hours = bot[20] or 5
 
     if not gate_dca and not gate_timer:
         return True  # No gate · always tradeable
