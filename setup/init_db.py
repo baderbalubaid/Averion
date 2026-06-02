@@ -73,8 +73,9 @@ def main():
         'user_subscriptions', 'subscription_billing',
         'exchange_coin_limits', 'short_buyback_orders',
         'trade_bundles', 'pending_limit_orders',
-        'security_audit_log',
-        'market_regimes'
+        'security_audit_log', 'market_regimes',
+        'performance_timing', 'system_health',
+        'bot_events', 'bot_mirrors', 'exchange_mirrors'
     ]
 
     print("\n📋 Verifying tables:")
