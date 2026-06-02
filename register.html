@@ -351,5 +351,77 @@
     }
 </script>
 
+
+<!-- Resend Verification Code -->
+<script>
+let resendTimer = null;
+let secondsLeft = 120;
+
+function startResendTimer() {
+    const btn = document.getElementById('resendBtn');
+    const timerEl = document.getElementById('resendTimer');
+    if (!btn || !timerEl) return;
+
+    btn.style.display = 'none';
+    timerEl.style.display = 'block';
+    secondsLeft = 120;
+
+    resendTimer = setInterval(() => {
+        secondsLeft--;
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        timerEl.textContent = `Resend available in ${mins}:${secs.toString().padStart(2,'0')}`;
+
+        if (secondsLeft <= 0) {
+            clearInterval(resendTimer);
+            timerEl.style.display = 'none';
+            btn.style.display = 'inline-block';
+        }
+    }, 1000);
+}
+
+async function resendCode() {
+    const btn = document.getElementById('resendBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/auth/resend-verification', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.status === 'sent') {
+            showMessage('✅ New code sent! Check your email.', 'success');
+            startResendTimer();
+        } else if (data.status === 'cooldown') {
+            showMessage(`⏳ Please wait ${data.seconds_remaining} seconds`, 'warning');
+            secondsLeft = data.seconds_remaining;
+            startResendTimer();
+        } else if (data.status === 'already_verified') {
+            window.location.href = '/dashboard';
+        } else {
+            showMessage('❌ Too many attempts · try again in 1 hour', 'error');
+        }
+    } catch(e) {
+        showMessage('❌ Failed to resend · try again', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Resend Code';
+    }
+}
+
+// Start timer on page load if on verify step
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('resendBtn')) {
+        startResendTimer();
+    }
+});
+</script>
+
 </body>
 </html>
