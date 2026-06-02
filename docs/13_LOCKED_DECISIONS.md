@@ -99,7 +99,7 @@
 - Paper maximum = 30 of 100
 - Auto-close ALL paper trades if ZERO live trades for 90 days
 - Day 83 warning · Day 89 final warning · Day 90 auto-close
-- Timer resets when ANY live position opens
+- Timer resets when a NEW live position OPENS (not closes · opening only)
 
 ## Dashboard
 - Settings tab = account info ONLY — bot config lives in wizard
@@ -169,21 +169,11 @@
   - Live feedback shown before saving
   - Dashboard warning if current settings cannot meet minimum
 
-## Entry Method Promotion Criteria (Point 7 — Pending AI Review)
+## Entry Method Promotion Criteria (Point 7 — SUPERSEDED)
 
-- Promotion score = Win Rate x Avg Profit x Recovery Speed / Max Drawdown
-- Promote to Smart DCA default IF:
-  - Minimum 100 trades recorded
-  - Tested across 3+ market regimes (bull · bear · sideways)
-  - Score beats E10 control group
-  - Score beats Simple DCA benchmark
-  - 30 day cooldown passed
-- Delete IF:
-  - 3 consecutive quarterly reviews failed
-  - Win rate < 40% consistently
-  - Underperforms E10 control group
-- NOTE: Share this formula with AIs for validation before implementing
-- NOTE: Get recommendations from ChatGPT + Gemini on scoring weights
+> This section is REPLACED by "Entry Method Promotion Formula (Point 7 - LOCKED)" below.
+> Formula validated by ChatGPT · Gemini · DeepSeek · Claude independently.
+> Do not implement from this section.
 
 ## Multi-Exchange Bot Behavior (Point 8 — LOCKED)
 
@@ -546,7 +536,7 @@ After every Short DCA sell:
 
 Timing Protection Rule:
 - When Short DCA sell executes → flag: PENDING_BUYBACK
-- ALL Long DCA bots on same exchange → HOLD new DCAs
+- Long DCA bots sharing same Virtual Wallet on same exchange → HOLD new DCAs
 - Hold lasts until limit buy order confirmed by exchange (~2 seconds)
 - Then Long DCA resumes normally
 - Prevents queue grabbing Short funds during placement delay
@@ -1353,8 +1343,9 @@ Timer reset rule:
 Previous rule removed: HOLD Long DCAs 2 seconds
 New rule:
 - PENDING_BUYBACK flag set when limit order being placed
-- Long DCA checks flag at start of each cycle
+- Long DCA bots on SAME Virtual Wallet check flag at start of each cycle
 - If PENDING_BUYBACK = TRUE → skip this cycle
+- Bots on DIFFERENT Virtual Wallet → unaffected · continue normally
 - After limit order confirmed placed → flag cleared
 - Long DCA resumes next 60s cycle automatically
 - 60s cycle handles timing naturally · no manual hold needed
@@ -1793,7 +1784,15 @@ Benefits:
 - Startup reconciliation can parse owner from exchange order
 - No guessing which bot or position owns an unconfirmed order
 - Works across all 7 exchanges that support clientOrderId
-- Exchanges that don't support it: fall back to symbol+timestamp match
+- Exchange clientOrderId support:
+  · MEXC: ✅ supported
+  · KuCoin: ✅ supported
+  · Binance: ✅ supported
+  · Bybit: ✅ supported
+  · OKX: ✅ supported
+  · Gate.io: ✅ supported
+  · Bitget: ✅ supported
+  · Fallback for any unsupported: symbol + timestamp + amount match
 
 Implementation:
 - CCXT params: {'clientOrderId': f'avr_{bot_id}_{position_id}_{level}_{int(time.time())}'}
@@ -1802,3 +1801,28 @@ Implementation:
 
 DB column needed:
 - trades.client_order_id VARCHAR(100)
+
+## Research Bot Launch Sequence (LOCKED)
+
+### Day 3 Launch Plan
+- Day 1: Server setup · DB · PM2 · bot loop
+- Day 2: Domain · SSL · dashboard · admin
+- Day 3 Step 1: Launch 144 Long research bots only
+- Day 3 Step 2: Monitor loop time for 24 hours
+  · Loop time < 30s → proceed ✅
+  · Loop time 30-50s → investigate before Short bots
+  · Loop time > 50s → fix before adding Short bots
+- Day 4+: Launch 144 Short research bots IF capacity confirmed
+- Total max: 288 research bots on CX23 (2 vCPU · 4GB RAM)
+
+### Capacity Thresholds
+- Green: loop < 30s · all bots firing normally
+- Yellow: loop 30-50s · monitor · consider upgrade
+- Red: loop > 50s · pause adding bots · upgrade server
+- CX33 upgrade (4 vCPU · 8GB): €17.99/month if needed
+
+### Why Separate Launch
+- 288 bots simultaneous = unknown server impact
+- Staged launch = safe · measurable · reversible
+- Short bots use same coins × 5 = more API calls
+- Better to confirm Long bots stable first

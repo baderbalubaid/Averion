@@ -104,8 +104,9 @@ Updates daily at 3am as volumes shift.
 - Never mixed in same calculation
 
 ### Daily 3am Process
-1. Fetch market cap from CoinGecko (rate-limited · batched)
-2. Apply cap protection formula
+1. Fetch market cap from CoinGecko at 03:30 · from CMC at 04:00 (separate cron steps)
+2. Average both sources: (CoinGecko + CMC) / 2 · see averaging formula in locked decisions
+3. Apply cap protection formula
 3. Compare against category boundaries
 4. If boundary crossed → reclassify immediately
 5. Apply new parameters to NEW positions only (existing positions keep original parameters — see 13_LOCKED_DECISIONS.md)
