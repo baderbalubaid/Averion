@@ -117,7 +117,8 @@ ufw default allow outgoing
 ufw allow $SSH_PORT/tcp comment 'SSH custom port'
 ufw allow 80/tcp comment 'HTTP'
 ufw allow 443/tcp comment 'HTTPS'
-ufw allow 8080/tcp comment 'Averion dashboard'
+# Port 8080 NOT opened to public - Nginx proxies from 80/443 to localhost:8080
+# ufw allow 8080/tcp  ← NEVER open this - bypasses Nginx SSL and CORS
 ufw --force enable
 echo "✅ UFW firewall configured"
 

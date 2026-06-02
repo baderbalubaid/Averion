@@ -1072,7 +1072,8 @@ All limit orders checked every hour:
 ## Daily Cron Schedule — Final (LOCKED)
 
 03:00 — Infrastructure
-- pip install ccxt safe upgrade (test then apply)
+- Check CCXT version number only · log if update available
+- Full CCXT upgrade runs Sunday 05:30 only (not daily)
 - pm2 restart averion
 - PostgreSQL backup → /backups/averion_YYYY-MM-DD.sql
 - Keep last 7 days · delete older
@@ -1887,3 +1888,97 @@ positions.status:
 PostgreSQL is the source of truth.
 Exchange state is reconciled against DB on every startup.
 In any conflict: DB wins · exchange state verified · never assumed.
+
+## Research Bot Lifecycle Policy (LOCKED)
+
+### Philosophy
+Research never fully stops — platform always self-improving.
+No other DCA platform continuously validates its own algorithm.
+This is a permanent competitive advantage.
+
+### Phase 1 — Months 1-6 (Full Grid)
+- All 144 bots running simultaneously
+- Monthly elimination: replace zero-trade bots only
+- At 6 months: winner selected → Smart DCA default
+- Data kept forever — never deleted
+
+### Phase 2 — Months 7-12 (Validation)
+- Keep top 30% bots running (~45 bots)
+- Drop obvious losers (worst scores · zero trades)
+- Monitor: does winner still beat benchmarks?
+- If new method overtakes → promote new winner
+
+### Phase 3 — Annual Review (Ongoing Forever)
+- Is current Smart DCA winner still winning?
+- Did market regime change favor different method?
+- Promote new winner if consistently better
+- Research cycle repeats indefinitely
+
+### Bot Count Over Time
+- Month 1-6: 144 bots (full grid)
+- Month 7-12: ~45 bots (top 30%)
+- Year 2+: ~20 bots (champion + challengers)
+- Never drop below 5 bots (always have competition)
+
+### Admin Paper Trade Limit (LOCKED)
+- Regular users: 30 paper trades maximum
+- Admin account: UNLIMITED paper trades
+- Research bots run under admin account
+- is_admin check skips paper limit entirely
+- Research trades tagged: is_research = TRUE
+- Research data kept FOREVER · never purged
+- Storage cost = negligible (< 5MB per year)
+
+### Research Data Retention
+- All research trades: kept FOREVER
+- Reason: baseline for future comparisons
+- Reason: proof of why winner was selected
+- Reason: regime history invaluable long term
+- research_scores table: never delete rows
+- Only add · never remove historical data
+
+## Fee Debt vs Subscription Shortage — Clear Distinction (LOCKED)
+
+Two completely different systems · never confused:
+
+### Performance Fee Debt
+- Triggered when: position closes at profit · reserve insufficient
+- Bot status: stays ON · never changes
+- Effect: no NEW positions open
+- Resolution: user tops up → debt cleared → resumes automatically
+- Example: won $50 · owe $10 fee · reserve = $0
+  → bot ON · no new trades · debt shown in red
+
+### Subscription/Slot Fee Shortage  
+- Triggered when: 1st of month · reserve cannot cover bot fees
+- Bot status: changes to EXPIRED (last created bot first)
+- Effect: bot turns OFF · existing positions continue to TP
+- Resolution: user tops up + manually reactivates bot
+- Example: 3 bots · $3 due · reserve = $1.50
+  → last created bot → EXPIRED
+  → first 2 bots continue normally
+
+### Why Different Behavior
+- Performance fee = earned by platform from profits
+  Bot staying ON generates more profits = more fees eventually
+- Subscription fee = flat monthly charge
+  Cannot justify keeping bot active if user won't pay flat fee
+  User made conscious decision to not maintain reserve
+
+## Smart Queue Recalculation Triggers (LOCKED)
+
+Queue recalculates at start of EVERY 60-second cycle.
+No manual trigger needed · always fresh.
+
+### Events that affect next cycle score:
+- User adds funds → wallet balance updates → next cycle uses new balance
+- Position closes (TP) → capital freed → next cycle rescores
+- DCA toggle ON/OFF → next cycle includes/excludes position
+- New position opens → next cycle adds to queue
+- User changes bot params → next cycle uses new params
+
+### All changes take effect: next 60-second cycle
+- Maximum delay: 60 seconds
+- No manual refresh needed
+- No restart needed
+- Queue always reflects current state
