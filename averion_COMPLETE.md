@@ -2133,6 +2133,31 @@ DB column needed:
 - Staged launch = safe · measurable · reversible
 - Short bots use same coins × 5 = more API calls
 - Better to confirm Long bots stable first
+
+## Email Verification Resend (LOCKED)
+
+### Problem
+Email delayed or spam-filtered → user stuck on verify page → abandons registration.
+
+### Solution
+Verify page shows countdown timer + resend button:
+- "Code sent to email@example.com"
+- Timer: "Resend available in 2:00" · counts down
+- After 2 minutes → [Resend Code] button appears
+- Click → new 6-digit code generated
+- Old code invalidated immediately
+- New email sent via Resend
+- Timer resets to 2:00
+
+### Rules (LOCKED)
+- Minimum 2 minutes between resends
+- Maximum 5 resends per hour per email
+- Each new code invalidates previous code
+- Code expires after 30 minutes always
+- Resend count tracked in DB · resets hourly
+- After 5 resends in 1 hour → show message:
+ "Too many attempts · try again in 1 hour"
+- Resend available on verify page only · not after verified
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -5806,6 +5831,9 @@ SELECT 'Security tables added!' AS result;
 -- EMAIL VERIFICATION COLUMNS
 -- ═══════════════════════════════
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS resend_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS resend_reset_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_resend_at TIMESTAMP;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code VARCHAR(10);
 
 
@@ -8511,6 +8539,55 @@ def get_regime_history(days=180):
             ORDER BY date DESC LIMIT %s
         """, (days,))
         return cur.fetchall()
+
+def regenerate_verification_code(user_id):
+   """Generate new 6-digit code · invalidate old one · track resend count"""
+   import random
+   code = str(random.randint(100000, 999999))
+   with get_db() as conn:
+       cur = conn.cursor()
+       # Check resend count in last hour
+       cur.execute("""
+           SELECT resend_count, resend_reset_at
+           FROM users WHERE id = %s
+       """, (user_id,))
+       row = cur.fetchone()
+       if row:
+           count = row[0] or 0
+           reset_at = row[1]
+           from datetime import datetime, timezone
+           now = datetime.now(timezone.utc)
+           # Reset count if more than 1 hour passed
+           if reset_at and (now - reset_at.replace(tzinfo=timezone.utc)).seconds > 3600:
+               count = 0
+           if count >= 5:
+               return None, 'too_many_attempts'
+       # Update code and increment resend count
+       cur.execute("""
+           UPDATE users SET
+               verification_code = %s,
+               verification_expires_at = NOW() + INTERVAL '30 minutes',
+               resend_count = COALESCE(resend_count, 0) + 1,
+               resend_reset_at = CASE
+                   WHEN resend_reset_at IS NULL
+                   OR NOW() - resend_reset_at > INTERVAL '1 hour'
+                   THEN NOW() ELSE resend_reset_at END,
+               last_resend_at = NOW()
+           WHERE id = %s
+           RETURNING verification_code
+       """, (code, user_id))
+       conn.commit()
+       return code, 'ok'
+
+def get_last_resend_time(user_id):
+   """Get when last resend was sent"""
+   with get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("""
+           SELECT last_resend_at, resend_count
+           FROM users WHERE id = %s
+       """, (user_id,))
+       return cur.fetchone()
 import os
 import hashlib
 import secrets
@@ -9489,6 +9566,41 @@ def reset_password_confirm(req: ResetPasswordConfirm):
 
     db.log_security_event(user_id, 'password_reset_complete')
     return {'message': 'Password updated · please login'}
+
+@app.post('/auth/resend-verification')
+def resend_verification(payload: dict = Depends(verify_token)):
+   from datetime import datetime, timezone
+   user_id = payload['user_id']
+
+   # Check if already verified
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute("SELECT email_verified, email FROM users WHERE id = %s", (user_id,))
+       row = cur.fetchone()
+       if not row:
+           raise HTTPException(status_code=404, detail='User not found')
+       if row[0]:
+           return {'status': 'already_verified'}
+       email = row[1]
+
+   # Check 2 minute cooldown
+   last = db.get_last_resend_time(user_id)
+   if last and last[0]:
+       now = datetime.now(timezone.utc)
+       last_time = last[0].replace(tzinfo=timezone.utc)
+       seconds_ago = (now - last_time).seconds
+       if seconds_ago < 120:
+           remaining = 120 - seconds_ago
+           return {'status': 'cooldown', 'seconds_remaining': remaining}
+
+   # Generate new code
+   code, result = db.regenerate_verification_code(user_id)
+   if result == 'too_many_attempts':
+       raise HTTPException(status_code=429, detail='Too many resend attempts · try again in 1 hour')
+
+   # Send email
+   email_svc.send_verification_email(email, code)
+   return {'status': 'sent', 'message': 'New verification code sent'}
 import os
 import time
 import ccxt
@@ -13070,6 +13182,78 @@ if __name__ == '__main__':
             if (r.ok) window.location.href = '/dashboard';
         }).catch(() => {});
     }
+</script>
+
+
+<!-- Resend Verification Code -->
+<script>
+let resendTimer = null;
+let secondsLeft = 120;
+
+function startResendTimer() {
+    const btn = document.getElementById('resendBtn');
+    const timerEl = document.getElementById('resendTimer');
+    if (!btn || !timerEl) return;
+
+    btn.style.display = 'none';
+    timerEl.style.display = 'block';
+    secondsLeft = 120;
+
+    resendTimer = setInterval(() => {
+        secondsLeft--;
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        timerEl.textContent = `Resend available in ${mins}:${secs.toString().padStart(2,'0')}`;
+
+        if (secondsLeft <= 0) {
+            clearInterval(resendTimer);
+            timerEl.style.display = 'none';
+            btn.style.display = 'inline-block';
+        }
+    }, 1000);
+}
+
+async function resendCode() {
+    const btn = document.getElementById('resendBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/auth/resend-verification', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.status === 'sent') {
+            showMessage('✅ New code sent! Check your email.', 'success');
+            startResendTimer();
+        } else if (data.status === 'cooldown') {
+            showMessage(`⏳ Please wait ${data.seconds_remaining} seconds`, 'warning');
+            secondsLeft = data.seconds_remaining;
+            startResendTimer();
+        } else if (data.status === 'already_verified') {
+            window.location.href = '/dashboard';
+        } else {
+            showMessage('❌ Too many attempts · try again in 1 hour', 'error');
+        }
+    } catch(e) {
+        showMessage('❌ Failed to resend · try again', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Resend Code';
+    }
+}
+
+// Start timer on page load if on verify step
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('resendBtn')) {
+        startResendTimer();
+    }
+});
 </script>
 
 </body>
