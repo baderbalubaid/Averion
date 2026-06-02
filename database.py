@@ -57,11 +57,13 @@ def get_user_by_id(user_id):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, email, is_admin, is_zero_fee,
-                   is_suspended, telegram_chat_id,
-                   telegram_verified, bot_slots_total,
-                   trades_used_this_month, next_billing_date
-            FROM users WHERE id = %s
+            SELECT u.id, u.email, u.is_admin, u.is_zero_fee,
+                   u.is_suspended, t.chat_id,
+                   t.verified, u.bot_slots_total,
+                   u.trades_used_this_month, u.next_billing_date
+            FROM users u
+            LEFT JOIN user_telegram t ON t.user_id = u.id
+            WHERE u.id = %s
         """, (user_id,))
         return cur.fetchone()
 
