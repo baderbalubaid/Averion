@@ -113,7 +113,7 @@ Build once · Build right · Public platform from Day 1
 ├── DAY1_CHECKLIST.md
 ├── env.example
 ├── init_db.py
-├── research_bots.json (107 bots)
+├── research_bots.json (144 bots)
 └── launch_research_bots.py
 
 /automation
@@ -1094,6 +1094,7 @@ Settings tab shows:
 ## Standby System — No Timeout (LOCKED)
 
 - Standby has NO timeout — waits forever
+- standby_timeout_at column renamed to standby_created_at in DB (audit only · never used as timeout)
 - Two exit conditions only:
   1. Price returns to DCA level → fills remainder
   2. Position hits TP → standby cancelled automatically
@@ -1420,7 +1421,7 @@ Must work:
 - Trailing TP
 - Telegram notifications
 - Dashboard showing positions
-- 107 research bots launched
+- 144 research bots launched
 - Daily cron (CoinGecko · CMC · classify · report)
 - Classification engine
 - Basic admin dashboard
@@ -1880,8 +1881,8 @@ All code written · pushed to GitHub · ready to deploy:
 | hetzner_day1.sh | ✅ Ready | Security hardened setup script |
 | hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
 | DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
-| research_bots.json | ✅ Ready | 107 paper bots configured |
-| launch_research_bots.py | ✅ Ready | Launch all 107 bots |
+| research_bots.json | ✅ Ready | 144 paper bots configured |
+| launch_research_bots.py | ✅ Ready | Launch all 144 bots |
 | daily_cron.sh | ✅ Ready | All automation scheduled |
 | health_check.sh | ✅ Ready | Hourly monitoring |
 | fetch_coingecko.py | ✅ Ready | CoinGecko market caps |
@@ -1932,7 +1933,7 @@ Manual steps after script:
 
 ## Day 3+ — Paper Trading
 
-- 107 research bots running simultaneously
+- 144 research bots running simultaneously
 - Smart DCA entry methods testing (paper only)
 - OHLCV data building hourly
 - Classification running daily at 04:30
@@ -2019,7 +2020,7 @@ Three layers:
 - Short DCA implementation
 - Limit orders for entry and DCA
 - Sequential trade gates
-- Virtual wallet UI
+- Virtual wallet UI (already Day 1 · see Phase 4)
 - Full bot creation wizard
 - Public user registration
 - NOWPayments integration
@@ -2590,7 +2591,7 @@ Worst deleted · best becomes Smart DCA default.
 
 ## Research Bot Grid (LOCKED — ChatGPT Validated)
 
-Total: 107 paper bots (102 method bots + 5 benchmarks)
+Total: 144 paper bots (139 method bots + 5 benchmarks)
 Period: 6 months · no mid-period adjustments
 Scaling: start 10 trades/bot → 20 → 30 gradually
 
@@ -4971,7 +4972,7 @@ CREATE TABLE positions (
     queued BOOLEAN DEFAULT FALSE,
     standby_amount DECIMAL(20,8) DEFAULT 0,
     standby_price DECIMAL(20,8),
-    standby_timeout_at TIMESTAMP,
+    standby_created_at TIMESTAMP,
     dust_amount DECIMAL(20,8) DEFAULT 0,
     dust_currency VARCHAR(20),
     is_manual BOOLEAN DEFAULT FALSE,
@@ -4983,9 +4984,9 @@ CREATE TABLE positions (
     close_reason VARCHAR(50),
     short_buyback_order_id VARCHAR(100),
     short_buyback_reserved_usdt DECIMAL(20,8) DEFAULT 0,
-    pending_buyback BOOLEAN DEFAULT FALSE
+    pending_buyback BOOLEAN DEFAULT FALSE,
     profit_coin VARCHAR(10) DEFAULT 'USDT',
-    base_coin VARCHAR(10) DEFAULT 'USDT',
+    base_coin VARCHAR(10) DEFAULT 'USDT'
 );
 
 -- ═══════════════════════════════
@@ -5092,6 +5093,7 @@ CREATE TABLE coin_history (
     exchange VARCHAR(50),
     real_cap DECIMAL(30,2),
     recorded_cap DECIMAL(30,2),
+    source VARCHAR(20) DEFAULT 'averaged',
     category VARCHAR(20),
     volume_24h DECIMAL(30,2),
     confidence_days INTEGER DEFAULT 0,
@@ -5526,6 +5528,78 @@ CREATE INDEX IF NOT EXISTS idx_market_regimes_date
 ON market_regimes(date);
 
 SELECT 'market_regimes table created!' AS result;
+
+-- ═══════════════════════════════
+-- PERFORMANCE TIMING
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS performance_timing (
+    id SERIAL PRIMARY KEY,
+    step VARCHAR(50) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    duration_seconds DECIMAL(10,3),
+    records_processed INTEGER DEFAULT 0,
+    error_message TEXT,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- SYSTEM HEALTH
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS system_health (
+    id SERIAL PRIMARY KEY,
+    checked_at TIMESTAMP DEFAULT NOW(),
+    cpu_percent DECIMAL(5,2),
+    ram_percent DECIMAL(5,2),
+    disk_percent DECIMAL(5,2),
+    pm2_running BOOLEAN DEFAULT TRUE,
+    trades_count INTEGER DEFAULT 0,
+    bot_loop_lag_seconds DECIMAL(10,3),
+    alert_sent BOOLEAN DEFAULT FALSE
+);
+
+-- ═══════════════════════════════
+-- BOT EVENTS
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS bot_events (
+    id SERIAL PRIMARY KEY,
+    bot_id INTEGER REFERENCES bots(id),
+    user_id INTEGER REFERENCES users(id),
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bot_events_bot
+ON bot_events(bot_id, created_at);
+
+-- ═══════════════════════════════
+-- BOT MIRRORS (Admin Copy Bot)
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS bot_mirrors (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES users(id),
+    source_bot_id INTEGER REFERENCES bots(id),
+    mirror_bot_id INTEGER REFERENCES bots(id),
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    stopped_at TIMESTAMP
+);
+
+-- ═══════════════════════════════
+-- EXCHANGE MIRRORS (Admin Mirror Exchange)
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS exchange_mirrors (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES users(id),
+    source_user_id INTEGER REFERENCES users(id),
+    source_exchange_id INTEGER REFERENCES exchanges(id),
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    stopped_at TIMESTAMP
+);
+
+SELECT 'New tables created!' AS result;
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
@@ -5927,7 +6001,7 @@ echo "Next steps:"
 echo "1. Add GitHub deploy keys (shown above)"
 echo "2. Setup UptimeRobot monitoring"
 echo "3. Test live \$1 order on MEXC"
-echo "4. Start 107 paper research bots"
+echo "4. Start 144 paper research bots"
 # Averion — Hetzner Day 1 Checklist
 > Follow in exact order. Check each item before moving to next.
 > All commands in hetzner_day1.sh — run that first!
@@ -6061,7 +6135,7 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 - [ ] Verify PAPER badge back
 
 ## PHASE 14 — Research Bots (30 min)
-- [ ] Set up 107 paper research bots
+- [ ] Set up 144 paper research bots
 - [ ] Start with 10 trades per bot limit
 - [ ] Monitor loop time: pm2 logs averion
 - [ ] Verify all bots running in dashboard
@@ -6261,8 +6335,9 @@ def main():
         'user_subscriptions', 'subscription_billing',
         'exchange_coin_limits', 'short_buyback_orders',
         'trade_bundles', 'pending_limit_orders',
-        'security_audit_log',
-        'market_regimes'
+        'security_audit_log', 'market_regimes',
+        'performance_timing', 'system_health',
+        'bot_events', 'bot_mirrors', 'exchange_mirrors'
     ]
 
     print("\n📋 Verifying tables:")
@@ -9925,6 +10000,27 @@ if __name__ == '__main__':
         print(f'Bot token: {BOT_TOKEN[:10]}...')
     else:
         print('⚠️ No bot token configured')
+
+def admin_bot_started(paper_mode):
+    mode = "📄 PAPER MODE" if paper_mode else "💰 LIVE MODE"
+    msg = f"🟢 Averion Bot Started\n{mode}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_bot_stopped(reason):
+    msg = f"🔴 Averion Bot Stopped\nReason: {reason}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_cron_started(step):
+    msg = f"⚙️ Cron Started: {step}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+    send_admin(msg)
+
+def admin_cron_finished(step, duration, records):
+    msg = f"✅ Cron Done: {step}\nDuration: {duration:.1f}s · Records: {records}"
+    send_admin(msg)
+
+def admin_cron_failed(step, error):
+    msg = f"❌ Cron Failed: {step}\nError: {error}"
+    send_admin(msg)
 import os
 import hashlib
 import secrets
