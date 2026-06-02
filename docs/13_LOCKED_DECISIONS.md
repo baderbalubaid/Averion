@@ -11,7 +11,7 @@
 - Trailing safety (Smart DCA only): if TP% - Trail% < 1% → direct market TP
 - NO maximum DCA levels — smart queue handles capital allocation forever
 - Bot NEVER stops running — detects new funds within 60 seconds
-- Open positions update IMMEDIATELY on reclassification (Option B)
+- Open positions are NOT affected by reclassification (Option A)
 - One pair per bot — no duplicate coin on same bot — cross-bot is fine
 - Paper stays paper FOREVER — live stays live — NO conversion ever
 - Short DCA = spot only — user must already hold the coin — min exchange order size required

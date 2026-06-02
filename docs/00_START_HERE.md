@@ -77,7 +77,7 @@ Build once · Build right · Public platform from Day 1
 8. Classification automated daily — CoinGecko + CMC averaged
 9. NO max DCA levels — smart queue handles capital forever
 10. Bot NEVER stops — put money and forget it
-11. Reclassification affects NEW positions only — existing keep original params
+11. Reclassification affects NEW positions only — existing positions keep original params FOREVER (Option A · LOCKED)
 12. Smart DCA = fully automated — customers see results only
 13. Trailing safety Smart DCA: TP%-Trail%<1% → direct market TP
 14. One pair per bot — no duplicate coin on same bot
