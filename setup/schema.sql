@@ -176,11 +176,11 @@ CREATE TABLE standby_orders (
     standby_amount DECIMAL(20,8) NOT NULL,
     target_price DECIMAL(20,8) NOT NULL,
     dca_level INTEGER NOT NULL,
-    timeout_at TIMESTAMP,
+    standby_created_at TIMESTAMP,
     status VARCHAR(20) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT NOW(),
     triggered_at TIMESTAMP,
-    expired_at TIMESTAMP
+    standby_cancelled_at TIMESTAMP
 );
 
 -- ═══════════════════════════════
@@ -473,6 +473,7 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_level_reached INTEGER 
 
 -- Virtual wallet standby reserved amount
 ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS standby_reserved DECIMAL(20,8) DEFAULT 0;
+    committed_usdt DECIMAL(20,8) DEFAULT 0,
 
 -- API key expiry tracking
 -- key_expires_at already in base CREATE TABLE
@@ -508,6 +509,7 @@ SELECT 'Base coin and position detail columns added!' AS result;
 
 -- Research bot market regime tracking
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regimes_tested JSONB DEFAULT '[]';
+    replacement_bot BOOLEAN DEFAULT FALSE,
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS bundle_period VARCHAR(7);
 
 -- Subscription billing history
@@ -694,6 +696,8 @@ CREATE TABLE IF NOT EXISTS performance_timing (
     started_at TIMESTAMP,
     completed_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_performance_timing_step
+ON performance_timing(step, completed_at DESC);
 
 -- ═══════════════════════════════
 -- SYSTEM HEALTH
@@ -752,3 +756,6 @@ CREATE TABLE IF NOT EXISTS exchange_mirrors (
 );
 
 SELECT 'New tables created!' AS result;
+
+CREATE INDEX IF NOT EXISTS idx_coin_history_source
+ON coin_history(coin, source, recorded_at DESC);

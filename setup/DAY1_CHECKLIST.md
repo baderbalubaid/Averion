@@ -49,7 +49,7 @@
 ## PHASE 4 — Database Setup (5 min)
 - [ ] Run schema: psql -U averion -d averion -h localhost < /home/averion/Averion/setup/schema.sql
 - [ ] Initialize DB: python3 /home/averion/Averion/setup/init_db.py
-- [ ] Should see: all 17 tables ✅
+- [ ] Should see: all tables ✅ (no errors in output)
 - [ ] Admin user created ✅
 
 ## PHASE 5 — Bot Startup (5 min)
@@ -70,7 +70,7 @@
 
 ## PHASE 7 — Security (5 min)
 - [ ] Verify firewall: ufw status
-- [ ] Should show: 22 · 80 · 443 · 8080 ALLOW
+- [ ] Should show: 2847 · 80 · 443 · 8080 ALLOW
 - [ ] Verify fail2ban: systemctl status fail2ban
 - [ ] Verify chrony: chronyc tracking
 
