@@ -330,14 +330,11 @@
 
 ## Customer Telegram Channels (LOCKED)
 
-- 3 separate channels per customer:
-  - Trades: every buy · sell · DCA · TP (mute-friendly)
-  - Alerts: reserve low · bot stopped · ST flag · urgent (never mute)
-  - Reports: daily per exchange · weekly · monthly
-- Customer connects in Settings tab → Notifications section
-- Enter Telegram Chat ID → bot sends verification code → confirmed
-- Each channel has separate toggle ON/OFF
-- Customer controls which channels they receive
+- ONE direct chat with @AverionBot — not separate channels
+- Old 3-channel design removed — Option C confirmed permanently
+- See "Customer Telegram Setup" section for full details
+- Message types: TRADE · ALERT · REPORT — all in one chat
+- Customer toggles each type ON/OFF independently
 
 ## Daily Telegram Report Per Exchange (LOCKED)
 
