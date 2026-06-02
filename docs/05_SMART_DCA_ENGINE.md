@@ -247,7 +247,7 @@ Worst deleted · best becomes Smart DCA default.
 
 ## Research Bot Grid (LOCKED — ChatGPT Validated)
 
-Total: 107 paper bots (102 method bots + 5 benchmarks)
+Total: 144 paper bots (139 method bots + 5 benchmarks)
 Period: 6 months · no mid-period adjustments
 Scaling: start 10 trades/bot → 20 → 30 gradually
 

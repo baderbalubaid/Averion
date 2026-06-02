@@ -1291,7 +1291,7 @@ Must work:
 - Trailing TP
 - Telegram notifications
 - Dashboard showing positions
-- 107 research bots launched
+- 144 research bots launched
 - Daily cron (CoinGecko · CMC · classify · report)
 - Classification engine
 - Basic admin dashboard
