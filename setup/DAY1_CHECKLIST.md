@@ -216,3 +216,27 @@ DMARC:
 - With proper setup → mostly inbox
 - New domain takes 2-3 months to build reputation
 - Resend has best deliverability of free email services
+
+## Day 2 — Split Fernet Key (FREE · 30 min · SECURITY)
+
+### Why do this
+Full FERNET_KEY in .env = one file = one risk
+Split key = hacker needs server AND Hetzner account
+Hetzner Secrets = free · included with your server
+
+### Steps
+1. Hetzner Console → Security → Secrets → Create Secret
+   Name: averion_fernet_part_b · leave value empty for now
+
+2. Hetzner Console → Security → API Tokens → Create Token
+   Name: averion-secrets · Permission: Read/Write
+
+3. Add to .env:
+   HETZNER_API_TOKEN=your_token_here
+   HETZNER_SECRET_ID=your_secret_id_here
+
+4. Run:
+   python3 /home/averion/Averion/automation/split_fernet_key.py
+
+5. Verify:
+   python3 -c "from exchanges import get_fernet; print('✅ Split key working')"
