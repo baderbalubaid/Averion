@@ -118,6 +118,12 @@ Updates daily at 3am as volumes shift.
 - Telegram alert: CoinGecko failed — using last recorded caps
 - Retry next 3am automatically
 
+### Averaging Formula (LOCKED)
+- Both sources: recorded_cap = (CoinGecko + CMC) / 2
+- One source only: use available source
+- Both failed: use last recorded cap
+- Disagreement > 100%: use LOWER value (conservative)
+
 ### New Coin Tiered Confidence
 | History | Approach | Badge |
 |---------|---------|-------|
