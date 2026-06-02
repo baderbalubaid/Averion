@@ -41,6 +41,11 @@ CREATE TABLE exchanges (
     pause_type VARCHAR(20),
     reconnect_attempts INTEGER DEFAULT 0,
     last_connected_at TIMESTAMP,
+    passphrase_enc TEXT,
+    ip_whitelist_confirmed BOOLEAN DEFAULT FALSE,
+    key_expires_at TIMESTAMP,
+    last_alert_sent_at TIMESTAMP,
+    alert_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -465,9 +470,9 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS checkpoint_level_reached INTEGER 
 ALTER TABLE virtual_wallets ADD COLUMN IF NOT EXISTS standby_reserved DECIMAL(20,8) DEFAULT 0;
 
 -- API key expiry tracking
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS key_expires_at TIMESTAMP;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS alert_count INTEGER DEFAULT 0;
+-- key_expires_at already in base CREATE TABLE
+-- last_alert_sent_at already in base CREATE TABLE
+-- alert_count already in base CREATE TABLE
 
 -- Bot slot tracking per user
 -- Telegram fields live in user_telegram table (single source of truth)
@@ -493,8 +498,8 @@ SELECT 'Base coin and position detail columns added!' AS result;
 -- ═══════════════════════════════
 
 -- Exchange passphrase (KuCoin · OKX · Bitget)
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS passphrase_enc TEXT;
-ALTER TABLE exchanges ADD COLUMN IF NOT EXISTS ip_whitelist_confirmed BOOLEAN DEFAULT FALSE;
+-- passphrase_enc already in base CREATE TABLE
+-- ip_whitelist_confirmed already in base CREATE TABLE
 
 -- Research bot market regime tracking
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regimes_tested JSONB DEFAULT '[]';
