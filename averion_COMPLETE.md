@@ -2339,6 +2339,67 @@ Exchange minimum required permissions:
 - Layer 3: Stolen key = only works from our IP
 - All 3 together = customer API keys effectively protected
 - Even insider threat = limited to 30-day window
+
+## Performance Fee Timing (LOCKED)
+
+Fee deducted IMMEDIATELY on every profitable trade close.
+No monthly netting. No holdback. No escrow.
+
+### Rule
+- Position closes at profit → fee = profit × 20%
+- Fee deducted from reserve immediately
+- If reserve insufficient → fee recorded as debt
+- Loss trades → $0 fee · no discussion · no exception
+
+### Why immediate
+- Simpler to implement and audit
+- No complex monthly reconciliation
+- Customer always knows exactly what they owe
+- Profitable trade = we earned it · take it now
+
+### Examples
+- Win $50 → fee $10 → deducted immediately
+- Win $1 → fee $0.20 → deducted immediately
+- Lose $100 → fee $0 → nothing touched
+- Win $200 then lose $1000 same month → fee = $40 (on the $200 win only)
+
+## Research Account Separation (LOCKED)
+
+### Two Admin Accounts
+1. Admin account (Bader personal)
+   - Login: admin@averionbot.com
+   - Personal bots · no research bots
+   - Normal admin dashboard access
+   - Balance separate from research
+
+2. Research account (automated)
+   - Login: research@averionbot.com
+   - ALL 144 research bots run here
+   - Visible in admin dashboard Tab 4 only
+   - No personal trading ever
+   - is_research = TRUE on all positions/trades
+
+### Why Separate
+- Research data never mixes with personal data
+- Reports are clean and independent
+- Research balance = virtual only
+- Personal balance = real money tracked separately
+- Admin can view research from dashboard but never confused
+
+### Setup
+- Created automatically in init_db.py on Day 1
+- Password set in .env: RESEARCH_ACCOUNT_PASSWORD
+- launch_research_bots.py uses research account
+
+## Manual Bot Queue Behavior (LOCKED)
+
+- Manual bot shares queue with Smart DCA bots (same wallet)
+- Manual positions compete equally by Loss% / USDT score
+- Manual DCA option available per position
+- User controls manual DCA timing directly
+- No special priority for manual over smart
+- Reason: shared wallet = shared queue = fair competition
+- User can always use separate wallet to isolate manual bot
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -5851,6 +5912,7 @@ SELECT 'Schema updates applied successfully!' AS result;
 
 -- Base coin support
 ALTER TABLE bots ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS bot_params JSONB DEFAULT '{}';
 
 -- Position detail enhancements
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS dca_level_price DECIMAL(20,8);
@@ -6747,6 +6809,7 @@ DKIM:
 DMARC:
 - Type: TXT · Name: _dmarc
 - Value: v=DMARC1; p=none; rua=mailto:admin@averionbot.com
+  NOTE: After 30 days upgrade to p=quarantine · after 60 days p=reject
 
 
 ### Step 3 — Verify in Resend dashboard
@@ -6887,8 +6950,7 @@ DB_CONFIG = {
 
 def hash_password(password):
     salt = secrets.token_hex(16)
-    hashed = hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
-    return f"{salt}:{hashed}"
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def main():
     print("🚀 Initializing Averion Database...")
@@ -6978,6 +7040,29 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Create research account for automated research bots
+def create_research_account():
+    research_email = 'research@averionbot.com'
+    research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'change-me-on-day1')
+    
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
+        if cur.fetchone():
+            print('✅ Research account already exists')
+            return
+        
+        import bcrypt
+        pw_hash = bcrypt.hashpw(research_password.encode(), bcrypt.gensalt()).decode()
+        cur.execute("""
+            INSERT INTO users (email, password_hash, is_admin, is_zero_fee, email_verified)
+            VALUES (%s, %s, TRUE, TRUE, TRUE)
+        """, (research_email, pw_hash))
+        conn.commit()
+        print('✅ Research account created: research@averionbot.com')
+
+create_research_account()
 import psycopg2
 import json
 import os
@@ -8266,7 +8351,7 @@ def reconcile_orders():
                     'secret': secret
                 }
                 if passphrase:
-                    config['password'] = passphrase
+                    config['password'] = exchanges_module.decrypt(passphrase)
 
                 exchange = exchange_class(config)
 
@@ -8431,6 +8516,24 @@ if __name__ == '__main__':
         print(f"❌ FATAL: {e}")
         tg.admin_error(str(e))
         exit(1)
+
+def clear_stale_pending_buyback():
+    """Clear PENDING_BUYBACK flags older than 60 seconds"""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE positions
+            SET pending_buyback = FALSE,
+                pending_buyback_since = NULL
+            WHERE pending_buyback = TRUE
+            AND pending_buyback_since < NOW() - INTERVAL '60 seconds'
+        """)
+        count = cur.rowcount
+        conn.commit()
+        if count > 0:
+            print(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags')
+            import telegram as tg
+            tg.send_admin(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags on startup')
 import os
 import psycopg2
 from psycopg2 import pool
@@ -8493,9 +8596,10 @@ def get_user_by_id(user_id):
             SELECT u.id, u.email, u.is_admin, u.is_zero_fee,
                    u.is_suspended, t.chat_id,
                    t.verified, u.bot_slots_total,
-                   u.trades_used_this_month, u.next_billing_date
+                   COALESCE(s.trades_used_this_month, 0), u.next_billing_date
             FROM users u
             LEFT JOIN user_telegram t ON t.user_id = u.id
+            LEFT JOIN user_subscriptions s ON s.user_id = u.id
             WHERE u.id = %s
         """, (user_id,))
         return cur.fetchone()
@@ -11505,7 +11609,7 @@ def fetch_ticker(exchange_obj, symbol):
 # ═══════════════════════════════
 # ORDER EXECUTION
 # ═══════════════════════════════
-def market_buy(exchange_obj, symbol, usdt_amount):
+def market_buy(exchange_obj, symbol, usdt_amount, bot_id=None, position_id=None, dca_level=0):
    try:
        order = exchange_obj.create_market_buy_order(
            symbol, None,
@@ -12084,11 +12188,6 @@ if __name__ == '__main__':
         print(f'Bot token: {BOT_TOKEN[:10]}...')
     else:
         print('⚠️ No bot token configured')
-
-def admin_bot_started(paper_mode):
-    mode = "📄 PAPER MODE" if paper_mode else "💰 LIVE MODE"
-    msg = f"🟢 Averion Bot Started\n{mode}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
-    send_admin(msg)
 
 def admin_bot_stopped(reason):
     msg = f"🔴 Averion Bot Stopped\nReason: {reason}\n⏰ {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
