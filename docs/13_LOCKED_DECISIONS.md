@@ -1982,3 +1982,54 @@ No manual trigger needed · always fresh.
 - No manual refresh needed
 - No restart needed
 - Queue always reflects current state
+
+## Security Hardening — Three Layers (LOCKED)
+
+### Layer 1 — Fernet Key Rotation (Monthly)
+- New FERNET_KEY generated 1st of every month
+- All exchange API keys re-encrypted with new key
+- Old key deleted from server after re-encryption
+- Key version tracked in fernet_key_versions table
+- Maximum breach window = 30 days
+- Admin Telegram alert after each rotation
+
+Rotation process (automated):
+1. Generate new Fernet key
+2. Fetch all encrypted keys from DB
+3. Decrypt with old key
+4. Re-encrypt with new key
+5. Update DB
+6. Delete old key from memory
+7. Update FERNET_KEY in .env
+8. Log rotation in fernet_key_versions
+
+### Layer 2 — API Permission Validation
+- Test call made when user saves API key
+- Verifies withdrawal permission is DISABLED
+- If withdrawal enabled → block save · show warning
+- Test uses exchange's permission system directly
+- Endpoint: POST /exchanges/validate-key
+- Result logged in security_audit_log
+
+Exchange minimum required permissions:
+- Spot trading: READ + TRADE only
+- Never: Withdrawal · Transfer · Sub-account
+
+### Layer 3 — IP Whitelist Verification
+- Server IP shown prominently when adding exchange
+- User must whitelist Averion server IP on exchange
+- After saving key → test call from our server
+- If call succeeds → IP whitelist confirmed ✅
+- If call fails → user prompted to whitelist first
+- Exchanges requiring IP whitelist:
+  · Binance: REQUIRED
+  · OKX: REQUIRED
+  · KuCoin: RECOMMENDED
+  · Others: OPTIONAL but shown
+
+### Combined Effect
+- Layer 1: Leaked .env = useless after 30 days
+- Layer 2: Stolen key = cannot withdraw funds
+- Layer 3: Stolen key = only works from our IP
+- All 3 together = customer API keys effectively protected
+- Even insider threat = limited to 30-day window

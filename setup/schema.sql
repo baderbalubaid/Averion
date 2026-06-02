@@ -764,3 +764,18 @@ SELECT 'New tables created!' AS result;
 
 CREATE INDEX IF NOT EXISTS idx_coin_history_source
 ON coin_history(coin, source, recorded_at DESC);
+
+-- ═══════════════════════════════
+-- FERNET KEY VERSIONS
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS fernet_key_versions (
+    id SERIAL PRIMARY KEY,
+    version INTEGER NOT NULL UNIQUE,
+    key_hash VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    rotated_at TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_fernet_active
+ON fernet_key_versions(is_active, version DESC);
