@@ -1,5 +1,6 @@
 import os
 import hashlib
+import bcrypt
 import secrets
 import jwt
 from datetime import datetime, timezone, timedelta
