@@ -42,7 +42,7 @@ Put money in · forget it · collect profits.
 | No monthly fee | Users pay only when they profit |
 | Set and forget | Bot never stops · detects funds in 60s |
 | Survivability | Never blows up · survives crashes |
-| Self-improving | 10 entry methods compete · best wins |
+| Self-improving | 14 entry methods compete · best wins |
 | Fair pricing | 20% of profits only · loss months = $0 |
 
 ---
@@ -72,7 +72,7 @@ Put money in · forget it · collect profits.
 - Unlimited DCA levels — never stuck
 
 ### Intelligence
-- 10 entry methods competing simultaneously
+- 14 entry methods competing simultaneously
 - Auto-classification into 5 market cap categories
 - Cap protection against fake pumps
 - Volume-weighted parameters per category
@@ -113,7 +113,7 @@ Put money in · forget it · collect profits.
 ## Long-Term Vision
 
 Platform gets smarter every year.
-10 entry methods compete → worst deleted → best survives.
+14 entry methods compete → worst deleted → best survives.
 Intelligence compounds over time automatically.
 Eventually becomes a marketplace where signal providers
 list their strategies for subscribers to use.

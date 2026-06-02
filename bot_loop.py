@@ -100,8 +100,7 @@ def calculate_score(position, current_price, bot):
     avg_cost = float(position[7] or 0)
     total_invested = float(position[9] or 0)
     dca_count = position[10]
-    dca_percent = float(bot[10] or 7.0)
-    spacing_mult = float(bot[11] or 1.4)
+
     size_mult = float(bot[12] or 1.5)
     base_order = float(bot[13] or 1.0)
 
@@ -290,12 +289,16 @@ def try_open_position(bot, exchange_obj, tickers, r):
     user_id = bot[1]
     exchange_id = bot[2]
     coin_category = db.get_all_coin_categories()
-    base_order = float(bot[13] or 1.0)
     method = bot[4]
     direction = bot[5]
-    base_coin = bot[10]
-    trades_per_bot = bot[11] or 1
-    trades_per_coin = bot[12] or 1
+    base_coin = bot[9]
+
+    size_mult = float(bot[12] or 1.0)
+    take_profit = float(bot[13] or 3.0)
+    trailing = float(bot[14] or 1.0)
+    base_order = float(bot[15] or 10.0)
+    trades_per_bot = bot[16] or 1
+    trades_per_coin = bot[17] or 1
 
     # Check max trades per bot
     open_positions = db.get_open_positions(bot_id=bot_id)

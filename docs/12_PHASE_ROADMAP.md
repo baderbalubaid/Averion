@@ -52,7 +52,7 @@
 
 ---
 
-## Phase 4 — Live Trading ⏳ NEXT
+## Phase 4 — Hetzner Setup + Paper Trading ⏳ NEXT
 **Goal:** First real order on Hetzner server
 
 ### Replit remaining (before Hetzner):
@@ -78,7 +78,7 @@
 
 ### Days 3-16:
 - Paper trading 24/7
-- All 10 entry methods collecting data
+- All 14 entry methods collecting data
 - Excel reports generated daily
 - Monitor health checks
 
@@ -92,7 +92,7 @@
 **Goal:** Full adaptive platform
 
 - Smart DCA queue (Loss% ÷ USDT scoring)
-- 10 entry methods running simultaneously
+- 14 entry methods running simultaneously
 - Research system + MoM + decision history
 - Auto-classification engine
 - Cap protection system
