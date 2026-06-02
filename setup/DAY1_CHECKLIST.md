@@ -131,7 +131,7 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 - [ ] Verify PAPER badge back
 
 ## PHASE 14 — Research Bots (30 min)
-- [ ] Set up 107 paper research bots
+- [ ] Set up 144 paper research bots
 - [ ] Start with 10 trades per bot limit
 - [ ] Monitor loop time: pm2 logs averion
 - [ ] Verify all bots running in dashboard

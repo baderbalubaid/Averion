@@ -39,8 +39,8 @@ All code written · pushed to GitHub · ready to deploy:
 | hetzner_day1.sh | ✅ Ready | Security hardened setup script |
 | hetzner_day2.sh | ✅ Ready | Domain + HTTPS setup |
 | DAY1_CHECKLIST.md | ✅ Ready | Step by step checklist |
-| research_bots.json | ✅ Ready | 107 paper bots configured |
-| launch_research_bots.py | ✅ Ready | Launch all 107 bots |
+| research_bots.json | ✅ Ready | 144 paper bots configured |
+| launch_research_bots.py | ✅ Ready | Launch all 144 bots |
 | daily_cron.sh | ✅ Ready | All automation scheduled |
 | health_check.sh | ✅ Ready | Hourly monitoring |
 | fetch_coingecko.py | ✅ Ready | CoinGecko market caps |
@@ -91,7 +91,7 @@ Manual steps after script:
 
 ## Day 3+ — Paper Trading
 
-- 107 research bots running simultaneously
+- 144 research bots running simultaneously
 - Smart DCA entry methods testing (paper only)
 - OHLCV data building hourly
 - Classification running daily at 04:30

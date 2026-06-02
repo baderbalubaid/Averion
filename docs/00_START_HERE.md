@@ -113,7 +113,7 @@ Build once · Build right · Public platform from Day 1
 ├── DAY1_CHECKLIST.md
 ├── env.example
 ├── init_db.py
-├── research_bots.json (107 bots)
+├── research_bots.json (144 bots)
 └── launch_research_bots.py
 
 /automation
