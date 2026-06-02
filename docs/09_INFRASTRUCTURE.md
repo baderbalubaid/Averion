@@ -79,6 +79,13 @@
 - Send daily Telegram to each customer (their summary)
 - Save report to /reports/ folder
 
+#### 1st of Month — Key Rotation
+- Generate new Fernet key
+- Re-encrypt all exchange API keys
+- Delete old key
+- Alert admin via Telegram
+- Log in fernet_key_versions
+
 #### 05:30 — Sunday Only
 - DB VACUUM + ANALYZE
 - Delete logs older than 30 days
