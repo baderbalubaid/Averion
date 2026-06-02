@@ -94,3 +94,7 @@ echo "1. Add GitHub deploy keys (shown above)"
 echo "2. Setup UptimeRobot monitoring"
 echo "3. Test live \$1 order on MEXC"
 echo "4. Start 144 paper research bots"
+
+# Monthly Fernet key rotation (1st of every month at 02:00)
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 2 1 * * cd /home/$AVERION_USER/Averion && python3 automation/rotate_fernet.py >> /var/log/averion/fernet_rotation.log 2>&1") | crontab -u $AVERION_USER -
+echo "✅ Fernet rotation cron added"
