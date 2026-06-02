@@ -1142,3 +1142,56 @@ def get_last_resend_time(user_id):
            FROM users WHERE id = %s
        """, (user_id,))
        return cur.fetchone()
+
+def get_btc_7d_change():
+    """Get BTC 7-day price change percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                ((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC' ORDER BY timestamp DESC LIMIT 1) -
+                 (SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '7 days'
+                  ORDER BY timestamp DESC LIMIT 1)) /
+                NULLIF((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '7 days'
+                  ORDER BY timestamp DESC LIMIT 1), 0) * 100
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0
+
+def get_btc_24h_change():
+    """Get BTC 24-hour price change percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                ((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC' ORDER BY timestamp DESC LIMIT 1) -
+                 (SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '24 hours'
+                  ORDER BY timestamp DESC LIMIT 1)) /
+                NULLIF((SELECT close FROM ohlcv_hourly
+                  WHERE coin = 'BTC'
+                  AND timestamp <= NOW() - INTERVAL '24 hours'
+                  ORDER BY timestamp DESC LIMIT 1), 0) * 100
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0
+
+def get_market_volatility():
+    """Get market volatility from BTC ATR as percentage"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT atr_14 / NULLIF(close, 0) * 100
+            FROM ohlcv_hourly
+            WHERE coin = 'BTC'
+            ORDER BY timestamp DESC LIMIT 1
+        """)
+        row = cur.fetchone()
+        return float(row[0] or 0) if row else 0.0

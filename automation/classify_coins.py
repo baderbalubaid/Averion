@@ -221,3 +221,32 @@ Reclassified: {reclassified} coins"""
 
 if __name__ == '__main__':
     main()
+
+# Write daily market regime
+from datetime import date, datetime
+import database as db
+
+def determine_and_write_regime():
+    try:
+        # Get BTC price changes
+        btc_7d = db.get_btc_7d_change()
+        btc_24h = db.get_btc_24h_change()
+        volatility = db.get_market_volatility()
+
+        # Determine regime
+        if btc_7d > 5 and volatility < 60:
+            regime = 'bull'
+        elif btc_7d < -5 or volatility > 80:
+            regime = 'bear'
+        else:
+            regime = 'sideways'
+
+        db.write_market_regime(
+            date.today(), regime,
+            btc_24h, btc_7d, volatility
+        )
+        print(f'✅ Market regime: {regime} · BTC 7d: {btc_7d:.1f}% · Vol: {volatility:.1f}%')
+    except Exception as e:
+        print(f'❌ Regime write failed: {e}')
+
+determine_and_write_regime()
