@@ -372,10 +372,7 @@ Available funds: $X
 
 ## Virtual Wallet System (LOCKED)
 
-- User creates named virtual wallets per exchange
-- Example: Long Test 1 · Short BTC · RVN Wallet
-- Each wallet: name · currency · capital amount or All
-- Bot links to one wallet (changeable anytime)
+- See full definition above in "Virtual Wallet System (NEW FEATURE)"
 - Same wallet = shared queue + shared capital
 - Different wallet = isolated queue + capital
 - Wallets section shown per exchange in dashboard
