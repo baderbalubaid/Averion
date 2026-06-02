@@ -1827,3 +1827,28 @@ DB column needed:
 - Staged launch = safe · measurable · reversible
 - Short bots use same coins × 5 = more API calls
 - Better to confirm Long bots stable first
+
+## Email Verification Resend (LOCKED)
+
+### Problem
+Email delayed or spam-filtered → user stuck on verify page → abandons registration.
+
+### Solution
+Verify page shows countdown timer + resend button:
+- "Code sent to email@example.com"
+- Timer: "Resend available in 2:00" · counts down
+- After 2 minutes → [Resend Code] button appears
+- Click → new 6-digit code generated
+- Old code invalidated immediately
+- New email sent via Resend
+- Timer resets to 2:00
+
+### Rules (LOCKED)
+- Minimum 2 minutes between resends
+- Maximum 5 resends per hour per email
+- Each new code invalidates previous code
+- Code expires after 30 minutes always
+- Resend count tracked in DB · resets hourly
+- After 5 resends in 1 hour → show message:
+ "Too many attempts · try again in 1 hour"
+- Resend available on verify page only · not after verified
