@@ -10,10 +10,23 @@ load_dotenv()
 # FERNET ENCRYPTION
 # ═══════════════════════════════
 def get_fernet():
-   key = os.getenv('FERNET_KEY')
-   if not key:
-       raise Exception('FERNET_KEY not set in .env')
-   return Fernet(key.encode())
+   # Full key mode (Day 1)
+   full_key = os.getenv('FERNET_KEY')
+   if full_key:
+       return Fernet(full_key.encode())
+   # Split key mode (Day 2+ · more secure)
+   part_a = os.getenv('FERNET_KEY_PART_A')
+   hetzner_token = os.getenv('HETZNER_API_TOKEN')
+   secret_id = os.getenv('HETZNER_SECRET_ID')
+   if part_a and hetzner_token and secret_id:
+       import requests
+       res = requests.get(
+           f'https://api.hetzner.cloud/v1/secrets/{secret_id}',
+           headers={'Authorization': f'Bearer {hetzner_token}'}
+       )
+       part_b = res.json()['secret']['value']
+       return Fernet((part_a + part_b).encode())
+   raise Exception('No Fernet key found · set FERNET_KEY or split key vars in .env')
 
 def encrypt(text: str) -> str:
    return get_fernet().encrypt(text.encode()).decode()
