@@ -258,8 +258,8 @@ def get_open_positions(exchange_id=None, bot_id=None):
 def open_position(bot_id, user_id, exchange_id, wallet_id,
                   coin, direction, avg_cost, quantity,
                   total_invested, last_buy_price, category,
-                  is_paper, base_coin, sequence_number,
-                  coin_trade_number, entry_method=None):
+                  is_paper, base_coin, profit_coin, sequence_number,
+                  coin_trade_number, entry_method=None, profit_coin='USDT'):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -267,7 +267,7 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
                 bot_id, user_id, exchange_id, wallet_id,
                 coin, direction, avg_cost, quantity,
                 total_invested, last_buy_price, category,
-                is_paper, base_coin, sequence_number,
+                is_paper, base_coin, profit_coin, sequence_number,
                 coin_trade_number, entry_method,
                 is_gate_reference, gate_reference_since
             ) VALUES (
