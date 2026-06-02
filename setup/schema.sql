@@ -677,3 +677,75 @@ CREATE INDEX IF NOT EXISTS idx_market_regimes_date
 ON market_regimes(date);
 
 SELECT 'market_regimes table created!' AS result;
+
+-- ═══════════════════════════════
+-- PERFORMANCE TIMING
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS performance_timing (
+    id SERIAL PRIMARY KEY,
+    step VARCHAR(50) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    duration_seconds DECIMAL(10,3),
+    records_processed INTEGER DEFAULT 0,
+    error_message TEXT,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ═══════════════════════════════
+-- SYSTEM HEALTH
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS system_health (
+    id SERIAL PRIMARY KEY,
+    checked_at TIMESTAMP DEFAULT NOW(),
+    cpu_percent DECIMAL(5,2),
+    ram_percent DECIMAL(5,2),
+    disk_percent DECIMAL(5,2),
+    pm2_running BOOLEAN DEFAULT TRUE,
+    trades_count INTEGER DEFAULT 0,
+    bot_loop_lag_seconds DECIMAL(10,3),
+    alert_sent BOOLEAN DEFAULT FALSE
+);
+
+-- ═══════════════════════════════
+-- BOT EVENTS
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS bot_events (
+    id SERIAL PRIMARY KEY,
+    bot_id INTEGER REFERENCES bots(id),
+    user_id INTEGER REFERENCES users(id),
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bot_events_bot
+ON bot_events(bot_id, created_at);
+
+-- ═══════════════════════════════
+-- BOT MIRRORS (Admin Copy Bot)
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS bot_mirrors (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES users(id),
+    source_bot_id INTEGER REFERENCES bots(id),
+    mirror_bot_id INTEGER REFERENCES bots(id),
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    stopped_at TIMESTAMP
+);
+
+-- ═══════════════════════════════
+-- EXCHANGE MIRRORS (Admin Mirror Exchange)
+-- ═══════════════════════════════
+CREATE TABLE IF NOT EXISTS exchange_mirrors (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES users(id),
+    source_user_id INTEGER REFERENCES users(id),
+    source_exchange_id INTEGER REFERENCES exchanges(id),
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    stopped_at TIMESTAMP
+);
+
+SELECT 'New tables created!' AS result;
