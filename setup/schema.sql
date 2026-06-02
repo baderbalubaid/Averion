@@ -608,6 +608,7 @@ SELECT 'Multi-trade gate and limit order columns added!' AS result;
 
 -- Gate reference tracking
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS base_coin VARCHAR(10) DEFAULT 'USDT';
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS is_research BOOLEAN DEFAULT FALSE;
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS gate_reference_since TIMESTAMP;
 
 -- Pending limit orders
