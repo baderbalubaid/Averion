@@ -2608,6 +2608,18 @@ All reports:
 → Notes section (blank · AI fills)
 → Pushed to GitHub automatically
 → Shareable via URL with any AI
+
+## Pricing System — Final (LOCKED)
+
+Free tier: unlimited exchanges · 5 bots · 100 open trades · 30 paper · $5 trial
+Add-ons: extra bots + trade bundles (prices TBD · admin sets in DB)
+Billing: one-time default · auto-renewal opt-in · expiry date shown
+Performance fee: 20% immediate on profit · loss = $0
+Referral: 2.5% of 20% fee · forever · registration only
+Reserve wallet: minimum $10 · NOWPayments · TRC20/BEP20
+Owner wallet: real TRC20 address · auto-transfer at $10 threshold
+Paper trades: 30 max · auto-close after 90 days no live trade
+Trade limit: 100 hard cap · bundles raise the limit
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
