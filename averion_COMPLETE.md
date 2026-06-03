@@ -2515,6 +2515,30 @@ Quality vs frequency balance
 
 Preview shown before saving:
 "Entry when: RSI < 35 AND price 3% below VWAP AND volume > 1.5x"
+
+## Admin Dashboard V2 — Final Structure (LOCKED)
+
+9 tabs total · owner is also a user with own trades
+
+Tab 1: Dashboard (home · alerts · platform overview · exchanges)
+Tab 2: My Bots (bots + queue per wallet + history sub-tab)
+Tab 3: My Copy (mirrors · copy bots)
+Tab 4: Research (252 bots · champions · reports)
+Tab 5: Users (customer management · 3-level dropdown)
+Tab 6: Health (server · cron · fetch · performance · markdown export)
+Tab 7: Trading (exchanges · classification · Smart DCA)
+Tab 8: Controls (system controls · owner wallet · security)
+Tab 9: System (account · settings · danger zone)
+
+Key decisions:
+- Fees shown as negative (customers owe owner)
+- Each wallet = independent queue
+- Bot view = 3 sub-tabs (Positions · Queue · Closed)
+- History = all trades across all bots (separate sub-tab)
+- All coins bot shows summary + paginated detail
+- Suspend = no new trades · existing continue · not holding money
+- Health report exportable as markdown for AI review
+- Full research report from Day 1 available anytime
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
