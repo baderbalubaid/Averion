@@ -474,3 +474,73 @@ Can expand to 200+ if server handles it (CX33 upgrade).
 15. What would make this research system the most
     comprehensive DCA entry method study ever done
     in crypto? What are we still missing?
+
+---
+
+## FINAL SUMMARY — All 26 Methods Locked
+
+### Complete Method List:
+
+| Method | Name | Bots | Philosophy |
+|--------|------|------|-----------|
+| E1 | VWAP + RSI + ATR | 12 | Mean reversion + value |
+| E2 | Panic Exhaustion | 9 | BB + volume exhaustion |
+| E3 | Volume Climax | 12 | Volume + price action |
+| E4 | Time-Cycle Window | 9 | Time-based entry |
+| E5 | Multi-Timeframe EMA | 12 | Trend pullback |
+| E6 | Z-Score Statistical | 9 | Pure mean reversion |
+| E7 | Volatility Squeeze | 9 | Breakout from compression |
+| E8 | Swing Structure Shift | 9 | Market structure |
+| E9 | Sequential Candle Decay | 9 | Candle pattern |
+| E10 | Pure Drop Threshold | 12 | Control group |
+| E11 | QFL Base Bounce | 9 | Crypto-native base break |
+| E12 | S/R Reclaim | 9 | Support reclaim |
+| E13 | EMA + MACD + RSI | 10 | Triple confluence |
+| E14 | Stoch RSI Pullback | 9 | Oversold + trend |
+| E15 | OBV Divergence | 9 | Volume accumulation |
+| E16 | RSI Divergence | 9 | Momentum divergence |
+| E17 | Liquidity Sweep | 9 | Stop hunt reversal |
+| E18 | ADX Trend Pullback | 9 | Trend strength filter |
+| E19 | Fibonacci Retracement | 9 | Key level entry |
+| E20 | VPOC Volume Profile | 9 | Volume node support |
+| E21 | Fair Value Gap | 9 | Price imbalance fill |
+| E22 | Hammer/Engulfing | 9 | Pure price action |
+| E23 | Relative Strength vs BTC | 9 | Crypto-specific |
+| E24 | Funding Rate Extreme | 9 | Short squeeze signal |
+| E25 | Supertrend + RSI | 9 | ATR trend + oversold |
+| E26 | Ichimoku Simplified | 9 | Cloud-based reversion |
+| Benchmarks | 5 methods | 5 | BTC Hold · ETH · Simple · Random · Static |
+
+Total method bots: 247
+Total with benchmarks: 252
+
+### Signal Families Covered:
+✅ Mean reversion (E1 · E6 · E10)
+✅ Volume exhaustion (E2 · E3)
+✅ Trend pullback (E4 · E5 · E13 · E14 · E18 · E25)
+✅ Volatility (E7 · E11)
+✅ Market structure (E8 · E12 · E17 · E22)
+✅ Statistical (E6 · E9)
+✅ Divergence (E15 · E16)
+✅ Volume profile (E20)
+✅ Price imbalance (E21)
+✅ Fibonacci (E19)
+✅ Relative performance (E23)
+✅ Crypto-specific (E11 · E24)
+✅ Cloud system (E26)
+✅ Control group (E10 · benchmarks)
+
+### DCA-Specific Scoring Metrics:
+Primary RARS: Capital Efficiency 35% + Drawdown 30% + Win Rate 20% + Profit Factor 15%
+Additional tracking per method:
+- avg_dca_count (fewer = better entry quality)
+- avg_days_to_tp (faster = better)
+- max_capital_deployed (lower = more efficient)
+- regime_performance (bull/bear/sideways separate)
+
+### Server Plan:
+252 Long bots → CX33 (€17.99/month)
+252 Short bots (Phase 2) → same server
+Total at full capacity: 504 research bots
+
+### All decisions locked. Ready to code on Hetzner Day 3.

@@ -8280,6 +8280,782 @@ if __name__ == '__main__':
           "recovery_closes": 3
         }
       ]
+    },
+    "E15": {
+      "name": "OBV Divergence",
+      "description": "Price making lower lows while OBV making higher lows = smart money accumulating",
+      "most_important_param": "lookback",
+      "fixed": {
+        "green_close_required": true,
+        "obv_rising_candles": 3
+      },
+      "bots": [
+        {
+          "id": "E15-1",
+          "lookback_hours": 24,
+          "rsi_max": 40,
+          "min_drop_pct": 3
+        },
+        {
+          "id": "E15-2",
+          "lookback_hours": 24,
+          "rsi_max": 45,
+          "min_drop_pct": 5
+        },
+        {
+          "id": "E15-3",
+          "lookback_hours": 24,
+          "rsi_max": 50,
+          "min_drop_pct": 7
+        },
+        {
+          "id": "E15-4",
+          "lookback_hours": 48,
+          "rsi_max": 40,
+          "min_drop_pct": 3
+        },
+        {
+          "id": "E15-5",
+          "lookback_hours": 48,
+          "rsi_max": 45,
+          "min_drop_pct": 5
+        },
+        {
+          "id": "E15-6",
+          "lookback_hours": 48,
+          "rsi_max": 50,
+          "min_drop_pct": 7
+        },
+        {
+          "id": "E15-7",
+          "lookback_hours": 72,
+          "rsi_max": 40,
+          "min_drop_pct": 5
+        },
+        {
+          "id": "E15-8",
+          "lookback_hours": 72,
+          "rsi_max": 45,
+          "min_drop_pct": 7
+        },
+        {
+          "id": "E15-9",
+          "lookback_hours": 72,
+          "rsi_max": 50,
+          "min_drop_pct": 10
+        }
+      ]
+    },
+    "E16": {
+      "name": "RSI Divergence",
+      "description": "Price lower low while RSI higher low = selling momentum weakening before reversal",
+      "most_important_param": "lookback",
+      "fixed": {
+        "rsi_period": 14,
+        "min_price_drop_pct": 3
+      },
+      "bots": [
+        {
+          "id": "E16-1",
+          "lookback_hours": 24,
+          "rsi_at_second_low": 35,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-2",
+          "lookback_hours": 24,
+          "rsi_at_second_low": 40,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-3",
+          "lookback_hours": 24,
+          "rsi_at_second_low": 45,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-4",
+          "lookback_hours": 48,
+          "rsi_at_second_low": 35,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-5",
+          "lookback_hours": 48,
+          "rsi_at_second_low": 40,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-6",
+          "lookback_hours": 48,
+          "rsi_at_second_low": 45,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E16-7",
+          "lookback_hours": 72,
+          "rsi_at_second_low": 35,
+          "confirmation": "break_prior_high"
+        },
+        {
+          "id": "E16-8",
+          "lookback_hours": 72,
+          "rsi_at_second_low": 40,
+          "confirmation": "break_prior_high"
+        },
+        {
+          "id": "E16-9",
+          "lookback_hours": 72,
+          "rsi_at_second_low": 45,
+          "confirmation": "break_prior_high"
+        }
+      ]
+    },
+    "E17": {
+      "name": "Liquidity Sweep Reversal",
+      "description": "Price breaks N-hour low triggering stops then immediately reclaims = institutional absorption",
+      "most_important_param": "lookback_low_hours",
+      "fixed": {
+        "volume_multiplier": 1.5
+      },
+      "bots": [
+        {
+          "id": "E17-1",
+          "lookback_low_hours": 12,
+          "reclaim_pct": 0.25,
+          "close_position": "upper_40"
+        },
+        {
+          "id": "E17-2",
+          "lookback_low_hours": 12,
+          "reclaim_pct": 0.5,
+          "close_position": "upper_50"
+        },
+        {
+          "id": "E17-3",
+          "lookback_low_hours": 12,
+          "reclaim_pct": 1.0,
+          "close_position": "upper_60"
+        },
+        {
+          "id": "E17-4",
+          "lookback_low_hours": 24,
+          "reclaim_pct": 0.25,
+          "close_position": "upper_40"
+        },
+        {
+          "id": "E17-5",
+          "lookback_low_hours": 24,
+          "reclaim_pct": 0.5,
+          "close_position": "upper_50"
+        },
+        {
+          "id": "E17-6",
+          "lookback_low_hours": 24,
+          "reclaim_pct": 1.0,
+          "close_position": "upper_60"
+        },
+        {
+          "id": "E17-7",
+          "lookback_low_hours": 48,
+          "reclaim_pct": 0.25,
+          "close_position": "upper_40"
+        },
+        {
+          "id": "E17-8",
+          "lookback_low_hours": 48,
+          "reclaim_pct": 0.5,
+          "close_position": "upper_50"
+        },
+        {
+          "id": "E17-9",
+          "lookback_low_hours": 48,
+          "reclaim_pct": 1.0,
+          "close_position": "upper_60"
+        }
+      ]
+    },
+    "E18": {
+      "name": "ADX Trend Pullback",
+      "description": "Strong trend confirmed by ADX + RSI oversold = buying dip in genuinely strong uptrend",
+      "most_important_param": "adx_min",
+      "fixed": {
+        "adx_period": 14,
+        "price_above_trend_ema": true
+      },
+      "bots": [
+        {
+          "id": "E18-1",
+          "adx_min": 20,
+          "rsi_max": 35,
+          "trend_ema": 100
+        },
+        {
+          "id": "E18-2",
+          "adx_min": 20,
+          "rsi_max": 40,
+          "trend_ema": 100
+        },
+        {
+          "id": "E18-3",
+          "adx_min": 20,
+          "rsi_max": 45,
+          "trend_ema": 100
+        },
+        {
+          "id": "E18-4",
+          "adx_min": 25,
+          "rsi_max": 35,
+          "trend_ema": 150
+        },
+        {
+          "id": "E18-5",
+          "adx_min": 25,
+          "rsi_max": 40,
+          "trend_ema": 150
+        },
+        {
+          "id": "E18-6",
+          "adx_min": 25,
+          "rsi_max": 45,
+          "trend_ema": 150
+        },
+        {
+          "id": "E18-7",
+          "adx_min": 30,
+          "rsi_max": 35,
+          "trend_ema": 200
+        },
+        {
+          "id": "E18-8",
+          "adx_min": 30,
+          "rsi_max": 40,
+          "trend_ema": 200
+        },
+        {
+          "id": "E18-9",
+          "adx_min": 30,
+          "rsi_max": 45,
+          "trend_ema": 200
+        }
+      ]
+    },
+    "E19": {
+      "name": "Fibonacci Retracement",
+      "description": "Price pulls back to key Fibonacci levels = self-fulfilling institutional orders cluster here",
+      "most_important_param": "fib_level",
+      "fixed": {
+        "price_above_ema200": true
+      },
+      "bots": [
+        {
+          "id": "E19-1",
+          "fib_level": 38.2,
+          "swing_lookback_hours": 48,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E19-2",
+          "fib_level": 50.0,
+          "swing_lookback_hours": 48,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E19-3",
+          "fib_level": 61.8,
+          "swing_lookback_hours": 48,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E19-4",
+          "fib_level": 78.6,
+          "swing_lookback_hours": 48,
+          "confirmation": "green_close"
+        },
+        {
+          "id": "E19-5",
+          "fib_level": 38.2,
+          "swing_lookback_hours": 96,
+          "confirmation": "vwap_reclaim"
+        },
+        {
+          "id": "E19-6",
+          "fib_level": 50.0,
+          "swing_lookback_hours": 96,
+          "confirmation": "vwap_reclaim"
+        },
+        {
+          "id": "E19-7",
+          "fib_level": 61.8,
+          "swing_lookback_hours": 96,
+          "confirmation": "vwap_reclaim"
+        },
+        {
+          "id": "E19-8",
+          "fib_level": 78.6,
+          "swing_lookback_hours": 96,
+          "confirmation": "vwap_reclaim"
+        },
+        {
+          "id": "E19-9",
+          "fib_level": 61.8,
+          "swing_lookback_hours": 168,
+          "confirmation": "vwap_reclaim"
+        }
+      ]
+    },
+    "E20": {
+      "name": "VPOC Volume Profile",
+      "description": "Price returns to highest volume price level = maximum liquidity = strongest structural support",
+      "most_important_param": "profile_lookback_days",
+      "fixed": {
+        "price_bins_pct": 0.1
+      },
+      "bots": [
+        {
+          "id": "E20-1",
+          "profile_lookback_days": 30,
+          "buffer_pct": 0,
+          "rsi_filter": null
+        },
+        {
+          "id": "E20-2",
+          "profile_lookback_days": 60,
+          "buffer_pct": 0,
+          "rsi_filter": null
+        },
+        {
+          "id": "E20-3",
+          "profile_lookback_days": 90,
+          "buffer_pct": 0,
+          "rsi_filter": null
+        },
+        {
+          "id": "E20-4",
+          "profile_lookback_days": 30,
+          "buffer_pct": 0.5,
+          "rsi_filter": 35
+        },
+        {
+          "id": "E20-5",
+          "profile_lookback_days": 60,
+          "buffer_pct": 0.5,
+          "rsi_filter": 35
+        },
+        {
+          "id": "E20-6",
+          "profile_lookback_days": 90,
+          "buffer_pct": 0.5,
+          "rsi_filter": 35
+        },
+        {
+          "id": "E20-7",
+          "profile_lookback_days": 60,
+          "buffer_pct": "value_area_low",
+          "rsi_filter": null
+        },
+        {
+          "id": "E20-8",
+          "profile_lookback_days": 90,
+          "buffer_pct": "value_area_low",
+          "rsi_filter": 30
+        },
+        {
+          "id": "E20-9",
+          "profile_lookback_days": 90,
+          "buffer_pct": -1.0,
+          "rsi_filter": 40
+        }
+      ]
+    },
+    "E21": {
+      "name": "Fair Value Gap",
+      "description": "3-candle imbalance zone where price fills gap = market seeks to fill imbalances",
+      "most_important_param": "timeframe_hours",
+      "fixed": {
+        "price_above_ema200": true,
+        "max_gap_age_days": 7
+      },
+      "bots": [
+        {
+          "id": "E21-1",
+          "timeframe_hours": 1,
+          "fill_depth_pct": 25,
+          "volume_multiplier": null
+        },
+        {
+          "id": "E21-2",
+          "timeframe_hours": 1,
+          "fill_depth_pct": 50,
+          "volume_multiplier": null
+        },
+        {
+          "id": "E21-3",
+          "timeframe_hours": 1,
+          "fill_depth_pct": 100,
+          "volume_multiplier": 1.2
+        },
+        {
+          "id": "E21-4",
+          "timeframe_hours": 4,
+          "fill_depth_pct": 25,
+          "volume_multiplier": null
+        },
+        {
+          "id": "E21-5",
+          "timeframe_hours": 4,
+          "fill_depth_pct": 50,
+          "volume_multiplier": null
+        },
+        {
+          "id": "E21-6",
+          "timeframe_hours": 4,
+          "fill_depth_pct": 100,
+          "volume_multiplier": 1.5
+        },
+        {
+          "id": "E21-7",
+          "timeframe_hours": 4,
+          "fill_depth_pct": 50,
+          "volume_multiplier": 2.0
+        },
+        {
+          "id": "E21-8",
+          "timeframe_hours": 12,
+          "fill_depth_pct": 50,
+          "volume_multiplier": null
+        },
+        {
+          "id": "E21-9",
+          "timeframe_hours": 12,
+          "fill_depth_pct": 100,
+          "volume_multiplier": 1.2
+        }
+      ]
+    },
+    "E22": {
+      "name": "Hammer Engulfing at Support",
+      "description": "Pure price action candle patterns at support level = buyers defending level shown by candle shape",
+      "most_important_param": "pattern_type",
+      "fixed": {
+        "uses_e12_support_detection": true
+      },
+      "bots": [
+        {
+          "id": "E22-1",
+          "pattern": "hammer",
+          "wick_ratio": 2.0,
+          "support_proximity_pct": 0.5
+        },
+        {
+          "id": "E22-2",
+          "pattern": "hammer",
+          "wick_ratio": 2.5,
+          "support_proximity_pct": 0.5
+        },
+        {
+          "id": "E22-3",
+          "pattern": "hammer",
+          "wick_ratio": 3.0,
+          "support_proximity_pct": 0.5
+        },
+        {
+          "id": "E22-4",
+          "pattern": "hammer",
+          "wick_ratio": 2.0,
+          "support_proximity_pct": 1.0
+        },
+        {
+          "id": "E22-5",
+          "pattern": "hammer",
+          "wick_ratio": 2.5,
+          "support_proximity_pct": 1.0
+        },
+        {
+          "id": "E22-6",
+          "pattern": "hammer",
+          "wick_ratio": 3.0,
+          "support_proximity_pct": 1.0
+        },
+        {
+          "id": "E22-7",
+          "pattern": "engulfing",
+          "wick_ratio": null,
+          "support_proximity_pct": 0.5
+        },
+        {
+          "id": "E22-8",
+          "pattern": "engulfing",
+          "wick_ratio": null,
+          "support_proximity_pct": 1.0
+        },
+        {
+          "id": "E22-9",
+          "pattern": "engulfing",
+          "wick_ratio": null,
+          "support_proximity_pct": 2.0
+        }
+      ]
+    },
+    "E23": {
+      "name": "Relative Strength vs BTC",
+      "description": "Coin outperforms BTC while both falling = hidden institutional accumulation",
+      "most_important_param": "lookback_hours",
+      "fixed": {
+        "requires_btc_ohlcv": true,
+        "coin_must_be_dropping": true
+      },
+      "bots": [
+        {
+          "id": "E23-1",
+          "lookback_hours": 24,
+          "min_outperform_pct": 2,
+          "rsi_max": 40
+        },
+        {
+          "id": "E23-2",
+          "lookback_hours": 24,
+          "min_outperform_pct": 4,
+          "rsi_max": 40
+        },
+        {
+          "id": "E23-3",
+          "lookback_hours": 24,
+          "min_outperform_pct": 6,
+          "rsi_max": 40
+        },
+        {
+          "id": "E23-4",
+          "lookback_hours": 48,
+          "min_outperform_pct": 2,
+          "rsi_max": 45
+        },
+        {
+          "id": "E23-5",
+          "lookback_hours": 48,
+          "min_outperform_pct": 4,
+          "rsi_max": 45
+        },
+        {
+          "id": "E23-6",
+          "lookback_hours": 48,
+          "min_outperform_pct": 6,
+          "rsi_max": 45
+        },
+        {
+          "id": "E23-7",
+          "lookback_hours": 72,
+          "min_outperform_pct": 2,
+          "rsi_max": 50
+        },
+        {
+          "id": "E23-8",
+          "lookback_hours": 72,
+          "min_outperform_pct": 4,
+          "rsi_max": 50
+        },
+        {
+          "id": "E23-9",
+          "lookback_hours": 72,
+          "min_outperform_pct": 6,
+          "rsi_max": 50
+        }
+      ]
+    },
+    "E24": {
+      "name": "Funding Rate Extreme",
+      "description": "Perpetual futures funding very negative = aggressive shorts = short squeeze imminent",
+      "most_important_param": "funding_threshold",
+      "fixed": {
+        "exchange_specific": true,
+        "perp_markets_only": true
+      },
+      "bots": [
+        {
+          "id": "E24-1",
+          "funding_threshold_pct": -0.05,
+          "rsi_max": 35,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-2",
+          "funding_threshold_pct": -0.1,
+          "rsi_max": 35,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-3",
+          "funding_threshold_pct": -0.15,
+          "rsi_max": 35,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-4",
+          "funding_threshold_pct": -0.05,
+          "rsi_max": 40,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-5",
+          "funding_threshold_pct": -0.1,
+          "rsi_max": 40,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-6",
+          "funding_threshold_pct": -0.15,
+          "rsi_max": 40,
+          "lookback": "current"
+        },
+        {
+          "id": "E24-7",
+          "funding_threshold_pct": -0.05,
+          "rsi_max": 35,
+          "lookback": "8h_avg"
+        },
+        {
+          "id": "E24-8",
+          "funding_threshold_pct": -0.1,
+          "rsi_max": 35,
+          "lookback": "8h_avg"
+        },
+        {
+          "id": "E24-9",
+          "funding_threshold_pct": -0.15,
+          "rsi_max": 40,
+          "lookback": "8h_avg"
+        }
+      ]
+    },
+    "E25": {
+      "name": "Supertrend + RSI",
+      "description": "Supertrend ATR-based trend direction bullish + RSI oversold = trend confirmed pullback",
+      "most_important_param": "atr_multiplier",
+      "fixed": {
+        "supertrend_must_be_bullish": true
+      },
+      "bots": [
+        {
+          "id": "E25-1",
+          "atr_period": 10,
+          "atr_multiplier": 2.0,
+          "rsi_max": 30
+        },
+        {
+          "id": "E25-2",
+          "atr_period": 10,
+          "atr_multiplier": 2.5,
+          "rsi_max": 35
+        },
+        {
+          "id": "E25-3",
+          "atr_period": 10,
+          "atr_multiplier": 3.0,
+          "rsi_max": 40
+        },
+        {
+          "id": "E25-4",
+          "atr_period": 14,
+          "atr_multiplier": 2.0,
+          "rsi_max": 30
+        },
+        {
+          "id": "E25-5",
+          "atr_period": 14,
+          "atr_multiplier": 2.5,
+          "rsi_max": 35
+        },
+        {
+          "id": "E25-6",
+          "atr_period": 14,
+          "atr_multiplier": 3.0,
+          "rsi_max": 40
+        },
+        {
+          "id": "E25-7",
+          "atr_period": 20,
+          "atr_multiplier": 2.0,
+          "rsi_max": 30
+        },
+        {
+          "id": "E25-8",
+          "atr_period": 20,
+          "atr_multiplier": 2.5,
+          "rsi_max": 35
+        },
+        {
+          "id": "E25-9",
+          "atr_period": 20,
+          "atr_multiplier": 3.0,
+          "rsi_max": 40
+        }
+      ]
+    },
+    "E26": {
+      "name": "Ichimoku Cloud Simplified",
+      "description": "Kumo cloud only as trend filter + RSI oversold = cloud-based mean reversion",
+      "most_important_param": "rsi_max",
+      "fixed": {
+        "use_kumo_only": true,
+        "price_below_cloud": true,
+        "future_cloud_bullish": true
+      },
+      "bots": [
+        {
+          "id": "E26-1",
+          "conversion": 9,
+          "base": 26,
+          "rsi_max": 35
+        },
+        {
+          "id": "E26-2",
+          "conversion": 9,
+          "base": 26,
+          "rsi_max": 40
+        },
+        {
+          "id": "E26-3",
+          "conversion": 9,
+          "base": 26,
+          "rsi_max": 45
+        },
+        {
+          "id": "E26-4",
+          "conversion": 12,
+          "base": 30,
+          "rsi_max": 35
+        },
+        {
+          "id": "E26-5",
+          "conversion": 12,
+          "base": 30,
+          "rsi_max": 40
+        },
+        {
+          "id": "E26-6",
+          "conversion": 12,
+          "base": 30,
+          "rsi_max": 45
+        },
+        {
+          "id": "E26-7",
+          "conversion": 9,
+          "base": 26,
+          "rsi_max": 35
+        },
+        {
+          "id": "E26-8",
+          "conversion": 12,
+          "base": 26,
+          "rsi_max": 35
+        },
+        {
+          "id": "E26-9",
+          "conversion": 9,
+          "base": 30,
+          "rsi_max": 40
+        }
+      ]
     }
   }
 }import os
