@@ -2865,6 +2865,65 @@ Auto-resume: ON by default
 
 Set and forget: deposits funds → walks away → platform handles everything
 Weekly reminder only if bots paused (not daily)
+
+## Trade Limits — Final (LOCKED)
+
+### Hard Cap Rule
+Total 100 = Long + Short + Paper combined
+One counter · everything counts
+
+Paper sub-limit: 30 max within the 100
+Paper cap: ALWAYS 30 · never changes · no exceptions
+Bundles never raise paper limit
+
+### Why Paper Sub-Limit of 30
+New user opens 100 paper trades → tries real money → blocked
+Frustrated · confused · leaves platform
+30 paper max protects new users from this mistake
+Paper trades are free · can close at any loss anytime
+Non-experienced users may not know this
+
+### Examples
+
+Example 1:
+Paper: 20 · Long: 50 · Short: 10 = 80/100
+Can open: 20 more (live only)
+Paper still has room: 10 more paper allowed
+
+Example 2:
+Paper: 30 · Long: 40 · Short: 0 = 70/100
+Can open: 30 more (live only)
+Cannot open more paper (at 30 sub-limit)
+
+Example 3:
+Paper: 30 · Long: 70 · Short: 0 = 100/100
+Fully at cap · cannot open anything
+Options: close positions OR buy bundle
+
+### Dashboard Display
+Total: 70/100
+├─ Live: 40 (Long 35 · Short 5)
+└─ Paper: 30/30 (at limit)
+Can open: 30 more (live trades only)
+[Add Bundle] to increase total cap
+
+### Bundle Rules
+Buy Bundle 200:
+→ Total cap: 100 → 200
+→ Paper sub-limit: still 30 (unchanged always)
+
+Buy Bundle 500:
+→ Total cap: 100 → 500
+→ Paper sub-limit: still 30 (unchanged always)
+
+### Admin / Research Account
+is_research_account = TRUE → no cap · unlimited
+is_research_account = FALSE → normal rules apply
+Admin personal trading → same 100 cap as regular users
+
+### Paper Auto-Close Rule (Already Locked)
+After 90 days no live trade → all paper trades auto-close
+Prevents forgotten paper trades consuming slots forever
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -6774,6 +6833,17 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 INSERT INTO schema_migrations (version, description)
 VALUES ('001', 'Initial schema setup')
 ON CONFLICT (version) DO NOTHING;
+
+-- Trade limit tracking (combined counter)
+-- Total cap = Long + Short + Paper combined
+-- Paper sub-cap = 30 max always
+-- Add column to track per user
+ALTER TABLE users ADD COLUMN IF NOT EXISTS live_trades_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS paper_trades_count INTEGER DEFAULT 0;
+-- live_trades_count = Long + Short open positions
+-- paper_trades_count = paper open positions
+-- total = live + paper <= trade_limit (default 100)
+-- paper always <= 30 regardless of bundle
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
