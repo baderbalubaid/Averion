@@ -2851,6 +2851,20 @@ Same-device referral detection: IP + device fingerprint
 Wash trading detection: same exchange account pattern
 Implement before public launch (Phase 7)
 Not needed for Phase 4-6 (limited users)
+
+## Bot State Machine & Reserve Floor — Final (LOCKED)
+
+TP: ALWAYS ON · no toggle · never shown · fires regardless of any condition
+Trading toggle: customer controlled
+DCA toggle: customer controlled
+
+States:
+Normal → floor hit → zero capital → resumed
+Each bot has own independent floor + threshold
+Auto-resume: ON by default
+
+Set and forget: deposits funds → walks away → platform handles everything
+Weekly reminder only if bots paused (not daily)
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
