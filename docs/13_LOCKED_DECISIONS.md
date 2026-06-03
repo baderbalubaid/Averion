@@ -2266,3 +2266,17 @@ Types:
 📧 EMAIL: security · deposit · reports (toggle)
 
 All controls in Settings tab only.
+
+## Admin Telegram — 3 Channels (LOCKED)
+
+Channel 1: Alerts (urgent · needs action)
+→ Reserve empty · API rejected · crashed · security · breaker
+
+Channel 2: Activity (info · no action)
+→ New user · deposits · fees · referral · research updates
+
+Channel 3: System (technical · daily digest)
+→ Cron summary · server health · CCXT · backups · rotation
+
+Daily digest: sent every morning to Channel 3
+Contains: cron results · platform stats · server health · alerts count
