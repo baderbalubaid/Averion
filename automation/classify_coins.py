@@ -1,3 +1,131 @@
+
+def get_regime_tp_multiplier():
+    """Get TP multiplier based on current market regime"""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT regime FROM market_regimes
+            ORDER BY date DESC LIMIT 1
+        """)
+        row = cur.fetchone()
+        regime = row[0] if row else 'sideways'
+    
+    multipliers = {
+        'bull': 0.80,
+        'bear': 0.60,
+        'sideways': 0.70,
+        'strong_bull': 0.85,
+        'strong_bear': 0.55
+    }
+    return multipliers.get(regime, 0.70)
+
+def calculate_coin_spacing(coin, category, ohlcv_data):
+    """Calculate independent spacing per coin from its own ATR data"""
+    import numpy as np
+    
+    # Category safety limits
+    limits = {
+        'mega':  {'min': 2.0,  'max': 8.0},
+        'large': {'min': 5.0,  'max': 12.0},
+        'mid':   {'min': 7.0,  'max': 18.0},
+        'small': {'min': 10.0, 'max': 25.0},
+        'micro': {'min': 15.0, 'max': 40.0}
+    }
+    cat_limits = limits.get(category, limits['mid'])
+    
+    if len(ohlcv_data) < 14:
+        # Not enough data: use category midpoint
+        return (cat_limits['min'] + cat_limits['max']) / 2
+    
+    closes = [c[4] for c in ohlcv_data]  # close prices
+    highs  = [c[2] for c in ohlcv_data]
+    lows   = [c[3] for c in ohlcv_data]
+    
+    # ATR_14 on hourly data
+    true_ranges = []
+    for i in range(1, len(closes)):
+        tr = max(
+            highs[i] - lows[i],
+            abs(highs[i] - closes[i-1]),
+            abs(lows[i] - closes[i-1])
+        )
+        true_ranges.append(tr)
+    
+    atr_14 = np.mean(true_ranges[-14:])
+    atr_pct = (atr_14 / closes[-1]) * 100
+    atr_spacing = atr_pct * 1.5
+    
+    # Median bounce threshold from 90 days
+    drops = []
+    i = 0
+    while i < len(closes) - 1:
+        if closes[i+1] < closes[i]:
+            drop_start = closes[i]
+            j = i + 1
+            while j < len(closes) and closes[j] < closes[i]:
+                j += 1
+            if j < len(closes):
+                drop_pct = ((drop_start - min(closes[i:j])) / drop_start) * 100
+                drops.append(drop_pct)
+            i = j
+        else:
+            i += 1
+    
+    if drops:
+        median_bounce = float(np.median(drops))
+        bounce_spacing = median_bounce * 0.85
+    else:
+        bounce_spacing = atr_spacing
+    
+    # Take the larger (more conservative)
+    raw_spacing = max(atr_spacing, bounce_spacing)
+    
+    # Clamp to category limits
+    spacing = max(cat_limits['min'], min(cat_limits['max'], raw_spacing))
+    return round(spacing, 2)
+
+def calculate_coin_tp(coin, category, ohlcv_data):
+    """Calculate independent TP per coin with regime multiplier"""
+    import numpy as np
+    
+    limits = {
+        'mega':  {'min': 1.0, 'max': 5.0},
+        'large': {'min': 2.0, 'max': 7.0},
+        'mid':   {'min': 4.0, 'max': 10.0},
+        'small': {'min': 5.0, 'max': 15.0},
+        'micro': {'min': 8.0, 'max': 20.0}
+    }
+    cat_limits = limits.get(category, limits['mid'])
+    
+    if len(ohlcv_data) < 90 * 24:
+        return (cat_limits['min'] + cat_limits['max']) / 2
+    
+    closes = [c[4] for c in ohlcv_data]
+    
+    # Find recovery percentages
+    recoveries = []
+    i = 0
+    while i < len(closes) - 1:
+        if closes[i+1] < closes[i]:
+            bottom = min(closes[i:i+48]) if i+48 < len(closes) else min(closes[i:])
+            recovery_window = closes[i+1:i+72] if i+72 < len(closes) else closes[i+1:]
+            if recovery_window:
+                peak_after = max(recovery_window)
+                recovery_pct = ((peak_after - bottom) / bottom) * 100
+                recoveries.append(recovery_pct)
+        i += 1
+    
+    if not recoveries:
+        return (cat_limits['min'] + cat_limits['max']) / 2
+    
+    median_recovery = float(np.median(recoveries))
+    tp_mult = get_regime_tp_multiplier()
+    raw_tp = median_recovery * tp_mult
+    
+    # Clamp to category limits
+    tp = max(cat_limits['min'], min(cat_limits['max'], raw_tp))
+    return round(tp, 2)
+
 import psycopg2
 import requests
 import os
