@@ -25,6 +25,35 @@ Trade opened in bull = always scored in bull leaderboard.
 - 90+ days OHLCV data (excludes new coins)
 - Result: ~200-300 tradeable coins
 
+
+---
+
+## 2b. Entry Methods (14 total)
+
+| Method | Name | Variations | Key Parameter |
+|--------|------|-----------|---------------|
+| E1 | VWAP + RSI Deviation | 12 | RSI threshold |
+| E2 | Panic Exhaustion | 9 | Bollinger pierce |
+| E3 | Volume Climax | 12 | Volume multiplier |
+| E4 | Time-Cycle Window | 9 | SMA lookback |
+| E5 | Multi-Timeframe | 12 | EMA alignment |
+| E6 | Z-Score Statistical | 9 | Z threshold |
+| E7 | Volatility Squeeze | 9 | Squeeze duration |
+| E8 | Swing Structure Shift | 9 | Swing detection |
+| E9 | Sequential Candle Decay | 9 | Candle count |
+| E10 | Pure Drop Threshold (control) | 12 | Drop % |
+| E11 | QFL Base Bounce | 9 | Base break % |
+| E12 | Support/Resistance Reclaim | 9 | Reclaim distance % |
+| E13 | EMA + MACD + RSI Confluence | 10 | EMA pair |
+| E14 | Stoch RSI Pullback + Trend | 9 | Oversold threshold |
+
+Total method bots: 139
+Benchmarks: 5 (BTC Hold · ETH Hold · Simple DCA · Random Entry · Static Spacing)
+Grand total: 144 bots
+
+Short research: 144 bots × 5 selected coins (BTC · ETH + 3 liquid alts)
+= 720 short paper trades running simultaneously
+
 ---
 
 ## 3. Trade Scaling Plan
@@ -387,7 +416,7 @@ ADD COLUMN IF NOT EXISTS inventory_locked_days DECIMAL(10,2);
 
 ---
 
-## 13. generate_metrics.py Flow (Weekly Automation)
+## 15. generate_metrics.py Flow (Weekly Automation)
 
 Runs every Sunday 05:00 automatically.
 No human action needed.
