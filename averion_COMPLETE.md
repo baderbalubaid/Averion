@@ -2400,6 +2400,40 @@ No monthly netting. No holdback. No escrow.
 - No special priority for manual over smart
 - Reason: shared wallet = shared queue = fair competition
 - User can always use separate wallet to isolate manual bot
+
+## Coin Classification Final Decisions (LOCKED)
+
+### Volume-Weighted Spacing: REMOVED
+Old: category_spacing = weighted average (BTC dominated at 87%)
+New: each coin gets independent spacing from its own ATR data
+Category = safety limits only (min/max bounds)
+
+### Per-Coin Spacing Formula (LOCKED)
+spacing = max(ATR_14 x 1.5, median_bounce x 0.85)
+Clamped to category min/max
+Independent per coin · never averaged across coins
+
+### Regime-Aware TP Multiplier (LOCKED)
+Bull regime: multiplier = 0.80 (ride momentum longer)
+Bear regime: multiplier = 0.60 (take profit fast)
+Sideways: multiplier = 0.70 (default)
+Strong Bull: multiplier = 0.85
+Strong Bear: multiplier = 0.55
+
+Formula:
+TP = weighted_avg_entry x (1 + median_recovery x regime_multiplier)
+Clamped to category TP min/max
+
+### Research Bots Use Classified Params (LOCKED)
+Research bots use same classification as live bots
+Reason: best signal = goes to TP with zero DCAs
+Fewer DCAs = better signal quality = higher RARS
+Classification sets correct TP target for fair signal comparison
+
+### Server Load Assessment (LOCKED)
+Per-coin spacing: one SQL UPDATE per coin per day at 03:30
+Not a loop issue: runs in daily cron not in bot loop
+Same server handles 288 bots easily
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -6201,6 +6235,14 @@ CREATE TABLE IF NOT EXISTS fernet_key_versions (
 
 CREATE INDEX IF NOT EXISTS idx_fernet_active
 ON fernet_key_versions(is_active, version DESC);
+
+-- Regime-aware TP tracking
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS spacing_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS tp_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS tp_regime_multiplier DECIMAL(4,2) DEFAULT 0.70;
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS atr_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_bounce_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_recovery_pct DECIMAL(8,4);
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
