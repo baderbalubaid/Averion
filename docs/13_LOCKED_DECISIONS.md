@@ -2280,3 +2280,25 @@ Channel 3: System (technical · daily digest)
 
 Daily digest: sent every morning to Channel 3
 Contains: cron results · platform stats · server health · alerts count
+
+## Reporting System — Final (LOCKED)
+
+Excel reports: REMOVED
+Replaced with 3 structured markdown reports:
+
+1. Daily Health Report (05:00 daily · GitHub)
+  → Server · cron · loops · 30-day rolling data
+  → [Copy] buttons per section in Health tab
+
+2. Weekly Research Report (Sunday 05:00 · GitHub)
+  → Already locked in research brief
+
+3. Monthly Summary (1st of month 05:00 · GitHub)
+  → Platform growth · financial · top coins
+
+All reports:
+→ Context header (server specs + normal ranges)
+→ Attention section (problems first)
+→ Notes section (blank · AI fills)
+→ Pushed to GitHub automatically
+→ Shareable via URL with any AI
