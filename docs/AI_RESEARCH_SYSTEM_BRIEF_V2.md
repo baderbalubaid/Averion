@@ -384,3 +384,57 @@ ADD COLUMN IF NOT EXISTS inventory_locked_days DECIMAL(10,2);
    Our 100 trade minimum enough?
 
 10. Any flaw in tiered promotion that could produce wrong champion?
+
+---
+
+## 13. generate_metrics.py Flow (Weekly Automation)
+
+Runs every Sunday 05:00 automatically.
+No human action needed.
+
+Step 1: Read all closed research trades from DB
+- Separate by direction (long/short)
+- Separate by regime (bull/bear/sideways)
+
+Step 2: For each regime, score each variation
+- Skip if trades < 30 (mark data_sparse=TRUE)
+- Calculate 5 raw dimensions
+- Calculate RARS per variation
+
+Step 3: Normalize all dimensions 0-1
+- Find min/max across ALL variations in regime
+- Normalize each dimension relative to peers
+
+Step 4: Apply weights, calculate final RARS
+- RARS = 0.35*cap + 0.25*dd + 0.20*wr + 0.15*pf + 0.05*con
+
+Step 5: Aggregate to method level
+- Use MEDIAN of variations (not mean)
+- Best variation identified per method
+
+Step 6: Check promotion tiers per regime
+- Tier 1: 4 consecutive weeks + 20 trades + 15% margin
+- Tier 2: 6 of 8 weeks + 30 trades + 15% margin
+- Tier 3: 6 months passed + best RARS + 15% over E10
+
+Step 7: If champion confirmed
+- auto_switch ON: switch immediately
+- auto_switch OFF: alert Bader, wait approval
+- Always send Telegram notification
+
+Step 8: Save all scores to research_scores table
+
+Step 9: Generate markdown weekly report
+- 3 separate leaderboards (Bull/Bear/Sideways)
+- Per method: open positions + closed trades
+- Benchmark comparison
+- Alerts and server health
+
+Step 10: Push report to GitHub
+- URL: github.com/baderbalubaid/Averion/research/
+
+Step 11: Telegram notification
+- "Weekly report ready"
+- Champion status
+- Any changes
+- Download URL
