@@ -266,3 +266,267 @@ Monthly report:        [ON/OFF]
 - All controls in Settings tab only · nowhere else
 - Email for important/infrequent alerts only
 - Never spam customer · quality over quantity
+
+---
+
+## ADMIN TELEGRAM NOTIFICATIONS (LOCKED)
+
+Admin has 3 separate Telegram channels.
+Each channel has specific purpose.
+Never mix urgent alerts with routine info.
+
+---
+
+## Channel 1 — Alerts (Urgent · Needs Action)
+
+Everything here requires immediate attention.
+
+User reserve empty:
+🔴 RESERVE EMPTY
+User #5 · user@email.com
+All bots paused · no new trades
+Outstanding fees: $12.30
+
+User API key rejected:
+🔴 API KEY REJECTED
+User #3 · MEXC exchange
+Bot paused · user notified
+[View User]
+
+ST flag detected:
+🔴 ST FLAG
+Coin: RVN/USDT · User #7 · MEXC
+Position sold immediately
+P&L: -$2.30 · User notified
+
+Bot crashed:
+🔴 BOT CRASHED
+Error: [error message]
+Auto-restarted at 14:23
+[View Logs]
+
+Failed DB backup:
+🔴 BACKUP FAILED
+Time: 03:00 · Size: N/A
+Manual action required
+[Check Server]
+
+Exchange API down:
+🔴 EXCHANGE DOWN
+MEXC API · 5 consecutive failures
+All MEXC bots paused
+Retrying with backoff
+
+Dead coin detected:
+🔴 DEAD COIN
+Coin: XYZ/USDT · User #12
+Position locked · user notified
+[View Position]
+
+Security — failed login attempts:
+🔴 SECURITY ALERT
+5 failed admin login attempts
+IP: 192.168.x.x blocked
+[Check Access Log]
+
+Payment webhook failed:
+🔴 WEBHOOK FAILED
+NOWPayments webhook missed
+User #8 · $50 payment
+Manual verification needed
+[Check NOWPayments]
+
+Short buyback missing:
+🔴 BUYBACK MISSING
+User #4 · BTC/USDT · MEXC
+Limit order not found on exchange
+Auto-recovery triggered
+
+Bear circuit breaker fired:
+🔴 CIRCUIT BREAKER
+Bear champion: E6-2
+Max drawdown > 40% in 30 days
+Emergency switch: E7-3
+[View Research]
+
+All methods distressed:
+🔴 ALL METHODS DISTRESSED
+All bear methods > 40% drawdown
+No qualified replacement
+Manual review required
+E10 retained as champion
+
+Research champion switched:
+🟢 CHAMPION SWITCHED
+Regime: Bull
+E10-1 → E11-3
+RARS: 0.745 vs 0.621 (+20%)
+Tier 1 · 4 weeks · 47 trades
+[View Report]
+
+---
+
+## Channel 2 — Activity (Info · No Action Needed)
+
+Routine platform activity.
+
+New user registered:
+👤 NEW USER
+Email: user@email.com
+Referral: ABC123 (User #3)
+Plan: Free
+
+User topped up reserve:
+💰 DEPOSIT
+User #5 · $50.00 USDT
+Debt cleared: $12.30 ✅
+New reserve: $37.70
+
+Fee collected (over $50):
+💵 FEE COLLECTED
+User #7 · $87.40
+Trade: BTC/USDT · LONG +$437
+Owner wallet: $4,317
+
+Owner wallet transfer:
+💳 TRANSFER COMPLETE
+Amount: $2,341.20
+To: TRC20 wallet
+Owner wallet: $0.00
+
+Referral payout:
+🤝 REFERRAL PAID
+User #3 earned: $2.40
+From: User #12 trade
+User #3 total referrals: $24.80
+
+New bot created:
+🤖 NEW BOT
+User #5 · BTC/USDT · Binance
+Method: Smart DCA · Long
+Trade limit: 10
+
+Coin reclassified:
+📊 RECLASSIFICATION
+Coin: LINK/USDT
+Mid Cap → Large Cap
+$8.2B → $11.4B market cap
+3 users affected · new positions only
+
+Research challenger detected:
+📊 CHALLENGER DETECTED
+Regime: Bull
+E13-5 beating E11-3
+Week 1 of 4 · RARS +0.043 ahead
+Monitoring...
+
+Research report ready:
+📊 WEEK 12 RESEARCH REPORT
+Bull: E11-3 (no change) ⭐
+Bear: E6-2 (no change) ⭐
+Sideways: E1-1 (no change) ⭐
+Challenger: E13-5 week 2/4
+[Download Report URL]
+
+Paper timer auto-closed:
+📄 PAPER TIMER
+User #9 · paper trades closed
+No live trades in 90 days
+User notified
+
+---
+
+## Channel 3 — System (Technical · Server)
+
+Daily cron · server health · updates.
+
+Daily cron summary (every morning):
+📊 DAILY CRON · June 3 2026
+
+CRON STEPS:
+03:00 CoinGecko ✅ 312 coins · 0.8s
+03:30 CMC       ✅ 312 coins · 1.2s
+04:00 OHLCV     ❌ Failed coin 87 [Re-run]
+04:30 Classify  ✅ 3 reclassified
+05:00 Research  ✅ Week 12 done
+
+PLATFORM:
+Users: 47 | New today: 2
+Open positions: 1,847
+Trades closed: 234
+Fees collected: $456.20
+
+SERVER:
+CPU avg: 23% | RAM: 1.8GB/4GB
+Loop avg: 1.8s | Uptime: 14d 3h
+DB size: 284MB
+
+ALERTS TODAY: 2
+→ User #3 API key rejected
+→ User #7 reserve low
+
+CCXT: 4.5.57 ✅
+
+Server health threshold crossed:
+🔴 SERVER ALERT
+CPU: 84% (threshold: 80%)
+Current positions: 2,300
+Consider upgrading to CX33
+
+Server back to normal:
+🟢 SERVER NORMAL
+CPU: 31% · RAM: 1.9GB/4GB
+Loop avg: 2.1s
+
+Bot started (after restart):
+🟢 BOT STARTED
+PostgreSQL ✅ Redis ✅
+Nginx ✅ PM2 ✅
+Paper mode: OFF
+Cycle 1: 1.2s ✅
+
+CCXT upgrade result (pass):
+🟢 CCXT UPGRADED
+4.5.56 → 4.5.57
+All 5 tests passed ✅
+Bot restarted · running normally
+
+CCXT upgrade result (fail):
+🟡 CCXT UPGRADE SKIPPED
+Test failed: fetch_balance
+Staying on 4.5.56
+Will retry next Sunday
+
+Fernet key rotation:
+🔐 FERNET KEY ROTATED
+47 exchange keys re-encrypted
+Part A: .env updated
+Part B: Hetzner Secrets updated
+Next rotation: July 1
+
+DB backup complete:
+✅ BACKUP COMPLETE
+Size: 284MB · 03:00
+Location: /backups/2026-06-03.sql.gz
+
+DB backup failed:
+🔴 BACKUP FAILED
+Time: 03:00
+Error: disk space low
+Manual action required
+
+---
+
+## Admin Telegram Rules (LOCKED)
+
+- 3 separate channels · never mix types
+- Channel 1: urgent only · check immediately
+- Channel 2: FYI · check when convenient
+- Channel 3: technical · check daily
+- Daily cron summary always sent to Channel 3
+- Server health alerts → Channel 1 if critical
+- Server health updates → Channel 3 if routine
+- All research alerts → Channel 1 if action needed
+- All research info → Channel 2 if informational
+- No spam · every message has purpose
+- [Copy as Markdown] button in Health tab for AI sharing
