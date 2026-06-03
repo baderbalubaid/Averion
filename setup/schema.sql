@@ -888,3 +888,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 INSERT INTO schema_migrations (version, description)
 VALUES ('001', 'Initial schema setup')
 ON CONFLICT (version) DO NOTHING;
+
+-- Trade limit tracking (combined counter)
+-- Total cap = Long + Short + Paper combined
+-- Paper sub-cap = 30 max always
+-- Add column to track per user
+ALTER TABLE users ADD COLUMN IF NOT EXISTS live_trades_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS paper_trades_count INTEGER DEFAULT 0;
+-- live_trades_count = Long + Short open positions
+-- paper_trades_count = paper open positions
+-- total = live + paper <= trade_limit (default 100)
+-- paper always <= 30 regardless of bundle
