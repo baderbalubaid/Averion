@@ -780,3 +780,11 @@ CREATE TABLE IF NOT EXISTS fernet_key_versions (
 
 CREATE INDEX IF NOT EXISTS idx_fernet_active
 ON fernet_key_versions(is_active, version DESC);
+
+-- Regime-aware TP tracking
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS spacing_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS tp_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS tp_regime_multiplier DECIMAL(4,2) DEFAULT 0.70;
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS atr_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_bounce_pct DECIMAL(8,4);
+ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_recovery_pct DECIMAL(8,4);
