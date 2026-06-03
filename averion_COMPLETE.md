@@ -2539,6 +2539,24 @@ Key decisions:
 - Suspend = no new trades · existing continue · not holding money
 - Health report exportable as markdown for AI review
 - Full research report from Day 1 available anytime
+
+## Customer Dashboard — Final Structure (LOCKED)
+
+Same tab structure as admin (consistent UX):
+Tab 1: Dashboard (home · alerts · exchange overview · recent activity)
+Tab 2: Bots (bots + queue per wallet + history sub-tab)
+Tab 3: Settings (profile · exchanges · notifications · reserve · billing · security)
+
+Key decisions:
+- Mobile first · fits phone screen
+- Same tab names as admin for consistency
+- Bot edit: changes apply to NEW trades only
+- Existing trades: keep original params forever
+- Queue: per wallet · independent
+- Bot detail: 3 sub-tabs (Positions · Queue · Closed)
+- History: all closed trades only (no queue history)
+- Custom entry builder: up to 3 conditions max
+- Simulate tool: shows effect of adding/removing capital
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
