@@ -2314,3 +2314,107 @@ Reserve wallet: minimum $10 · NOWPayments · TRC20/BEP20
 Owner wallet: real TRC20 address · auto-transfer at $10 threshold
 Paper trades: 30 max · auto-close after 90 days no live trade
 Trade limit: 100 hard cap · bundles raise the limit
+
+## Critical Bugs Fixed — Post Session 5 Review
+
+### Bug 1: secret_enc not decrypted in reconcile_orders()
+File: exchanges.py
+Line: ~9376
+Fix: 'secret': exchanges_module.decrypt(secret)
+Was: 'secret': secret (raw cipher text!)
+Impact: ALL exchange auth fails on startup
+
+### Bug 2: import bcrypt missing in init_db.py
+File: init_db.py
+Fix: add 'import bcrypt' at top of file
+Was: bcrypt.hashpw called but bcrypt never imported
+Impact: Admin user creation crashes Day 1
+
+### Bug 3: research_bots.json missing E15-E26 + E18b
+File: setup/research_bots.json
+Fix: E15-E26 + E18b already added this session
+Verify: launch_research_bots.py reads updated JSON
+Impact: Would create 144 bots instead of 261
+
+### Bug 4: smart_dca_champions not seeded
+File: init_db.py
+Fix: Insert 3 seed rows on init:
+     Bull → E10 as starting champion
+     Bear → E10 as starting champion
+     Sideways → E10 as starting champion
+Impact: generate_metrics.py silently does nothing forever
+
+### Bug 5: Excel cron step not updated
+File: automation/daily_cron.sh
+Fix: Replace generate_excel.py with 3 markdown reports:
+     generate_health_report.py (daily)
+     generate_weekly_report.py (weekly · Sunday only)
+     generate_monthly_report.py (monthly · 1st only)
+Impact: Cron tries to generate Excel that was removed
+
+### Bug 6: market_regimes table missing 5-signal columns
+File: setup/schema.sql
+Fix: Add columns:
+     realized_vol_30d DECIMAL(10,4)
+     market_cap_30d_change DECIMAL(10,4)
+     btc_200d_ma_position VARCHAR(10)
+     altcoin_season_index INTEGER
+     raw_score INTEGER
+Was: Only stored btc_24h_change · btc_7d_change · market_volatility
+Impact: Cannot audit or recalculate historical regimes
+
+### Bug 7 (new): RARS Capital Efficiency not normalized
+File: automation/generate_metrics.py
+Fix: Store regime_tp_multiplier_at_entry in research_scores
+     Normalize: capital_efficiency = raw_efficiency / regime_multiplier
+Was: Capital efficiency penalizes bull-regime methods unfairly
+Impact: Research picks wrong champion → wrong method in live trading
+
+---
+
+## New Decisions Locked (Post Review)
+
+### E18b — Low ADX Ranging Market (9 bots)
+Logic: ADX < threshold (ranging) + RSI oversold
+= Mean reversion in sideways market
+Opposite hypothesis to E18 (high ADX)
+Both test different conditions · research decides winner
+
+| Bot | ADX Max | RSI Max | Lookback |
+|-----|---------|---------|---------|
+| E18b-1 | 20 | 30 | 14h |
+| E18b-2 | 20 | 35 | 14h |
+| E18b-3 | 20 | 40 | 14h |
+| E18b-4 | 25 | 30 | 14h |
+| E18b-5 | 25 | 35 | 14h |
+| E18b-6 | 25 | 40 | 14h |
+| E18b-7 | 20 | 30 | 24h |
+| E18b-8 | 25 | 35 | 24h |
+| E18b-9 | 25 | 40 | 24h |
+
+Total bots: 261 (252 + 9 E18b)
+
+### Signal Status in Bot Detail View
+Show live entry signal conditions when customer clicks bot:
+Entry signal: Smart DCA E11-3
+Last check: 47 seconds ago
+Last entry: June 1 14:23
+Conditions: [live status per condition]
+NOT on main bot card · only inside detail view
+
+### Password Reset
+Customer: email reset link (15 min expiry)
+Admin Phase 1: Telegram code only
+Admin Phase 7+: Telegram + phone SMS
+
+### RARS Normalization (Option A)
+Store: regime_tp_multiplier_at_entry per trade
+Normalize: capital_efficiency / regime_multiplier before scoring
+Reason: Bull multiplier makes TP harder → longer close → unfair penalty
+Result: Correct champion selected → more profit in live trading
+
+### Onboarding Empty State (3 steps)
+Step A: No exchange → "Connect your exchange" prompt
+Step B: No bot → "Create your first bot" prompt
+Step C: No reserve → "Top up reserve wallet" prompt
+Each step dismissible · disappears when complete
