@@ -2557,6 +2557,21 @@ Key decisions:
 - History: all closed trades only (no queue history)
 - Custom entry builder: up to 3 conditions max
 - Simulate tool: shows effect of adding/removing capital
+
+## Notifications — Final (LOCKED)
+
+One Telegram chat · @AverionBot
+Long/Short = same format · only label differs
+Profit in $ or coin based on bot setting
+
+Types:
+🟢 TRADE: opened · DCA/Sell fired · closed (toggle)
+🔴 ALERT: reserve · API · ST · checkpoint (recommended ON)
+🟢 INCOME: referral earned (toggle)
+📊 REPORT: daily · weekly · monthly (toggle)
+📧 EMAIL: security · deposit · reports (toggle)
+
+All controls in Settings tab only.
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
