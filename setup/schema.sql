@@ -804,3 +804,21 @@ ALTER TABLE bots ADD COLUMN IF NOT EXISTS research_max_trades INTEGER DEFAULT 1;
 -- Research bot variation tracking
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS variation VARCHAR(20);
 -- E11-3 · E11-7 etc for detailed variation tracking
+
+-- Bug 6 Fix: market_regimes 5-signal columns
+ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS realized_vol_30d DECIMAL(10,4);
+ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS market_cap_30d_change DECIMAL(10,4);
+ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS btc_200d_ma_position VARCHAR(10);
+ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS altcoin_season_index INTEGER;
+ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS raw_score INTEGER;
+
+-- Bug 7 Fix: RARS normalization column
+ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regime_tp_multiplier_at_entry DECIMAL(5,3) DEFAULT 1.0;
+
+-- Bug 4 Fix: smart_dca_champions seed rows (run once)
+INSERT INTO smart_dca_champions (regime, champion_method, champion_rars, since_date, auto_switch)
+VALUES
+  ('bull', 'E10', 0.0, CURRENT_DATE, true),
+  ('bear', 'E10', 0.0, CURRENT_DATE, true),
+  ('sideways', 'E10', 0.0, CURRENT_DATE, true)
+ON CONFLICT (regime) DO NOTHING;

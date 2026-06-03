@@ -1695,6 +1695,73 @@
           "rsi_max": 40
         }
       ]
+    },
+    "E18b": {
+      "name": "ADX Ranging Market Pullback",
+      "description": "Low ADX (ranging market) + RSI oversold = mean reversion in sideways conditions",
+      "most_important_param": "adx_max",
+      "fixed": {
+        "adx_period": 14,
+        "ranging_market": true
+      },
+      "bots": [
+        {
+          "id": "E18b-1",
+          "adx_max": 20,
+          "rsi_max": 30,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-2",
+          "adx_max": 20,
+          "rsi_max": 35,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-3",
+          "adx_max": 20,
+          "rsi_max": 40,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-4",
+          "adx_max": 25,
+          "rsi_max": 30,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-5",
+          "adx_max": 25,
+          "rsi_max": 35,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-6",
+          "adx_max": 25,
+          "rsi_max": 40,
+          "lookback_hours": 14
+        },
+        {
+          "id": "E18b-7",
+          "adx_max": 20,
+          "rsi_max": 30,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E18b-8",
+          "adx_max": 25,
+          "rsi_max": 35,
+          "lookback_hours": 24
+        },
+        {
+          "id": "E18b-9",
+          "adx_max": 25,
+          "rsi_max": 40,
+          "lookback_hours": 24
+        }
+      ]
     }
-  }
+  },
+  "total_method_bots": 256,
+  "total_with_benchmarks": 261
 }
