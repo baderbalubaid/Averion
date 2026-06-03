@@ -2418,3 +2418,130 @@ Step A: No exchange → "Connect your exchange" prompt
 Step B: No bot → "Create your first bot" prompt
 Step C: No reserve → "Top up reserve wallet" prompt
 Each step dismissible · disappears when complete
+
+## Bugs Fixed — Post Session 5 AI Review Batch 2
+
+### Bug 8: Old Promotion Formula Deleted (LOCKED)
+Old: WR^0.30 × AP^0.20 × RS^0.15 × DD^0.35 (multiplicative · DELETED)
+New: RARS 35/30/20/15 additive (ONLY formula)
+generate_metrics.py must implement RARS only
+
+### Bug 9: PENDING_BUYBACK Race Condition Fix (LOCKED)
+New columns in positions table:
+pending_buyback_usdt_locked: amount reserved for buyback
+pending_buyback_expires_at: timestamp when lock expires (5 min not 60s)
+Rule: Long DCA queue SKIPS any USDT locked for pending buyback
+Lock cleared when: limit order placed OR expires OR position closed
+
+### Bug 10: Coin Removed Mid-Position (LOCKED)
+Rule: Price fetch loop ALWAYS includes coins with open positions
+Even if coin removed from tradeable universe
+Even if coin delisted or below volume threshold
+Price fetched until position closed · no exceptions
+TP must always fire · capital never stuck
+
+### Bug 11: Telegram Multi-Channel Language (LOCKED)
+Customer = ONE direct chat with @AverionBot always
+Delete all references to multiple customer channels
+Only admin has 3 separate channels (Channel 1/2/3)
+
+### Bug 12: Research Account Trade Limit Bypass (LOCKED)
+New columns in users table:
+is_research_account: TRUE for admin research bots
+trade_limit_bypass: TRUE = no 100-trade cap
+Research account: unlimited concurrent positions
+Regular users: 100 hard cap always
+Admin personal trading: same 100 cap as regular users
+
+### Bug 13: Password Reset Flow (LOCKED)
+Customer flow:
+→ Login page: [Forgot Password?] link
+→ Enter email address
+→ System sends reset link via Resend email
+→ Link valid 15 minutes only
+→ Customer clicks → sets new password
+→ All existing sessions revoked
+→ Rate limit: max 5 attempts per IP per hour
+
+Admin flow:
+→ Telegram code sent to admin Telegram
+→ Code valid 5 minutes only
+→ Enter code → set new password
+→ All admin sessions revoked
+
+### Bug 14: Champion Challenger Tracking Columns (LOCKED)
+New columns in smart_dca_champions:
+challenger_method: current challenger method ID
+challenger_rars: challenger current RARS score
+challenger_weeks: consecutive weeks challenger has beaten champion
+challenge_start_date: when challenger first beat champion
+challenger_trades: trades challenger has in current period
+Populated weekly by generate_metrics.py every Sunday
+
+### Bug 15: Client Order ID Reconciliation (LOCKED)
+Columns in trades table:
+client_order_id: our generated ID (format: AVR-{bot_id}-{timestamp})
+reconciled_at: when last reconciled with exchange
+reconciliation_status: pending · matched · missing · extra
+On startup: reconcile_orders() matches by client_order_id first
+Fallback: match by price + amount + timestamp if ID not found
+
+### Bug 16: Sequential Gate + DCA Checkpoint Precedence (LOCKED)
+Rule: checkpoint ALWAYS wins over gate
+If checkpoint active: gate ignored until checkpoint resolved
+User must take checkpoint action first
+Then gate logic resumes normally
+Document clearly in bot creation wizard Step 4
+
+### Gap 1: Security Audit Log (LOCKED)
+Table: security_audit_log
+Logs: login · logout · api_key_add · api_key_delete
+     bot_create · bot_delete · position_manual_close
+     password_change · wallet_change · admin_action
+Visible in: Admin Tab 9 (System) → Access Log
+Retention: 90 days
+
+### Gap 2: CSP Headers (LOCKED)
+Add to Nginx config:
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Phase 1: basic CSP · Phase 6: strict CSP (remove unsafe-inline)
+
+### Gap 3: JWT Session Refresh (LOCKED)
+30-day session tokens
+Refresh: automatically on any authenticated request
+If token within 7 days of expiry → issue new token
+Old token: invalidated after new issued
+Customer never sees expiry · seamless experience
+
+### Gap 4: Registration Rate Limit (LOCKED)
+Table: rate_limits tracks attempts per IP per endpoint
+Registration: max 3 attempts per IP per hour
+Password reset: max 5 attempts per IP per hour
+Exceeded: return 429 Too Many Requests
+Reset: window_start + 1 hour → counter resets
+
+### Gap 5: Database Migration Strategy (LOCKED)
+Table: schema_migrations tracks applied versions
+Format: versioned SQL files: migrations/001_initial.sql
+Each migration: forward only · no rollback
+Before any schema change: add migration file
+Apply: python3 run_migration.py 002
+Never modify schema.sql directly in production
+
+### Gap 6: Staging Environment (LOCKED)
+No separate server needed
+Staging = PAPER_MODE=true on Hetzner
+Separate git branch: staging
+Test all changes on staging branch first
+Merge to main only after verification
+Cron jobs run in staging too but flagged as test
+
+### Gap 7: Referral Anti-Gaming (Phase 7)
+Minimum hold period: 24 hours before fee counted
+Same-device referral detection: IP + device fingerprint
+Wash trading detection: same exchange account pattern
+Implement before public launch (Phase 7)
+Not needed for Phase 4-6 (limited users)

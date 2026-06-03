@@ -822,3 +822,69 @@ VALUES
   ('bear', 'E10', 0.0, CURRENT_DATE, true),
   ('sideways', 'E10', 0.0, CURRENT_DATE, true)
 ON CONFLICT (regime) DO NOTHING;
+
+-- Bug 9: PENDING_BUYBACK race condition fix
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS pending_buyback_usdt_locked DECIMAL(20,8) DEFAULT 0;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS pending_buyback_expires_at TIMESTAMP;
+-- Lock USDT amount when buyback pending · Long DCA queue skips locked amount
+
+-- Bug 12: Research account bypass trade limit
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_research_account BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trade_limit_bypass BOOLEAN DEFAULT FALSE;
+-- Research account: is_research_account=TRUE · trade_limit_bypass=TRUE · no cap ever
+
+-- Bug 14: Champion challenger tracking columns
+ALTER TABLE smart_dca_champions ADD COLUMN IF NOT EXISTS challenger_method VARCHAR(20);
+ALTER TABLE smart_dca_champions ADD COLUMN IF NOT EXISTS challenger_rars DECIMAL(10,4);
+ALTER TABLE smart_dca_champions ADD COLUMN IF NOT EXISTS challenger_weeks INTEGER DEFAULT 0;
+ALTER TABLE smart_dca_champions ADD COLUMN IF NOT EXISTS challenge_start_date DATE;
+ALTER TABLE smart_dca_champions ADD COLUMN IF NOT EXISTS challenger_trades INTEGER DEFAULT 0;
+
+-- Bug 15: Client order ID in trades table
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS client_order_id VARCHAR(100);
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS reconciled_at TIMESTAMP;
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS reconciliation_status VARCHAR(20) DEFAULT 'pending';
+-- Values: pending · matched · missing · extra
+
+-- Gap 1: Security audit log table
+CREATE TABLE IF NOT EXISTS security_audit_log (
+   id BIGSERIAL PRIMARY KEY,
+   user_id INTEGER REFERENCES users(id),
+   action VARCHAR(100) NOT NULL,
+   entity_type VARCHAR(50),
+   entity_id INTEGER,
+   ip_address VARCHAR(45),
+   user_agent TEXT,
+   details JSONB DEFAULT '{}',
+   created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_user ON security_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON security_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON security_audit_log(created_at);
+-- Log: login · logout · api_key_add · api_key_delete · bot_create · bot_delete
+--      position_manual_close · password_change · wallet_change · admin_action
+
+-- Gap 4: Registration rate limit tracking
+CREATE TABLE IF NOT EXISTS rate_limits (
+   id BIGSERIAL PRIMARY KEY,
+   ip_address VARCHAR(45) NOT NULL,
+   endpoint VARCHAR(100) NOT NULL,
+   attempt_count INTEGER DEFAULT 1,
+   window_start TIMESTAMP DEFAULT NOW(),
+   created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_ip_endpoint ON rate_limits(ip_address, endpoint);
+-- Max 3 registration attempts per IP per hour
+-- Max 5 password reset attempts per IP per hour
+
+-- Gap 5: Database migration version tracking
+CREATE TABLE IF NOT EXISTS schema_migrations (
+   id SERIAL PRIMARY KEY,
+   version VARCHAR(20) NOT NULL UNIQUE,
+   description TEXT,
+   applied_at TIMESTAMP DEFAULT NOW(),
+   applied_by VARCHAR(100) DEFAULT 'system'
+);
+INSERT INTO schema_migrations (version, description)
+VALUES ('001', 'Initial schema setup')
+ON CONFLICT (version) DO NOTHING;
