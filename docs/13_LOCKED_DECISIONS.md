@@ -2128,3 +2128,84 @@ Classification sets correct TP target for fair signal comparison
 Per-coin spacing: one SQL UPDATE per coin per day at 03:30
 Not a loop issue: runs in daily cron not in bot loop
 Same server handles 288 bots easily
+
+## Research Bot Dashboard — All Decisions (LOCKED)
+
+### 1. Bot Naming Convention
+Each research bot named exactly from JSON:
+E1-1 · E1-2 · E1-12 (E1 has 12 variations)
+E11-3 · E11-9 (E11 has 9 variations)
+DB fields: name='E11-3' · method='E11' · variation='E11-3'
+is_research = TRUE on all research bots
+Auto-created by launch_research_bots.py on Day 1
+Zero manual creation needed
+
+### 2. Research Tab — Separate (LOCKED)
+Added as Tab 7 in admin dashboard
+NEVER overwrites existing tabs (1-6 unchanged)
+Shows ONLY research bots (is_research = TRUE)
+Completely separate from customer bots forever
+Research bots never appear in customer bot tabs
+
+### 3. Trade Count Control — Input + Confirm
+Research Tab top section:
+- Input box: user types number (e.g. 10)
+- [Apply to All] button
+- Confirmation popup before applying
+- Updates all 252 research bots simultaneously
+- No slider · typed number only · explicit confirm
+
+### 4. Weekly Reporting — Already Locked
+See: docs/AI_RESEARCH_SYSTEM_BRIEF_FINAL.md
+Weekly Sunday markdown · GitHub push · Telegram alert
+
+### 5. Research Tab Layout — Collapsed Rows
+Level 1 (default): One row per METHOD
+Columns: Method · Bots · Total Trades · Win% · Avg DCAs · P&L$
+Sortable by any column
+
+Level 2 (click to expand): One row per VARIATION
+Columns: Variation · Trades · Win% · Avg DCAs · P&L$
+Current champion marked with star ⭐
+
+Level 3 (click variation): Detail panel slides open
+Shows:
+OPEN TRADES table:
+- Coin · Opened date · Days open · Entry · Current · DCAs · P&L$ · P&L%
+- Sortable by any column
+
+CLOSED TRADES table:
+- Coin · Entry · Exit · Days · DCAs · P&L$ · P&L%
+- Sortable by any column
+
+Summary bar:
+- Avg holding days · Win rate · Avg DCAs · Total P&L · RARS · Regime
+
+### 6. Custom Entry Builder (LOCKED)
+Third entry option for customers (after Smart DCA · ASAP):
+○ Smart DCA (current champion method)
+○ ASAP (buy immediately no signal)
+○ Custom Builder
+
+Custom Builder:
+- Up to 3 conditions (max)
+- Each condition: [indicator] [operator] [value]
+- All 3 must be true simultaneously for entry
+- Historical test button: shows fires in last 30 days
+
+Available indicators for custom entry:
+RSI · VWAP distance · Bollinger Band %
+Volume multiplier · EMA crossover
+MACD signal · Z-Score · ATR multiplier
+Fibonacci level · Stochastic RSI
+ADX level · Supertrend direction
+OBV direction · RSI Divergence
+Funding Rate · Relative Strength vs BTC
+
+Reason max 3 conditions:
+More than 3 = signal fires too rarely
+Customer gets frustrated with no entries
+Quality vs frequency balance
+
+Preview shown before saving:
+"Entry when: RSI < 35 AND price 3% below VWAP AND volume > 1.5x"
