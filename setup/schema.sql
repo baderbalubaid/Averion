@@ -788,3 +788,19 @@ ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS tp_regime_multiplier DECIMAL(4
 ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS atr_pct DECIMAL(8,4);
 ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_bounce_pct DECIMAL(8,4);
 ALTER TABLE coin_history ADD COLUMN IF NOT EXISTS median_recovery_pct DECIMAL(8,4);
+
+-- Custom entry builder for customer bots
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS entry_method VARCHAR(20) DEFAULT 'smart';
+-- Values: smart · asap · custom
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS custom_entry_conditions JSONB DEFAULT '[]';
+-- Example: [{"indicator":"rsi","operator":"<","value":35},{"indicator":"vwap_distance","operator":">","value":3}]
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS custom_entry_preview TEXT;
+-- Human readable: "RSI < 35 AND VWAP distance > 3%"
+
+-- Research tab trade count control
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS research_max_trades INTEGER DEFAULT 1;
+-- Controlled globally from admin · applies to all research bots
+
+-- Research bot variation tracking
+ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS variation VARCHAR(20);
+-- E11-3 · E11-7 etc for detailed variation tracking
