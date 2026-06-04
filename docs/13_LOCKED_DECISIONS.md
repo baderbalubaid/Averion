@@ -3698,3 +3698,94 @@ Open trades = DB records only (not heavy on server)
 Server load = signal checking + price fetching + DB queries
 Not all bots fire simultaneously
 Realistic open positions: 10-20% of bots at any time
+
+---
+
+## Bot Loop Architecture — Final (LOCKED)
+
+### Option A: asyncio (Single Process · LOCKED)
+One Python process using async/await.
+All exchanges run concurrently in same process.
+Simpler · less memory · sufficient for CX33.
+Upgrade to Option B (separate PM2 processes) only
+if loop consistently > 15s after CX33.
+
+### Architecture
+Two separate PM2 processes:
+
+Process 1: live_loop.py (customer bots)
+Priority: HIGHEST
+Handles: all real money trades
+All 7 exchanges via asyncio
+Never delayed by research bots
+
+Process 2: research_loop.py (1,566 research bots)
+Priority: LOWER
+Handles: all paper research trades
+All 7 exchanges via asyncio
+Yields to live_loop
+Runs in background
+
+### asyncio Structure (inside each process)
+async def run_all_exchanges():
+   await asyncio.gather(
+       run_exchange('binance'),
+       run_exchange('mexc'),
+       run_exchange('kucoin'),
+       run_exchange('okx'),
+       run_exchange('bybit'),
+       run_exchange('gate'),
+       run_exchange('bitget'),
+   )
+
+Each run_exchange():
+1. fetch_tickers() for that exchange (1 bulk call)
+2. Check all bots on that exchange
+3. Execute trades if conditions met
+4. Update DB
+
+All 7 run simultaneously via asyncio.gather()
+Slow exchange = only that exchange delayed
+Others continue unaffected
+
+### Expected Performance
+Single loop (old): 22-45s
+asyncio parallel:  4-6s per cycle
+Improvement: 5-10x faster
+
+### Loop Timing
+live_loop.py: every 60s (hard target)
+research_loop.py: every 60s (soft target · can slip)
+If research loop > 60s: skip cycle · next 60s
+Live loop: never skips · always runs on time
+
+### PM2 Configuration
+pm2 start live_loop.py --name averion-live
+pm2 start research_loop.py --name averion-research
+pm2 startup → both restart on server reboot
+Both monitored via pm2 monit
+
+### Upgrade Path (Option B)
+If CX33 + asyncio loop > 15s consistently:
+Upgrade to 7 separate PM2 processes:
+pm2 start loop_binance.py --name loop-binance
+pm2 start loop_mexc.py --name loop-mexc
+etc.
+True multi-core parallelism
+Requires CX43 (8 vCPU) for full benefit
+Not needed unless serious scaling issues
+
+### Database Coordination
+Both processes share same PostgreSQL DB
+pgBouncer handles connection pooling
+live_loop.py: priority DB connections
+research_loop.py: lower priority
+No locking conflicts (different bot IDs)
+
+### Redis Usage
+Redis coordinates between processes:
+→ Price cache (live prices shared)
+→ Last update timestamps
+→ Prevents duplicate trade execution
+→ live_loop writes prices · research_loop reads
+→ One exchange fetch serves both processes
