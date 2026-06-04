@@ -146,7 +146,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   "Why did my bot buy?" panel
   Historical recovery context
 
-⬜ 4. Legal documents
+✅ 4. Legal documents
   Terms of Service
   Privacy Policy
   Risk Disclosure
