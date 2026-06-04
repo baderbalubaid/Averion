@@ -139,7 +139,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Capital overview per wallet
   Most critical missing UI
 
-⬜ 3. Position detail screen
+✅ 3. Position detail screen
   Progress bar (entry · DCA levels · TP)
   DCA history table
   Entry signal card

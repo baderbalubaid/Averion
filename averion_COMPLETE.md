@@ -326,7 +326,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Capital overview per wallet
   Most critical missing UI
 
-⬜ 3. Position detail screen
+✅ 3. Position detail screen
   Progress bar (entry · DCA levels · TP)
   DCA history table
   Entry signal card
@@ -4860,6 +4860,130 @@ Every exchange gets one default wallet on connect:
 Name: "Main Wallet" · Currency: USDT · Cap: All
 Created automatically · cannot be deleted
 User creates additional wallets as needed
+
+---
+
+## Position Detail Screen — Final (LOCKED · v1)
+
+Note: Will update after seeing live on Hetzner.
+UI may change based on real usage experience.
+
+### Two Levels
+
+LEVEL 1: Position Card (Bots tab · always visible)
+→ Health score
+→ Progress bar (all DCA levels + current price)
+→ P&L · avg cost · TP
+→ DCA used / total
+→ Days open
+→ Recovery estimate
+→ [Add Funds] [Close] [Details →]
+
+LEVEL 2: Position Detail (tap Details →)
+→ Full price ladder
+→ Entry quality score (research-backed)
+→ Why bot entered (signal conditions)
+→ Historical context (success rate · avg recovery)
+→ Full DCA table
+→ All position stats
+→ Controls (DCA toggle · Trading toggle)
+
+---
+
+### Level 1: Position Card
+
+SOL/USDT · MEXC                    🟢
+Health: 87/100 ████████░░
+Progress:
+Entry──DCA1──[●]──DCA2──DCA3──DCA4──TP
+$133   $126  NOW  $120  $112        $132
+P&L: -8.4% · Avg: $128 · TP: $132
+DCA used: 2/6 · Open: 3 days
+Recovery est: ~14 days
+[Add Funds]  [Close]  [Details →]
+
+---
+
+### Level 2: Position Detail
+
+PRICE LADDER (visual · center of screen):
+$132 ← TP
+$128 ← avg cost
+$126 ← DCA 2
+$120 ← NOW ●
+$119 ← DCA 3 (next)
+$112 ← DCA 4
+$105 ← DCA 5
+$98  ← DCA 6
+
+ENTRY QUALITY (unique · research-backed):
+Method: E11-7 · QFL Base Bounce
+Entry quality: 92/100
+Historical (E11-7 on SOL):
+→ Success rate: 74%
+→ Reached TP without DCA: 61%
+→ Avg recovery: 18 days
+
+WHY BOT ENTERED:
+✅ QFL base break: 4.2% (min 4%)
+✅ Volume confirmed: 2.1x (min 1.5x)
+✅ Bull regime: active at entry
+✅ Regime multiplier: 1.05
+
+POSITION STATS:
+Entry price · Avg cost · Current · TP
+Total invested · Current value · P&L
+DCA used / total · Days open
+
+DCA TABLE:
+Level | Price | Amount | Date
+Entry | $140  | $200   | Jun 01
+DCA 1 | $133  | $220   | Jun 03
+DCA 2 | $126  | $84.50 | Jun 05
+
+RECOVERY:
+Current drawdown: -8.4%
+Historical recovery: 73% of similar
+Estimated: ~14 days
+Note: historical estimate only · not a guarantee
+
+CONTROLS:
+[DCA: ON ●]  [Trading: ON ●]
+[Add Funds]  [Close Position]
+
+---
+
+### Health Score Formula
+100 points minus penalties + bonuses:
+DCA usage: -10 per 2 DCAs used
+Drawdown: -1 per 1% unrealized loss
+Days open: -1 per day above avg
+Method confidence: +10 if success > 70%
+Range: 0-100 · shown as progress bar
+Color: 🟢 70+ · 🟡 40-69 · 🔴 0-39
+
+### Entry Quality Score
+Based on research bot data for this method + coin:
+Success rate · zero DCA rate · avg recovery
+Only shows after 50+ research trades
+Shows N/A for new methods or coins
+Competitors cannot show this (no research data)
+Averion unique advantage
+
+### Recovery Estimate
+Historical context only · never a prediction
+"Based on E11-7 last 50 similar trades
+on SOL in Bull regime"
+Always shows disclaimer:
+"Historical estimate · not a guarantee"
+
+### Price Ladder
+Visual vertical list of all price levels
+Entry · DCA1-DCA6 · TP
+Current price marked with ●
+Next DCA level highlighted
+Easy to understand at a glance
+No technical jargon anywhere
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
