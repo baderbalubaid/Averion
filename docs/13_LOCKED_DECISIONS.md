@@ -5061,3 +5061,43 @@ Balance < $5.00 → ⚠️ Telegram warning
 Balance < $2.00 → 🔴 Telegram critical
 Balance = $0 → ❌ Positions paused
 After top-up → ✅ Auto-resume within 60s
+
+---
+
+## NOWPayments — Complete Final (LOCKED)
+
+### Mode: Custody + Permanent Addresses (LOCKED)
+Enable Custody in NOWPayments dashboard
+Each user gets ONE permanent USDT address
+User saves in Trust Wallet once · use forever
+
+### Networks (LOCKED)
+✅ TRC20: recommended · zero network fee (promo)
+✅ BEP20: alternative · small network fee
+❌ ERC20: not supported · too expensive
+
+### Fees (LOCKED)
+Gateway fee: 0.5% per deposit
+Who pays: USER (Option A)
+Network fee: $0 TRC20 · small BEP20
+Conversion fee: NOT applicable (USDT only)
+Monthly fee: $0
+Integration fee: $0
+Mass payouts fee: $0
+Support fee: $0
+
+Example:
+User sends $100 USDT TRC20
+Platform receives: $99.50
+Fee paid by user: $0.50
+User reserve credited: $99.50
+
+### Shown to user at deposit:
+"Processing fee: 0.5%
+Send $100 → Reserve receives $99.50
+Recommended: TRC20 (zero network fee)"
+
+### Summary
+Simple · cheap · permanent · no recode ever
+User saves address once · deposits anytime
+Platform costs: $0/month beyond 0.5% per deposit
