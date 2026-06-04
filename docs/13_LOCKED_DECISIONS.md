@@ -3278,3 +3278,73 @@ Admin removes MEXC copy entirely:
 When copy trade closes with profit:
 20% fee on YOUR profit → from YOUR reserve wallet
 Same fee system as all other trades
+
+---
+
+## Short DCA — Updates & Corrections (LOCKED)
+
+### All Exchanges Simultaneously (LOCKED · updated)
+Short DCA launches on ALL 7 exchanges at once
+Previous note "MEXC first" = OUTDATED · DELETED
+Same as Long DCA implementation
+One codebase · all exchanges · Phase 5
+
+### Limit Order Check Frequency (LOCKED · updated)
+Previous: hourly cron check for missing limit orders
+Updated: check EVERY 60 SECONDS for PENDING_BUYBACK
+Reason: 1 hour gap = price can hit TP and recover
+= user misses profit entirely
+
+Implementation:
+Bot loop every 60s checks:
+If position has PENDING_BUYBACK = TRUE:
+→ Verify limit buy order still active on exchange
+→ If missing: replace immediately
+→ Do NOT wait for hourly cron
+
+Hourly cron: still runs as backup verification
+60s check: primary protection
+
+### Spacing = Same Formula as Long (LOCKED)
+Short spacing uses identical formula to Long:
+Level 1: activation_price × (1 + DCA%)
+Level 2+: last_sell_price × (1 + DCA% × multiplier^level)
+
+Reason: coin volatility same in both directions
+ATR measures both up and down equally
+Consistent · predictable · no special handling
+
+### Short Research Bots (LOCKED · Phase 5)
+Same 261 methods as Long
+But coin universe = 5 coins only:
+BTC · ETH · BNB · SOL · XRP
+Research account pre-holds all 5 coins
+3 separate Short regime champions
+Independent from Long champions
+Added to research_bots.json when Phase 5 begins
+
+### Profit Currency (LOCKED · both directions)
+Long profit: USDT or base coin (user picks)
+Short profit: USDT or base coin (user picks)
+Both directions = same toggle · same logic
+No difference between Long and Short
+
+### Bot Never Stops (LOCKED · both directions)
+Long runs out of USDT → keeps trying every 60s
+Short runs out of coin → keeps trying every 60s
+When funds available → resumes automatically
+Never force-closes · never gives up
+TP always fires regardless of balance
+
+### Short DCA Complete Flow Summary
+1. User holds coin on exchange
+2. Bot entry: MARKET sell initial amount
+3. Price rises → bot sells more (MARKET) at spacing intervals
+4. Each sell: recalculate avg sell price + new TP target
+5. TP target = avg_sell_price × (1 - TP%)
+6. Place/update LIMIT buy order at TP target
+7. Exchange reserves USDT for buyback
+8. Price drops to TP → limit buy fills
+9. Profit = total USDT collected - buyback cost
+10. 20% fee on profit immediately
+11. Position closed · user gets coin back + profit
