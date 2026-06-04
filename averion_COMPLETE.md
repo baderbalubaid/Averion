@@ -354,7 +354,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🟡 IMPORTANT (before public launch)
 
-⬜ 7. Email templates
+✅ 7. Email templates
   Welcome · verify · weekly digest
   API expiry warning · reserve low
   Tax report delivery
@@ -5113,6 +5113,298 @@ Estimated first trade: 6-24 hours shown always
 ③ Telegram third (communication · optional)
 ④ Reserve last (money · only when trust built)
 Never reorder these
+
+---
+
+## Email Templates — Final (LOCKED · v1)
+
+### Style: Simple HTML (Option B)
+Dark background (#0E0E1C) · white text
+Averion logo at top
+Clean single-column layout
+One clear CTA button per email
+Mobile responsive
+No images except logo
+Footer: unsubscribe · privacy · support
+
+---
+
+### EMAIL 1: Welcome
+Subject: Welcome to Averion · Your account is ready
+
+Hi [Username],
+
+Your Averion account is ready.
+
+What you can do now:
+→ Connect your exchange (Binance · MEXC · KuCoin · more)
+→ Create your first bot (paper mode · free forever)
+→ Watch your bot trade automatically
+
+[Get Started →]
+
+You are currently in paper mode.
+No real money used until you choose to go live.
+
+Questions? Reply to this email or message us on Telegram.
+
+— The Averion Team
+averionbot.com
+
+---
+
+### EMAIL 2: Email Verification
+Subject: Verify your Averion account
+
+Hi [Username],
+
+Your verification code is:
+
+[482 916]
+
+Expires in 30 minutes.
+
+Or click the link below to verify automatically:
+[Verify My Account →]
+
+If you did not create an account, ignore this email.
+
+— Averion
+
+---
+
+### EMAIL 3: Reserve Wallet Low
+Subject: ⚠️ Reserve wallet low · Action needed
+
+Hi [Username],
+
+Your reserve wallet is running low.
+
+Current balance: $2.40
+Minimum recommended: $10.00
+
+When reserve reaches $0:
+→ New trades will pause
+→ Existing positions continue
+→ TP always fires
+
+Top up now to keep trading:
+[Add Funds →]
+
+Need help? Reply to this email.
+
+— Averion
+
+---
+
+### EMAIL 4: API Key Expired
+Subject: ⚠️ Exchange connection issue · [Exchange]
+
+Hi [Username],
+
+Your [MEXC] API key has expired or been revoked.
+
+Affected bots: [3 bots paused]
+Open positions: [2 positions · TP monitoring continues]
+
+To restore trading:
+1. Create a new API key on [MEXC]
+2. Update it in Averion Settings
+3. Bots resume automatically
+
+[Update API Key →]
+
+Your open positions are safe.
+TP will fire when price is reached.
+
+— Averion
+
+---
+
+### EMAIL 5: Tax Report Delivery
+Subject: 📊 Your Averion Tax Report · [Year]
+
+Hi [Username],
+
+Your [2025] trading summary is ready.
+
+Performance:
+Closed trades: [234]
+Gross profit: [$8,470]
+Performance fees: [$1,694]
+Net profit: [$6,776]
+
+Download your full report:
+[Download PDF →] [Download CSV →]
+
+Available for 3 years · use for tax filing.
+Averion does not provide tax advice.
+Consult a tax professional for guidance.
+
+— Averion
+
+---
+
+### EMAIL 6: Debt Warning
+Subject: 🔴 Trading paused · Outstanding balance
+
+Hi [Username],
+
+Your outstanding balance has reached $[amount].
+
+Trading status: PAUSED
+TP status: ACTIVE (always runs)
+
+To resume trading:
+[Top Up Reserve Wallet →]
+
+Minimum needed to resume: $[amount]
+
+Your open positions are safe.
+All take profits continue to fire automatically.
+
+— Averion
+
+---
+
+### EMAIL 7: Weekly Performance Summary
+Subject: 📈 Your week on Averion · [Date range]
+
+Hi [Username],
+
+Here is your weekly summary:
+
+This week:
+Closed trades: [8]
+Profit: +$134.50
+Fees paid: $26.90
+Net profit: +$107.60
+
+Top coin: SOL (+$45.20)
+Reserve balance: $23.10
+
+[View Full Dashboard →]
+
+— Averion
+
+---
+
+### EMAIL 8: First Trade Congratulations
+Subject: 🎉 Your first trade just opened!
+
+Hi [Username],
+
+Your bot just made its first move!
+
+[PAPER] SOL/USDT · MEXC
+Entry: $120.40
+Size: $50 (virtual)
+Method: Smart DCA
+
+This is paper mode · no real money involved.
+Your bot is working exactly as designed.
+
+Ready to go live?
+[Enable Live Trading →]
+
+— Averion
+
+---
+
+### EMAIL 9: Password Reset
+Subject: Reset your Averion password
+
+Hi [Username],
+
+We received a request to reset your password.
+
+[Reset Password →]
+
+Link expires in 15 minutes.
+
+If you did not request this, your account is safe.
+No action needed.
+
+— Averion
+
+---
+
+### EMAIL 10: Account Deletion Confirmation
+Subject: Your Averion account has been closed
+
+Hi [Username],
+
+Your account has been successfully closed.
+
+What happens next:
+→ All bots deactivated
+→ API keys removed
+→ Personal data scheduled for anonymization
+→ Trade history retained per legal requirements
+
+Outstanding balance: $[amount] (if any)
+Contact support to resolve.
+
+Thank you for using Averion.
+
+[support@averionbot.com]
+
+---
+
+### EMAIL 11: Re-engagement (30 days inactive)
+Subject: Your Averion bots are waiting
+
+Hi [Username],
+
+You have not logged in for 30 days.
+
+Your bots: [2 active · 1 position open]
+Open position: SOL/USDT · -4.2%
+Reserve balance: $18.40
+
+Everything is running safely.
+Log in to check your progress:
+
+[View Dashboard →]
+
+— Averion
+
+---
+
+### EMAIL 12: Referral Earned
+Subject: 💰 You earned a referral bonus
+
+Hi [Username],
+
+Your referral just generated a reward!
+
+Referred user: [username masked]
+Their profit: $[X]
+Your reward: $[Y] (2.5%)
+
+Added to your reserve wallet automatically.
+
+Total referral earnings: $[lifetime]
+
+[View Referrals →]
+
+— Averion
+
+---
+
+### Email Rules (LOCKED)
+Sender: support@averionbot.com
+Service: Resend (free 3,000/month)
+Style: Simple HTML · dark theme
+Max per user per day: 3 emails
+Never send same alert twice in 24h
+All emails have unsubscribe footer
+Critical alerts (API expired · debt):
+ cannot be unsubscribed
+ (financial safety requirement)
+Tax report: annual only · January 1st
+Weekly summary: opt-in (default OFF)
+Re-engagement: maximum once per 30 days
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
