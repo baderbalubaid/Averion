@@ -899,3 +899,32 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS paper_trades_count INTEGER DEFAULT 0;
 -- paper_trades_count = paper open positions
 -- total = live + paper <= trade_limit (default 100)
 -- paper always <= 30 regardless of bundle
+
+-- Smart DCA Champions Table
+CREATE TABLE IF NOT EXISTS smart_dca_champions (
+    id SERIAL PRIMARY KEY,
+    regime VARCHAR(20) NOT NULL UNIQUE,
+    method VARCHAR(20) NOT NULL DEFAULT 'E10',
+    best_variation VARCHAR(20) DEFAULT 'E10-1',
+    rars_score DECIMAL(10,6) DEFAULT 0,
+    confirmed_at TIMESTAMP,
+    confirmation_weeks INTEGER DEFAULT 0,
+    challenger_method VARCHAR(20),
+    challenger_variation VARCHAR(20),
+    challenger_weeks INTEGER DEFAULT 0,
+    challenger_rars DECIMAL(10,6),
+    challenge_start_date TIMESTAMP,
+    challenger_trades INTEGER DEFAULT 0,
+    auto_switch BOOLEAN DEFAULT TRUE,
+    switched_at TIMESTAMP,
+    previous_method VARCHAR(20),
+    no_alpha_detected BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO smart_dca_champions (regime, method, best_variation)
+VALUES
+    ('bull',     'E10', 'E10-1'),
+    ('bear',     'E10', 'E10-1'),
+    ('sideways', 'E10', 'E10-1')
+ON CONFLICT (regime) DO NOTHING;

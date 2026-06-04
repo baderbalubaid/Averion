@@ -3440,6 +3440,150 @@ Layer 4: IP + device fingerprint
 Layer 5: Cross-exchange blacklist
 Layer 6: Admin risk scoring (new)
 Layer 7: Phone verification on demand (new)
+
+---
+
+## Short DCA — Complete Flow (LOCKED)
+
+### Philosophy
+Short DCA = mirror image of Long DCA
+Long:  Buy → average DOWN on drops → sell high
+Short: Sell → average UP on rises → buy low
+
+### Entry
+Bot sells initial coin amount at MARKET price
+Example: sell 1000 RVN at $0.030 = $30 USDT collected
+
+### Averaging (price rises = sell more)
+If price RISES by spacing% → sell more coin
+Each additional sell = at higher price
+= Improves average sell price
+Example:
+Entry sell: $0.030
+Price +10% → sell more at $0.033
+Avg sell price: $0.031 (improved)
+
+### TP (limit BUY below entry)
+TP = limit buy order placed BELOW entry price
+When price drops to TP → buy back ALL coin cheaper
+Example: TP buy at $0.027
+Profit = $0.031 avg sell - $0.027 buyback = +$0.004/coin
+
+### Profit Currency (LOCKED · same as Long)
+User chooses at bot creation:
+USDT: profit kept as USDT
+RVN: profit converted back to RVN
+
+Both Long and Short support both currencies
+Same toggle · same logic · no difference
+
+### Bot Never Stops
+Long runs out of USDT → keeps trying every 60s
+Short runs out of coin → keeps trying every 60s
+When funds available → resumes automatically
+Never force-closes · never gives up
+TP always fires regardless of balance
+
+### Spacing (same formula as Long)
+Short spacing = how much price rises between sells
+Same ATR calculation · same classification
+Same 25/25/25/25 weighted window
+Same dynamic scalar · same percentile ranges
+Category limits apply as emergency backstop
+
+### Fee Deduction
+When buyback fills (Short closes):
+profit = total USDT collected - buyback cost
+20% fee deducted immediately from reserve wallet
+Loss close = $0 fee (never charged on losses)
+Same system as Long · no difference
+
+### Insufficient Coin During Averaging
+If user runs out of coin:
+→ Cannot execute averaging sell
+→ Bot keeps trying every 60s
+→ When coin available → averaging resumes
+→ TP still fires on whatever was sold
+→ Admin alert: "Short bot: insufficient coin balance"
+
+---
+
+## Copy Trade — Complete Spec (LOCKED)
+
+### Setup
+Admin connects MEXC User #13326:
+→ Selects which of YOUR MEXC wallets to use
+→ Sets YOUR fixed order size (e.g. $20)
+→ All user bots = followed by default [ON]
+
+### Normal Behavior (follow user exactly)
+User opens trade → you open same coin immediately
+User's DCA fires → your DCA fires (same spacing as user)
+User's TP hits → your TP hits (same TP as user)
+You mirror EVERYTHING the user does
+Your order size = your fixed $ amount always
+User changes params → applies to YOUR new trades only
+Existing open copies → keep original params forever
+
+### Exception: User Closes at LOSS (manual)
+You do NOT follow the close
+Your position becomes standalone Smart DCA
+NOW uses YOUR coin classification:
+→ Your spacing from own coin data
+→ Your TP from own coin data
+→ Your trailing from own coin data
+→ Joins your MEXC queue
+→ TP from YOUR avg cost
+→ Treated as normal Smart DCA trade forever
+
+### Simple Rule
+Profit close → follow user ✅
+Loss close → don't follow · switch to your classification ✅
+
+### Per Bot Toggle
+Each bot under copied exchange shows:
+[Follow: ON ●] default = ON
+→ OFF = don't copy new opens from this bot
+→ Existing copies: stay open as standalone Smart DCA
+→ Never force-closed
+
+### Order Size Change
+Admin changes $20 → $30:
+→ New copies use $30
+→ Existing open copies: keep original $20 forever
+
+### No Funds Available
+Skip copying until funds available
+When funds available → resume copying new opens
+Cannot copy past missed entries (no catch-up)
+
+### Remove Copied Exchange
+Admin removes MEXC copy entirely:
+→ All copied positions → standalone Smart DCA
+→ Join MEXC queue automatically
+→ No forced closes
+→ Platform handles everything
+→ TP from YOUR avg cost
+→ YOUR classification for spacing
+
+### What Copies
+✅ Coin (same coin as user)
+✅ Direction (Long or Short)
+✅ Entry timing (same time as user)
+✅ DCA timing (same time as user)
+✅ TP timing (same as user if profitable)
+✅ Entry method changes (new trades only)
+
+### What Does NOT Copy
+❌ User's capital amount (you use your fixed $)
+❌ User's profit currency (you use your setting)
+❌ Loss closes (you stay open → Smart DCA)
+❌ User's reserve balance
+
+### Profit
+When copy trade closes with profit:
+20% fee on YOUR profit → from YOUR reserve wallet
+Same fee system as all other trades
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -7360,6 +7504,35 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS paper_trades_count INTEGER DEFAULT 0;
 -- paper_trades_count = paper open positions
 -- total = live + paper <= trade_limit (default 100)
 -- paper always <= 30 regardless of bundle
+
+-- Smart DCA Champions Table
+CREATE TABLE IF NOT EXISTS smart_dca_champions (
+    id SERIAL PRIMARY KEY,
+    regime VARCHAR(20) NOT NULL UNIQUE,
+    method VARCHAR(20) NOT NULL DEFAULT 'E10',
+    best_variation VARCHAR(20) DEFAULT 'E10-1',
+    rars_score DECIMAL(10,6) DEFAULT 0,
+    confirmed_at TIMESTAMP,
+    confirmation_weeks INTEGER DEFAULT 0,
+    challenger_method VARCHAR(20),
+    challenger_variation VARCHAR(20),
+    challenger_weeks INTEGER DEFAULT 0,
+    challenger_rars DECIMAL(10,6),
+    challenge_start_date TIMESTAMP,
+    challenger_trades INTEGER DEFAULT 0,
+    auto_switch BOOLEAN DEFAULT TRUE,
+    switched_at TIMESTAMP,
+    previous_method VARCHAR(20),
+    no_alpha_detected BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO smart_dca_champions (regime, method, best_variation)
+VALUES
+    ('bull',     'E10', 'E10-1'),
+    ('bear',     'E10', 'E10-1'),
+    ('sideways', 'E10', 'E10-1')
+ON CONFLICT (regime) DO NOTHING;
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
