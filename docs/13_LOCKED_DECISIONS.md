@@ -3664,3 +3664,37 @@ Research Short bots:
 → Fully simulated
 
 These are completely separate systems.
+
+---
+
+## Short Research Bot Count — Final (LOCKED)
+
+### Structure
+261 methods × 5 coins = 1,305 Short bot instances
+Results COMBINED per method across all 5 coins
+One RARS score per method (not per coin)
+3 Short champions (Bull · Bear · Sideways)
+Independent from Long champions
+
+### Total Day 3
+Long research:  261 bot instances (across 300+ coins)
+Short research: 1,305 bot instances (261 × 5 coins)
+Grand total:    1,566 bot instances
+
+### Staged Launch (LOCKED)
+Day 3 morning: launch 261 Long bots first
+Day 3 afternoon: if loop < 30s → launch 1,305 Short bots
+Day 4: assess loop time → upgrade server if needed
+
+### Server Recommendation
+Start on CX33 from Day 1 (€17.99/mo · 4 vCPU · 8GB)
+CX23 borderline for 1,566 bots
+CX33 comfortable · cheap insurance
+CX43 only if loop > 30s consistently after CX33
+
+### Open Trades vs Bot Instances
+1,566 bots ≠ 1,566 open trades
+Open trades = DB records only (not heavy on server)
+Server load = signal checking + price fetching + DB queries
+Not all bots fire simultaneously
+Realistic open positions: 10-20% of bots at any time
