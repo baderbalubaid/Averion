@@ -2940,6 +2940,307 @@ Champion timeline: 3-6 months research → auto-switch
 Server cost: test after Hetzner · share health report
 Fernet key: split (Part A server · Part B Hetzner Secrets)
 Monthly rotation: automatic · old key useless after
+
+---
+
+## DCA Parameter System — Complete Technical Spec (LOCKED)
+
+### Weighted Rolling Window
+Equal weights: 25/25/25/25
+Last 7 days:  25%
+Days 8-30:    25%
+Days 31-60:   25%
+Days 61-90:   25%
+
+Why equal (not 50/30/20):
+- No single period dominates
+- 50% on last 30 days = too reactive to anomalies
+- Stable · reliable · consistent
+- Still adapts faster than unweighted 90-day
+
+### Dynamic ATR Scalar
+vol_scalar = min(3.0, max(1.2, coin_vol_30d / category_avg_vol))
+NOT fixed 1.5 for all coins.
+BTC low vol → scalar 1.2 (tighter · more entries)
+RVN high vol → scalar 2.0+ (wider · protect capital)
+
+### Regime TP Multipliers (SOFT · replaced old 0.60-0.85)
+Strong Bull: 1.10
+Bull:        1.05
+Sideways:    1.00
+Bear:        0.90
+Strong Bear: 0.85
+Reason: weighted window already adapts to bear.
+Old 0.60 bear = TP too tight · left profit on table.
+
+### Per-Coin Percentile Ranges
+spacing_floor   = weighted 10th percentile of drops
+spacing_ceiling = weighted 90th percentile of drops
+tp_floor        = weighted 10th percentile of recoveries
+tp_ceiling      = weighted 90th percentile of recoveries
+Category limits = emergency backstop only (rarely triggers)
+
+### Outlier Filter (3x IQR)
+Applied before ANY percentile calculation:
+q1 = 25th percentile
+q3 = 75th percentile
+iqr = q3 - q1
+upper_fence = q3 + (3.0 × iqr)
+Remove values above fence before statistics.
+Flag coin: outlier_event_detected = TRUE
+
+### Trailing Calculation
+trailing = weighted 20th percentile of post-TP extensions
+extra_move = (peak_after_TP - TP_price) / TP_price
+Minimum floor: 0.1% absolute
+15% daily change limit
+
+### Size Multiplier Power Scaling
+vol_ratio = coin_volatility / category_avg_volatility
+adjusted  = category_base × (vol_ratio ^ 0.7)
+size_mult = clamp(adjusted, category_min, category_max)
+Power (^0.7) not linear: smoother · safer · bounded
+10% daily change limit
+
+### Spacing Full Formula
+Step 1: ATR_14_daily from ohlcv_hourly grouped by day
+Step 2: vol_scalar = min(3.0, max(1.2, coin_vol_30d / category_avg_vol))
+Step 3: median_bounce = weighted median drops (25/25/25/25)
+Step 4: spacing_raw = max(ATR_14_daily × vol_scalar, median_bounce)
+Step 5: spacing_floor = weighted 10th percentile drops
+        spacing_ceiling = weighted 90th percentile drops
+Step 6: spacing = clamp(spacing_raw, floor, ceiling)
+Step 7: spacing = clamp(spacing, yesterday×0.80, yesterday×1.20)
+Step 8: spacing = clamp(spacing, category_min, category_max)
+
+### TP Full Formula
+Step 1: median_recovery = weighted median recoveries (25/25/25/25)
+Step 2: tp_floor = weighted 10th percentile recoveries
+        tp_ceiling = weighted 90th percentile recoveries
+Step 3: tp_raw = median_recovery × regime_multiplier
+Step 4: tp = clamp(tp_raw, tp_floor, tp_ceiling)
+Step 5: tp = clamp(tp, yesterday×0.80, yesterday×1.20)
+Step 6: tp = clamp(tp, category_min_tp, category_max_tp)
+Applied from: weighted average entry price (not original entry)
+
+### RARS Normalization (Phase 6)
+Store: regime_tp_multiplier_at_entry per research trade
+Normalize: capital_efficiency = raw_efficiency / regime_multiplier
+Reason: Bull multiplier → longer close → unfair penalty on bull entries
+Result: Correct champion selected → more profit in live trading
+
+### Edge Cases
+Never bouncing (downtrend):
+  median_recovery <= 0 → use category default TP
+  Mark: weak_recovery · admin alert
+
+Instant recovery (tiny bounces):
+  Spacing floor prevents too tight
+  Minimum TP: 1.5% absolute floor
+
+Extreme outlier (LUNA-style):
+  3× IQR filter before all percentile calculations
+  Flag: outlier_event_detected = TRUE
+
+Coin removed from universe mid-position:
+  Price fetch ALWAYS continues for coins with open positions
+  TP must always fire · capital never stuck
+
+No USDT pair (BTC-denominated):
+  Convert ATR to USDT equivalent before calculation
+
+---
+
+## Entry Methods E15-E26 Full Grids (LOCKED)
+
+### E15 — OBV Divergence (9 bots)
+Logic: Price lower low + OBV higher low = smart money accumulating
+| Bot | Lookback | RSI Max | Min Drop |
+|-----|---------|---------|---------|
+| E15-1 | 24h | 40 | 3% |
+| E15-2 | 24h | 45 | 5% |
+| E15-3 | 24h | 50 | 7% |
+| E15-4 | 48h | 40 | 3% |
+| E15-5 | 48h | 45 | 5% |
+| E15-6 | 48h | 50 | 7% |
+| E15-7 | 72h | 40 | 5% |
+| E15-8 | 72h | 45 | 7% |
+| E15-9 | 72h | 50 | 10% |
+Fixed: Green close required · OBV rising 3+ candles
+
+### E16 — RSI Divergence (9 bots)
+Logic: Price lower low + RSI higher low = selling momentum weakening
+| Bot | Lookback | RSI 2nd Low | Confirmation |
+|-----|---------|------------|-------------|
+| E16-1 | 24h | 35 | Green close |
+| E16-2 | 24h | 40 | Green close |
+| E16-3 | 24h | 45 | Green close |
+| E16-4 | 48h | 35 | Green close |
+| E16-5 | 48h | 40 | Green close |
+| E16-6 | 48h | 45 | Green close |
+| E16-7 | 72h | 35 | Break prior high |
+| E16-8 | 72h | 40 | Break prior high |
+| E16-9 | 72h | 45 | Break prior high |
+Fixed: RSI period 14 · Min drop 3%
+
+### E17 — Liquidity Sweep Reversal (9 bots)
+Logic: Price breaks N-hour low (triggers stops) then reclaims = institutional absorption
+| Bot | Lookback Low | Reclaim % | Close Position |
+|-----|------------|---------|--------------|
+| E17-1 | 12h | 0.25% | Upper 40% |
+| E17-2 | 12h | 0.50% | Upper 50% |
+| E17-3 | 12h | 1.00% | Upper 60% |
+| E17-4 | 24h | 0.25% | Upper 40% |
+| E17-5 | 24h | 0.50% | Upper 50% |
+| E17-6 | 24h | 1.00% | Upper 60% |
+| E17-7 | 48h | 0.25% | Upper 40% |
+| E17-8 | 48h | 0.50% | Upper 50% |
+| E17-9 | 48h | 1.00% | Upper 60% |
+Fixed: Volume > 1.5x average
+
+### E18 — ADX Trend Pullback (9 bots)
+Logic: HIGH ADX (strong trend) + RSI oversold + above trend EMA
+| Bot | ADX Min | RSI Max | Trend EMA |
+|-----|---------|---------|----------|
+| E18-1 | 20 | 35 | 100 |
+| E18-2 | 20 | 40 | 100 |
+| E18-3 | 20 | 45 | 100 |
+| E18-4 | 25 | 35 | 150 |
+| E18-5 | 25 | 40 | 150 |
+| E18-6 | 25 | 45 | 150 |
+| E18-7 | 30 | 35 | 200 |
+| E18-8 | 30 | 40 | 200 |
+| E18-9 | 30 | 45 | 200 |
+Fixed: ADX period 14 · Price above trend EMA
+
+### E19 — Fibonacci Retracement (9 bots)
+Logic: Price pulls back to Fibonacci levels = self-fulfilling institutional orders
+| Bot | Fib Level | Lookback | Confirmation |
+|-----|-----------|---------|-------------|
+| E19-1 | 38.2% | 48h | Green close |
+| E19-2 | 50.0% | 48h | Green close |
+| E19-3 | 61.8% | 48h | Green close |
+| E19-4 | 78.6% | 48h | Green close |
+| E19-5 | 38.2% | 96h | VWAP reclaim |
+| E19-6 | 50.0% | 96h | VWAP reclaim |
+| E19-7 | 61.8% | 96h | VWAP reclaim |
+| E19-8 | 78.6% | 96h | VWAP reclaim |
+| E19-9 | 61.8% | 168h | VWAP reclaim |
+Fixed: Price above EMA200 (uptrend only)
+
+### E20 — VPOC Volume Profile (9 bots)
+Logic: Price returns to highest-volume price level = maximum liquidity support
+| Bot | Profile Days | Buffer | RSI Filter |
+|-----|------------|--------|-----------|
+| E20-1 | 30d | 0% | None |
+| E20-2 | 60d | 0% | None |
+| E20-3 | 90d | 0% | None |
+| E20-4 | 30d | 0.5% | RSI < 35 |
+| E20-5 | 60d | 0.5% | RSI < 35 |
+| E20-6 | 90d | 0.5% | RSI < 35 |
+| E20-7 | 60d | Value Area Low | None |
+| E20-8 | 90d | Value Area Low | RSI < 30 |
+| E20-9 | 90d | VPOC - 1% | RSI < 40 |
+
+### E21 — Fair Value Gap (9 bots)
+Logic: 3-candle imbalance zone · price fills gap
+| Bot | Timeframe | Fill Depth | Volume |
+|-----|---------|-----------|--------|
+| E21-1 | 1h | 25% | None |
+| E21-2 | 1h | 50% | None |
+| E21-3 | 1h | 100% | 1.2x |
+| E21-4 | 4h | 25% | None |
+| E21-5 | 4h | 50% | None |
+| E21-6 | 4h | 100% | 1.5x |
+| E21-7 | 4h | 50% | 2.0x |
+| E21-8 | 12h | 50% | None |
+| E21-9 | 12h | 100% | 1.2x |
+Fixed: Price above EMA200 · Max gap age 7 days
+
+### E22 — Hammer/Engulfing at Support (9 bots)
+Logic: Pure price action candle pattern at support level
+| Bot | Pattern | Wick Ratio | Support Proximity |
+|-----|---------|-----------|-----------------|
+| E22-1 | Hammer | 2.0x | 0.5% |
+| E22-2 | Hammer | 2.5x | 0.5% |
+| E22-3 | Hammer | 3.0x | 0.5% |
+| E22-4 | Hammer | 2.0x | 1.0% |
+| E22-5 | Hammer | 2.5x | 1.0% |
+| E22-6 | Hammer | 3.0x | 1.0% |
+| E22-7 | Engulfing | Full | 0.5% |
+| E22-8 | Engulfing | Full | 1.0% |
+| E22-9 | Engulfing | Full | 2.0% |
+Fixed: Uses E12 support detection algorithm
+
+### E23 — Relative Strength vs BTC (9 bots)
+Logic: Coin outperforms BTC while both falling = hidden accumulation
+| Bot | Lookback | Min Outperform | RSI Max |
+|-----|---------|--------------|--------|
+| E23-1 | 24h | +2% | 40 |
+| E23-2 | 24h | +4% | 40 |
+| E23-3 | 24h | +6% | 40 |
+| E23-4 | 48h | +2% | 45 |
+| E23-5 | 48h | +4% | 45 |
+| E23-6 | 48h | +6% | 45 |
+| E23-7 | 72h | +2% | 50 |
+| E23-8 | 72h | +4% | 50 |
+| E23-9 | 72h | +6% | 50 |
+Calculation: coin_return_Nh - btc_return_Nh > threshold
+
+### E24 — Funding Rate Extreme (9 bots)
+Logic: Perpetual futures funding very negative = short squeeze imminent
+| Bot | Funding Threshold | RSI | Lookback |
+|-----|-----------------|-----|---------|
+| E24-1 | -0.05% | 35 | Current |
+| E24-2 | -0.10% | 35 | Current |
+| E24-3 | -0.15% | 35 | Current |
+| E24-4 | -0.05% | 40 | Current |
+| E24-5 | -0.10% | 40 | Current |
+| E24-6 | -0.15% | 40 | Current |
+| E24-7 | -0.05% | 35 | 8h avg |
+| E24-8 | -0.10% | 35 | 8h avg |
+| E24-9 | -0.15% | 40 | 8h avg |
+Data: CCXT fetchFundingRate() · perp markets only
+Tag: data_sparse_expected for non-perp coins
+
+### E25 — Supertrend + RSI (9 bots)
+Logic: Supertrend bullish + RSI oversold = trend-confirmed pullback
+| Bot | ATR Period | ATR Multiplier | RSI Max |
+|-----|-----------|--------------|--------|
+| E25-1 | 10 | 2.0 | 30 |
+| E25-2 | 10 | 2.5 | 35 |
+| E25-3 | 10 | 3.0 | 40 |
+| E25-4 | 14 | 2.0 | 30 |
+| E25-5 | 14 | 2.5 | 35 |
+| E25-6 | 14 | 3.0 | 40 |
+| E25-7 | 20 | 2.0 | 30 |
+| E25-8 | 20 | 2.5 | 35 |
+| E25-9 | 20 | 3.0 | 40 |
+Fixed: Supertrend must be bullish (green) at entry
+
+### E26 — Ichimoku Cloud Simplified (9 bots)
+Logic: Kumo cloud only · price below cloud + future cloud bullish + RSI
+Note: data_sparse_expected_TRUE (rare setup)
+| Bot | Conversion | Base | RSI Max |
+|-----|-----------|------|--------|
+| E26-1 | 9 | 26 | 35 |
+| E26-2 | 9 | 26 | 40 |
+| E26-3 | 9 | 26 | 45 |
+| E26-4 | 12 | 30 | 35 |
+| E26-5 | 12 | 30 | 40 |
+| E26-6 | 12 | 30 | 45 |
+| E26-7 | 9 | 26 | 35 |
+| E26-8 | 12 | 26 | 35 |
+| E26-9 | 9 | 30 | 40 |
+Fixed: Price below cloud + future cloud bullish · Kumo only
+
+### Research Bot Totals (LOCKED)
+Method bots: 256
+Benchmarks: 5
+Total: 261 bots
+Short research: 261 bots × 5 coins (BTC·ETH·BNB·SOL·XRP)
+3 separate Short regime champions (independent from Long)
+is_research_account=TRUE → no trade limit ever
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
