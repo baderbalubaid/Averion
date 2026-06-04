@@ -3348,3 +3348,70 @@ TP always fires regardless of balance
 9. Profit = total USDT collected - buyback cost
 10. 20% fee on profit immediately
 11. Position closed · user gets coin back + profit
+
+---
+
+## Short DCA Parameter System — Final (LOCKED)
+
+### Philosophy
+Short DCA = complete mirror of Long DCA
+Identical system · opposite direction measurement
+
+### Regime Multipliers (REVERSED from Long)
+Long:  Strong Bull 1.10 · Bull 1.05 · Sideways 1.00 · Bear 0.90 · Strong Bear 0.85
+Short: Strong Bull 0.85 · Bull 0.90 · Sideways 1.00 · Bear 1.05 · Strong Bear 1.10
+
+Reason: Short profits when price drops
+Bear = Short's best regime (ride longer)
+Bull = Short's worst regime (exit fast)
+
+### Spacing (per-coin independent)
+Measured from coin's OWN RISE history
+(not drop history like Long)
+Same formula: ATR × dynamic scalar
+Same 25/25/25/25 weighted window
+Same 10th-90th percentile ranges
+Same 20% daily change limit
+Same dynamic ATR scalar (1.2-3.0)
+
+### TP (per-coin independent)
+Measured from coin's reversal after rise
+Regime multiplier REVERSED (see above)
+Same daily 20% change limit
+Same floor/ceiling percentile ranges
+
+### Trailing
+Same formula as Long
+20th percentile of post-TP extensions
+Same limits and floors
+
+### Size Multiplier
+Same volatility-based formula
+Same power scaling (^0.7)
+Same category limits
+
+### Classification
+Same 5 categories (Mega/Large/Mid/Small/Micro)
+Same emergency limits per category
+Same cap protection (+10% up · immediate down)
+Same confidence system (0-30 · 30-90 · 90+ days)
+
+### Smart DCA Champions (3 separate Short champions)
+Bull Short Champion (separate from Long)
+Bear Short Champion (separate from Long)
+Sideways Short Champion (separate from Long)
+Same RARS formula · same 3-tier promotion
+Same circuit breaker (40% drawdown)
+Independent auto-switching
+
+### Research System
+261 Short research bots
+Coin universe: 5 coins only (BTC · ETH · BNB · SOL · XRP)
+Research account pre-holds all 5 coins
+Same 27 methods tested for Short behavior
+Results independent from Long research
+
+### One Difference Only
+Long spacing = from coin's DROP history
+Short spacing = from coin's RISE history
+Everything else: identical
