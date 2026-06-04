@@ -3326,6 +3326,120 @@ Admin shows only good numbers at start.
 More stats visible as platform grows.
 No competitor does this → trust builder.
 Auto-updated every Sunday from research report.
+
+---
+
+## Registration & Anti-Fraud System — Final (LOCKED)
+
+### Registration Flow (LOCKED)
+Step 1: Register
+→ Username
+→ Email
+→ Password
+→ Confirm password
+
+Step 2: Verify email
+→ Code sent to email
+→ Enter code manually OR click link
+→ Done · trading enabled immediately
+→ No phone · no Telegram · no friction
+→ Same as any normal platform
+
+### Exchange UID Fingerprint (LOCKED · Silent)
+When user connects exchange API:
+→ UID captured automatically (invisible to user)
+→ Stored in uid_fingerprint column
+→ User never knows · never sees it
+→ Duplicate exchange account → blocked silently
+
+UID availability per exchange:
+✅ Reliable: Binance · KuCoin · OKX · Bybit · Gate.io
+⚠️ Uncertain: MEXC · Bitget (test on Hetzner Day 3)
+If UID unavailable: store NULL · flag as unverified
+Admin sees: UID verified count per user
+
+### Admin Risk Detection (LOCKED)
+Users tab shows per user:
+ID | Username | Exchanges | UID verified | Trades | Last Active | Risk
+
+Risk scoring (automatic):
+🟢 Low: multiple exchanges · UID all verified
+🟡 Medium: 1 exchange · UID uncertain
+🔴 High: MEXC only · UID 0 · 100 trades · new account
+
+Examples:
+User A: 4 exchanges · UID 4/4 ✅ · 67 trades → 🟢 Serious trader
+User B: 1 MEXC · UID 0/1 ⚠️ · 100 trades → 🔴 Watch
+User C: 1 MEXC · UID 0/1 ⚠️ · 100 trades → 🔴 Watch
+
+Admin suspicion triggers:
+→ B + C: same IP? Same device? Same day?
+→ Same trading pattern?
+→ MEXC only + UID unverified + max trades
+
+### Phone Verification — On Demand (LOCKED)
+Admin triggers per suspicious user:
+[Require Phone Verification] button in Users tab
+
+User sees on next login:
+"Verify your phone number to continue trading"
+→ Enter phone number
+→ Receive SMS code
+→ Verify → trading resumes immediately
+
+If user refuses:
+→ Cannot open new trades until verified
+→ Account stays active but frozen
+→ Existing positions: TP always fires (never blocked)
+→ Existing positions: DCA continues
+
+Phone stored as hash (GDPR safe · never shown):
+→ Same phone already exists → flag admin
+→ B + C same phone = confirmed duplicate
+→ Admin suspends duplicate account
+
+### SMS Service Timeline (LOCKED)
+Phase 1-6: admin-triggered manually only
+→ No monthly subscription cost
+→ Only when suspicious pattern detected
+→ Expected: 5-10 cases maximum at small scale
+
+Phase 7 (public launch · stable income):
+→ Subscribe to Twilio or similar service
+→ Cost: ~$0.01 per SMS
+→ Only pay per use · no monthly minimum
+→ Budget: $5-10/month at small scale
+
+### Debt Cap System (LOCKED)
+Maximum debt per user: $100
+When debt reaches $100:
+→ Pause ALL trading (new positions + DCA)
+→ TP always fires (never blocked · ever)
+→ Telegram alert: "Debt $100 reached · top up to resume"
+→ Dashboard: large red banner with [Top Up Now]
+
+Abandoned account with debt:
+→ Account stays in DB with debt forever
+→ Email reminder: day 30 · day 90 · day 180
+→ After 180 days inactive → flag: ABANDONED_DEBT
+→ After 2 years → write off · anonymize data
+→ Small amounts not worth legal action
+
+### Telegram (LOCKED · Optional Forever)
+Telegram = optional · for notifications only
+Never required · never mentioned as security
+Connect for better notifications → user choice
+If connected: Telegram phone hash stored as bonus layer
+If not connected: email notifications only · no penalty
+
+### Anti-Fraud Layers Summary (UPDATED)
+Layer 1: Email verification at registration
+Layer 2: Exchange UID fingerprint (silent · strongest)
+Layer 3: Reserve wallet $10 minimum
+Layer 4: IP + device fingerprint
+Layer 5: Cross-exchange blacklist
+Layer 6: Admin risk scoring (new)
+Layer 7: Phone verification on demand (new)
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
