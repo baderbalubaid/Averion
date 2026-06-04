@@ -3946,3 +3946,161 @@ Global Long: [5→10] if stable
 
 All controlled from Research Tab
 No code changes ever needed
+
+---
+
+## System Crash Protection & DB Upgrade — Final (LOCKED)
+
+### Floating IP (LOCKED · Critical)
+Always use Hetzner Floating IP from Day 1.
+Never expose server IP directly to users.
+
+Why:
+Users whitelist IP on their exchange API keys.
+Server IP changes = ALL user API keys break.
+Floating IP = one IP you own · moves between servers.
+
+Setup Day 1:
+1. Create Hetzner Floating IP
+2. Assign to CX33 server
+3. Users whitelist this IP on their exchanges
+4. IP never changes regardless of server
+
+Server upgrade process (zero downtime):
+Step 1: Snapshot current server
+Step 2: Restore snapshot on new larger server
+Step 3: Test on new server (paper mode)
+Step 4: Move floating IP to new server (1 click)
+Step 5: Delete old server
+Total user downtime: 0 minutes
+Zero API key changes needed ever
+
+---
+
+### Database Upgrade (LOCKED)
+Think of DB like a filing cabinet.
+Adding new drawer = migration file.
+
+Safe process:
+Step 1: Write change in migrations/00X_description.sql
+Step 2: Test on staging (PAPER_MODE=true)
+Step 3: Apply on production:
+       python3 run_migration.py 003
+Step 4: schema_migrations records it (cannot run twice)
+
+Most changes: bot keeps running · no downtime
+Dangerous changes (rare):
+→ DROP COLUMN or RENAME = pause bot 2-3 min
+→ Apply change → restart bot
+→ Telegram alert during maintenance
+
+---
+
+### What Can Crash + Protection
+
+CRASH 1: Exchange API timeout
+Cause: exchange slow or down
+Fix: try/except · exponential backoff
+    PM2 auto-restarts if process crashes
+    Only that exchange paused · others continue
+Downtime: 0 seconds
+
+CRASH 2: DB connection lost
+Cause: PostgreSQL hiccup
+Fix: pgBouncer manages connections
+    Auto-reconnect built into database.py
+    Redis cache serves data during brief outage
+Downtime: 0 seconds
+
+CRASH 3: Server reboot (planned or unplanned)
+Cause: server restart
+Fix: PM2 startup → all processes restart automatically
+    reconcile_orders() runs immediately on restart
+    Matches all open orders vs exchange state
+    Fixes any inconsistencies from mid-execution orders
+    client_order_id prevents duplicate orders
+Downtime: 60 seconds maximum
+
+CRASH 4: Wrong migration applied
+Cause: schema change error
+Fix: test on staging first (always)
+    schema_migrations prevents double-apply
+    Daily backup = restore within 30 minutes
+Downtime: 0-3 minutes (very rare)
+
+CRASH 5: Memory full (RAM)
+Cause: too many bots · memory leak
+Fix: alert at 80% RAM → upgrade before full
+    Health tab shows RAM trend
+    Daily health report shows RAM trend
+Downtime: 0 (proactive upgrade)
+
+CRASH 6: Disk full
+Cause: logs growing · OHLCV data
+Fix: alert at 80% disk
+    Auto-clean cron logs (30 days)
+    OHLCV compressed after 90 days
+    Hetzner volume expansion (online · no restart)
+Downtime: 0 if caught early · 5 min if ignored
+
+CRASH 7: Short DCA buyback missing
+Cause: limit order cancelled on exchange
+Fix: check every 60s (every loop)
+    Auto-replace immediately
+    5-minute PENDING_BUYBACK timeout
+    Telegram alert when recovering
+Downtime: 0 (self-healing)
+
+CRASH 8: Trade executed but not recorded
+Cause: network cut after order sent
+Fix: client_order_id on every order
+    reconcile_orders() on startup
+    Matches by ID → marks as filled
+    No duplicate orders ever
+Downtime: 0 (self-healing on restart)
+
+CRASH 9: Cron job fails
+Cause: API down · DB slow · disk full
+Fix: each step independent
+    One step fails = others continue
+    [Re-run] button in admin for any step
+    Telegram alert per failed step
+    Fallback data used if API fails
+Downtime: 0 (trading continues)
+
+CRASH 10: Code bug in new feature
+Cause: deployment error
+Fix: test on staging first
+    PM2 auto-restarts crashed process
+    Telegram alert immediately
+    Rollback: git checkout previous version
+             PM2 restart
+Downtime: 60 seconds maximum
+
+---
+
+### Most Important Protections Summary
+
+PM2: auto-restarts everything always ✅
+reconcile_orders(): fixes state after any restart ✅
+client_order_id: no duplicate orders ever ✅
+Floating IP: zero-downtime server upgrades ✅
+pgBouncer: DB connections never overflow ✅
+Daily backup: restore within 30 minutes ✅
+Staging (PAPER_MODE=true): test before production ✅
+schema_migrations: safe DB changes always ✅
+Health alerts: proactive (80% thresholds) ✅
+Exchange isolation: one exchange down = others fine ✅
+
+---
+
+### Server Upgrade Checklist (LOCKED)
+1. Create Hetzner snapshot of current server
+2. Launch new server (restore from snapshot)
+3. Switch PAPER_MODE=true on new server
+4. Run 24 hours → verify all systems stable
+5. Move floating IP to new server (1 click)
+6. Switch PAPER_MODE back to original setting
+7. Verify bot loop running · check Telegram
+8. Delete old server after 48 hours (safety buffer)
+Total downtime: 0 minutes
