@@ -52,7 +52,7 @@ def init_exchange(exchange_row):
        exchange_class = getattr(ccxt, exc_name)
        config = {
            'apiKey': api_key,
-           'secret': secret,
+           'secret': decrypt(secret),
            'enableRateLimit': True,
            'options': {'defaultType': 'spot'}
        }
