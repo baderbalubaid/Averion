@@ -74,7 +74,7 @@ Exchange API keys are:
 → Encrypted using Fernet symmetric encryption
 → Split key stored in two separate secure locations
 → Never stored or transmitted in plain text
-→ Never accessible to Averion staff
+→ Not visible to Averion staff in plain text
 → Rotated monthly (encryption key rotation)
 
 Trade-only permissions required.

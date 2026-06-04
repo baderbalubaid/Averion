@@ -45,7 +45,7 @@ Illegal activities:
 
 Violations may result in:
 → Immediate account suspension
-→ Forfeiture of reserve wallet balance
+→ Suspension of withdrawals from reserve wallet pending investigation
 → Reporting to relevant authorities
 → Legal action for damages
 
