@@ -5590,6 +5590,78 @@ DCA: never stops
 TP: never stops
 Debt cap: does not exist
 Resume: automatic when balance > $0
+
+---
+
+## Bot Wizard — Coin Selection Update (LOCKED)
+
+### Three Options (Step 3 of wizard)
+
+Option 1: ALL COINS
+→ All available coins on exchange
+→ Must meet $1M daily volume minimum
+→ Currently ~300 coins typical
+
+Option 2: TOP X COINS (new)
+→ By market cap · CoinGecko · updated daily
+→ Dropdown values: 10 · 25 · 50 · 100 · 200
+→ Default suggestion: TOP 100
+→ Shows actual available count per exchange:
+  "Top 100 · 78 available on MEXC"
+→ Cross-referenced: must be on user's exchange
+→ Must meet $1M daily volume minimum
+
+Option 3: SPECIFIC COINS
+→ User searches and selects manually
+→ One or multiple coins
+→ Fixed list · not updated automatically
+
+### TOP X Daily Update Logic (LOCKED)
+Runs: daily at 04:30 (classification cron)
+Source: CoinGecko market cap ranking
+Cap protection: same (+10% max upward)
+
+New coin enters TOP X:
+→ flag: watch = TRUE
+→ Bot starts watching immediately ✅
+→ New positions can open ✅
+
+Coin drops out of TOP X:
+→ flag: watch = FALSE
+→ NO new positions opened on that coin
+→ Existing open position: continues normally ✅
+  DCA: continues ✅
+  TP: fires when hit ✅
+  After TP closes: fully removed from bot
+
+Coin returns to TOP X:
+→ flag: watch = TRUE again
+→ Bot resumes watching ✅
+→ New positions can open again ✅
+
+### Position Card Warning (when coin drops)
+⚠️ XYZ dropped from Top 100
+Position continues → TP at $0.045
+No new XYZ positions after close
+
+### Admin View (Tab 7 Trading)
+Top X list shown daily:
+New today: [RVN ↑] [HBAR ↑]
+Dropped: [XYZ ↓] (2 active positions · continuing)
+
+### SHORT Bot Coin Selection
+SHORT: ONE coin only (user must hold it)
+TOP X option: NOT available for Short
+Only: SPECIFIC COIN selection
+Reason: user must physically hold the coin
+Cannot hold "top 100" automatically
+
+### Summary
+Bot watching: dynamic (updates daily)
+Open positions: always continue regardless
+TP: always fires regardless
+DCA: always continues regardless
+New entries: only if coin still in selected list
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
