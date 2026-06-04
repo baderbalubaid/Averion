@@ -152,13 +152,13 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Risk Disclosure
   AI writes first draft · owner reviews
 
-⬜ 5. Landing page content
+⬜ 5. Landing page (DEFERRED · separate session after Hetzner stable) content
   Hero · features · pricing · FAQ
   Every feature in one sentence
   Trust builders · CTA
   Big session · owner approves
 
-⬜ 6. Customer onboarding flow
+✅ 6. Customer onboarding flow
   Empty state → first bot
   3-step welcome checklist
   First trade experience
