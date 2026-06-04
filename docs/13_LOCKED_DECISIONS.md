@@ -3789,3 +3789,160 @@ Redis coordinates between processes:
 → Prevents duplicate trade execution
 → live_loop writes prices · research_loop reads
 → One exchange fetch serves both processes
+
+---
+
+## Infrastructure Scaling — Final (LOCKED)
+
+### Loop Mode Switch (LOCKED)
+LOOP_MODE=asyncio  ← default · Day 1
+LOOP_MODE=workers  ← upgrade when ready
+
+Manual only · NEVER auto-switches
+Admin Controls tab: [Switch Mode] button
+Process:
+1. Upgrade server first
+2. Verify server stable
+3. Manually switch LOOP_MODE in admin
+4. PM2 restarts automatically
+5. 7 processes start
+Zero crashes · full control · zero recode
+
+### Additional Costs Beyond Server (LOCKED)
+ZERO additional infrastructure costs:
+→ pgBouncer: FREE (Ubuntu package)
+→ Redis: FREE (already included)
+→ PM2: FREE (already using)
+→ asyncio: FREE (Python built-in)
+→ 7 processes: FREE (same server)
+→ CoinGecko API: FREE tier
+→ CMC API: FREE tier
+→ Resend email: FREE (3,000/month)
+→ SSL Certbot: FREE
+→ GitHub: FREE
+→ UptimeRobot: FREE (50 monitors)
+→ NOWPayments: 0.5% per deposit (user pays)
+
+Only real costs:
+→ Hetzner server (monthly)
+→ Domain averionbot.com (~$12/year)
+Nothing else ever
+
+### Platform — Hetzner Forever (LOCKED)
+No need to move to AWS · GCP · Azure
+Hetzner scales to 10,000+ users comfortably
+No recode needed for any scale
+Just bigger server or more servers
+Config changes in .env only
+
+Reasons to stay on Hetzner:
+→ 10x cheaper than AWS equivalent
+→ Same performance
+→ Same features (load balancer · managed DB · storage)
+→ EU-based (GDPR compliant)
+→ Excellent support
+→ Easy server snapshots + restore
+
+Only reason to consider cloud:
+→ 100,000+ users (extreme scale · unlikely)
+→ Multi-region globally required
+→ Compliance needs SOC2/ISO27001
+
+### Upgrade Path (LOCKED)
+Today:       CX23 €3.99/mo  (setup + testing)
+Day 3:       CX33 €17.99/mo (1,566 research bots)
+100 users:   CX43 €29.99/mo (comfortable)
+500 users:   AX41 €39/mo    (dedicated · no shared)
+2,000 users: AX52 €59/mo    (8 core · 128GB RAM)
+10,000 users:AX102 €99/mo   (16 core · 256GB RAM)
+
+Each upgrade process:
+1. Snapshot current server (Hetzner feature)
+2. Create new larger server
+3. Restore snapshot
+4. Update DNS or floating IP
+5. Done in 30 minutes
+6. Zero recode · zero data loss
+
+### Cost Comparison at 10,000 Users
+Hetzner AX102: €99/mo total ✅
+AWS equivalent: $800-1,500/mo ❌
+Savings: 10x cheaper on Hetzner
+
+### Zero Recode Architecture (LOCKED)
+Already built for scaling:
+→ LOOP_MODE switch (asyncio → workers)
+→ pgBouncer (connection pooling)
+→ Redis (caching + coordination)
+→ PM2 (process management)
+→ PostgreSQL (vertical scaling)
+→ ecosystem.config.js (both modes coded)
+
+Adding more servers if needed:
+→ Add Hetzner Load Balancer (€5/mo)
+→ Clone server (same code)
+→ Point both to shared PostgreSQL
+→ Zero recode · .env change only
+
+### Research Tab — System Status (LOCKED)
+Always visible at top of Research tab:
+🟢 Loop: 4.2s avg · 1.8s last cycle
+🟢 Server: CPU 23% · RAM 1.8GB/4GB
+🟢 Cron: all steps ✅ today
+🟢 Research: 1,566 bots active
+🟢 Mode: asyncio
+
+Loop time also visible in:
+→ Top bar (always)
+→ Health tab (detailed chart)
+→ Per exchange breakdown in Health tab
+
+### Research Tab — Trade Controls (LOCKED)
+Two independent controls:
+
+LONG trades per bot:  [0] [Apply to all Long ✓]
+SHORT trades per bot: [0] [Apply to all Short ✓]
+
+Both default 0 on launch
+Confirmation popup before each apply
+Independent · never linked
+
+### Research Tab — Method View (LOCKED)
+One row per method (collapsed):
+▶ E1 — VWAP + RSI + ATR    Trades/bot:[1] [ON●]
+▶ E2 — Panic Exhaustion     Trades/bot:[1] [ON●]
+▶ E11 — QFL Base Bounce ⭐  Trades/bot:[5] [ON●]
+
+Click ▶ → expands to variations:
+E1-1 | Open:3 | Closed:12 | P&L:+$23 | [Edit]
+E1-2 | Open:1 | Closed:8  | P&L:+$12 | [Edit]
+
+Trades/bot per method: independent control
+ON/OFF per method: pause entire method
+⭐ = current champion
+
+### Research Bot Batch Launch (LOCKED)
+Phase A: Create all bots (0 trades · default):
+→ All 1,566 bots created with parameters
+→ Zero trades · zero server load
+→ Just DB records
+
+Phase B: Batch load (10 bots per batch):
+[Launch Batch 1: E1-1 to E1-10] button
+→ Sets trades = 1 for 10 bots
+→ Watch server health 30 min
+→ [Launch Batch 2] when stable
+→ Continue until all loaded
+
+Phase C: Gradual trade increase per method:
+E1: change trades [0→1] → watch 1 hour
+E2: [0→1] → watch
+...continue method by method
+
+OR if server comfortable:
+Global Long: [0→1] all at once → watch
+Global Long: [1→5] if stable
+Global Long: [5→10] if stable
+
+All controlled from Research Tab
+No code changes ever needed
