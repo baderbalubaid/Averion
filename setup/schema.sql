@@ -928,3 +928,25 @@ VALUES
     ('bear',     'E10', 'E10-1'),
     ('sideways', 'E10', 'E10-1')
 ON CONFLICT (regime) DO NOTHING;
+
+-- Short Research Virtual Coin Balances
+CREATE TABLE IF NOT EXISTS research_virtual_balances (
+   id SERIAL PRIMARY KEY,
+   coin VARCHAR(20) NOT NULL,
+   virtual_balance DECIMAL(20,8) NOT NULL DEFAULT 0,
+   auto_refill BOOLEAN DEFAULT TRUE,
+   refill_amount DECIMAL(20,8) NOT NULL,
+   last_refilled TIMESTAMP DEFAULT NOW(),
+   created_at TIMESTAMP DEFAULT NOW(),
+   UNIQUE(coin)
+);
+
+-- Seed 5 research coins
+INSERT INTO research_virtual_balances (coin, virtual_balance, refill_amount)
+VALUES
+   ('BTC',  10.0,      10.0),
+   ('ETH',  100.0,     100.0),
+   ('BNB',  500.0,     500.0),
+   ('SOL',  1000.0,    1000.0),
+   ('XRP',  100000.0,  100000.0)
+ON CONFLICT (coin) DO NOTHING;

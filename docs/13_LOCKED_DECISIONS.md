@@ -3587,3 +3587,80 @@ RARS scoring identical formula.
 Regime multipliers REVERSED for Short.
 Results after 50+ trades per method.
 Short champion auto-switches independently.
+
+---
+
+## Short DCA Research — Virtual Coin Balance (LOCKED)
+
+### Problem
+Short DCA requires holding coin to sell.
+Paper mode uses virtual USDT (unlimited).
+Cannot "paper hold" real BTC or ETH.
+No real coin purchase needed.
+
+### Solution: Option A — Virtual Coin Balance
+Research account has two virtual balances:
+
+Long research:
+virtual_usdt_balance = unlimited (already works)
+
+Short research:
+virtual_coin_balances = {
+ BTC: 10.0 (virtual · auto-refills)
+ ETH: 100.0 (virtual · auto-refills)
+ BNB: 500.0 (virtual · auto-refills)
+ SOL: 1000.0 (virtual · auto-refills)
+ XRP: 100000.0 (virtual · auto-refills)
+}
+
+### How It Works
+Short research bot sells:
+→ Deducts from virtual_coin_balances
+→ MARKET sell simulated (no real exchange order)
+→ Records price at time of signal
+→ If virtual balance empty → refills automatically
+→ Never touches real exchange
+→ Never touches real money
+
+Long research bot buys:
+→ Uses virtual_usdt_balance
+→ Already works this way ✅
+
+Both sides fully simulated.
+Consistent · clean · no real money needed.
+
+### No Pre-Buy Required
+Day 2 checklist: NO coin pre-buy needed.
+Research account = fully virtual both directions.
+Zero real money for research.
+
+### Schema Addition
+Table: research_virtual_balances
+Fields:
+ research_account_id INTEGER
+ coin VARCHAR(20) (BTC · ETH · BNB · SOL · XRP)
+ virtual_balance DECIMAL(20,8)
+ auto_refill BOOLEAN DEFAULT TRUE
+ refill_amount DECIMAL(20,8)
+ last_refilled TIMESTAMP
+
+Auto-refill trigger:
+When virtual_balance < 10% of refill_amount:
+→ Refill to full amount automatically
+→ Log refill event in research_trades table
+→ Does not affect RARS scoring
+→ Ensures research never stops
+
+### Customer Short DCA (DIFFERENT · REAL)
+Customer Short bots:
+→ Must hold REAL coin on exchange
+→ Bot checks real balance before every sell
+→ If insufficient: Telegram alert · skip · retry
+→ No virtual balance · real exchange only
+
+Research Short bots:
+→ Virtual coin balance only
+→ Never touches real exchange
+→ Fully simulated
+
+These are completely separate systems.
