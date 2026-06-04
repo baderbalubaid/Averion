@@ -4104,3 +4104,111 @@ Exchange isolation: one exchange down = others fine ✅
 7. Verify bot loop running · check Telegram
 8. Delete old server after 48 hours (safety buffer)
 Total downtime: 0 minutes
+
+---
+
+## Data Retention Policy — Final (LOCKED)
+
+### Philosophy
+Old market data becomes useless over time.
+BTC at $60K vs $120K = completely different market.
+90-day rolling window already handles this for parameters.
+Keep data only as long as legally required or useful.
+
+### Customer Trades (LOCKED)
+Keep: 3 years from trade close date
+Year 4: anonymize (remove personal identifiers)
+Year 5: delete completely
+
+Why 3 years:
+→ Tax compliance (most countries require 3 years)
+→ User can download CSV anytime during 3 years
+→ After 3 years: legally safe to delete
+→ Old trades have zero analytical value
+
+### Research Scores (LOCKED)
+Keep full data: 2 years
+Year 2-3: keep winner records only
+Year 3+: delete loser method data
+
+Keep FOREVER (tiny · few KB total):
+→ Champion history (which method won · when · RARS)
+→ Regime champion changes log
+→ Weekly report summaries
+
+Why: market changes completely every 2-3 years
+Old losing method scores = zero value
+
+### OHLCV Data (LOCKED)
+Hourly candles: 90 days rolling (already locked)
+Daily summaries: 2 years maximum
+After 2 years: delete daily summaries
+Reason: parameters recalculate from fresh 90-day data
+Old daily summaries have zero analytical value
+
+### Financial Records (LOCKED)
+Keep: 5 years (financial regulations)
+After 5 years: anonymize records
+Never fully delete (regulatory requirement)
+Records: fees · deposits · transfers · referrals
+Size: very small · not a storage concern
+
+### User Accounts (LOCKED)
+Active users: keep while active
+Voluntarily deleted: anonymize immediately
+                    keep anonymized 3 years
+                    delete completely year 4
+
+### Server Logs (LOCKED · unchanged)
+Bot loop logs: 30 days
+Cron logs: 30 days
+API logs: 30 days
+Security audit log: 90 days
+Health reports: 90 days (GitHub keeps them longer)
+
+### Yearly Tax Report (LOCKED)
+Generated: automatically January 1st each year
+Covers: previous calendar year
+
+Contents:
+→ Total trades closed
+→ Gross profit per trade
+→ Performance fees paid (20%)
+→ Net profit after fees
+→ Per exchange breakdown
+→ Per coin breakdown
+
+Format: PDF + CSV
+Delivery: Telegram + email simultaneously
+Available in: Settings tab → Billing → Tax Reports
+Retention: 3 years then deleted with trade data
+
+Admin also receives:
+→ Platform total fees collected
+→ Total users with closed trades
+→ For owner's own tax records
+
+### Storage Impact (LOCKED)
+With smart retention:
+DB size stabilizes at 5-10GB maximum
+Never grows uncontrollably
+Even at 10,000 users over 10 years
+
+Comparison:
+Without retention: grows forever (100GB+ eventually)
+With retention: stable 5-10GB forever ✅
+
+### Cleanup Cron (LOCKED)
+Runs: 1st of every month at 02:00
+Actions:
+→ Delete trades older than 3 years
+→ Trim research scores older than 2 years
+→ Delete OHLCV daily summaries older than 2 years
+→ Delete logs older than 30 days
+→ Anonymize deleted user accounts older than 3 years
+→ Admin report: how much space freed
+
+Tax report generation:
+Runs: January 1st at 06:00 (after cleanup)
+Generates previous year report for all users
+Sends via Telegram + email
