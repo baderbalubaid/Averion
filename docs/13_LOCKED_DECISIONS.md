@@ -5101,3 +5101,39 @@ Recommended: TRC20 (zero network fee)"
 Simple · cheap · permanent · no recode ever
 User saves address once · deposits anytime
 Platform costs: $0/month beyond 0.5% per deposit
+
+---
+
+## Reserve Wallet — Absolute Final (LOCKED)
+
+### The Only Rule
+Reserve > $0 → new trades open ✅
+Reserve = $0 or debt → new trades pause ❌
+DCA → ALWAYS continues ✅ (no exceptions)
+TP → ALWAYS fires ✅ (no exceptions ever)
+
+### $100 Debt Cap: REMOVED
+Old rule deleted.
+No cap on debt amount.
+DCA + TP always run regardless of debt.
+Reason: DCA + TP help recover positions
+       Platform gets paid when TP fires
+       Stopping DCA = positions get worse
+       No reason to ever stop DCA or TP
+
+### Auto-Resume
+User deposits any amount:
+→ Debt deducted first
+→ If balance > $0 → new trades resume ✅
+→ If still in debt → new trades still paused
+
+### Deposit Minimum: $10
+Only rule remaining on deposits.
+Can trade with any reserve balance > $0.
+
+### Summary
+New trades: pause when balance = $0
+DCA: never stops
+TP: never stops
+Debt cap: does not exist
+Resume: automatic when balance > $0
