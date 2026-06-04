@@ -3415,3 +3415,95 @@ Results independent from Long research
 Long spacing = from coin's DROP history
 Short spacing = from coin's RISE history
 Everything else: identical
+
+---
+
+## Session Final Decisions (LOCKED)
+
+### 1. Account Cancellation Flow
+Settings → Danger Zone → [Close Account]
+
+Warning shown:
+"You have X open positions across Y exchanges"
+No email confirmation required
+
+3 options:
+A: [Close All Positions + Delete Account]
+   → Market sells ALL positions immediately
+   → 20% fee on any profits
+   → Account deleted after all closed
+
+B: [Keep Positions Open + Delete Account]
+   → Bots stop opening new trades
+   → Existing positions: TP still fires always
+   → Reserve keeps running until empty
+   → Account deleted after ALL positions closed naturally
+   → May take weeks/months
+
+C: [Cancel] ← default
+
+After deletion:
+→ All bots deactivated
+→ API keys removed from DB
+→ Personal data anonymized (GDPR)
+→ Trade history kept forever (financial records)
+→ Reserve wallet balance: NON-REFUNDABLE
+→ Debt: stays in DB forever
+→ Same exchange: blocked (UID fingerprint)
+
+### 2. History Tab — By Trade + By Coin (LOCKED)
+Two toggle views:
+[Trades] ← default · existing behavior
+[By Coin] ← new view
+
+By Coin view:
+Coin | Trades | Win% | Avg DCAs | Net Profit$ | P&L% | Avg Days
+Sortable by any column
+Same filters as Trades view (exchange · date · direction)
+Summary bar: totals across all coins
+No new tables needed · pure SQL aggregation
+
+### 3. FAILURE_SCENARIOS.md (LOCKED)
+Created: docs/FAILURE_SCENARIOS.md
+Covers all failure scenarios + recovery steps
+Share with AI when investigating issues
+See file for full content
+
+### 4. Scale Upgrade Path (LOCKED)
+Server alone not sufficient at large scale.
+Full stack upgrade required at milestones:
+100 users: CX33 + pgBouncer
+500 users: CX53 + dedicated DB + read replicas
+2000 users: multiple app servers + load balancer
+10000+: full cloud infrastructure
+See FAILURE_SCENARIOS.md for full scale path
+
+### 5. Short DCA 60s Limit Order Check (LOCKED)
+PENDING_BUYBACK checked EVERY 60s in bot loop
+NOT hourly · every single loop cycle
+If limit buy missing → replace immediately
+Most critical protection for Short DCA
+
+### 6. Landing Page Structure (LOCKED · content later)
+Section 1: Hero ("funds stay yours · pay only when you win")
+Section 2: 3 trust cards (non-custodial · 20% on profit · set&forget)
+Section 3: How it works (3 steps)
+Section 4: Smart DCA — NO parameters shown
+  "We test hundreds of strategies on real data daily.
+   Best performer becomes your Smart DCA automatically.
+   No tuning needed. Data decides."
+Section 5: Features grid (7 exchanges · Long+Short · alerts etc)
+Section 6: Pricing (free + add-ons)
+Section 7: FAQ
+Section 8: CTA
+Full content: separate session
+
+### PostgreSQL Connection Pooling (LOCKED)
+pgBouncer installed on Day 2 (hetzner_day2.sh)
+Pool settings:
+max_client_conn = 200
+default_pool_size = 20
+pool_mode = transaction
+App connects to pgBouncer port 6432
+pgBouncer manages real DB connections
+Cost: free · Ubuntu package
