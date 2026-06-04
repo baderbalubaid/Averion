@@ -339,13 +339,13 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Risk Disclosure
   AI writes first draft · owner reviews
 
-⬜ 5. Landing page content
+⬜ 5. Landing page (DEFERRED · separate session after Hetzner stable) content
   Hero · features · pricing · FAQ
   Every feature in one sentence
   Trust builders · CTA
   Big session · owner approves
 
-⬜ 6. Customer onboarding flow
+✅ 6. Customer onboarding flow
   Empty state → first bot
   3-step welcome checklist
   First trade experience
@@ -4984,6 +4984,135 @@ Current price marked with ●
 Next DCA level highlighted
 Easy to understand at a glance
 No technical jargon anywhere
+
+---
+
+## Customer Onboarding Flow — Final (LOCKED · v1)
+
+Note: Will update after seeing live on Hetzner.
+
+### 4 Steps (sequential unlock)
+
+① Connect Exchange (required)
+→ Shows all supported exchanges
+→ [How to create API key →] help link per exchange
+→ Unlocks Step 2 when complete
+
+② Create First Bot (required)
+→ Opens bot creation wizard (10 steps)
+→ After creation: success confirmation shown
+→ Unlocks Steps 3 + 4 when complete
+
+③ Connect Telegram (optional)
+→ Deep link: [Open Telegram →] (not search)
+→ Unique code: AV-XXXXXX (10 min expiry)
+→ [Skip · use email only] option always visible
+→ After connected: notification preferences shown
+→ Unlocks nothing · optional step
+
+④ Top Up Reserve Wallet (live trading only)
+→ "Minimum $10 · Typical users $25-50"
+→ "Paper trading = free forever · no pressure"
+→ NOWPayments flow inline
+
+---
+
+### Setup Progress Bar (always visible)
+Setup Progress: [■■■■□□□□] 50% · 2 of 4 completed
+Shows above checklist while incomplete
+Disappears with checklist when all done
+
+---
+
+### After Step 2 (first bot created):
+
+Success confirmation popup:
+🎉 Smart Long Bot Created!
+Now monitoring 247 coins.
+Waiting for entry signal...
+
+Paper vs Live explanation shown once:
+Paper Mode ✅
+→ Real market signals
+→ Real entry conditions
+→ Virtual money only · zero risk
+
+Live Mode 🔴
+→ Real money trades
+→ Requires reserve wallet
+→ Enable in Settings when ready
+
+[Got it ✓]
+
+---
+
+### Dashboard Preview Card (after first bot)
+Always visible even with zero trades:
+
+Your Bot
+Status: 🟢 Active
+Watching: 247 coins
+Method: Smart DCA Champion
+Open Positions: 0
+Avg time to first entry: 6-24 hours
+
+"If no trade in 24 hours: signal is waiting
+for right market conditions. Bot is working."
+
+This prevents "is my bot broken?" questions
+
+---
+
+### Notification Preferences (Step 3)
+☑ First trade opened (special · separate)
+☑ Trade opens/closes
+☑ TP hit (profit!)
+☑ Alerts (reserve low · API issues)
+☑ Daily report
+☐ Weekly report
+☐ Monthly report
+
+First trade = special notification:
+"🎉 YOUR FIRST TRADE!
+SOL/USDT · $50 · Smart DCA
+Your bot just made its first move!"
+
+---
+
+### Setup Complete Screen
+Shown when all 4 steps done:
+(Telegram = optional · shown if connected)
+
+🎉 Setup Complete!
+✅ MEXC Connected
+✅ Smart Long Bot Running
+✅ Telegram Connected
+✅ Reserve Wallet Ready ($25)
+Welcome to Averion.
+
+Checklist permanently hidden after this
+Never shown again
+
+---
+
+### Key Rules
+Steps unlock sequentially (1→2→3→4)
+Step 3 (Telegram): optional · never forced
+Step 4 (Reserve): not needed for paper
+Email fallback always available if Telegram skipped
+Paper mode banner: visible forever until live mode
+Checklist: dismissible per step · disappears when all done
+Progress bar: disappears with checklist
+Help link: per exchange API key guide
+Deep link: [Open Telegram →] (not search)
+Estimated first trade: 6-24 hours shown always
+
+### Onboarding Step Order Locked
+① Exchange first (value before asking anything)
+② Bot second (first win · bot is running)
+③ Telegram third (communication · optional)
+④ Reserve last (money · only when trust built)
+Never reorder these
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
