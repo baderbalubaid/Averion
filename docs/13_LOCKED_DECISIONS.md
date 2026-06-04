@@ -2935,3 +2935,88 @@ Total: 261 bots
 Short research: 261 bots × 5 coins (BTC·ETH·BNB·SOL·XRP)
 3 separate Short regime champions (independent from Long)
 is_research_account=TRUE → no trade limit ever
+
+## New Decisions — Post Session 5 Customer & Owner Review (LOCKED)
+
+### Customer Dashboard — Performance Stats (LOCKED)
+Add to Tab 1 Dashboard (top section):
+Total profit since joining: $847.20
+This month: +$234 vs last month: +$189 (+24%)
+Win rate trend: 67% → 71% (improving ✅)
+Best coin ever: BTC +$380 (8 trades)
+Worst coin ever: RVN -$23 (3 trades)
+Motivational line: "Your bots have made you $847 since March"
+Updated: every time a trade closes
+
+### PWA + Widget (LOCKED)
+PWA install: Phase 6 (already planned)
+→ Install from browser · no app store
+→ Home screen icon · push notifications
+→ Works iOS + Android
+
+Native home screen widget:
+→ Phase 8+ only (if users request it)
+→ Not worth complexity for Phase 1-7
+→ Telegram notifications replace widget perfectly
+
+### Monthly Health Report — Cost Per User (LOCKED)
+Add to monthly summary report:
+Server: €17.99/mo · Active users: 12
+Cost per user: €1.50
+Fees collected: $456 · Revenue per user: $38
+Profit margin: [calculated]
+Helps owner know when to upgrade server
+Helps owner know platform economics
+
+### Users Tab — Last Active Column (LOCKED)
+Add to Users table:
+Last Active column (after Status)
+Shows: "2h ago" · "3 days ago" · "45 days ago"
+Color coding:
+🟢 Green: < 7 days (active)
+🟡 Yellow: 7-30 days (quiet)
+🔴 Red: > 30 days (at risk of churn)
+Sortable by Last Active column
+
+### Paper Trade Limit System (LOCKED)
+Default paper limit: admin sets globally (not hardcoded)
+Launch phase: admin sets 999 (effectively unlimited)
+Growth phase: admin reduces as needed
+Stable phase: admin sets to 30 or any number
+
+Admin Controls tab:
+Global paper limit: [999] [Save]
+Applies to: new users only
+Existing users: unaffected when global changes
+
+Per user override (Users tab):
+Paper: 47/999 [Set custom limit]
+Custom limit overrides global for that user only
+Use case: abusive user → set to 5
+Use case: beta tester → keep at 999
+
+Admin Users tab shows per user:
+Paper trades used: 47/999
+[Edit paper limit] button
+
+### Public Results Page (LOCKED)
+URL: averionbot.com/results
+Default: HIDDEN (404 redirect to home)
+
+Admin Controls tab toggle:
+[Results page: HIDDEN ↔ VISIBLE]
+
+When visible · per-stat toggles:
+☑ Total trades: 12,847
+☑ Platform win rate: 67%
+☑ Average profit per trade: +3.2%
+☑ Current champion: E11-3 (QFL Base Bounce)
+☑ Champion RARS score: 0.745
+☑ Weeks as champion: 8
+☐ Active users (hide when small)
+☐ Total registered users (hide when small)
+
+Admin shows only good numbers at start.
+More stats visible as platform grows.
+No competitor does this → trust builder.
+Auto-updated every Sunday from research report.
