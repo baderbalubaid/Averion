@@ -3507,3 +3507,83 @@ pool_mode = transaction
 App connects to pgBouncer port 6432
 pgBouncer manages real DB connections
 Cost: free · Ubuntu package
+
+---
+
+## Phase Roadmap — Updated Final (LOCKED)
+
+### Short DCA = NOT a separate phase (LOCKED)
+Short DCA is identical system to Long DCA.
+Mirror image · same code · same logic · same day.
+Launches TOGETHER with Long DCA on Day 3.
+No separate implementation phase needed.
+
+### Day 3 Research Bot Launch (UPDATED)
+261 Long research bots (E1-E26 + E18b + benchmarks)
+261 Short research bots (same 27 methods · 5 coins)
+Total Day 3: 522 research bots simultaneously
+
+Short research coins: BTC · ETH · BNB · SOL · XRP
+Research account pre-holds all 5 coins before Day 3.
+3 Short champions (independent from Long champions).
+
+Server recommendation:
+Start on CX33 (€17.99/mo · 4 vCPU · 8GB)
+522 bots = significant load on CX23
+Better to start right than upgrade under pressure.
+
+Monitor 24 hours after launch:
+→ Loop < 30s: stable ✅
+→ Loop 30-50s: investigate
+→ Loop > 50s: investigate immediately
+
+### Limit Orders = Already Built (Day 1)
+Optional per bot in wizard Step 3.
+Not a separate phase.
+Available from Day 1 for both Long + Short.
+
+### Sequential Gates = Already Built (Day 1)
+In wizard Step 4.
+Not a separate phase.
+Available from Day 1.
+
+### Phase 5 — Redefined (LOCKED)
+Phase 5 = UI/feature improvements after
+30+ days stable paper trading.
+
+Includes:
+→ Copy trade system (admin copies user)
+→ Public results page (averionbot.com/results)
+→ Performance by coin view (History tab)
+→ Bot health score display
+→ "Why did my bot buy?" panel
+→ Advanced sequential gate UI improvements
+→ Strategy marketplace foundation (Phase 8)
+
+NOT includes (already built):
+→ Short DCA (done · Day 1)
+→ Limit orders (done · Day 1)
+→ Sequential gates (done · Day 1)
+
+### Phase Summary (FINAL)
+Phase 4: Hetzner setup (Days 1-3)
+Phase 4.5: Personal live trading (Day 45+)
+Phase 5: UI features + copy trade (Day 60+)
+Phase 6: First customers (Month 6+)
+Phase 7: Public launch (Month 6-12)
+Phase 8: Marketplace (Year 2)
+
+### Remove All "MEXC First for Short" References
+Old note "Short DCA = MEXC first · then KuCoin" = DELETED
+All exchanges simultaneously from Day 3.
+Same as Long DCA.
+No exchange priority for Short.
+
+### Paper Research for Short (LOCKED)
+Short research bots run from Day 3.
+Same paper trading system as Long.
+Admin research account holds 5 coins.
+RARS scoring identical formula.
+Regime multipliers REVERSED for Short.
+Results after 50+ trades per method.
+Short champion auto-switches independently.
