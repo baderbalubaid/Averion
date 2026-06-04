@@ -321,7 +321,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Long vs Short · coin selection
   Virtual wallet assignment
 
-⬜ 2. Virtual wallet UI
+✅ 2. Virtual wallet UI
   Create · name · assign bots
   Capital overview per wallet
   Most critical missing UI
@@ -4794,6 +4794,72 @@ Mode banner (always shown before launch):
 
 [🚀 Start Bot] → paper starts immediately
               → live requires [Confirm] popup
+
+---
+
+## Virtual Wallet UI — Final (LOCKED · v1)
+
+Note: Will update after seeing live on Hetzner.
+
+### Location
+Customer Dashboard → Tab 2 (Bots)
+Each exchange section has two tabs:
+[Wallets] · [Bots]
+
+### Wallet Card (per wallet)
+Shows:
+→ Name + currency (USDT or coin)
+→ Available balance
+→ Deployed (in open positions)
+→ Queued (waiting for DCA)
+→ Total cap (All · Fixed $ · Fixed %)
+→ Number of bots assigned
+→ [View Bots] [Edit] [⋮]
+
+### Wallet Types
+USDT wallet: Long bots only
+Coin wallet: Short bots only (that specific coin)
+Example: RVN Wallet = Short RVN bots only
+
+### Create/Edit Wallet
+Fields:
+→ Exchange (locked · from current exchange)
+→ Name (user defined · any text)
+→ Currency:
+  USDT (Long bots)
+  Coin + select which coin (Short bots)
+→ Capital Cap:
+  All available (no limit)
+  Fixed amount: [$X] USDT or [X] coin
+  Percentage: [X]% of exchange balance
+
+### Wallet Detail (View Bots)
+Shows:
+→ Header: Available · Deployed · Queued
+→ All bots in this wallet (cards)
+→ Queue for this wallet:
+  Position | Loss% | Need | Score | Next
+
+### Wallet Menu [⋮]
+→ Edit wallet
+→ View transactions (full history)
+→ Move bot to another wallet
+→ Pause all bots in wallet
+→ Delete wallet (only if no active bots)
+
+### Rules
+One wallet = one exchange + one currency
+Bot assigned to wallet at creation
+Bot can move wallets anytime (new trades only)
+Delete wallet = requires zero active bots
+Capital shown in real-time (updates every loop)
+Queue visible per wallet (score · next to fire)
+
+### Default Wallet
+Every exchange gets one default wallet on connect:
+Name: "Main Wallet" · Currency: USDT · Cap: All
+Created automatically · cannot be deleted
+User creates additional wallets as needed
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
