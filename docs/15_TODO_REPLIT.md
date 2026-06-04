@@ -134,7 +134,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Long vs Short · coin selection
   Virtual wallet assignment
 
-⬜ 2. Virtual wallet UI
+✅ 2. Virtual wallet UI
   Create · name · assign bots
   Capital overview per wallet
   Most critical missing UI
