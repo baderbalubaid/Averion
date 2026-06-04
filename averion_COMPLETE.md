@@ -304,6 +304,153 @@ Example markers:
    Open dashboard URL in browser
    Check all tabs still work
    Check BTC price showing
+
+---
+
+## PENDING TOPICS TRACKER — Living Document
+Last updated: Session 6
+Status: ⬜ pending · ✅ done · 🔄 in progress
+
+---
+
+### 🔴 CRITICAL (needed before first customer)
+
+⬜ 1. Bot creation wizard (full flow)
+  7 steps · every screen · every option
+  Smart DCA vs Manual vs Custom
+  Long vs Short · coin selection
+  Virtual wallet assignment
+
+⬜ 2. Virtual wallet UI
+  Create · name · assign bots
+  Capital overview per wallet
+  Most critical missing UI
+
+⬜ 3. Position detail screen
+  Progress bar (entry · DCA levels · TP)
+  DCA history table
+  Entry signal card
+  "Why did my bot buy?" panel
+  Historical recovery context
+
+⬜ 4. Legal documents
+  Terms of Service
+  Privacy Policy
+  Risk Disclosure
+  AI writes first draft · owner reviews
+
+⬜ 5. Landing page content
+  Hero · features · pricing · FAQ
+  Every feature in one sentence
+  Trust builders · CTA
+  Big session · owner approves
+
+⬜ 6. Customer onboarding flow
+  Empty state → first bot
+  3-step welcome checklist
+  First trade experience
+
+---
+
+### 🟡 IMPORTANT (before public launch)
+
+⬜ 7. Email templates
+  Welcome · verify · weekly digest
+  API expiry warning · reserve low
+  Tax report delivery
+
+⬜ 8. NOWPayments setup spec
+  Webhook flow · credit process
+  Minimum $10 · TRC20/BEP20
+  Test checklist before launch
+
+⬜ 9. Referral system UI
+  Referrer dashboard
+  Link generation
+  Earnings tracking page
+
+⬜ 10. Sequential gates full spec
+   How they work in detail
+   UI in wizard
+   Examples per gate type
+
+⬜ 11. Custom entry builder
+   Customer builds own signal
+   Up to 3 conditions
+   JSONB storage + execution
+
+---
+
+### 🟢 NICE TO HAVE (can add after launch)
+
+⬜ 12. Support flow
+   Customer contacts support
+   Telegram handle
+   Response time commitment
+
+⬜ 13. Password reset flow
+   Steps · email · security
+
+⬜ 14. API key test button
+   "Test connection" in Settings
+   Withdrawal attempt = should fail
+
+⬜ 15. ST flag handling UI
+   What customer sees
+   Warning before market sell
+   Post-sell notification
+
+---
+
+### 📋 ALWAYS PENDING (living docs)
+
+🔄 16. Admin manual
+   Living document · update as we go
+   PDF: generate when Hetzner stable (Month 2)
+   Never fully closed
+
+🔄 17. Landing page (big session · separate)
+   Pending until close to launch
+
+---
+
+### ✅ COMPLETED TOPICS
+
+✅ Research System V3 (27 methods · 261 bots)
+✅ Coin Classification (per-coin independent)
+✅ DCA Parameters (Long + Short)
+✅ Entry Methods (E1-E26 + E18b · full grids)
+✅ Admin Dashboard (9 tabs)
+✅ Customer Dashboard (3 tabs)
+✅ Notifications (customer + admin)
+✅ Reporting System (3 markdown)
+✅ Pricing System
+✅ Short DCA (complete · reversed multipliers)
+✅ Short Research (1,305 bots · virtual coin)
+✅ Copy Trade (complete spec)
+✅ Bot Loop (asyncio · 2 PM2 processes)
+✅ Infrastructure Scaling (Hetzner forever)
+✅ Crash Protection (10 scenarios)
+✅ DB Upgrade (safe migration)
+✅ Floating IP (Day 1 mandatory)
+✅ Data Retention (3yr trades · 5yr financial)
+✅ Yearly Tax Report (January 1st auto)
+✅ Admin Manual (living doc · 12 sections)
+✅ Failure Scenarios (194 lines)
+✅ Phase Roadmap (corrected)
+✅ Account Cancellation (3 options)
+✅ History By Coin view
+✅ pgBouncer connection pooling
+✅ Research Batch Launch System
+✅ Registration + Anti-Fraud (7 layers)
+✅ Public Launch Preparation
+✅ Performance Stats (customer Tab 1)
+✅ Paper Limit (admin-controlled)
+✅ Public Results Page (hidden by default)
+✅ Last Active column (Users tab)
+✅ Bot Health Score
+✅ "Why did my bot buy?" panel (locked)
+✅ Customer Performance by Coin
 # Locked Decisions
 
 > These decisions are FINAL. Do not re-suggest, re-discuss, or modify without Bader explicitly saying "discuss this decision". AI must respect all decisions below.
