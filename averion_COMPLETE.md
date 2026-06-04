@@ -5405,6 +5405,115 @@ Critical alerts (API expired · debt):
 Tax report: annual only · January 1st
 Weekly summary: opt-in (default OFF)
 Re-engagement: maximum once per 30 days
+
+---
+
+## NOWPayments Setup Spec — Final (LOCKED)
+
+### What NOWPayments Does
+Handles all USDT deposits to reserve wallets.
+Non-custodial: funds auto-forward to owner wallet.
+User gets unique USDT address (no memo confusion).
+0.5% fee per deposit (charged to user).
+
+### Supported Networks (LOCKED)
+✅ TRC20 (Tron): recommended · ~$1 fee
+✅ BEP20 (BSC): alternative · ~$0.50 fee
+❌ ERC20 (Ethereum): NOT supported · $10-30 fee
+
+### Setup Steps (Day 2 Hetzner)
+1. Create NOWPayments account at nowpayments.io
+2. Complete KYC verification
+3. Add owner USDT wallet address (TRC20 + BEP20)
+4. Enable "Fixed Rate" mode
+5. Generate API key → add to .env:
+   NOWPAYMENTS_API_KEY=your_key_here
+6. Set webhook URL:
+   https://averionbot.com/api/webhook/nowpayments
+7. Enable IPN (Instant Payment Notification)
+8. Set minimum payment: $10
+
+### Deposit Flow (Automatic)
+Step 1: User clicks [Top Up Reserve]
+Step 2: Platform calls NOWPayments API
+        Creates payment with unique address
+Step 3: User sends USDT to shown address
+Step 4: NOWPayments detects payment
+Step 5: Webhook fires to our server
+Step 6: reserve_deposits table updated
+Step 7: User balance credited immediately
+Step 8: Telegram notification sent
+Step 9: Funds auto-forward to owner wallet
+
+### Webhook Handler (LOCKED)
+Endpoint: POST /api/webhook/nowpayments
+
+Verifies:
+→ Signature matches NOWPayments secret
+→ Payment status = confirmed
+→ Amount >= minimum $10
+→ Not already processed (tx_hash unique)
+
+Actions:
+→ Credit user reserve_balance
+→ Record in reserve_deposits table
+→ Send Telegram notification
+→ Send email confirmation
+
+### Fallback (LOCKED)
+Webhook missed → hourly cron checks:
+→ NOWPayments API: last 24h payments
+→ Matches against pending deposits
+→ Credits any missed payments
+→ Maximum delay: 1 hour
+
+Admin manual match:
+Admin Tab 8 → [Match Deposit] button
+For edge cases where auto-match fails
+
+### DB Table: reserve_deposits
+user_id · payment_id (NOWPayments)
+amount_sent · amount_received
+network (TRC20/BEP20)
+tx_hash (unique · prevents double credit)
+status (pending/confirmed/failed)
+created_at · confirmed_at
+
+### Owner Wallet Auto-Transfer
+Fees accumulate in DB first
+Auto-transfer when accumulated >= $10
+Transfer via TRC20 (cheapest)
+Month-end: force transfer regardless of amount
+Admin: [Transfer Now] button for manual
+
+### Pre-Launch Test Checklist
+□ NOWPayments account created + verified
+□ API key added to .env
+□ Webhook URL configured + tested
+□ Owner wallet address saved + verified
+□ Minimum $10 set in NOWPayments
+□ Test deposit: send $10 USDT (real)
+□ Verify webhook fires within 60 seconds
+□ Verify user balance credited immediately
+□ Verify Telegram notification sent
+□ Verify owner wallet receives funds
+□ Verify fallback cron catches missed webhooks
+□ Test edge case: webhook fires twice (idempotent)
+□ Test edge case: amount below minimum
+
+### Admin Deposit Log (LOCKED)
+Admin Tab 8 → Deposits section:
+Shows: user · amount · network · tx_hash · status
+Filter: date · network · status
+[Export CSV] button
+[Match Deposit] for manual matching
+[Refund] button (manual only · edge cases)
+
+### Reserve Alerts (LOCKED)
+Balance < $5.00 → ⚠️ Telegram warning
+Balance < $2.00 → 🔴 Telegram critical
+Balance = $0 → ❌ Positions paused
+After top-up → ✅ Auto-resume within 60s
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
