@@ -5430,3 +5430,42 @@ Platform decides always
 Market for everything
 Limit for Short buyback only
 Removed from wizard completely
+
+---
+
+## Trailing — Long Only (LOCKED)
+
+Trailing available: LONG DCA only
+Trailing available: NOT for Short DCA
+
+### Long DCA Trailing
+Bot detects price rising past TP
+Trailing activates · follows price upward
+Sells when price reverses by trail%
+Works perfectly with MARKET orders
+Captures extra profit beyond TP
+
+### Short DCA Trailing = NOT AVAILABLE
+Reason:
+Short buyback = LIMIT order at fixed price
+Placed on exchange immediately
+Cannot trail a limit order
+Price is locked · cannot move
+No trailing possible
+
+Short DCA profit:
+Fixed at: avg_sell_price × (1 - TP%)
+Exact price · no trailing · no extra
+Clean · simple · predictable
+
+### Wizard Impact
+Long bot wizard:
+Step 7 (Exit): shows TP + Trailing options ✅
+
+Short bot wizard:
+Step 7 (Exit): shows TP only ❌ no trailing
+Note shown: "Short DCA uses fixed buyback price"
+
+### Summary
+Long:  TP (market) + Trailing ✅
+Short: TP (limit · fixed price only) · no trailing ✅
