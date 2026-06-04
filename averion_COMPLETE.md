@@ -315,7 +315,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🔴 CRITICAL (needed before first customer)
 
-⬜ 1. Bot creation wizard (full flow)
+✅ 1. Bot creation wizard (full flow)
   7 steps · every screen · every option
   Smart DCA vs Manual vs Custom
   Long vs Short · coin selection
@@ -4665,6 +4665,135 @@ Tax report generation:
 Runs: January 1st at 06:00 (after cleanup)
 Generates previous year report for all users
 Sends via Telegram + email
+
+---
+
+## Bot Creation Wizard — Final (LOCKED · v1)
+
+Note: Design locked for now · will update after
+seeing it live on Hetzner. UI may change based on
+real usage experience.
+
+### 10 Steps Total
+
+STEP 1: Exchange
+→ Shows all connected exchanges
+→ [+ Connect New Exchange] opens API key flow inline
+→ Cannot proceed without at least one exchange
+
+STEP 2: Direction
+→ LONG (buy low · sell high · any coin)
+→ SHORT (sell high · buy back lower · must hold coin)
+→ Short shows warning: "Must hold this coin first"
+
+STEP 3: Coin
+LONG: multiple coins allowed
+→ ALL COINS option (recommended)
+→ Or select specific coins from list
+→ Each coin shows: category · spacing · TP · confidence
+
+SHORT: one coin only
+→ Shows user's balance per coin
+→ Coins with zero balance shown with ⚠️
+→ Cannot select coin with no balance
+
+STEP 4: Virtual Wallet
+LONG: shows all USDT wallets
+→ Name · available USDT per wallet
+→ [+ Create New Wallet]
+
+SHORT + specific coin (e.g. RVN):
+→ Shows RVN wallets ONLY
+→ [+ Create RVN Wallet]
+
+Inline wallet creation wizard:
+→ Exchange (locked · from Step 1)
+→ Name (text input)
+→ Coin (USDT for Long · coin for Short)
+→ Capital cap:
+   Quantity: [X] coins
+   OR Percentage: [X]% of exchange balance
+
+STEP 5: Entry Method
+○ Smart DCA (recommended)
+  Shows current champion per regime
+  Bull · Bear · Sideways champions displayed
+○ ASAP (enter immediately · no signal)
+○ Custom Entry Builder:
+  ☑/☐ RSI < threshold
+  ☑/☐ Price below VWAP %
+  ☑/☐ Volume spike multiplier
+  ☑/☐ MACD crossover
+  ☑/☐ Bollinger Band pierce
+  ☑/☐ Stoch RSI < threshold
+  Confluence: meet [N] of above conditions
+
+Order type:
+● Market (recommended)
+○ Limit
+
+STEP 6: DCA Settings
+● Smart (platform calculates from coin data)
+  Shows current calculated spacing
+○ Manual:
+  Spacing: [X]%
+  Multiplier: [X]x per level
+
+DCA Toggle:
+● DCA ON (recommended)
+○ DCA OFF (entry only · no averaging)
+
+STEP 7: Exit Method
+Take Profit:
+● Smart (platform calculates)
+  Shows current calculated TP%
+○ Manual: [X]%
+
+Trailing:
+● Smart trailing (platform calculates)
+○ Manual trailing: [X]%
+○ No trailing (close exactly at TP)
+
+STEP 8: Profit Currency
+● Quote currency (USDT · stable · recommended)
+○ Base currency (coin · compounds position)
+
+STEP 9: Order Size
+LONG: fixed $ amount
+→ [$X] USDT per base order
+→ Shows % of wallet this represents
+
+SHORT: fixed quantity
+→ [X] coin per base sell order
+→ Shows USDT equivalent at current price
+→ Shows % of wallet cap this represents
+
+STEP 10: Review + Live Preview
+Configuration summary:
+→ Every setting from all 9 steps
+→ At a glance · edit any step via [← Back]
+
+Live preview (real current prices):
+LONG example (RVN · 5% spacing · 2% TP):
+Entry buy:   $0.034 (now)
+DCA buy 1:   $0.032 (-5%)
+DCA buy 2:   $0.030 (-10%)
+DCA buy 3:   $0.029 (-15%)
+TP sell:     $0.035 (+2% from avg)
+
+SHORT example (RVN · 5% spacing · 2% TP):
+Entry sell:  $0.034 (now)
+DCA sell 1:  $0.036 (+5%)
+DCA sell 2:  $0.038 (+10%)
+DCA sell 3:  $0.040 (+15%)
+TP buyback:  $0.033 (-2% from avg sell)
+
+Mode banner (always shown before launch):
+📄 PAPER MODE → No real money used
+🔴 LIVE MODE  → Real money · confirmation required
+
+[🚀 Start Bot] → paper starts immediately
+              → live requires [Confirm] popup
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.

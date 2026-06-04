@@ -128,7 +128,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🔴 CRITICAL (needed before first customer)
 
-⬜ 1. Bot creation wizard (full flow)
+✅ 1. Bot creation wizard (full flow)
   7 steps · every screen · every option
   Smart DCA vs Manual vs Custom
   Long vs Short · coin selection
