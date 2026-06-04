@@ -284,3 +284,36 @@ Disk > 80%        = 🔴 add volume or upgrade
 Server upgrade cost: €17.99 → €29.99 → €39 → €59
 Add volume cost: +40GB = €2/month extra
 Both options available in Hetzner console
+
+---
+
+## SECTION 12: DATA & STORAGE
+
+Your DB stays small automatically:
+
+Data deleted automatically:
+→ Customer trades: after 3 years (tax done)
+→ Research old data: after 2 years
+→ Server logs: after 30 days
+→ OHLCV old data: after 2 years
+
+Data kept forever (tiny):
+→ Champion history (few KB total)
+→ Financial records 5 years (regulations)
+
+DB size estimate:
+Today: ~1GB
+1 year: ~3GB
+5 years: stabilizes at 5-10GB max
+Never grows out of control
+
+Tax reports:
+Generated automatically January 1st
+Sent to all users via Telegram + email
+You also receive platform summary
+Available 3 years then auto-deleted
+
+Monthly cleanup runs automatically:
+1st of month at 02:00
+Cleans old data · frees space
+You receive Telegram report of space freed
