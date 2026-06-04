@@ -383,7 +383,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🟢 NICE TO HAVE (can add after launch)
 
-⬜ 12. Support flow
+✅ 12. Support flow
    Customer contacts support
    Telegram handle
    Response time commitment
@@ -5922,6 +5922,73 @@ Note shown: "Short DCA uses fixed buyback price"
 ### Summary
 Long:  TP (market) + Trailing ✅
 Short: TP (limit · fixed price only) · no trailing ✅
+
+---
+
+## Support Flow — Final (LOCKED)
+
+### Two Channels Only
+
+Primary: Telegram
+→ @AverionSupport handle
+→ Owner responds personally
+→ Fast · direct · personal
+→ Best for urgent issues
+
+Secondary: Email
+→ support@averionbot.com
+→ Response within 24 hours
+→ Best for detailed issues
+→ Keeps written record
+
+### Where Shown to Customer
+Settings tab → Help section:
+"Need help?
+Telegram: @AverionSupport (fastest)
+Email: support@averionbot.com"
+
+Every error message:
+"Something went wrong.
+Contact support: @AverionSupport"
+
+Footer of every page:
+support@averionbot.com · @AverionSupport
+
+### Response Time Commitment
+Critical (bot stopped · API issue): same day
+General questions: within 24 hours
+Feature requests: acknowledged within 48 hours
+No SLA promised publicly · best effort only
+
+### No Ticketing System
+Not needed at launch
+Owner handles all support personally
+Add helpdesk (Freshdesk · Tawk.to) when:
+→ 50+ active users
+→ Support volume > 10 tickets/day
+
+### Common Issues + Quick Answers
+Pre-written responses for:
+→ "Why is my bot not trading?"
+  Check: API connected · reserve balance · signal waiting
+→ "Why did my trade close at a loss?"
+  ST flag detected · user closed manually
+→ "How do I top up reserve?"
+  Settings → Reserve Wallet → Top Up
+→ "Why is my balance wrong?"
+  Check pending trades · performance fees deducted
+
+### Escalation
+If issue requires code fix:
+→ Log in GitHub issues (private)
+→ Fix in next deployment
+→ Notify user when fixed
+
+### Admin Support Log (LOCKED)
+Admin Tab 5 (Users) → per user:
+[View Support History] button
+Shows: all reported issues · resolutions
+Helps track recurring problems
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
