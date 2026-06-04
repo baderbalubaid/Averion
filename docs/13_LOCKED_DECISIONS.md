@@ -2618,3 +2618,19 @@ Admin personal trading → same 100 cap as regular users
 ### Paper Auto-Close Rule (Already Locked)
 After 90 days no live trade → all paper trades auto-close
 Prevents forgotten paper trades consuming slots forever
+
+## Public Launch — Final (LOCKED)
+
+No fixed timeline · quality over speed
+Personal use first → soft launch → public
+
+Stripe: REMOVED · NOWPayments only forever
+Support: owner only · Telegram + email
+Marketing: organic · Reddit + X · no paid ads
+Legal: Terms · Privacy · Risk Disclosure (AI writes)
+Security checklist: 20+ items before first customer
+GitHub: public now → private before first customer
+Champion timeline: 3-6 months research → auto-switch
+Server cost: test after Hetzner · share health report
+Fernet key: split (Part A server · Part B Hetzner Secrets)
+Monthly rotation: automatic · old key useless after
