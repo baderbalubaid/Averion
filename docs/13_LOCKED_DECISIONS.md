@@ -5209,3 +5209,85 @@ Open positions: always continue regardless
 TP: always fires regardless
 DCA: always continues regardless
 New entries: only if coin still in selected list
+
+---
+
+## Referral UI — Final (LOCKED · v1)
+
+### Location
+Customer Dashboard → Tab 3 (Settings)
+Section: Referral Program (below account info)
+
+### Referral Link
+Format: averionbot.com/r/USERNAME
+Generated automatically at registration
+Cannot change ever
+
+Display:
+averionbot.com/r/AHMED2024
+[Copy Link] [Share ▼]
+
+Share dropdown:
+→ [📋 Copy Link]
+→ [✈️ Share on Telegram]
+→ [🐦 Share on X (Twitter)]
+→ [💬 Share via WhatsApp]
+
+### Earnings Section
+Total earned:  $47.20 (lifetime)
+This month:    $12.50
+Last month:    $18.30
+Pending:       $4.80 (processing · not yet credited)
+
+Credited: automatically to reserve wallet
+Timing: immediately when referred user's fee deducted
+
+### Referrals Table
+Total referred: 8 users
+Active traders: 5
+Inactive:       3
+
+Table columns:
+User     | Joined   | Status   | Earned
+User #1  | Jan 2025 | Active 🟢 | $23.40
+User #2  | Feb 2025 | Active 🟢 | $12.10
+User #3  | Mar 2025 | Inactive 🔴| $0.00
+User #4  | Apr 2025 | Active 🟢 | $8.70
+User #5  | May 2025 | Active 🟢 | $3.00
+
+Usernames: masked for privacy (User #1 · User #2)
+[Load more] for pagination
+Inactive = registered but no closed profitable trades
+
+### How It Works (always visible)
+1. Share your unique link
+2. Friend registers using your link
+3. Friend trades and profits
+4. You earn 2.5% of their fees forever
+5. Credited to your reserve wallet instantly
+
+⚠️ Referral code entered at registration only
+   Cannot be added or changed after signup
+
+### Telegram Notification (when earned)
+💰 REFERRAL EARNED
+User #1 closed a profitable trade
+Their fee: $100
+Your reward: $2.50 (2.5%)
+Added to reserve wallet ✅
+Total earned: $47.20
+
+### Email Notification
+Sent when referral earns reward
+Template: Email #12 (already locked)
+
+### Rules (LOCKED)
+Rate: 2.5% of 20% performance fee
+Duration: forever · no time limit
+Self-referral: blocked by anti-fraud
+Code: registration only · cannot change
+Loss months: $0 referral income
+Referred user: always pays full 20%
+Referrer deleted: referred users revert to owner
+Pending: shows unconfirmed earnings
+Credited: reserve wallet · instantly on fee deduction
