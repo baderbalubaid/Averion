@@ -5291,3 +5291,96 @@ Referred user: always pays full 20%
 Referrer deleted: referred users revert to owner
 Pending: shows unconfirmed earnings
 Credited: reserve wallet · instantly on fee deduction
+
+---
+
+## Sequential Gates — Final (LOCKED · v1)
+
+### Core Concept (LOCKED)
+Gate = permission to open next trade
+Gate ≠ entry trigger
+
+Two separate systems:
+1. Gate: GO / NO-GO signal
+   Opens when: DCA triggered OR timer expires
+   
+2. Entry method: WHEN to actually enter
+   Waits for: Smart DCA signal · ASAP · Custom
+   
+Gate opens → bot ALLOWED to open next trade
+Bot then WAITS for entry signal
+Entry signal fires → trade 2 opens ✅
+
+Exception: ASAP entry
+→ Gate opens → trade opens immediately
+→ No signal wait
+→ ASAP = enter right now always
+
+### Wizard UI (Step 6 DCA Settings)
+
+Max trades per bot: [20]
+Total concurrent open positions from this bot
+
+Max trades per coin: [3]
+Max times same coin repeats (0 = unlimited)
+
+Open next trade WHEN:
+☑ DCA triggered on current trade
+  Gate opens when current trade hits DCA
+☑ Timer: [24] hours after last opened
+  Gate opens after X hours
+Both ON: whichever comes first = gate opens
+Both OFF: one trade per coin only
+
+IMPORTANT shown in wizard:
+"Gate controls WHEN bot is allowed to open
+next trade. The entry method still determines
+the actual entry signal.
+Exception: ASAP entry opens immediately
+when gate opens."
+
+### Visual Example (shown in wizard)
+Smart DCA entry · DCA gate + 24h timer
+Max 3 trades per coin
+
+Trade 1 opens on E11-3 signal ✅
+  ↓ BTC drops (DCA fires) = gate opens
+Bot waits for next E11-3 signal
+  ↓ Signal fires 2 hours later
+Trade 2 opens ✅
+  ↓ 24 hours pass = gate opens
+Bot waits for next E11-3 signal
+  ↓ Signal fires 45 min later
+Trade 3 opens ✅ (max per coin reached)
+No more BTC until one closes
+
+vs ASAP entry:
+Trade 1 opens ✅
+  ↓ DCA fires = gate opens
+Trade 2 opens IMMEDIATELY ✅
+  ↓ 24h timer = gate opens
+Trade 3 opens IMMEDIATELY ✅
+
+### Bot Card Display
+Smart Long · MEXC
+Trades: 12/20 · BTC: 2/3
+Gate: DCA + 24h ⏱
+Next gate: 8h remaining
+
+### Gate Reference Rules (LOCKED)
+Last opened trade = gate reference
+When reference closes:
+→ Highest sequence number still open = new reference
+→ Timer resets from new reference time
+→ NOT from original open time
+
+Checkpoint rule:
+→ Checkpoint always wins over gate
+→ If checkpoint active: gate ignored
+→ Gate resumes when checkpoint resolved
+
+### Short DCA Gates
+Same logic · reversed direction
+Gate opens when: price rises X% (DCA sell) OR timer
+Entry: waits for Short entry signal
+ASAP Short: sells immediately when gate opens

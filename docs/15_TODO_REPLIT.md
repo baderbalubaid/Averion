@@ -182,7 +182,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
   Link generation
   Earnings tracking page
 
-⬜ 10. Sequential gates full spec
+✅ 10. Sequential gates full spec
    How they work in detail
    UI in wizard
    Examples per gate type
