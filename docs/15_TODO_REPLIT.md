@@ -167,7 +167,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🟡 IMPORTANT (before public launch)
 
-⬜ 7. Email templates
+✅ 7. Email templates
   Welcome · verify · weekly digest
   API expiry warning · reserve low
   Tax report delivery
