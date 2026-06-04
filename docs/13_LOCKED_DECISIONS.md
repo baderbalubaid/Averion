@@ -5384,3 +5384,49 @@ Same logic · reversed direction
 Gate opens when: price rises X% (DCA sell) OR timer
 Entry: waits for Short entry signal
 ASAP Short: sells immediately when gate opens
+
+---
+
+## Order Types — CORRECTED Absolute Final (LOCKED)
+
+### The Only Rule
+
+ALL orders = MARKET
+EXCEPT Short DCA buyback = LIMIT
+
+Long DCA:
+Entry:  MARKET ✅
+DCA:    MARKET ✅
+TP:     MARKET ✅ (bot detects price · sells immediately)
+
+Short DCA:
+Entry sell:  MARKET ✅
+DCA sell:    MARKET ✅
+Buyback: LIMIT ✅ (only exception · ever)
+
+Emergency:
+ST flag:      MARKET ✅
+Manual close: MARKET ✅
+
+### Why Short Buyback = LIMIT only
+Short bot collected USDT from sells
+Waiting for price to drop to buy back
+LIMIT order placed at TP price:
+→ Exchange reserves exact USDT needed
+→ Price drops → fills automatically
+→ Profit locked at exact price
+→ Cannot use market (wrong timing)
+
+### Why Long TP = MARKET (not limit)
+Bot checks price every 60s
+When price hits TP level → market sell
+Gets very close to TP price (liquid coins)
+No pending order needed
+Simple · clean · no locked capital
+
+### No User Choice on Order Types
+User never selects order types
+Platform decides always
+Market for everything
+Limit for Short buyback only
+Removed from wizard completely
