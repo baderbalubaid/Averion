@@ -196,7 +196,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 ### 🟢 NICE TO HAVE (can add after launch)
 
-⬜ 12. Support flow
+✅ 12. Support flow
    Customer contacts support
    Telegram handle
    Response time commitment
