@@ -13208,7 +13208,7 @@ def reconcile_orders():
                 exchange_class = getattr(ccxt, exc_name)
                 config = {
                     'apiKey': exchanges_module.decrypt(api_key),
-                    'secret': secret
+                    'secret': exchanges_module.decrypt(secret)
                 }
                 if passphrase:
                     config['password'] = exchanges_module.decrypt(passphrase)
