@@ -68,7 +68,7 @@ Build once · Build right · Public platform from Day 1
 
 ## 18 Rules Never To Break
 1. DCA spacing from LAST BUY PRICE — not average cost
-2. Market orders are the default for guaranteed execution — exceptions: Short DCA buyback uses limit order · users may enable limit entry/DCA per bot in wizard
+2. Market orders are the default for guaranteed execution — exceptions: Short DCA buyback uses limit order · all orders MARKET always (Short buyback LIMIT only · no user choice)
 3. 20% fee on REALIZED profits only — loss months = $0
 4. User funds ALWAYS on their exchange — Averion never holds
 5. Paper stays paper FOREVER — live stays live — no conversion
@@ -125,7 +125,7 @@ Build once · Build right · Public platform from Day 1
 ├── fetch_ohlcv.py
 ├── daily_aggregation.py
 ├── generate_metrics.py
-├── generate_excel.py (9 sheets)
+├── generate_health_report.py · generate_weekly_report.py · generate_monthly_report.py
 └── generate_diagnostics.py (auto-analysis)
 # Bader Personal Notes
 
@@ -538,7 +538,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 - 3am cron staggered:
   - 03:00 Infrastructure (CCXT upgrade · restart · backup)
   - 03:30 Data & Classification (CoinGecko · parameters · volume)
-  - 04:00 Reporting (snapshot · metrics · Excel · Telegram)
+  - 04:00 Reporting (snapshot · metrics · markdown reports · Telegram)
   - 04:30 Sunday only (cleanup · disk · DB VACUUM · weekly report)
 
 ## Security
@@ -701,12 +701,12 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 
 - Trade history: 3 years (see Data Retention Policy — Final section)
 - OHLCV hourly: 90 days rolling (older compressed to daily summary)
-- Daily summaries: FOREVER (tiny storage · long term analysis)
-- Research decisions: FOREVER (never repeat failed experiments)
-- Balance history: FOREVER (all time chart for users)
+- Daily summaries: 2 years → delete
+- Research decisions: 2 years full → trim to winners only
+- Balance history: 3 years
 - Telegram logs: 30 days (Sunday cleanup cron handles this)
 - Error logs: 30 days (Sunday cleanup cron handles this)
-- Deposit logs: FOREVER (financial records · dispute resolution)
+- Deposit logs: 5 years (financial regulations)
 
 ## Monetization & Bot Limits (LOCKED)
 
@@ -714,7 +714,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 - 5 bots included free forever
 - 100 trades open maximum (hard limit always)
 - 100 trade bundle per month included
-- 1 exchange connection
+- Unlimited exchange connections
 - 20% performance fee on profits
 
 ### Paid Additions (from reserve wallet)
@@ -1025,7 +1025,7 @@ Priority Order (same exchange · same wallet):
 - No debt write-off ever — must be paid in full
 - No maximum debt limit
 - 0% fee accounts (family/admin): no fees · no debt · no reserve needed
-- Debt history kept FOREVER (financial records · tax · disputes)
+- Debt history: 5 years (financial regulations)
 - Active unpaid debt kept forever until paid
 
 ## CoinGecko Rate Limiting Solution (LOCKED)
@@ -2383,7 +2383,7 @@ This is a permanent competitive advantage.
 - Storage cost = negligible (< 5MB per year)
 
 ### Research Data Retention
-- All research trades: kept FOREVER
+- All research trades: 2 years full → trim to winners only
 - Reason: baseline for future comparisons
 - Reason: proof of why winner was selected
 - Reason: regime history invaluable long term
@@ -7434,14 +7434,14 @@ True set and forget — no monthly invoices.
 ## Referral System (LOCKED)
 
 ### How It Works
-- Rate = 3% of the 20% performance fee → referrer reserve wallet
+- Rate = 2.5% of the 20% performance fee → referrer reserve wallet
 - Duration = forever — no time limit
 - Referred user still pays full 20% — no discount ever
 
 ### Math Example
 - Ahmed makes $1,000 profit
 - Ahmed pays $200 fee (20%)
-- Khalid (referrer) gets $6.00 (3% of $200)
+- Khalid (referrer) gets $5.00 (2.5% of $200)
 - Owner gets $194.00 (97% of $200)
 
 ### Rules
@@ -8777,7 +8777,7 @@ Tab 5 — Controls
 - Bot creation wizard (7 steps)
 - Trade limits system
 - Reserve wallet system
-- Referral system 3%
+- Referral system 2.5%
 - Two bot toggles (Trading + DCA)
 - Reserve floor + auto-resume
 - Recovery buy system REMOVED
@@ -8929,7 +8929,7 @@ Will remove when averionbot.com launches publicly.
 - Every hour: health check + OHLCV + ATR
 - 03:00 Infrastructure: CCXT upgrade · restart · backup
 - 03:30 Data & Classification: CoinGecko · classify · recalculate · volume-weighted
-- 04:00 Reporting: snapshot · metrics · Excel · Telegram report
+- 04:00 Reporting: snapshot · metrics · markdown reports · Telegram
 - 04:30 Sunday only: cleanup · disk · DB VACUUM · weekly report
 **Status:** ✅ Resolved — schedule locked
 
@@ -9103,7 +9103,7 @@ Put money in · forget it · collect profits.
 ### Business
 - 20% performance fee on profits only
 - Reserve wallet pre-funding (NOWPayments)
-- Referral system 3% forever
+- Referral system 2.5% forever
 - Free $5 trial credit for new users
 
 ### Operations
@@ -13667,7 +13667,7 @@ def get_active_bots():
                    e.passphrase_enc, e.paused_at
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
-            WHERE b.status = 'active'
+            WHERE b.status = 'open'
             AND b.trading_on = TRUE
             AND e.paused_at IS NULL
             AND (b.expires_at IS NULL OR b.expires_at > NOW())
@@ -14353,7 +14353,7 @@ def get_research_rankings():
                    b.name as bot_name
             FROM research_scores r
             JOIN bots b ON b.id = r.bot_id
-            WHERE r.status = 'active'
+            WHERE r.status = 'open'
             ORDER BY r.promotion_score DESC NULLS LAST
         """)
         return cur.fetchall()
@@ -14386,7 +14386,7 @@ def get_active_standby_orders(exchange_id):
             FROM standby_orders s
             JOIN positions p ON p.id = s.position_id
             JOIN bots b ON b.id = p.bot_id
-            WHERE s.status = 'active'
+            WHERE s.status = 'open'
             AND b.exchange_id = %s
         """, (exchange_id,))
         return cur.fetchall()
@@ -14441,7 +14441,7 @@ def get_all_users_admin():
                        (WHERE fd.paid_at IS NULL), 0) as fee_debt
             FROM users u
             LEFT JOIN bots b ON b.user_id = u.id
-                AND b.status = 'active'
+                AND b.status = 'open'
             LEFT JOIN positions p ON p.user_id = u.id
                 AND p.status = 'open'
             LEFT JOIN reserve_wallets r ON r.user_id = u.id

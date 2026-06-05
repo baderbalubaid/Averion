@@ -85,7 +85,7 @@
 - 3am cron staggered:
   - 03:00 Infrastructure (CCXT upgrade · restart · backup)
   - 03:30 Data & Classification (CoinGecko · parameters · volume)
-  - 04:00 Reporting (snapshot · metrics · Excel · Telegram)
+  - 04:00 Reporting (snapshot · metrics · markdown reports · Telegram)
   - 04:30 Sunday only (cleanup · disk · DB VACUUM · weekly report)
 
 ## Security
@@ -248,12 +248,12 @@
 
 - Trade history: 3 years (see Data Retention Policy — Final section)
 - OHLCV hourly: 90 days rolling (older compressed to daily summary)
-- Daily summaries: FOREVER (tiny storage · long term analysis)
-- Research decisions: FOREVER (never repeat failed experiments)
-- Balance history: FOREVER (all time chart for users)
+- Daily summaries: 2 years → delete
+- Research decisions: 2 years full → trim to winners only
+- Balance history: 3 years
 - Telegram logs: 30 days (Sunday cleanup cron handles this)
 - Error logs: 30 days (Sunday cleanup cron handles this)
-- Deposit logs: FOREVER (financial records · dispute resolution)
+- Deposit logs: 5 years (financial regulations)
 
 ## Monetization & Bot Limits (LOCKED)
 
@@ -261,7 +261,7 @@
 - 5 bots included free forever
 - 100 trades open maximum (hard limit always)
 - 100 trade bundle per month included
-- 1 exchange connection
+- Unlimited exchange connections
 - 20% performance fee on profits
 
 ### Paid Additions (from reserve wallet)
@@ -572,7 +572,7 @@ Priority Order (same exchange · same wallet):
 - No debt write-off ever — must be paid in full
 - No maximum debt limit
 - 0% fee accounts (family/admin): no fees · no debt · no reserve needed
-- Debt history kept FOREVER (financial records · tax · disputes)
+- Debt history: 5 years (financial regulations)
 - Active unpaid debt kept forever until paid
 
 ## CoinGecko Rate Limiting Solution (LOCKED)
@@ -1930,7 +1930,7 @@ This is a permanent competitive advantage.
 - Storage cost = negligible (< 5MB per year)
 
 ### Research Data Retention
-- All research trades: kept FOREVER
+- All research trades: 2 years full → trim to winners only
 - Reason: baseline for future comparisons
 - Reason: proof of why winner was selected
 - Reason: regime history invaluable long term

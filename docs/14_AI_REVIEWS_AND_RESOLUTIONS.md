@@ -84,7 +84,7 @@ Will remove when averionbot.com launches publicly.
 - Every hour: health check + OHLCV + ATR
 - 03:00 Infrastructure: CCXT upgrade · restart · backup
 - 03:30 Data & Classification: CoinGecko · classify · recalculate · volume-weighted
-- 04:00 Reporting: snapshot · metrics · Excel · Telegram report
+- 04:00 Reporting: snapshot · metrics · markdown reports · Telegram
 - 04:30 Sunday only: cleanup · disk · DB VACUUM · weekly report
 **Status:** ✅ Resolved — schedule locked
 
