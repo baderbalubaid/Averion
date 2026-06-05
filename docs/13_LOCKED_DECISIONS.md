@@ -71,7 +71,7 @@
 - Minimum top-up = $10
 - New user gets $5 free trial credit
 - Reserve alerts: <$5 warning · <$2 critical · $0 new positions pause
-- Referral = 3% of 20% fee → referrer reserve wallet — forever
+- Referral = 2.5% of 20% fee → referrer reserve wallet — forever
 - Referral code entered at registration ONLY — cannot change after
 - Regular customers always pay 20% — no discount ever
 - 0% fee accounts = relatives/selected by admin only — no reserve needed
@@ -198,7 +198,7 @@
 - Bot sells portions as price rises (widening spacing)
 - Avg sell price calculated from all sells combined
 - TP triggers when price drops below avg sell price - TP%
-- Trailing arms then fires on TRAIL% pullback
+- Trailing: NOT available for Short DCA (Long only · Short = fixed limit buyback)
 - Buy back uses collected USDT only
 - Profit = difference between avg sell and buy back price
 - Profit coin: USDT (keep difference) or base coin (buy more)
@@ -246,7 +246,7 @@
 
 ## Data Retention Policy (Point 12 - LOCKED)
 
-- Trade history: FOREVER (tax records · research needs full history)
+- Trade history: 3 years (see Data Retention Policy — Final section)
 - OHLCV hourly: 90 days rolling (older compressed to daily summary)
 - Daily summaries: FOREVER (tiny storage · long term analysis)
 - Research decisions: FOREVER (never repeat failed experiments)
