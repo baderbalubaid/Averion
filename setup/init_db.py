@@ -1,3 +1,4 @@
+import bcrypt
 import psycopg2
 import os
 import hashlib

@@ -1070,3 +1070,24 @@ async def validate_exchange_key(req: dict, payload: dict = Depends(verify_token)
         results['errors'].append(f'Error: {str(e)}')
 
     return results
+
+
+@app.get("/health")
+def health_check():
+   try:
+       conn = get_db()
+       cur = conn.cursor()
+       cur.execute("SELECT 1")
+       cur.close()
+       conn.close()
+       db_ok = True
+   except:
+       db_ok = False
+   try:
+       r = get_redis()
+       r.ping()
+       redis_ok = True
+   except:
+       redis_ok = False
+   status = "ok" if db_ok and redis_ok else "degraded"
+   return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
