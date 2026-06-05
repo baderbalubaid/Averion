@@ -19,7 +19,7 @@ def load_config():
         return json.load(f)
 
 def get_admin_user(cur):
-    cur.execute("SELECT id FROM users WHERE is_admin = TRUE LIMIT 1")
+    cur.execute("SELECT id FROM users WHERE is_research_account = TRUE LIMIT 1")
     row = cur.fetchone()
     if not row:
         raise Exception("No admin user found. Create admin user first.")

@@ -77,7 +77,7 @@ sleep 1800  # Wait until 05:00
 echo "--- 05:00 Reporting ---" | tee -a $LOG_DIR/reporting.log
 python3 $AVERION_DIR/automation/daily_aggregation.py >> $LOG_DIR/reporting.log 2>&1
 python3 $AVERION_DIR/automation/generate_metrics.py >> $LOG_DIR/reporting.log 2>&1
-python3 $AVERION_DIR/automation/generate_excel.py >> $LOG_DIR/reporting.log 2>&1
+python3 $AVERION_DIR/automation/generate_health_report.py >> $LOG_DIR/reporting.log 2>&1
 echo "✅ Reporting complete $(date)" | tee -a $LOG_DIR/reporting.log
 
 # ═══════════════════════════════
