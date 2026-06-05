@@ -5865,3 +5865,8 @@ open · standby · tp_fired · closed · dead · archived
 
 Never use: active (old name replaced by open)
 tp_fired = valid status (TP hit · sell confirming)
+
+
+## emergency_halt query pattern
+Bot loop: SELECT value FROM system_settings WHERE key = 'emergency_halt'
+If value == 'true': skip new entries · DCA + TP continue
