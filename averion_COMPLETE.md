@@ -2379,7 +2379,7 @@ This is a permanent competitive advantage.
 - Research bots run under admin account
 - is_admin check skips paper limit entirely
 - Research trades tagged: is_research = TRUE
-- Research data kept FOREVER · never purged
+- Research data: 2 years full → trim to winners → delete losers year 3
 - Storage cost = negligible (< 5MB per year)
 
 ### Research Data Retention
