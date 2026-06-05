@@ -5847,3 +5847,21 @@ If value == 'true': skip new entries · DCA + TP continue
 
 NOT a boolean column query.
 Use: WHERE key = 'emergency_halt' AND value = 'true'
+
+
+## Emergency Halt — DB Query Pattern (LOCKED)
+
+Stored as key/value in system_settings:
+key = emergency_halt · value = true or false (TEXT)
+
+Bot loop query every cycle:
+SELECT value FROM system_settings WHERE key = 'emergency_halt'
+If value == 'true': skip new entries · DCA + TP continue
+
+
+## positions.status Enum Values (LOCKED)
+
+open · standby · tp_fired · closed · dead · archived
+
+Never use: active (old name replaced by open)
+tp_fired = valid status (TP hit · sell confirming)
