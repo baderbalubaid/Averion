@@ -904,6 +904,16 @@ tr:hover td{background:#6366F106}
 <!-- ══          JAVASCRIPT START           ══ -->
 <!-- ═══════════════════════════════════════ -->
 <script>
+
+    // Authentication headers helper
+    function authHeaders() {
+        const token = localStorage.getItem('averion_token');
+        return {
+            'Authorization': 'Bearer ' + (token || ''),
+            'Content-Type': 'application/json'
+        };
+    }
+
 const API = window.location.origin;
 
 const EXC = {
