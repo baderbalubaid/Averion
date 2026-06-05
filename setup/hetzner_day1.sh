@@ -233,12 +233,16 @@ sudo -u $AVERION_USER pm2 start /home/$AVERION_USER/Averion/main.py \
     --interpreter python3
 # PM2 startup — correct approach
 # PM2 startup — must execute the generated command
-STARTUP_CMD=$(env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER 2>&1 | grep "sudo" | tail -1)
+STARTUP_CMD=$(env PATH=$PATH:/usr/bin # Configure PM2 with exponential backoff (prevents CPU starvation on crash loops)
+export PM2_RESTART_DELAY=5000
+pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER 2>&1 | grep "sudo" | tail -1)
 if [ -n "$STARTUP_CMD" ]; then
     eval $STARTUP_CMD
     echo "✅ PM2 systemd configured"
 else
-    env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER
+    env PATH=$PATH:/usr/bin # Configure PM2 with exponential backoff (prevents CPU starvation on crash loops)
+export PM2_RESTART_DELAY=5000
+pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER
 fi
 su - $AVERION_USER -c 'pm2 save'
 echo "✅ PM2 saved"
