@@ -829,7 +829,8 @@ Validated by ChatGPT · Gemini · DeepSeek independently.
 - Floor: max(drawdown, 0.01) to prevent division by zero
 
 ### Scoring Formula
-Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
+RARS = (Cap_Eff × 0.35) + (Drawdown × 0.30) + (Win_Rate × 0.20) + (Profit_Factor × 0.15)
+(Old multiplicative formula DELETED · RARS additive is the ONLY formula)
 
 ### Weights Rationale
 - Drawdown 35%: survivability first - matches Averion philosophy
@@ -1561,7 +1562,7 @@ All limit orders checked every hour:
 05:30 — Sunday Only
 - DB VACUUM + ANALYZE
 - Delete logs older than 30 days
-- Delete Excel reports older than 30 days
+- Delete old health reports older than 90 days
 - Disk space check → alert if >70%
 - Weekly Telegram summary (profit + fees + rankings)
 - Check CCXT version → safe upgrade if available
@@ -1626,7 +1627,7 @@ Each component fails independently:
 - Redis down → bot reads PostgreSQL directly (slower)
 - Backup fails → Telegram alert · bot continues
 - CCXT upgrade fails → stays on current version
-- Excel generation fails → Telegram alert · retry tomorrow
+- Report generation fails → Telegram alert · retry tomorrow
 
 Admin dashboard toggle per component:
 - [ON/OFF] CoinGecko integration
@@ -1736,7 +1737,7 @@ Must work:
 - Trailing TP
 - Telegram notifications
 - Dashboard showing positions
-- 144 research bots launched
+- 261 research bots launched (staged · batch system)
 - Daily cron (CoinGecko · CMC · classify · report)
 - Classification engine
 - Basic admin dashboard
@@ -2521,7 +2522,7 @@ No monthly netting. No holdback. No escrow.
 
 2. Research account (automated)
    - Login: research@averionbot.com
-   - ALL 144 research bots run here
+   - ALL 261 research bots run here (E1-E26 + E18b + benchmarks)
    - Visible in admin dashboard Tab 4 only
    - No personal trading ever
    - is_research = TRUE on all positions/trades
@@ -6270,6 +6271,21 @@ Bot loop checks every cycle: if emergency_halt = TRUE → skip new entries only
 
 Resume: admin turns OFF → all bots resume automatically
 Telegram Channel 1: alert when activated + deactivated
+
+---
+
+## Emergency Halt — DB Query Pattern (LOCKED)
+
+Stored as key/value in system_settings table:
+key = 'emergency_halt' · value = 'true' or 'false' (TEXT)
+
+Bot loop query (every cycle):
+SELECT value FROM system_settings WHERE key = 'emergency_halt'
+if value == 'true': skip new entries only (DCA + TP continue)
+
+NOT a boolean column.
+NOT: WHERE emergency_halt = TRUE
+IS: WHERE key = 'emergency_halt' AND value = 'true'
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -11005,7 +11021,7 @@ CMC_API_KEY=your-cmc-api-key
 # ═══════════════════════════════
 # Get free API key at resend.com (3,000/month free)
 RESEND_API_KEY=your-resend-api-key
-SENDER_EMAIL=noreply@averionbot.com
+SENDER_EMAIL=support@averionbot.com
 
 # ═══════════════════════════════
 # NOWPAYMENTS (Phase 7)
@@ -11139,7 +11155,10 @@ def create_research_account():
     research_email = 'research@averionbot.com'
     research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'change-me-on-day1')
     
-    with get_db() as conn:
+    conn = psycopg2.connect(**DB_CONFIG)
+conn.autocommit = False
+try:
+    if True:  # was: with get_db() as conn:
         cur = conn.cursor()
         cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
         if cur.fetchone():

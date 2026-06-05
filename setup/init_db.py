@@ -114,7 +114,10 @@ def create_research_account():
     research_email = 'research@averionbot.com'
     research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'change-me-on-day1')
     
-    with get_db() as conn:
+    conn = psycopg2.connect(**DB_CONFIG)
+conn.autocommit = False
+try:
+    if True:  # was: with get_db() as conn:
         cur = conn.cursor()
         cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
         if cur.fetchone():
