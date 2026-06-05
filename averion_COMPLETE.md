@@ -391,7 +391,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 ✅ 13. Password reset flow
    Steps · email · security
 
-⬜ 14. API key test button
+✅ 14. API key test button
    "Test connection" in Settings
    Withdrawal attempt = should fail
 
@@ -6034,6 +6034,88 @@ Admin cannot see or reset user passwords
 Admin can only: [Force Logout] + [Suspend Account]
 User must use email reset flow only
 Security: bcrypt · never stored plain text
+
+---
+
+## API Key Test Button — Final (LOCKED)
+
+### Location
+Settings tab → Exchanges section
+Each connected exchange shows:
+[MEXC ✅] [Test Connection] [Edit] [Remove]
+
+### What Test Does (in order)
+Step 1: Connect to exchange via CCXT
+→ Verify API key + secret valid
+→ If fails: "Invalid API key · check credentials"
+
+Step 2: Check permissions
+→ Verify trade permission = ON
+→ If fails: "Trade permission missing"
+
+Step 3: Check withdrawal permission
+→ Must be DISABLED
+→ If enabled: "⚠️ Withdrawal enabled · DISABLE immediately"
+→ Shows exact instructions per exchange
+
+Step 4: Fetch account balance
+→ Confirms full read access
+→ Shows: "Balance: $234.50 USDT available"
+
+Step 5: IP whitelist check
+→ Verify platform IP is whitelisted
+→ If fails: "Platform IP not whitelisted"
+→ Shows: floating IP address to whitelist
+
+All pass:
+✅ Connection: OK
+✅ Trade permission: OK
+✅ Withdrawal: DISABLED ✅
+✅ Balance access: OK
+✅ IP whitelist: OK
+[Exchange is ready to trade]
+
+### When Test Runs Automatically
+→ When user first adds exchange
+→ When user updates API key
+→ Daily health check (silent · background)
+→ When bot loop gets auth error
+
+### Test Result Display
+┌─────────────────────────────────────────┐
+│ Testing MEXC connection...              │
+│                                         │
+│ ✅ API key valid                        │
+│ ✅ Trade permission enabled             │
+│ ✅ Withdrawal disabled                  │
+│ ✅ Balance readable: $234.50 USDT       │
+│ ✅ IP whitelisted                       │
+│                                         │
+│ All checks passed · ready to trade ✅   │
+└─────────────────────────────────────────┘
+
+Failure example:
+┌─────────────────────────────────────────┐
+│ ❌ Withdrawal permission is ENABLED     │
+│                                         │
+│ This is a security risk.               │
+│ Disable withdrawal on MEXC:            │
+│ 1. Go to MEXC → API Management         │
+│ 2. Edit your API key                   │
+│ 3. Uncheck "Withdrawal"                │
+│ 4. Save → Test again                   │
+│                                         │
+│ [Open MEXC API Settings →]             │
+└─────────────────────────────────────────┘
+
+### Rules
+→ Test takes max 10 seconds
+→ Loading spinner shown during test
+→ Results stay visible until dismissed
+→ [Test Again] button after failure
+→ Cannot save exchange with withdrawal enabled
+→ Warning shown if IP not whitelisted
+   (not blocked · just warned)
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
