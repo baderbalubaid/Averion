@@ -201,7 +201,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
    Telegram handle
    Response time commitment
 
-⬜ 13. Password reset flow
+✅ 13. Password reset flow
    Steps · email · security
 
 ⬜ 14. API key test button
