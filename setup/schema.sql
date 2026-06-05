@@ -91,7 +91,7 @@ CREATE TABLE bots (
     max_trades INTEGER DEFAULT 0,
     dca_checkpoint INTEGER DEFAULT 0,
     is_paper BOOLEAN DEFAULT TRUE,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -177,7 +177,7 @@ CREATE TABLE standby_orders (
     target_price DECIMAL(20,8) NOT NULL,
     dca_level INTEGER NOT NULL,
     standby_created_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     created_at TIMESTAMP DEFAULT NOW(),
     triggered_at TIMESTAMP,
     standby_cancelled_at TIMESTAMP
@@ -427,7 +427,7 @@ CREATE TABLE research_scores (
     recovery_speed DECIMAL(10,2),
     promotion_score DECIMAL(10,6),
     rank INTEGER,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     last_calculated TIMESTAMP DEFAULT NOW()
 );
 
@@ -536,7 +536,7 @@ CREATE TABLE IF NOT EXISTS exchange_coin_limits (
     coin VARCHAR(20) NOT NULL,
     min_order_size DECIMAL(20,8),
     min_notional DECIMAL(20,8),
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     status_reason TEXT,
     last_checked TIMESTAMP DEFAULT NOW(),
     UNIQUE(exchange_id, coin)
@@ -580,7 +580,7 @@ CREATE TABLE IF NOT EXISTS trade_bundles (
     renewal_type VARCHAR(20) DEFAULT 'one-time',
     purchased_at TIMESTAMP DEFAULT NOW(),
     expires_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'active'
+    status VARCHAR(20) DEFAULT 'open'
 );
 
 CREATE INDEX IF NOT EXISTS idx_trade_bundles_user ON trade_bundles(user_id, status);
@@ -955,3 +955,15 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_signal_details JSONB;
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_method_at_open VARCHAR(20);
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS regime_at_open VARCHAR(20);
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_quality_score INTEGER;
+
+-- System settings (emergency halt etc)
+CREATE TABLE IF NOT EXISTS system_settings (
+   id SERIAL PRIMARY KEY,
+   key VARCHAR(50) NOT NULL UNIQUE,
+   value TEXT,
+   updated_at TIMESTAMP DEFAULT NOW(),
+   updated_by INTEGER REFERENCES users(id)
+);
+INSERT INTO system_settings (key, value)
+VALUES ('emergency_halt', 'false')
+ON CONFLICT (key) DO NOTHING;
