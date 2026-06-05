@@ -10412,8 +10412,16 @@ sudo -u $AVERION_USER pm2 start /home/$AVERION_USER/Averion/main.py \
     --name averion \
     --interpreter python3
 # PM2 startup — correct approach
-env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER
+# PM2 startup — must execute the generated command
+STARTUP_CMD=$(env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER 2>&1 | grep "sudo" | tail -1)
+if [ -n "$STARTUP_CMD" ]; then
+    eval $STARTUP_CMD
+    echo "✅ PM2 systemd configured"
+else
+    env PATH=$PATH:/usr/bin pm2 startup systemd -u $AVERION_USER --hp /home/$AVERION_USER
+fi
 su - $AVERION_USER -c 'pm2 save'
+echo "✅ PM2 saved"
 echo "✅ PM2 configured as $AVERION_USER user"
 
 # ═══════════════════════════════
@@ -11117,11 +11125,11 @@ def create_benchmark_bot(cur, bench, user_id, exchange_id):
 
     cur.execute("""
         INSERT INTO bots (
-            user_id, exchange_id, name, method,
+            user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades, created_at
-        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10, %s)
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10, %s)
     """, (
-        user_id, exchange_id,
+        user_id, exchange_id, None,
         bench['name'],
         bench['method'],
         datetime.utcnow()
@@ -11140,15 +11148,15 @@ def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
 
     cur.execute("""
         INSERT INTO bots (
-            user_id, exchange_id, name, method,
+            user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades,
             dca_percent, spacing_multiplier,
             size_multiplier, take_profit_percent,
             created_at
-        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10,
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10,
                   7.0, 1.4, 1.5, 5.0, %s)
     """, (
-        user_id, exchange_id,
+        user_id, exchange_id, None,
         bot_name, method_id.lower(),
         datetime.utcnow()
     ))
@@ -11246,11 +11254,11 @@ def create_benchmark_bot(cur, bench, user_id, exchange_id):
 
     cur.execute("""
         INSERT INTO bots (
-            user_id, exchange_id, name, method,
+            user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades, created_at
-        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10, %s)
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10, %s)
     """, (
-        user_id, exchange_id,
+        user_id, exchange_id, None,
         bench['name'],
         bench['method'],
         datetime.utcnow()
@@ -11269,15 +11277,15 @@ def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
 
     cur.execute("""
         INSERT INTO bots (
-            user_id, exchange_id, name, method,
+            user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades,
             dca_percent, spacing_multiplier,
             size_multiplier, take_profit_percent,
             created_at
-        ) VALUES (%s, %s, %s, %s, TRUE, 'active', 10,
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10,
                   7.0, 1.4, 1.5, 5.0, %s)
     """, (
-        user_id, exchange_id,
+        user_id, exchange_id, None,
         bot_name, method_id.lower(),
         datetime.utcnow()
     ))
