@@ -101,6 +101,11 @@ After that: AX41 €39/mo → AX52 €59/mo
 
 ## SECTION 5: HOW TO UPGRADE SERVER (30 min)
 
+Step 0: VERIFY floating IP exists!
+→ Hetzner console → Networking → Floating IPs
+→ If none exists: create one and assign to server NOW
+→ If none: all user API keys will break on upgrade
+
 Step 1: Hetzner console → your server → Snapshots
 → Click [Create Snapshot]
 → Wait 5-10 minutes (server keeps running)
@@ -136,7 +141,7 @@ DB is stored on your server disk.
 DB ≠ RAM or CPU · completely separate.
 
 What takes space:
-1. Trade history: keeps forever (financial records)
+1. Trade history: 3 years → anonymize → delete year 5
    ~180MB per 100 users per year (tiny)
 
 2. OHLCV data: auto-compressed after 90 days
@@ -166,7 +171,20 @@ Option B: Upgrade to larger server
 
 ---
 
-## SECTION 7: RESEARCH BOTS (what to do)
+## SECTION 7: RESEARCH BOTS
+
+### Two-Account Structure (Important!)
+Your admin account: admin@averionbot.com
+Research account: research@averionbot.com (separate)
+
+Research bots run UNDER the research account.
+In your admin dashboard Tab 4 (Research):
+→ You SEE all 1,566 research bots here
+→ They actually run under research@ account
+→ Your "My Bots" tab shows only YOUR personal bots
+→ This is correct · not a bug
+
+ (what to do)
 
 Your 1,566 research bots run automatically.
 You don't need to do anything normally.
@@ -317,3 +335,43 @@ Monthly cleanup runs automatically:
 1st of month at 02:00
 Cleans old data · frees space
 You receive Telegram report of space freed
+
+---
+
+## SECTION 13: COMMON CUSTOMER ISSUES
+
+### "My bot hasn't opened a trade in 3 days"
+Check:
+1. Is signal waiting? Bot detail → Entry Method status
+2. Is reserve empty? Check reserve balance
+3. Is exchange connected? Settings → Exchanges → Test
+4. Is coin in top X? Daily classification at 04:30
+5. Explanation: "Smart DCA waits for signal · avg 6-24h"
+
+### "I got charged a fee but I lost money"
+Check:
+1. Was THIS specific trade profitable?
+2. Fee = 20% of that trade's profit only
+3. Other trades may be at loss · fee charged per profitable trade
+4. Check: History tab → click trade → see fee column
+
+### "My reserve is empty but I didn't get an alert"
+Check:
+1. Was Telegram connected? Alert only via Telegram
+2. Check Admin → Users → that user → reserve history
+3. Possible: fees auto-deducted faster than expected
+4. Explain: fees deduct immediately when trade closes
+
+### "I want a refund of my reserve wallet"
+Policy: Reserve wallet balance is NON-REFUNDABLE
+(used exclusively for platform fees)
+Tell customer: "Reserve funds pay your performance fees.
+We cannot refund as they cover services already rendered."
+Exception: if NO trades ever made → goodwill decision yours
+
+### "I deposited but balance didn't update"
+Check:
+1. Admin Tab 8 → Deposits → look for pending/failed
+2. Check NOWPayments dashboard for that payment
+3. Wait 1 hour (hourly polling fallback)
+4. Manual match: [Match Deposit] button in Admin

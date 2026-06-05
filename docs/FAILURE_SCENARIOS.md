@@ -89,7 +89,7 @@ Admin: Telegram Channel 1 alert
 Symptom: balance = $0
 System: pause new trades
 TP: always fires (never blocked)
-DCA: pauses (no capital)
+DCA: ALWAYS continues ✅ (never pauses · ever)
 Recovery: user tops up via NOWPayments
 Admin: sees debt/balance in Users tab
 
@@ -192,3 +192,50 @@ Rule: upgrade when ANY of these hit:
 → CPU avg > 60% for 7 consecutive days
 → Loop avg > 15s for 7 consecutive days
 → RAM avg > 3GB for 7 consecutive days
+
+---
+
+## Emergency Halt Activated
+Symptom: Admin activates emergency halt
+System: Bot loop reads emergency_halt = true every 60s
+Effect: New positions pause · DCA continues · TP fires
+Customer sees: red banner "Platform temporarily paused"
+Resume: admin deactivates → all bots resume automatically
+Admin: Telegram Channel 1 alert on activate + deactivate
+
+---
+
+## PENDING_BUYBACK Deadlock
+Symptom: Short DCA buyback flag stuck · Long DCAs paused
+Cause: limit order placed → server restart → flag stale
+System: 5-minute timeout auto-clears PENDING_BUYBACK flag
+Recovery: automatic within 5 minutes
+Customer: yellow attention log "Short DCA buyback pending"
+Admin: health report shows if recurring
+
+---
+
+## Fernet Key Rotation During Active Trade
+Symptom: DCA order fails after rotation
+Cause: key changed between encrypt and decrypt
+System: rotation runs at 02:00 · bot loop paused briefly
+Recovery: next 60s loop uses new key · order retried
+Admin: Telegram Channel 1 alert if rotation fails
+
+---
+
+## Paper Auto-Close (90 days)
+Symptom: Customer paper positions suddenly close
+Cause: 90 days without any live trade
+System: cron closes all paper positions · emails user
+Customer: receives warning at day 83 + day 89 + day 90
+Recovery: create new paper bots · start fresh
+
+---
+
+## Loop Mode Switch Failure
+Symptom: switching LOOP_MODE=workers causes crash
+Cause: ecosystem.config.js not updated or syntax error
+Recovery: switch back to LOOP_MODE=asyncio
+pm2 delete all && pm2 start ecosystem.config.js
+Admin: verify loop running before switching
