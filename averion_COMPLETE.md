@@ -10311,6 +10311,8 @@ CREATE TABLE IF NOT EXISTS system_settings (
 INSERT INTO system_settings (key, value)
 VALUES ('emergency_halt', 'false')
 ON CONFLICT (key) DO NOTHING;
+
+ALTER TABLE research_virtual_balances ADD COLUMN IF NOT EXISTS research_account_id INTEGER REFERENCES users(id);
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
