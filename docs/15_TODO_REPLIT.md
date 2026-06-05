@@ -204,7 +204,7 @@ Status: ⬜ pending · ✅ done · 🔄 in progress
 ✅ 13. Password reset flow
    Steps · email · security
 
-⬜ 14. API key test button
+✅ 14. API key test button
    "Test connection" in Settings
    Withdrawal attempt = should fail
 
