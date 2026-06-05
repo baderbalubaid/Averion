@@ -101,6 +101,14 @@ After that: AX41 €39/mo → AX52 €59/mo
 
 ## SECTION 5: HOW TO UPGRADE SERVER (30 min)
 
+⚠️ BEFORE UPGRADING: Verify floating IP exists!
+→ Hetzner console → Networking → Floating IPs
+→ Must be assigned to current server
+→ If missing: create + assign BEFORE upgrade
+→ Without it: ALL user API keys break on upgrade
+
+
+
 Step 0: VERIFY floating IP exists!
 → Hetzner console → Networking → Floating IPs
 → If none exists: create one and assign to server NOW
