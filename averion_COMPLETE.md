@@ -6116,6 +6116,92 @@ Failure example:
 → Cannot save exchange with withdrawal enabled
 → Warning shown if IP not whitelisted
    (not blocked · just warned)
+
+---
+
+## ST Flag UI — Final (LOCKED)
+
+### What Is ST Flag
+Exchange marks coin as Suspended Trading (ST)
+= Coin being delisted or trading halted
+= Must sell immediately at any price
+= Cannot wait for TP · capital at risk
+
+### Detection
+Bot loop every 60s:
+→ Checks exchange coin status
+→ If ST detected → immediate action
+→ No waiting · no confirmation needed
+
+### Automatic Action (no user input)
+1. Market sell ALL coin immediately
+2. Cancel any pending limit orders
+3. Record close price + P&L
+4. Deduct fee if profit (20%)
+5. Free capital back to wallet
+6. Send Telegram alert
+7. Send email alert
+
+### Customer Telegram Alert
+🚨 ST FLAG DETECTED
+[COIN]/USDT · MEXC
+
+Exchange has suspended trading.
+Position closed automatically.
+
+Entry: $0.034
+Close: $0.031
+P&L: -$1.50 (-8.8%)
+Fee: $0 (loss · no fee)
+
+Capital returned: $16.50 USDT
+Wallet: Main Wallet
+
+No action needed from you.
+
+### Customer Dashboard
+Position card changes to:
+┌─────────────────────────────────────────┐
+│ 🚨 XYZ/USDT · MEXC · CLOSED            │
+│ Reason: ST Flag (exchange suspended)    │
+│ Closed at: $0.031                       │
+│ P&L: -$1.50 (-8.8%)                    │
+│ Fee: $0                                 │
+│ Capital returned to Main Wallet         │
+└─────────────────────────────────────────┘
+
+Moves to History tab after 24 hours
+
+### Admin Telegram Alert (Channel 1)
+🚨 ST FLAG: XYZ/USDT
+User: #47 · MEXC
+Position closed automatically
+P&L: -$1.50
+Capital returned: $16.50 USDT
+
+### Admin Dashboard (Tab 1)
+ST events shown in alerts section:
+⚠️ ST Flag: XYZ/USDT · User #47 · Jun 05 14:23
+[View Details]
+
+### Edge Cases
+Multiple positions on same coin:
+→ ALL closed simultaneously
+→ One alert per position
+→ Summary alert for admin
+
+ST during DCA (order in flight):
+→ Cancel DCA · sell what we have
+→ Partial fill handled correctly
+
+ST during TP (already filled):
+→ TP already executed → no action needed
+→ Capital already freed
+
+Coin recovers (ST removed):
+→ Bot does NOT reopen position
+→ User must create new bot manually
+→ No automatic re-entry after ST
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
