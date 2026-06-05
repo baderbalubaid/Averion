@@ -3105,7 +3105,7 @@ Phase 7 (public launch · stable income):
 → Budget: $5-10/month at small scale
 
 ### Debt Cap System (LOCKED)
-Maximum debt per user: $100
+OBSOLETE - DELETED: see Reserve Wallet Absolute Final section
 When debt reaches $100:
 → Pause ALL trading (new positions + DCA)
 → TP always fires (never blocked · ever)

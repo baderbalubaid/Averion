@@ -3558,7 +3558,7 @@ Phase 7 (public launch · stable income):
 → Budget: $5-10/month at small scale
 
 ### Debt Cap System (LOCKED)
-Maximum debt per user: $100
+OBSOLETE - DELETED: see Reserve Wallet Absolute Final section
 When debt reaches $100:
 → Pause ALL trading (new positions + DCA)
 → TP always fires (never blocked · ever)
@@ -10039,7 +10039,7 @@ ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS raw_score INTEGER;
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regime_tp_multiplier_at_entry DECIMAL(5,3) DEFAULT 1.0;
 
 -- Bug 4 Fix: smart_dca_champions seed rows (run once)
-INSERT INTO smart_dca_champions (regime, champion_method, champion_rars, since_date, auto_switch)
+INSERT INTO smart_dca_champions (regime, method, rars_score, confirmed_at, auto_switch)
 VALUES
   ('bull', 'E10', 0.0, CURRENT_DATE, true),
   ('bear', 'E10', 0.0, CURRENT_DATE, true),
@@ -10173,6 +10173,11 @@ VALUES
    ('SOL',  1000.0,    1000.0),
    ('XRP',  100000.0,  100000.0)
 ON CONFLICT (coin) DO NOTHING;
+
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_signal_details JSONB;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_method_at_open VARCHAR(20);
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS regime_at_open VARCHAR(20);
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_quality_score INTEGER;
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
@@ -10580,6 +10585,33 @@ echo "4. Start 144 paper research bots"
 # Monthly Fernet key rotation (1st of every month at 02:00)
 (crontab -u $AVERION_USER -l 2>/dev/null; echo "0 2 1 * * cd /home/$AVERION_USER/Averion && python3 automation/rotate_fernet.py >> /var/log/averion/fernet_rotation.log 2>&1") | crontab -u $AVERION_USER -
 echo "✅ Fernet rotation cron added"
+# STEP 0 — Floating IP (DO THIS FIRST)
+
+⚠️ Before connecting ANY exchange API keys
+⚠️ Users whitelist this IP forever
+
+Steps in Hetzner Console:
+1. Go to console.hetzner.cloud
+2. Left menu: Floating IPs
+3. Create Floating IP: IPv4 · same location as server
+4. Name: averion-ip
+5. Assign to your server
+6. Note the IP: ___________________
+
+Add to server (run as root):
+cat > /etc/network/interfaces.d/60-floating-ip.cfg << EOF
+auto eth0:1
+iface eth0:1 inet static
+   address YOUR_FLOATING_IP
+   netmask 255.255.255.255
+EOF
+systemctl restart networking
+
+Cost: 3.71 EUR/month
+Verify: ping YOUR_FLOATING_IP from another device
+
+---
+
 # Averion — Hetzner Day 1 Checklist
 > Follow in exact order. Check each item before moving to next.
 > All commands in hetzner_day1.sh — run that first!
@@ -10903,6 +10935,7 @@ GITHUB_TOKEN=your-github-token
 # ═══════════════════════════════
 PORT=8080
 HOST=0.0.0.0
+import bcrypt
 import psycopg2
 import os
 import hashlib
@@ -15623,6 +15656,27 @@ async def validate_exchange_key(req: dict, payload: dict = Depends(verify_token)
         results['errors'].append(f'Error: {str(e)}')
 
     return results
+
+
+@app.get("/health")
+def health_check():
+   try:
+       conn = get_db()
+       cur = conn.cursor()
+       cur.execute("SELECT 1")
+       cur.close()
+       conn.close()
+       db_ok = True
+   except:
+       db_ok = False
+   try:
+       r = get_redis()
+       r.ping()
+       redis_ok = True
+   except:
+       redis_ok = False
+   status = "ok" if db_ok and redis_ok else "degraded"
+   return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
 import os
 import time
 import ccxt

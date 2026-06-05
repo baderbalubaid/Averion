@@ -1,3 +1,30 @@
+# STEP 0 — Floating IP (DO THIS FIRST)
+
+⚠️ Before connecting ANY exchange API keys
+⚠️ Users whitelist this IP forever
+
+Steps in Hetzner Console:
+1. Go to console.hetzner.cloud
+2. Left menu: Floating IPs
+3. Create Floating IP: IPv4 · same location as server
+4. Name: averion-ip
+5. Assign to your server
+6. Note the IP: ___________________
+
+Add to server (run as root):
+cat > /etc/network/interfaces.d/60-floating-ip.cfg << EOF
+auto eth0:1
+iface eth0:1 inet static
+   address YOUR_FLOATING_IP
+   netmask 255.255.255.255
+EOF
+systemctl restart networking
+
+Cost: 3.71 EUR/month
+Verify: ping YOUR_FLOATING_IP from another device
+
+---
+
 # Averion — Hetzner Day 1 Checklist
 > Follow in exact order. Check each item before moving to next.
 > All commands in hetzner_day1.sh — run that first!

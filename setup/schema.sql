@@ -816,7 +816,7 @@ ALTER TABLE market_regimes ADD COLUMN IF NOT EXISTS raw_score INTEGER;
 ALTER TABLE research_scores ADD COLUMN IF NOT EXISTS regime_tp_multiplier_at_entry DECIMAL(5,3) DEFAULT 1.0;
 
 -- Bug 4 Fix: smart_dca_champions seed rows (run once)
-INSERT INTO smart_dca_champions (regime, champion_method, champion_rars, since_date, auto_switch)
+INSERT INTO smart_dca_champions (regime, method, rars_score, confirmed_at, auto_switch)
 VALUES
   ('bull', 'E10', 0.0, CURRENT_DATE, true),
   ('bear', 'E10', 0.0, CURRENT_DATE, true),
@@ -950,3 +950,8 @@ VALUES
    ('SOL',  1000.0,    1000.0),
    ('XRP',  100000.0,  100000.0)
 ON CONFLICT (coin) DO NOTHING;
+
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_signal_details JSONB;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_method_at_open VARCHAR(20);
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS regime_at_open VARCHAR(20);
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_quality_score INTEGER;
