@@ -49,7 +49,7 @@ def create_benchmark_bot(cur, bench, user_id, exchange_id):
         INSERT INTO bots (
             user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades, created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10, %s)
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10, %s)
     """, (
         user_id, exchange_id, None,
         bench['name'],
@@ -75,7 +75,7 @@ def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
             dca_percent, spacing_multiplier,
             size_multiplier, take_profit_percent,
             created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10,
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10,
                   7.0, 1.4, 1.5, 5.0, %s)
     """, (
         user_id, exchange_id, None,

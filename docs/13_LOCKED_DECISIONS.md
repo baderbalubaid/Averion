@@ -5749,3 +5749,71 @@ Coin recovers (ST removed):
 → Bot does NOT reopen position
 → User must create new bot manually
 → No automatic re-entry after ST
+
+---
+
+## Final Decisions — Post Round 2 AI Review (LOCKED)
+
+### positions.status Enum (LOCKED · FINAL)
+Exactly 6 values · no others:
+open      = position active · bot monitoring
+standby   = bot wants DCA but no funds
+tp_fired  = TP hit · sell confirming
+closed    = trade finished (profit or loss)
+dead      = delisted · ST flag · force closed
+archived  = old closed position in archive
+
+Always use: status = 'open' (never 'active')
+DB default: 'open'
+tp_fired: valid status · keep in all queries
+
+### Email Sender (LOCKED)
+All automated emails: support@averionbot.com
+Resend config: SENDER_EMAIL=support@averionbot.com
+All 12 email templates: from support@averionbot.com
+DNS: SPF + DKIM configured for support@ subdomain
+No noreply@ ever
+
+### E24 Funding Rate Data Source (LOCKED)
+Data: CCXT fetchFundingRate() per exchange
+Cost: free · available on all 7 exchanges
+Perp market coins: fetch funding rate ✅
+Spot-only coins: skip E24 · mark as no_data
+Tag: data_sparse_expected = TRUE for E24
+Research still runs · fewer signals = expected
+
+### 100 Trade Limit (LOCKED · CONFIRMED)
+100 = TOTAL across ALL exchanges
+Not per exchange · not per bot
+Example: 3 exchanges · 5 bots each = total 15 bots
+All 15 bots share the 100 open trade counter
+Paper trades share same counter (max 30 of 100)
+
+### Emergency Halt Button (LOCKED)
+Location: Admin Controls tab (Tab 8)
+[🚨 Emergency Halt: OFF ●]
+
+When ON (admin activates):
+→ ALL customers affected globally
+→ ALL bots on ALL exchanges
+→ New positions: PAUSE immediately
+→ DCA: continues ✅
+→ TP: always fires ✅
+
+Customer dashboard shows red banner:
+"⚠️ Platform temporarily paused
+No new entries · TP and DCA active
+Resume expected soon"
+
+Admin use cases:
+→ Market crash (stop buying falling knives)
+→ Exchange outage affecting all users
+→ Critical bug discovered
+→ Server overload emergency
+
+DB column: system_settings.emergency_halt BOOLEAN
+When admin toggles → updates DB immediately
+Bot loop checks every cycle: if emergency_halt = TRUE → skip new entries only
+
+Resume: admin turns OFF → all bots resume automatically
+Telegram Channel 1: alert when activated + deactivated

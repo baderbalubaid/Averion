@@ -6202,6 +6202,74 @@ Coin recovers (ST removed):
 → Bot does NOT reopen position
 → User must create new bot manually
 → No automatic re-entry after ST
+
+---
+
+## Final Decisions — Post Round 2 AI Review (LOCKED)
+
+### positions.status Enum (LOCKED · FINAL)
+Exactly 6 values · no others:
+open      = position active · bot monitoring
+standby   = bot wants DCA but no funds
+tp_fired  = TP hit · sell confirming
+closed    = trade finished (profit or loss)
+dead      = delisted · ST flag · force closed
+archived  = old closed position in archive
+
+Always use: status = 'open' (never 'active')
+DB default: 'open'
+tp_fired: valid status · keep in all queries
+
+### Email Sender (LOCKED)
+All automated emails: support@averionbot.com
+Resend config: SENDER_EMAIL=support@averionbot.com
+All 12 email templates: from support@averionbot.com
+DNS: SPF + DKIM configured for support@ subdomain
+No noreply@ ever
+
+### E24 Funding Rate Data Source (LOCKED)
+Data: CCXT fetchFundingRate() per exchange
+Cost: free · available on all 7 exchanges
+Perp market coins: fetch funding rate ✅
+Spot-only coins: skip E24 · mark as no_data
+Tag: data_sparse_expected = TRUE for E24
+Research still runs · fewer signals = expected
+
+### 100 Trade Limit (LOCKED · CONFIRMED)
+100 = TOTAL across ALL exchanges
+Not per exchange · not per bot
+Example: 3 exchanges · 5 bots each = total 15 bots
+All 15 bots share the 100 open trade counter
+Paper trades share same counter (max 30 of 100)
+
+### Emergency Halt Button (LOCKED)
+Location: Admin Controls tab (Tab 8)
+[🚨 Emergency Halt: OFF ●]
+
+When ON (admin activates):
+→ ALL customers affected globally
+→ ALL bots on ALL exchanges
+→ New positions: PAUSE immediately
+→ DCA: continues ✅
+→ TP: always fires ✅
+
+Customer dashboard shows red banner:
+"⚠️ Platform temporarily paused
+No new entries · TP and DCA active
+Resume expected soon"
+
+Admin use cases:
+→ Market crash (stop buying falling knives)
+→ Exchange outage affecting all users
+→ Critical bug discovered
+→ Server overload emergency
+
+DB column: system_settings.emergency_halt BOOLEAN
+When admin toggles → updates DB immediately
+Bot loop checks every cycle: if emergency_halt = TRUE → skip new entries only
+
+Resume: admin turns OFF → all bots resume automatically
+Telegram Channel 1: alert when activated + deactivated
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -9314,7 +9382,7 @@ CREATE TABLE bots (
     max_trades INTEGER DEFAULT 0,
     dca_checkpoint INTEGER DEFAULT 0,
     is_paper BOOLEAN DEFAULT TRUE,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -9400,7 +9468,7 @@ CREATE TABLE standby_orders (
     target_price DECIMAL(20,8) NOT NULL,
     dca_level INTEGER NOT NULL,
     standby_created_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     created_at TIMESTAMP DEFAULT NOW(),
     triggered_at TIMESTAMP,
     standby_cancelled_at TIMESTAMP
@@ -9650,7 +9718,7 @@ CREATE TABLE research_scores (
     recovery_speed DECIMAL(10,2),
     promotion_score DECIMAL(10,6),
     rank INTEGER,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     last_calculated TIMESTAMP DEFAULT NOW()
 );
 
@@ -9759,7 +9827,7 @@ CREATE TABLE IF NOT EXISTS exchange_coin_limits (
     coin VARCHAR(20) NOT NULL,
     min_order_size DECIMAL(20,8),
     min_notional DECIMAL(20,8),
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT 'open',
     status_reason TEXT,
     last_checked TIMESTAMP DEFAULT NOW(),
     UNIQUE(exchange_id, coin)
@@ -9803,7 +9871,7 @@ CREATE TABLE IF NOT EXISTS trade_bundles (
     renewal_type VARCHAR(20) DEFAULT 'one-time',
     purchased_at TIMESTAMP DEFAULT NOW(),
     expires_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'active'
+    status VARCHAR(20) DEFAULT 'open'
 );
 
 CREATE INDEX IF NOT EXISTS idx_trade_bundles_user ON trade_bundles(user_id, status);
@@ -10178,6 +10246,18 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_signal_details JSONB;
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_method_at_open VARCHAR(20);
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS regime_at_open VARCHAR(20);
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS entry_quality_score INTEGER;
+
+-- System settings (emergency halt etc)
+CREATE TABLE IF NOT EXISTS system_settings (
+   id SERIAL PRIMARY KEY,
+   key VARCHAR(50) NOT NULL UNIQUE,
+   value TEXT,
+   updated_at TIMESTAMP DEFAULT NOW(),
+   updated_by INTEGER REFERENCES users(id)
+);
+INSERT INTO system_settings (key, value)
+VALUES ('emergency_halt', 'false')
+ON CONFLICT (key) DO NOTHING;
 #!/bin/bash
 # Averion — Hetzner Day 1 Setup Script
 # Run as root: bash hetzner_day1.sh
@@ -11127,7 +11207,7 @@ def create_benchmark_bot(cur, bench, user_id, exchange_id):
         INSERT INTO bots (
             user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades, created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10, %s)
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10, %s)
     """, (
         user_id, exchange_id, None,
         bench['name'],
@@ -11153,7 +11233,7 @@ def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
             dca_percent, spacing_multiplier,
             size_multiplier, take_profit_percent,
             created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10,
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10,
                   7.0, 1.4, 1.5, 5.0, %s)
     """, (
         user_id, exchange_id, None,
@@ -11256,7 +11336,7 @@ def create_benchmark_bot(cur, bench, user_id, exchange_id):
         INSERT INTO bots (
             user_id, exchange_id, wallet_id, name, method,
             is_paper, status, max_trades, created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10, %s)
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10, %s)
     """, (
         user_id, exchange_id, None,
         bench['name'],
@@ -11282,7 +11362,7 @@ def create_method_bot(cur, method_id, method_name, bot, user_id, exchange_id):
             dca_percent, spacing_multiplier,
             size_multiplier, take_profit_percent,
             created_at
-        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'active', 10,
+        ) VALUES (%s, %s, %s, %s, %s, TRUE, 'open', 10,
                   7.0, 1.4, 1.5, 5.0, %s)
     """, (
         user_id, exchange_id, None,
