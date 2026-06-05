@@ -5536,3 +5536,48 @@ Admin Tab 5 (Users) → per user:
 [View Support History] button
 Shows: all reported issues · resolutions
 Helps track recurring problems
+
+---
+
+## Password Reset Flow — Final (LOCKED)
+
+### Flow (3 steps only)
+
+Step 1: Login page → [Forgot Password?]
+→ User enters email address
+→ [Send Reset Link]
+
+Step 2: Email sent (Template #9)
+Subject: Reset your Averion password
+→ Link valid: 15 minutes only
+→ One-time use · expires after click
+→ If not received: [Resend] after 60 seconds
+
+Step 3: User clicks link → new password page
+→ New password field
+→ Confirm password field
+→ [Reset Password] button
+→ Redirects to login page
+→ Success message: "Password updated · please login"
+
+### Security Rules
+→ Link expires: 15 minutes
+→ One-time use: link invalid after clicked
+→ Old password: invalid immediately after reset
+→ All sessions: logged out on password reset
+→ Telegram alert sent: "Password changed on your account"
+→ Email alert sent: "Your password was reset"
+→ Rate limit: max 3 reset requests per hour per email
+→ Wrong email: show same success message
+   (prevents email enumeration)
+
+### Failed Reset (link expired)
+→ "This link has expired"
+→ [Request new link] button
+→ Returns to Step 1
+
+### Admin Cannot Reset Password
+Admin cannot see or reset user passwords
+Admin can only: [Force Logout] + [Suspend Account]
+User must use email reset flow only
+Security: bcrypt · never stored plain text
