@@ -191,7 +191,7 @@ def get_active_bots():
                    e.passphrase_enc, e.paused_at
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
-            WHERE b.status = 'active'
+            WHERE b.status = 'open'
             AND b.trading_on = TRUE
             AND e.paused_at IS NULL
             AND (b.expires_at IS NULL OR b.expires_at > NOW())
@@ -877,7 +877,7 @@ def get_research_rankings():
                    b.name as bot_name
             FROM research_scores r
             JOIN bots b ON b.id = r.bot_id
-            WHERE r.status = 'active'
+            WHERE r.status = 'open'
             ORDER BY r.promotion_score DESC NULLS LAST
         """)
         return cur.fetchall()
@@ -910,7 +910,7 @@ def get_active_standby_orders(exchange_id):
             FROM standby_orders s
             JOIN positions p ON p.id = s.position_id
             JOIN bots b ON b.id = p.bot_id
-            WHERE s.status = 'active'
+            WHERE s.status = 'open'
             AND b.exchange_id = %s
         """, (exchange_id,))
         return cur.fetchall()
@@ -965,7 +965,7 @@ def get_all_users_admin():
                        (WHERE fd.paid_at IS NULL), 0) as fee_debt
             FROM users u
             LEFT JOIN bots b ON b.user_id = u.id
-                AND b.status = 'active'
+                AND b.status = 'open'
             LEFT JOIN positions p ON p.user_id = u.id
                 AND p.status = 'open'
             LEFT JOIN reserve_wallets r ON r.user_id = u.id

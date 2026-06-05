@@ -100,7 +100,7 @@
 - Bot creation wizard (7 steps)
 - Trade limits system
 - Reserve wallet system
-- Referral system 3%
+- Referral system 2.5%
 - Two bot toggles (Trading + DCA)
 - Reserve floor + auto-resume
 - Recovery buy system REMOVED

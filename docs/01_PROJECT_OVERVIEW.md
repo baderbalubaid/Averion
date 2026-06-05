@@ -82,7 +82,7 @@ Put money in · forget it · collect profits.
 ### Business
 - 20% performance fee on profits only
 - Reserve wallet pre-funding (NOWPayments)
-- Referral system 3% forever
+- Referral system 2.5% forever
 - Free $5 trial credit for new users
 
 ### Operations

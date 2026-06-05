@@ -105,14 +105,14 @@ True set and forget — no monthly invoices.
 ## Referral System (LOCKED)
 
 ### How It Works
-- Rate = 3% of the 20% performance fee → referrer reserve wallet
+- Rate = 2.5% of the 20% performance fee → referrer reserve wallet
 - Duration = forever — no time limit
 - Referred user still pays full 20% — no discount ever
 
 ### Math Example
 - Ahmed makes $1,000 profit
 - Ahmed pays $200 fee (20%)
-- Khalid (referrer) gets $6.00 (3% of $200)
+- Khalid (referrer) gets $5.00 (2.5% of $200)
 - Owner gets $194.00 (97% of $200)
 
 ### Rules
