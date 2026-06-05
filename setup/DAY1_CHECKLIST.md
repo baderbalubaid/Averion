@@ -158,8 +158,8 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 - [ ] Verify PAPER badge back
 
 ## PHASE 14 — Research Bots (30 min)
-- [ ] Set up 144 paper research bots
-- [ ] Start with 10 trades per bot limit
+- [ ] Set up 261 Long research bots (staged launch)
+- [ ] Start with 1 trade per bot (scale: 1→10→20→30→50)
 - [ ] Monitor loop time: pm2 logs averion
 - [ ] Verify all bots running in dashboard
 
@@ -197,10 +197,10 @@ Platform is live! 6 month research period begins.
 - Connection: psql -U averion -d averion -h localhost
 - If connection refused: systemctl start postgresql
 
-### Excel Reports
+### Markdown Health Reports
 - Generated daily at 4am automatically
 - Saved to: /home/averion/Averion/reports/
-- Download via SCP: scp root@IP:/home/averion/Averion/reports/latest.xlsx .
+- Download via SCP: scp root@IP:/home/averion/Averion/reports/health/latest.md .
 - Open in Excel or Google Sheets
 - Never rename columns — AI workflows depend on stable names
 
@@ -268,3 +268,38 @@ Hetzner Secrets = free · included with your server
 
 5. Verify:
    python3 -c "from exchanges import get_fernet; print('✅ Split key working')"
+
+
+## POST PHASE 4 — Initial DB Backup
+```bash
+pg_dump -U averion averion > /home/averion/backup_day1_initial.sql
+echo "Backup saved"
+```
+
+
+## POST PHASE 4 — Verify Research Account
+```bash
+psql -U averion -d averion -h localhost -c "SELECT email, is_research_account FROM users;"
+```
+Expected: 2 rows — admin@ and research@averionbot.com
+
+
+## DAY 3 PRE-CHECK — Verify JSON
+```bash
+python3 -c "
+import json
+with open('setup/research_bots.json') as f:
+    d = json.load(f)
+methods = list(d['methods'].keys())
+total = sum(len(d['methods'][m]['bots']) for m in methods)
+print(f'Methods: {len(methods)} · Bots: {total} · Benchmarks: {len(d['benchmarks'])} · Total: {total+len(d['benchmarks'])}')"
+```
+Expected: 27 methods · 256 bots · 5 benchmarks · 261 total
+
+
+## DAY 3 AFTERNOON — Short Research Bots
+Only if loop < 30s after Long bots running:
+```bash
+DIRECTION=short python3 setup/launch_research_bots.py
+```
+Creates 1305 Short bots (261 x 5 coins: BTC ETH BNB SOL XRP)

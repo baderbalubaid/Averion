@@ -135,7 +135,7 @@ def create_research_account():
             INSERT INTO users (username, email, password_hash, 
                              is_research_account, email_verified, created_at)
             VALUES (%s, %s, %s, TRUE, TRUE, NOW())
-        """, ('research_bot', research_email, hashed))
+        """, (research_email, hashed))
         
         conn.commit()
         conn.close()
@@ -149,27 +149,6 @@ if __name__ == '__main__':
     main()
 
 # Create research account for automated research bots
-def create_research_account():
-    research_email = 'research@averionbot.com'
-    research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'change-me-on-day1')
-    
-    conn = psycopg2.connect(**DB_CONFIG)
-conn.autocommit = False
-try:
-    if True:  # was: with get_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
-        if cur.fetchone():
-            print('✅ Research account already exists')
-            return
-        
-        import bcrypt
-        pw_hash = bcrypt.hashpw(research_password.encode(), bcrypt.gensalt()).decode()
-        cur.execute("""
-            INSERT INTO users (email, password_hash, is_admin, is_zero_fee, email_verified)
-            VALUES (%s, %s, TRUE, TRUE, TRUE)
-        """, (research_email, pw_hash))
-        conn.commit()
-        print('✅ Research account created: research@averionbot.com')
 
-create_research_account()
+if __name__ == "__main__":
+    pass
