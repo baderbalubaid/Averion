@@ -10632,6 +10632,10 @@ echo "4. pm2 restart averion"
 echo "5. Continue with Day 2 (domain + HTTPS)"
 echo ""
 echo "⚠️  New SSH connection: ssh -p $SSH_PORT $AVERION_USER@YOUR_IP"
+
+# Daily DB backup
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 2 * * * pg_dump -U averion averion > /home/$AVERION_USER/backups/db_backup_\$(date +\%Y\%m\%d).sql") | crontab -u $AVERION_USER -
+echo "Daily backup cron added"
 #!/bin/bash
 # Averion — Hetzner Day 2 Setup Script
 # Run after Day 1 is complete
@@ -10892,8 +10896,8 @@ Next: Day 2 Checklist (domain + HTTPS + live test)
 - [ ] Verify PAPER badge back
 
 ## PHASE 14 — Research Bots (30 min)
-- [ ] Set up 144 paper research bots
-- [ ] Start with 10 trades per bot limit
+- [ ] Set up 261 Long research bots (staged launch)
+- [ ] Start with 1 trade per bot (scale: 1→10→20→30→50)
 - [ ] Monitor loop time: pm2 logs averion
 - [ ] Verify all bots running in dashboard
 
@@ -10931,10 +10935,10 @@ Platform is live! 6 month research period begins.
 - Connection: psql -U averion -d averion -h localhost
 - If connection refused: systemctl start postgresql
 
-### Excel Reports
+### Markdown Health Reports
 - Generated daily at 4am automatically
 - Saved to: /home/averion/Averion/reports/
-- Download via SCP: scp root@IP:/home/averion/Averion/reports/latest.xlsx .
+- Download via SCP: scp root@IP:/home/averion/Averion/reports/health/latest.md .
 - Open in Excel or Google Sheets
 - Never rename columns — AI workflows depend on stable names
 
@@ -11002,6 +11006,41 @@ Hetzner Secrets = free · included with your server
 
 5. Verify:
    python3 -c "from exchanges import get_fernet; print('✅ Split key working')"
+
+
+## POST PHASE 4 — Initial DB Backup
+```bash
+pg_dump -U averion averion > /home/averion/backup_day1_initial.sql
+echo "Backup saved"
+```
+
+
+## POST PHASE 4 — Verify Research Account
+```bash
+psql -U averion -d averion -h localhost -c "SELECT email, is_research_account FROM users;"
+```
+Expected: 2 rows — admin@ and research@averionbot.com
+
+
+## DAY 3 PRE-CHECK — Verify JSON
+```bash
+python3 -c "
+import json
+with open('setup/research_bots.json') as f:
+    d = json.load(f)
+methods = list(d['methods'].keys())
+total = sum(len(d['methods'][m]['bots']) for m in methods)
+print(f'Methods: {len(methods)} · Bots: {total} · Benchmarks: {len(d['benchmarks'])} · Total: {total+len(d['benchmarks'])}')"
+```
+Expected: 27 methods · 256 bots · 5 benchmarks · 261 total
+
+
+## DAY 3 AFTERNOON — Short Research Bots
+Only if loop < 30s after Long bots running:
+```bash
+DIRECTION=short python3 setup/launch_research_bots.py
+```
+Creates 1305 Short bots (261 x 5 coins: BTC ETH BNB SOL XRP)
 # Averion Environment Variables
 # Copy this file to .env and fill in your values
 # Command: cp setup/env.example .env
@@ -11219,7 +11258,7 @@ def create_research_account():
             INSERT INTO users (username, email, password_hash, 
                              is_research_account, email_verified, created_at)
             VALUES (%s, %s, %s, TRUE, TRUE, NOW())
-        """, ('research_bot', research_email, hashed))
+        """, (research_email, hashed))
         
         conn.commit()
         conn.close()
@@ -11233,30 +11272,9 @@ if __name__ == '__main__':
     main()
 
 # Create research account for automated research bots
-def create_research_account():
-    research_email = 'research@averionbot.com'
-    research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'change-me-on-day1')
-    
-    conn = psycopg2.connect(**DB_CONFIG)
-conn.autocommit = False
-try:
-    if True:  # was: with get_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
-        if cur.fetchone():
-            print('✅ Research account already exists')
-            return
-        
-        import bcrypt
-        pw_hash = bcrypt.hashpw(research_password.encode(), bcrypt.gensalt()).decode()
-        cur.execute("""
-            INSERT INTO users (email, password_hash, is_admin, is_zero_fee, email_verified)
-            VALUES (%s, %s, TRUE, TRUE, TRUE)
-        """, (research_email, pw_hash))
-        conn.commit()
-        print('✅ Research account created: research@averionbot.com')
 
-create_research_account()
+if __name__ == "__main__":
+    pass
 import psycopg2
 import json
 import os

@@ -317,3 +317,7 @@ echo "4. pm2 restart averion"
 echo "5. Continue with Day 2 (domain + HTTPS)"
 echo ""
 echo "⚠️  New SSH connection: ssh -p $SSH_PORT $AVERION_USER@YOUR_IP"
+
+# Daily DB backup
+(crontab -u $AVERION_USER -l 2>/dev/null; echo "0 2 * * * pg_dump -U averion averion > /home/$AVERION_USER/backups/db_backup_\$(date +\%Y\%m\%d).sql") | crontab -u $AVERION_USER -
+echo "Daily backup cron added"
