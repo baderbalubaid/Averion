@@ -6286,6 +6286,20 @@ if value == 'true': skip new entries only (DCA + TP continue)
 NOT a boolean column.
 NOT: WHERE emergency_halt = TRUE
 IS: WHERE key = 'emergency_halt' AND value = 'true'
+
+---
+
+## Emergency Halt — DB Query Pattern (LOCKED)
+
+Stored as key/value in system_settings table:
+key = 'emergency_halt' · value = 'true' or 'false' (TEXT)
+
+Bot loop query every cycle:
+SELECT value FROM system_settings WHERE key = 'emergency_halt'
+If value == 'true': skip new entries · DCA + TP continue
+
+NOT a boolean column query.
+Use: WHERE key = 'emergency_halt' AND value = 'true'
 # TODO — Hetzner Items
 
 > Everything that requires the actual server.
@@ -11151,6 +11165,40 @@ def main():
     else:
         print("❌ Some tables missing — run schema.sql first:")
         print("   psql -U averion -d averion -h localhost < setup/schema.sql")
+
+
+def create_research_account():
+    """Create the research account for automated bots"""
+    import psycopg2
+    research_email = 'research@averionbot.com'
+    research_password = os.getenv('RESEARCH_ACCOUNT_PASSWORD', 'research_secure_pass_change_me')
+    
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        # Check if already exists
+        cur.execute("SELECT id FROM users WHERE email = %s", (research_email,))
+        if cur.fetchone():
+            print("✅ Research account already exists")
+            conn.close()
+            return
+        
+        # Create research account
+        hashed = hash_password(research_password)
+        cur.execute("""
+            INSERT INTO users (username, email, password_hash, 
+                             is_research_account, email_verified, created_at)
+            VALUES (%s, %s, %s, TRUE, TRUE, NOW())
+        """, ('research_bot', research_email, hashed))
+        
+        conn.commit()
+        conn.close()
+        print(f"✅ Research account created: {research_email}")
+        
+    except Exception as e:
+        print(f"❌ Research account error: {e}")
+
 
 if __name__ == '__main__':
     main()
