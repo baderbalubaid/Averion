@@ -10807,6 +10807,7 @@ Verify: ping YOUR_FLOATING_IP from another device
 - [ ] Fill in: TELEGRAM_BOT_TOKEN
 - [ ] Fill in: TELEGRAM_ADMIN_CHAT_ID
 - [ ] Fill in: FERNET_KEY (from step above)
+- [ ] Fill in: RESEARCH_ACCOUNT_PASSWORD (choose strong password)
 - [ ] Fill in: GITHUB_TOKEN
 - [ ] Confirm PAPER_MODE=true
 - [ ] Save and exit: Ctrl+X → Y → Enter
