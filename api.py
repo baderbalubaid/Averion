@@ -170,6 +170,25 @@ def login(req: LoginRequest, request: Request):
         auth_module.send_verification(result['user_id'])
     return result
 
+
+class VerifyRequest(BaseModel):
+    user_id: int
+    code: str
+
+@app.post('/auth/verify')
+def verify(req: VerifyRequest, request: Request):
+    ip = request.client.host
+    success = auth_module.verify_code(
+        req.user_id, req.code, ip
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid or expired code'
+        )
+    return {'message': 'Verified successfully'}
+
+
 # ═══════════════════════════════
 # STATUS
 # ═══════════════════════════════
