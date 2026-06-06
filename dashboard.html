@@ -1761,6 +1761,23 @@ async function loadAll() {
   await fetchStatus();
   await fetchPositions();
 }
+
+// Auth check on load
+(async function checkAuth() {
+    const token = localStorage.getItem('averion_token');
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+    const res = await fetch('/status', {
+        headers: {'Authorization': 'Bearer ' + token}
+    }).catch(() => null);
+    if (!res || !res.ok) {
+        localStorage.clear();
+        window.location.href = '/login';
+    }
+})();
+
 loadAll();
 setInterval(loadAll, 15000);
 
