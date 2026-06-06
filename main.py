@@ -4,6 +4,7 @@ import psycopg2
 import redis
 import ccxt
 import exchanges as exchanges_module
+import telegram as tg
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -290,5 +291,4 @@ def clear_stale_pending_buyback():
         conn.commit()
         if count > 0:
             print(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags')
-            import telegram as tg
             tg.send_admin(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags on startup')
