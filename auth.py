@@ -161,11 +161,12 @@ def send_verification(user_id: int) -> bool:
     return tg.send_verification_code(user_id, telegram_chat_id)
 
 def verify_code(user_id: int, code: str,
-                ip: str = None) -> bool:
+                ip: str = None, remember: bool = True) -> bool:
     success = db.verify_code(user_id, code)
 
     if success:
-        trust_device(user_id, ip, days=30)
+        if remember:
+            trust_device(user_id, ip, days=30)
         db.log_security_event(
             user_id, 'verification_success', ip,
             details={'code_verified': True}

@@ -174,12 +174,13 @@ def login(req: LoginRequest, request: Request):
 class VerifyRequest(BaseModel):
     user_id: int
     code: str
+    remember: bool = True
 
 @app.post('/auth/verify')
 def verify(req: VerifyRequest, request: Request):
     ip = request.client.host
     success = auth_module.verify_code(
-        req.user_id, req.code, ip
+        req.user_id, req.code, ip, remember=req.remember
     )
     if not success:
         raise HTTPException(
@@ -838,12 +839,13 @@ def register(req: RegisterRequest, request: Request):
 class VerifyRequest(BaseModel):
     user_id: int
     code: str
+    remember: bool = True
 
 @app.post('/auth/verify')
 def verify(req: VerifyRequest, request: Request):
     ip = request.client.host
     success = auth_module.verify_code(
-        req.user_id, req.code, ip
+        req.user_id, req.code, ip, remember=req.remember
     )
     if not success:
         raise HTTPException(

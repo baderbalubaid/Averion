@@ -322,6 +322,13 @@
                    inputmode="numeric">
         </div>
 
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <input type="checkbox" id="remember-device" checked
+                   style="width:16px;height:16px;cursor:pointer">
+            <label for="remember-device" style="font-size:13px;color:#888;cursor:pointer">
+                Remember this device for 30 days
+            </label>
+        </div>
         <button class="btn btn-primary" id="verify-btn"
                 onclick="handleVerify()">
             Verify
@@ -498,6 +505,7 @@
 
         try {
             const token = localStorage.getItem('averion_token');
+            const remember = document.getElementById('remember-device')?.checked ?? true;
             const res = await fetch(`${API}/auth/verify`, {
                 method: 'POST',
                 headers: {
@@ -505,7 +513,7 @@
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    user_id: parseInt(pendingUserId), code
+                    user_id: parseInt(pendingUserId), code, remember
                 })
             });
             const data = await res.json();
