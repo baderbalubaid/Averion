@@ -5,6 +5,7 @@ import redis
 import ccxt
 import exchanges as exchanges_module
 import telegram as tg
+import database as db
 from datetime import datetime
 from dotenv import load_dotenv
 
