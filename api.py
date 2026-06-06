@@ -486,6 +486,13 @@ def admin_run_cron_step(step: str,
 
     return {'message': f'Step {step} started'}
 
+
+@app.on_event("startup")
+async def startup_event():
+    print(f"🔍 Routes registered: {len(app.routes)}")
+    auth_routes = [r.path for r in app.routes if hasattr(r, 'path') and 'auth' in r.path]
+    print(f"🔍 Auth routes: {auth_routes}")
+
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
 
