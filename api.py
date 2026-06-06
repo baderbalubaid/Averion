@@ -70,12 +70,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not credentials:
         raise HTTPException(status_code=401, detail='Not authenticated')
     try:
+        key = os.getenv('SECRET_KEY', 'changeme')
         payload = jwt.decode(
             credentials.credentials,
-            SECRET_KEY, algorithms=['HS256']
+            key, algorithms=['HS256']
         )
         return payload
-    except:
+    except Exception as e:
+        print(f'Token verify error: {e}')
         raise HTTPException(status_code=401, detail='Invalid token')
 
 def require_admin(payload: dict = Depends(verify_token)):
