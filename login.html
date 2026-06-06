@@ -422,18 +422,20 @@
         }
     }
 
-    // Auto-login if token exists and valid
+    // Auto-login only if previously verified
     (async function checkAutoLogin() {
         const token = localStorage.getItem('averion_token');
-        if (!token) return;
+        const verified = localStorage.getItem('averion_verified');
+        if (!token || !verified) return;
         try {
             const res = await fetch(`${window.location.origin}/status`, {
                 headers: {'Authorization': `Bearer ${token}`}
             });
             if (res.ok) {
-                window.location.href = '/dashboard';
+                localStorage.setItem('averion_verified', '1');
+            window.location.href = '/dashboard';
             } else {
-                localStorage.removeItem('averion_token');
+                localStorage.clear();
             }
         } catch(e) {}
     })();
