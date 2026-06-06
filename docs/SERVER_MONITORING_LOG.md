@@ -74,18 +74,22 @@ Status: PM2 running · no bots created yet
 
 | Metric | Value |
 |--------|-------|
-| RAM Used | TBD |
-| RAM Free | TBD |
-| CPU % | TBD |
-| Disk Used | TBD |
-| Disk Free | TBD |
-| DB Size | TBD |
-| PM2 Processes | 2 |
+| RAM Used | 659 MB |
+| RAM Free | 5.5 GB |
+| RAM Available | 6.9 GB |
+| CPU % | 0.0% (idle 97.7%) |
+| Disk Used | 2.9 GB |
+| Disk Free | 141 GB |
+| DB Size | 9.99 MB |
+| PM2 Processes | 1 |
+| PM2 Memory | 106.2 MB |
 | Active Bots | 0 |
 | Open Positions | 0 |
-| Loop Time | TBD |
+| Loop Time | 0.01s |
 
-Notes: Baseline loop overhead
+Notes: Bot loop running · no bots · cycle every 60s
+RAM increase from baseline: +70MB (PM2 + bot loop overhead)
+Loop time: 0.01s = excellent ✅
 
 ---
 
