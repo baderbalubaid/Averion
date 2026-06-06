@@ -440,7 +440,9 @@
                 headers: {'Authorization': `Bearer ${token}`}
             });
             if (res.ok) {
-                window.location.href = '/dashboard';
+                localStorage.setItem('averion_token', pendingToken);
+            localStorage.setItem('averion_user_id', pendingUserId);
+            window.location.href = '/dashboard';
             } else {
                 localStorage.clear();
             }
@@ -504,7 +506,7 @@
         setBtn('verify-btn', true, 'Verifying...');
 
         try {
-            const token = localStorage.getItem('averion_token');
+            const token = pendingToken || localStorage.getItem('averion_token');
             const remember = document.getElementById('remember-device')?.checked ?? true;
             const res = await fetch(`${API}/auth/verify`, {
                 method: 'POST',
