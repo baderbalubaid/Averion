@@ -266,7 +266,7 @@
 
         <div class="form-group">
             <label>Email address</label>
-            <input type="email" id="email"
+            <input type="email" id="email" onkeydown="if(event.key==='Enter')document.getElementById('password').focus()"
                    placeholder="your@email.com"
                    autocomplete="email">
         </div>
