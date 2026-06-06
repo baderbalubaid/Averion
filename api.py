@@ -483,7 +483,7 @@ def admin_run_cron_step(step: str,
     return {'message': f'Step {step} started'}
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
+    uvicorn.run(app, host='0.0.0.0', port=80)
 
 # ═══════════════════════════════
 # EXCHANGES — ADD / TEST / DELETE
