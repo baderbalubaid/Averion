@@ -165,6 +165,9 @@ def login(req: LoginRequest, request: Request):
         raise HTTPException(status_code=401, detail=error)
 
     auth_module.clear_login_fails(ip)
+    # Send verification code directly in login response if needed
+    if result.get('needs_verification'):
+        auth_module.send_verification(result['user_id'])
     return result
 
 # ═══════════════════════════════
