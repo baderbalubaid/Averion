@@ -432,8 +432,7 @@
                 headers: {'Authorization': `Bearer ${token}`}
             });
             if (res.ok) {
-                localStorage.setItem('averion_verified', '1');
-            window.location.href = '/dashboard';
+                window.location.href = '/dashboard';
             } else {
                 localStorage.clear();
             }
