@@ -526,6 +526,8 @@
                 return;
             }
 
+            localStorage.setItem('averion_token', pendingToken);
+            localStorage.setItem('averion_user_id', String(pendingUserId));
             window.location.href = '/dashboard';
 
         } catch(e) {
