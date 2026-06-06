@@ -1043,7 +1043,7 @@ def verify_code(user_id, code):
         if stored_code != code:
             return False
         from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
+        if expires_at.replace(tzinfo=None) < datetime.utcnow():
             return False
         # Mark as verified
         cur.execute("""
