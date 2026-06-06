@@ -387,6 +387,7 @@
 <script>
     const API = window.location.origin;
     let pendingUserId = null;
+    let pendingToken = null;
     let resetMethod = 'email';
     let resetEmail = '';
 
@@ -472,16 +473,15 @@
                 return;
             }
 
-            localStorage.setItem('averion_token', data.token);
-            localStorage.setItem('averion_user_id', data.user_id);
-            localStorage.setItem('averion_is_admin', data.is_admin);
-
             if (data.needs_verification) {
                 pendingUserId = data.user_id;
-                // Code already sent by server during login
+                pendingToken = data.token;
                 showVerify();
                 setBtn('login-btn', false, 'Sign In');
             } else {
+                localStorage.setItem('averion_token', data.token);
+                localStorage.setItem('averion_user_id', data.user_id);
+                localStorage.setItem('averion_is_admin', data.is_admin);
                 window.location.href = '/dashboard';
             }
 
