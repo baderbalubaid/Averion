@@ -97,6 +97,8 @@ def login(email: str, password: str,
 
     # Check if needs verification (new device or 30 days)
     needs_verification = check_needs_verification(user_id, ip)
+    if needs_verification:
+        send_verification(user_id)
 
     token = create_token(user_id, is_admin)
 
