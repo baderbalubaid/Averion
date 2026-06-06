@@ -352,7 +352,17 @@ tr:hover td{background:#6366F106}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
-    function logout() {
+    function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('topbar-avatar').contains(e.target)) {
+        const menu = document.getElementById('user-menu');
+        if (menu) menu.style.display = 'none';
+    }
+});
+function logout() {
         localStorage.removeItem('averion_token');
         localStorage.removeItem('averion_user_id');
         localStorage.removeItem('averion_is_admin');
@@ -407,8 +417,14 @@ tr:hover td{background:#6366F106}
     <div class="topbar-left">
       <span class="page-title" id="pageTitle">Home</span>
     </div>
-    <div class="topbar-right"
-        <button onclick="logout()" style="background:transparent;border:1px solid #2A2A45;color:#888;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;margin-left:8px;" onmouseover="this.style.borderColor='#F4645F';this.style.color='#F4645F'" onmouseout="this.style.borderColor='#2A2A45';this.style.color='#888'">Sign Out</button>>
+    <div class="topbar-right">
+      <div class="dropdown" style="position:relative">
+        <div class="user-avatar" onclick="toggleUserMenu()" style="cursor:pointer" id="topbar-avatar">B</div>
+        <div class="dropdown-menu" id="user-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#1a1a2e;border:1px solid #2A2A45;border-radius:10px;min-width:160px;z-index:1000;box-shadow:0 8px 32px #00000080">
+          <div class="dropdown-item" onclick="window.location.href='/login'" style="padding:10px 14px;font-size:13px;color:#ccc;cursor:pointer;border-bottom:1px solid #2A2A45">⚙️ Settings</div>
+          <div class="dropdown-item" onclick="logout()" style="padding:10px 14px;font-size:13px;color:#F4645F;cursor:pointer">🚪 Sign Out</div>
+        </div>
+      </div>
       <div class="paper-chip">⚡ PAPER</div>
       <div class="live-ticker">
         <div class="ticker-dot"></div>
@@ -1781,7 +1797,17 @@ async function loadAll() {
 loadAll();
 setInterval(loadAll, 15000);
 
-    function logout() {
+    function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('topbar-avatar').contains(e.target)) {
+        const menu = document.getElementById('user-menu');
+        if (menu) menu.style.display = 'none';
+    }
+});
+function logout() {
         localStorage.removeItem('averion_token');
         localStorage.removeItem('averion_user_id');
         localStorage.removeItem('averion_is_admin');
