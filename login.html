@@ -273,9 +273,16 @@
 
         <div class="form-group">
             <label>Password</label>
-            <input type="password" id="password"
-                   placeholder="••••••••"
-                   autocomplete="current-password">
+            <div style="position:relative">
+                <input type="password" id="password"
+                       placeholder="••••••••"
+                       autocomplete="current-password"
+                       onkeydown="if(event.key==='Enter')handleLogin()"
+                       style="padding-right:40px;width:100%">
+                <span onclick="togglePassword()" 
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:#888;font-size:14px"
+                      id="pass-toggle">👁</span>
+            </div>
         </div>
 
         <div class="forgot">
@@ -308,7 +315,7 @@
 
         <div class="form-group">
             <label>Verification code</label>
-            <input type="text" id="verify-code"
+            <input type="text" id="verify-code" oninput="if(this.value.replace(/\D/g,'').length===6){this.value=this.value.replace(/\D/g,'');handleVerify();}" maxlength="6" style="letter-spacing:8px;text-align:center;font-size:24px;width:200px"
                    class="code-input"
                    placeholder="000000"
                    maxlength="6"
@@ -402,6 +409,35 @@
     }
 
     // ── LOGIN ─────────────────────────────────────
+    
+    function togglePassword() {
+        const p = document.getElementById('password');
+        const t = document.getElementById('pass-toggle');
+        if (p.type === 'password') {
+            p.type = 'text';
+            t.textContent = '🙈';
+        } else {
+            p.type = 'password';
+            t.textContent = '👁';
+        }
+    }
+
+    // Auto-login if token exists and valid
+    (async function checkAutoLogin() {
+        const token = localStorage.getItem('averion_token');
+        if (!token) return;
+        try {
+            const res = await fetch(`${window.location.origin}/status`, {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (res.ok) {
+                window.location.href = '/dashboard';
+            } else {
+                localStorage.removeItem('averion_token');
+            }
+        } catch(e) {}
+    })();
+
     async function handleLogin() {
         showError('login-error', '');
         const email = document.getElementById('email').value.trim();
