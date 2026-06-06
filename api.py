@@ -58,7 +58,7 @@ def get_redis():
 # ═══════════════════════════════
 # AUTH HELPERS
 # ═══════════════════════════════
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # Password functions handled by auth module
 
@@ -67,6 +67,8 @@ security = HTTPBearer()
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not credentials:
+        raise HTTPException(status_code=401, detail='Not authenticated')
     try:
         payload = jwt.decode(
             credentials.credentials,
