@@ -821,6 +821,7 @@ def verify(req: VerifyRequest, request: Request):
 
 @app.post('/auth/send-code')
 def send_code(payload: dict = Depends(verify_token)):
+    print('DEBUG: send-code called', payload)
     success = auth_module.send_verification(
         payload['user_id']
     )
