@@ -440,9 +440,7 @@
                 headers: {'Authorization': `Bearer ${token}`}
             });
             if (res.ok) {
-                localStorage.setItem('averion_token', pendingToken);
-            localStorage.setItem('averion_user_id', pendingUserId);
-            window.location.href = '/dashboard';
+                window.location.href = '/dashboard';
             } else {
                 localStorage.clear();
             }
