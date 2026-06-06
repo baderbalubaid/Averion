@@ -192,3 +192,51 @@ Upgrade trigger: Loop > 30s → upgrade to AX41
 
 ## Server Upgrade Path
 CPX32 (current) → AX41 → AX52 → AX102
+
+---
+
+## DAY 1 PROGRESS LOG
+
+### Completed Today
+✅ Server created (CPX32 · Hetzner)
+✅ Floating IP configured (46.225.251.75)
+✅ System updated + kernel upgraded
+✅ All dependencies installed
+✅ PM2 + Node.js installed
+✅ PostgreSQL + Redis configured
+✅ Averion cloned from GitHub
+✅ Python packages installed
+✅ .env configured
+✅ Database schema loaded (all 40 tables)
+✅ Admin user created
+✅ Bot loop running via PM2
+✅ API running via PM2
+✅ Telegram connected (AverionsBot)
+✅ Admin channel configured
+✅ Login working with Telegram verification
+✅ Show/hide password
+✅ Enter key submits login
+✅ Auto-verify on 6-digit code entry
+
+### Bugs Fixed Today
+- duplicate profit_coin parameter in database.py
+- import telegram as tg missing from main.py
+- import database as db missing from main.py
+- db.init_pool() not called
+- is_suspended wrong index (6→5)
+- telegram_chat_id wrong index (3→5)
+- send_verification never called in login
+- verify route not loading (moved to top)
+- timezone comparison error in verify_code
+- OWNER_WALLET_TRC20 had space after = in .env
+- SECRET_KEY not passed to PM2 processes
+- ecosystem.config.js created for env vars
+
+### Still Pending
+- BTC price (needs exchange + bots)
+- Top right user menu dropdown
+- Auto-login without verification bypass
+- Add MEXC exchange
+- First paper bot
+- Domain setup (averionbot.com)
+- HTTPS setup

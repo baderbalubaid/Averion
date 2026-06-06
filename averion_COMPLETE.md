@@ -11142,7 +11142,8 @@ DB_CONFIG = {
 
 def hash_password(password):
     salt = secrets.token_hex(16)
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed = hashlib.sha256(f'{salt}{password}'.encode()).hexdigest()
+    return f'{salt}:{hashed}'
 
 def main():
     print("🚀 Initializing Averion Database...")
@@ -13306,6 +13307,8 @@ import psycopg2
 import redis
 import ccxt
 import exchanges as exchanges_module
+import telegram as tg
+import database as db
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -13353,6 +13356,7 @@ def wait_for_postgresql():
             conn = psycopg2.connect(**DB_CONFIG)
             conn.close()
             print("✅ PostgreSQL ready")
+            db.init_pool()
             return True
         except Exception as e:
             attempts += 1
@@ -13592,7 +13596,6 @@ def clear_stale_pending_buyback():
         conn.commit()
         if count > 0:
             print(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags')
-            import telegram as tg
             tg.send_admin(f'⚠️ Cleared {count} stale PENDING_BUYBACK flags on startup')
 import os
 import psycopg2
@@ -14639,7 +14642,7 @@ def verify_code(user_id, code):
         if stored_code != code:
             return False
         from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
+        if expires_at.replace(tzinfo=None) < datetime.utcnow():
             return False
         # Mark as verified
         cur.execute("""
@@ -14852,7 +14855,7 @@ def get_redis():
 # ═══════════════════════════════
 # AUTH HELPERS
 # ═══════════════════════════════
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # Password functions handled by auth module
 
@@ -14861,13 +14864,17 @@ security = HTTPBearer()
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not credentials:
+        raise HTTPException(status_code=401, detail='Not authenticated')
     try:
+        key = os.getenv('SECRET_KEY', 'changeme')
         payload = jwt.decode(
             credentials.credentials,
-            SECRET_KEY, algorithms=['HS256']
+            key, algorithms=['HS256']
         )
         return payload
-    except:
+    except Exception as e:
+        print(f'Token verify error: {e}')
         raise HTTPException(status_code=401, detail='Invalid token')
 
 def require_admin(payload: dict = Depends(verify_token)):
@@ -14955,7 +14962,29 @@ def login(req: LoginRequest, request: Request):
         raise HTTPException(status_code=401, detail=error)
 
     auth_module.clear_login_fails(ip)
+    # Send verification code directly in login response if needed
+    if result.get('needs_verification'):
+        auth_module.send_verification(result['user_id'])
     return result
+
+
+class VerifyRequest(BaseModel):
+    user_id: int
+    code: str
+
+@app.post('/auth/verify')
+def verify(req: VerifyRequest, request: Request):
+    ip = request.client.host
+    success = auth_module.verify_code(
+        req.user_id, req.code, ip
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid or expired code'
+        )
+    return {'message': 'Verified successfully'}
+
 
 # ═══════════════════════════════
 # STATUS
@@ -15275,6 +15304,13 @@ def admin_run_cron_step(step: str,
         subprocess.Popen(['bash', script])
 
     return {'message': f'Step {step} started'}
+
+
+@app.on_event("startup")
+async def startup_event():
+    print(f"🔍 Routes registered: {len(app.routes)}")
+    auth_routes = [r.path for r in app.routes if hasattr(r, 'path') and 'auth' in r.path]
+    print(f"🔍 Auth routes: {auth_routes}")
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
@@ -15615,6 +15651,7 @@ def verify(req: VerifyRequest, request: Request):
 
 @app.post('/auth/send-code')
 def send_code(payload: dict = Depends(verify_token)):
+    print('DEBUG: send-code called', payload)
     success = auth_module.send_verification(
         payload['user_id']
     )
@@ -17366,7 +17403,7 @@ def login(email: str, password: str,
     user_id = user[0]
     password_hash = user[2]
     is_admin = user[3]
-    is_suspended = user[6] if len(user) > 6 else False
+    is_suspended = user[5] if len(user) > 5 else False
 
     if is_suspended:
         db.log_security_event(
@@ -17384,6 +17421,8 @@ def login(email: str, password: str,
 
     # Check if needs verification (new device or 30 days)
     needs_verification = check_needs_verification(user_id, ip)
+    if needs_verification:
+        send_verification(user_id)
 
     token = create_token(user_id, is_admin)
 
@@ -17439,7 +17478,7 @@ def send_verification(user_id: int) -> bool:
     if not user:
         return False
 
-    telegram_chat_id = user[3]  # telegram_chat_id
+    telegram_chat_id = user[5]  # telegram_chat_id (index 5 in get_user_by_id)
     if not telegram_chat_id:
         return False
 
@@ -18693,9 +18732,16 @@ if __name__ == '__main__':
 
         <div class="form-group">
             <label>Password</label>
-            <input type="password" id="password"
-                   placeholder="••••••••"
-                   autocomplete="current-password">
+            <div style="position:relative">
+                <input type="password" id="password"
+                       placeholder="••••••••"
+                       autocomplete="current-password"
+                       onkeydown="if(event.key==='Enter')handleLogin()"
+                       style="padding-right:40px;width:100%">
+                <span onclick="togglePassword()" 
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:#888;font-size:14px"
+                      id="pass-toggle">👁</span>
+            </div>
         </div>
 
         <div class="forgot">
@@ -18728,7 +18774,7 @@ if __name__ == '__main__':
 
         <div class="form-group">
             <label>Verification code</label>
-            <input type="text" id="verify-code"
+            <input type="text" id="verify-code" oninput="if(this.value.replace(/\D/g,'').length===6){this.value=this.value.replace(/\D/g,'');handleVerify();}" maxlength="6" style="letter-spacing:8px;text-align:center;font-size:24px;width:200px"
                    class="code-input"
                    placeholder="000000"
                    maxlength="6"
@@ -18822,6 +18868,37 @@ if __name__ == '__main__':
     }
 
     // ── LOGIN ─────────────────────────────────────
+    
+    function togglePassword() {
+        const p = document.getElementById('password');
+        const t = document.getElementById('pass-toggle');
+        if (p.type === 'password') {
+            p.type = 'text';
+            t.textContent = '🙈';
+        } else {
+            p.type = 'password';
+            t.textContent = '👁';
+        }
+    }
+
+    // Auto-login only if previously verified
+    (async function checkAutoLogin() {
+        const token = localStorage.getItem('averion_token');
+        const verified = localStorage.getItem('averion_verified');
+        if (!token || !verified) return;
+        try {
+            const res = await fetch(`${window.location.origin}/status`, {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (res.ok) {
+                localStorage.setItem('averion_verified', '1');
+            window.location.href = '/dashboard';
+            } else {
+                localStorage.clear();
+            }
+        } catch(e) {}
+    })();
+
     async function handleLogin() {
         showError('login-error', '');
         const email = document.getElementById('email').value.trim();
@@ -18854,10 +18931,7 @@ if __name__ == '__main__':
 
             if (data.needs_verification) {
                 pendingUserId = data.user_id;
-                await fetch(`${API}/auth/send-code`, {
-                    method: 'POST',
-                    headers: {'Authorization': `Bearer ${data.token}`}
-                });
+                // Code already sent by server during login
                 showVerify();
                 setBtn('login-btn', false, 'Sign In');
             } else {
