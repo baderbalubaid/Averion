@@ -270,7 +270,7 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
                   coin, direction, avg_cost, quantity,
                   total_invested, last_buy_price, category,
                   is_paper, base_coin, profit_coin, sequence_number,
-                  coin_trade_number, entry_method=None, profit_coin='USDT'):
+                  coin_trade_number, entry_method=None):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
