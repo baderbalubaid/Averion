@@ -18,7 +18,8 @@ DB_CONFIG = {
 
 def hash_password(password):
     salt = secrets.token_hex(16)
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed = hashlib.sha256(f'{salt}{password}'.encode()).hexdigest()
+    return f'{salt}:{hashed}'
 
 def main():
     print("🚀 Initializing Averion Database...")
