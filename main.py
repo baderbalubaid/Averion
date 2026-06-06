@@ -52,6 +52,7 @@ def wait_for_postgresql():
             conn = psycopg2.connect(**DB_CONFIG)
             conn.close()
             print("✅ PostgreSQL ready")
+            db.init_pool()
             return True
         except Exception as e:
             attempts += 1
