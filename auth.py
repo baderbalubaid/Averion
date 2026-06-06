@@ -154,7 +154,7 @@ def send_verification(user_id: int) -> bool:
     if not user:
         return False
 
-    telegram_chat_id = user[3]  # telegram_chat_id
+    telegram_chat_id = user[5]  # telegram_chat_id (index 5 in get_user_by_id)
     if not telegram_chat_id:
         return False
 
