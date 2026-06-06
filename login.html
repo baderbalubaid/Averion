@@ -434,10 +434,7 @@
 
             if (data.needs_verification) {
                 pendingUserId = data.user_id;
-                await fetch(`${API}/auth/send-code`, {
-                    method: 'POST',
-                    headers: {'Authorization': `Bearer ${data.token}`}
-                });
+                // Code already sent by server during login
                 showVerify();
                 setBtn('login-btn', false, 'Sign In');
             } else {
