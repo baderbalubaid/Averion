@@ -79,7 +79,7 @@ def login(email: str, password: str,
     user_id = user[0]
     password_hash = user[2]
     is_admin = user[3]
-    is_suspended = user[6] if len(user) > 6 else False
+    is_suspended = user[5] if len(user) > 5 else False
 
     if is_suspended:
         db.log_security_event(
