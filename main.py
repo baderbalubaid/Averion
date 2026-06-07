@@ -214,6 +214,18 @@ def send_telegram(msg):
 # ═══════════════════════════════
 # MAIN BOT LOOP
 # ═══════════════════════════════
+def fetch_btc_price_loop(redis_client):
+    import requests as req_lib
+    while True:
+        try:
+            r = req_lib.get('https://api.mexc.com/api/v3/ticker/price?symbol=BTCUSDT', timeout=5)
+            if r.status_code == 200:
+                btc_price = float(r.json().get('price', 0))
+                redis_client.set('price:BTC/USDT', str(btc_price))
+        except:
+            pass
+        time.sleep(10)
+
 def bot_loop(redis_client):
     print("🚀 Bot loop starting...")
     tg.admin_bot_started(PAPER_MODE)
@@ -280,6 +292,9 @@ if __name__ == '__main__':
         reconcile_orders()
 
         # Step 5: Start bot loop
+        import threading
+        price_thread = threading.Thread(target=fetch_btc_price_loop, args=(redis_client,), daemon=True)
+        price_thread.start()
         bot_loop(redis_client)
 
     except Exception as e:
