@@ -266,9 +266,9 @@ def bot_loop(redis_client):
                     cur = conn.cursor()
                     cur.execute("""
                         INSERT INTO system_health 
-                        (cpu_percent, ram_percent, disk_percent, redis_mb, active_bots, open_positions)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (cpu, ram, disk, redis_mb, 0, 0))
+                        (cpu_percent, ram_percent, disk_percent)
+                        VALUES (%s, %s, %s)
+                    """, (cpu, ram, disk))
             except Exception as he:
                 pass
 
