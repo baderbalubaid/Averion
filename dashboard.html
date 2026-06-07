@@ -1203,7 +1203,7 @@ async function saveExchange() {
     const res = await fetch(`${API}/exchanges`, {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({exchange: id, custom_name: name, api_key: key, api_secret: secret})
+      body: JSON.stringify({exchange: id, custom_name: name, api_key: key, secret: secret})
     });
     const data = await res.json();
     if (!res.ok) { alert('Error: ' + (data.detail || 'Failed to save')); return; }
