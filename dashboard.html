@@ -1193,19 +1193,26 @@ function onExchangeChange() {
   document.getElementById('m-pass-group').style.display = EXC[id]?.pass ? 'block' : 'none';
   document.getElementById('m-name').placeholder = `e.g. My ${EXC[id]?.name||''} Account`;
 }
-function saveExchange() {
-  const id   = document.getElementById('m-exchange').value;
-  const name = document.getElementById('m-name').value.trim() || EXC[id]?.name || id;
-  const key  = document.getElementById('m-apikey').value.trim();
+async function saveExchange() {
+  const id     = document.getElementById('m-exchange').value;
+  const name   = document.getElementById('m-name').value.trim() || EXC[id]?.name || id;
+  const key    = document.getElementById('m-apikey').value.trim();
+  const secret = document.getElementById('m-secret')?.value.trim() || '';
   if (!key) { alert('Please enter your API key'); return; }
-  const list = getExchanges();
-  const existing = list.find(x => x.id === id);
-  if (!existing) list.push({id, name, connected:true});
-  else { existing.name = name; existing.connected = true; }
-  setExchanges(list);
-  closeModal();
-  renderExchanges();
-  alert(`✅ ${name} connected!`);
+  try {
+    const res = await fetch(`${API}/exchanges`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({exchange: id, custom_name: name, api_key: key, api_secret: secret})
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Error: ' + (data.detail || 'Failed to save')); return; }
+    closeModal();
+    alert(`✅ ${name} connected!`);
+    loadAll();
+  } catch(e) {
+    alert('Connection error · please try again');
+  }
 }
 
 // ── BOTS ──────────────────────────────────────────────────
