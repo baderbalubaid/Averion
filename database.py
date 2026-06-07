@@ -957,7 +957,7 @@ def get_all_users_admin():
         cur = conn.cursor()
         cur.execute("""
             SELECT u.id, u.email, u.created_at,
-                   u.is_suspended, u.telegram_verified,
+                   u.is_suspended,
                    COUNT(DISTINCT b.id) as bot_count,
                    COUNT(DISTINCT p.id) as open_positions,
                    COALESCE(r.balance_usdt, 0) as reserve_balance,
@@ -972,7 +972,7 @@ def get_all_users_admin():
             LEFT JOIN fee_debt fd ON fd.user_id = u.id
             WHERE u.is_admin = FALSE
             GROUP BY u.id, u.email, u.created_at,
-                     u.is_suspended, u.telegram_verified,
+                     u.is_suspended,
                      r.balance_usdt
             ORDER BY open_positions DESC
         """)
