@@ -98,7 +98,7 @@ def get_exchange_by_id(exchange_id):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, user_id, exchange, api_key_enc,
+            SELECT id, exchange, custom_name, api_key_enc,
                    secret_enc, passphrase_enc, active,
                    paused_at, pause_reason
             FROM exchanges WHERE id = %s
