@@ -226,6 +226,15 @@ def bot_loop(redis_client):
 
             from bot_loop import run_cycle
             run_cycle(redis_client)
+            # Fetch BTC price via public API (no keys needed)
+            try:
+                import requests as req_lib
+                r2 = req_lib.get('https://api.mexc.com/api/v3/ticker/price?symbol=BTCUSDT', timeout=5)
+                if r2.status_code == 200:
+                    btc_price = float(r2.json().get('price', 0))
+                    redis_client.setex('price:BTC/USDT', 120, str(btc_price))
+            except:
+                pass
 
             elapsed = time.time() - start
             print(f"Cycle {cycle} complete in {elapsed:.2f}s")
