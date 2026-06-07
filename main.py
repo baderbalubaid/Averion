@@ -255,6 +255,22 @@ def bot_loop(redis_client):
             redis_client.setex('bot:last_cycle', 120, str(datetime.utcnow()))
             redis_client.setex('bot:cycle_time', 120, str(round(elapsed, 2)))
             redis_client.setex('bot:status', 120, 'running')
+            # Record system health every cycle
+            try:
+                import psutil
+                cpu = psutil.cpu_percent(interval=1)
+                ram = psutil.virtual_memory().percent
+                disk = psutil.disk_usage('/').percent
+                redis_mb = float(redis_client.info()['used_memory']) / 1024 / 1024
+                with db.get_db() as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        INSERT INTO system_health 
+                        (cpu_percent, ram_percent, disk_percent, redis_mb, active_bots, open_positions)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (cpu, ram, disk, redis_mb, 0, 0))
+            except Exception as he:
+                pass
 
             # Sleep remainder of 60 seconds
             sleep_time = max(0, 60 - elapsed)
