@@ -187,6 +187,42 @@ def verify(req: VerifyRequest, request: Request):
     return {'message': 'Verified successfully'}
 
 
+class ExchangeCreate(BaseModel):
+   exchange: str
+   custom_name: str
+   api_key: str
+   secret: str
+   passphrase: Optional[str] = None
+   ip_whitelist_confirmed: bool = False
+@app.post('/exchanges')
+def add_exchange(req: ExchangeCreate,
+                payload: dict = Depends(verify_token)):
+   from cryptography.fernet import Fernet
+   import base64
+   fernet_key = os.getenv('FERNET_KEY')
+   if not fernet_key:
+       raise HTTPException(status_code=500,
+                           detail='Encryption not configured')
+   f = Fernet(fernet_key.encode())
+   api_key_enc = f.encrypt(req.api_key.encode()).decode()
+   secret_enc = f.encrypt(req.secret.encode()).decode()
+   passphrase_enc = None
+   if req.passphrase:
+       passphrase_enc = f.encrypt(req.passphrase.encode()).decode()
+   exchange_id = db.add_exchange(
+       payload['user_id'], req.exchange, req.custom_name,
+       api_key_enc, secret_enc, passphrase_enc
+   )
+   # Confirm IP whitelist
+   if req.ip_whitelist_confirmed:
+       with db.get_db() as conn:
+           cur = conn.cursor()
+           cur.execute("""
+               UPDATE exchanges SET ip_whitelist_confirmed = TRUE
+               WHERE id = %s
+           """, (exchange_id,))
+   return {'message': 'Exchange added', 'exchange_id': exchange_id}
+
 # ═══════════════════════════════
 # STATUS
 # ═══════════════════════════════
