@@ -85,9 +85,9 @@ def get_user_exchanges(user_id):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, exchange, custom_name, active,
-                   paused_at, pause_reason, last_connected_at,
-                   ip_whitelist_confirmed, key_expires_at
+            SELECT id, exchange, custom_name, api_key_enc,
+                   secret_enc, passphrase_enc, active,
+                   paused_at, pause_reason
             FROM exchanges
             WHERE user_id = %s AND active = TRUE
             ORDER BY created_at ASC
@@ -570,7 +570,7 @@ def record_system_health(cpu, ram, disk, redis_mb,
         # Delete older than 30 days
         cur.execute("""
             DELETE FROM system_health
-            WHERE recorded_at < NOW() - INTERVAL '30 days'
+            WHERE created_at < NOW() - INTERVAL '30 days'
         """)
 
 def record_performance_timing(step, duration,
@@ -605,7 +605,7 @@ def record_bot_event(bot_id, user_id, event_type,
         # Delete older than 30 days
         cur.execute("""
             DELETE FROM bot_events
-            WHERE recorded_at < NOW() - INTERVAL '30 days'
+            WHERE created_at < NOW() - INTERVAL '30 days'
         """)
 
 
