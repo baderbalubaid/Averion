@@ -1059,6 +1059,15 @@
 
             document.getElementById('health-updated').textContent =
                 new Date(latest.checked_at).toLocaleTimeString();
+            // Update service status
+            try {
+                const hres = await fetch(`${API}/health`);
+                const hdata = await hres.json();
+                const pgEl = document.getElementById('pg-status');
+                const redisEl = document.getElementById('redis-status');
+                if (pgEl) { pgEl.textContent = hdata.db === 'ok' ? '✅ Online' : '❌ Error'; }
+                if (redisEl) { redisEl.textContent = hdata.redis === 'ok' ? '✅ Online' : '❌ Error'; }
+            } catch(e) {}
 
         } catch(e) { console.error(e); }
     }
