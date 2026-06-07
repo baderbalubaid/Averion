@@ -827,29 +827,23 @@ def generate_diagnostics(payload: dict = Depends(require_admin)):
 # ═══════════════════════════════
 # ADMIN — SYSTEM HEALTH
 # ═══════════════════════════════
+
+
 @app.get('/admin/health')
 def admin_health(payload: dict = Depends(require_admin)):
    with db.get_db() as conn:
        cur = conn.cursor()
        cur.execute("""
-           SELECT cpu_percent, ram_percent, disk_percent,
-                  redis_mb, pg_connections, bot_cycle_time,
-                  active_bots, open_positions, recorded_at
+           SELECT cpu_percent, ram_percent, disk_percent, checked_at
            FROM system_health
-           ORDER BY recorded_at DESC LIMIT 168
+           ORDER BY checked_at DESC LIMIT 168
        """)
        rows = cur.fetchall()
-
    return [{
        'cpu': float(r[0] or 0),
        'ram': float(r[1] or 0),
        'disk': float(r[2] or 0),
-       'redis_mb': float(r[3] or 0),
-       'pg_conn': r[4],
-       'cycle_time': float(r[5] or 0),
-       'active_bots': r[6],
-       'open_positions': r[7],
-       'recorded_at': str(r[8])
+       'checked_at': str(r[3])
    } for r in rows]
 
 # ═══════════════════════════════
