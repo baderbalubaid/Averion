@@ -1058,7 +1058,7 @@
                 disk > 50 ? 'var(--amber)' : 'var(--amber)';
 
             document.getElementById('health-updated').textContent =
-                new Date(latest.recorded_at).toLocaleTimeString();
+                new Date(latest.checked_at).toLocaleTimeString();
 
         } catch(e) { console.error(e); }
     }
