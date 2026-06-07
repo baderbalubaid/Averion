@@ -992,6 +992,17 @@ function switchTabMobile(name, el) {
 }
 
 // ── STATUS ────────────────────────────────────────────────
+async function fetchBotCount() {
+  try {
+    const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+    if (res.ok) {
+      const bots = await res.json();
+      window._botCount = bots.length;
+      window._activeBots = bots.filter(b => b.status === 'active').length;
+    }
+  } catch(e) {}
+}
+
 async function fetchStatus() {
   try {
     const res = await fetch(`${API}/status`, {headers: authHeaders()});
@@ -1125,7 +1136,7 @@ function renderExchanges() {
       </div>
       <div class="exc-stats">
         <div class="exc-stat"><div class="exc-stat-lbl">Positions</div><div class="exc-stat-val" style="color:var(--blue)">${posCount}</div></div>
-        <div class="exc-stat"><div class="exc-stat-lbl">Bots Live</div><div class="exc-stat-val"><span style="color:var(--green)">1</span>/1</div></div>
+        <div class="exc-stat"><div class="exc-stat-lbl">Bots Live</div><div class="exc-stat-val"><span style="color:var(--green)" id="activeBotCount">0</span>/<span id="totalBotCount">0</span></div></div>
         <div class="exc-stat"><div class="exc-stat-lbl">24h P&L</div><div class="exc-stat-val" style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</div></div>
       </div>
       ${coins.length>0?`<div class="exc-footer">
@@ -1230,7 +1241,9 @@ function renderBotsList() {
   container.innerHTML = exchanges.map(exc => {
     const cfg = EXC[exc.id] || {};
     const displayName = exc.name || cfg.name || exc.id;
-    const botRunning = document.getElementById('btcPrice').textContent !== 'Offline';
+    const activeBots = window._activeBots || 0;
+    const totalBots = window._botCount || 0;
+    const botRunning = activeBots > 0;
     return `
     <div class="bot-section">
       <div class="bot-section-hdr">
@@ -1242,7 +1255,7 @@ function renderBotsList() {
           </div>
         </div>
         <div class="bot-exc-stats">
-          <div><div class="bot-exc-stat-lbl">Bots</div><div class="bot-exc-stat-val"><span style="color:var(--green)">${botRunning?1:0}</span>/1</div></div>
+          <div><div class="bot-exc-stat-lbl">Bots</div><div class="bot-exc-stat-val"><span style="color:var(--green)">${activeBots}</span>/${totalBots}</div></div>
           <div><div class="bot-exc-stat-lbl">Trades</div><div class="bot-exc-stat-val">${allPositions.length}</div></div>
         </div>
       </div>
@@ -1800,6 +1813,7 @@ async function loadAll() {
   await fetchStatus();
   await fetchPositions();
   await fetchExchanges();
+  await fetchBotCount();
 }
 
 // Auth check on load
