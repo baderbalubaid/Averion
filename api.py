@@ -1131,11 +1131,9 @@ async def validate_exchange_key(req: dict, payload: dict = Depends(verify_token)
 @app.get("/health")
 def health_check():
    try:
-       conn = get_db()
-       cur = conn.cursor()
-       cur.execute("SELECT 1")
-       cur.close()
-       conn.close()
+       with db.get_db() as conn:
+           cur = conn.cursor()
+           cur.execute("SELECT 1")
        db_ok = True
    except:
        db_ok = False
