@@ -1064,7 +1064,7 @@ function renderHome() {
 
 // ── EXCHANGES ─────────────────────────────────────────────
 function getExchanges() {
-  try { return JSON.parse(localStorage.getItem('av_exchanges') || '[]'); }
+  try { return window._exchangesCache || JSON.parse(localStorage.getItem('av_exchanges') || '[]'); }
   catch(e) { return []; }
 }
 function setExchanges(list) {
@@ -1780,9 +1780,26 @@ function toggleBotSwitch(excId,type,btn){
   if(sub)sub.textContent=`${list.length} bot${list.length!==1?'s':''} · ${list.filter(e=>e.trading!==false).length} running`;
 }
 // ── MAIN LOOP ─────────────────────────────────────────────
+async function fetchExchanges() {
+  try {
+    const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+    if (res.ok) {
+      const data = await res.json();
+      window._exchangesCache = data.map(e => ({
+        id: e.exchange,
+        name: e.custom_name || e.exchange,
+        connected: true,
+        exchange_id: e.id
+      }));
+      renderExchanges();
+    }
+  } catch(e) {}
+}
+
 async function loadAll() {
   await fetchStatus();
   await fetchPositions();
+  await fetchExchanges();
 }
 
 // Auth check on load
