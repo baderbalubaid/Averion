@@ -39,7 +39,7 @@ def decrypt(text: str) -> str:
 # ═══════════════════════════════
 def init_exchange(exchange_row):
    exc_id = exchange_row[0]
-   exc_name = exchange_row[2]
+   exc_name = exchange_row[1]
    api_key_enc = exchange_row[3]
    secret_enc = exchange_row[4]
    passphrase_enc = exchange_row[5]
