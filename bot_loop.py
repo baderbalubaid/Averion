@@ -577,9 +577,16 @@ def run_cycle(r):
             )
 
             if result:
-                # Update position
-                old_qty = float(best_candidate[4] or 0)
-                old_invested = float(best_candidate[3] or 0)
+                # Fetch current position data for accurate update
+                with db.get_db() as conn:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "SELECT quantity, total_invested FROM positions WHERE id=%s",
+                        (pos_id,)
+                    )
+                    pos_row = cur.fetchone()
+                old_qty = float(pos_row[0] or 0)
+                old_invested = float(pos_row[1] or 0)
                 new_qty = old_qty + result['quantity']
                 new_invested = old_invested + best_next_amount
                 new_avg = new_invested / new_qty if new_qty > 0 else 0
@@ -590,6 +597,7 @@ def run_cycle(r):
                     best_candidate[5] + 1
                 )
                 db.set_position_queued(pos_id, False)
+                print(f'✅ DCA executed: {coin} dca#{best_candidate[5]+1} avg=${new_avg:.6f} invested=${new_invested:.2f}')
 
         # ─────────────────────────
         # STEP 3: Open new positions
