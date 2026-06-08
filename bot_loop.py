@@ -545,7 +545,7 @@ def run_cycle(r):
             score, next_dca_price, next_dca_amount = result
 
             # Check if price reached DCA trigger
-            if current_price > next_dca_price:
+            if current_price < next_dca_price:
                 continue  # Not triggered yet
 
             if score > best_score:
