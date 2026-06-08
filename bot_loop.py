@@ -123,8 +123,8 @@ def calculate_score(position, current_price, bot):
     effective_spacing = dca_percent * (spacing_mult ** dca_count)
     next_dca_price = last_buy_price * (1 - effective_spacing / 100)
 
-    # Next DCA amount
-    next_dca_amount = base_order * (size_mult ** dca_count)
+    # Next DCA amount (dca_count+1 because this is the NEXT dca)
+    next_dca_amount = base_order * (size_mult ** (dca_count + 1))
 
     if next_dca_amount == 0:
         return 0
