@@ -104,6 +104,7 @@ def calculate_score(position, current_price, bot):
     spacing_mult = float(bot[11] or 1.4)
     size_mult = float(bot[12] or 1.0)
     take_profit = float(bot[13] or 3.0)
+    base_order = float(bot[15] or 10.0)
 
     if avg_cost == 0 or current_price == 0:
         return 0
@@ -301,6 +302,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
 
     size_mult = float(bot[12] or 1.0)
     take_profit = float(bot[13] or 3.0)
+    base_order = float(bot[15] or 10.0)
     trailing = float(bot[14] or 1.0)
     base_order = float(bot[15] or 10.0)
     trades_per_bot = int(bot[16] or 1)
