@@ -212,6 +212,10 @@ def execute_sell(exchange_obj, coin, quantity,
     if PAPER_MODE:
         price = get_price(coin, '', r, {})
         if not price:
+            keys = r.keys(f'price:*:{coin}/USDT')
+            if keys:
+                price = float(r.get(keys[0]))
+        if not price:
             return None
 
         usdt_received = quantity * price
