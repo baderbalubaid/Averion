@@ -266,9 +266,8 @@ def get_positions(payload: dict = Depends(verify_token)):
         coin = p[4]
         current_price = 0
         try:
-            current_price = float(
-                r.get(f'price:{coin}/USDT') or p[7] or 0
-            )
+            keys = r.keys(f'price:*:{coin}/USDT')
+            current_price = float(r.get(keys[0]) if keys else p[7] or 0)
         except:
             current_price = float(p[7] or 0)
 
