@@ -302,6 +302,8 @@ def try_open_position(bot, exchange_obj, tickers, r):
     take_profit = float(bot[13] or 3.0)
     trailing = float(bot[14] or 1.0)
     base_order = float(bot[15] or 10.0)
+    trades_per_bot = int(bot[16] or 1)
+    trades_per_coin = int(bot[17] or 1)
     trades_per_bot = bot[16] or 1
     trades_per_coin = bot[17] or 1
 
