@@ -535,7 +535,7 @@ def run_cycle(r):
         best_next_amount = None
 
         for pos in queue_candidates:
-            coin = pos[0]  # from queue query
+            coin = pos[1]  # pos[0]=id, pos[1]=coin
             current_price = get_price(coin, exc_row[2], r, tickers)
             if not current_price:
                 continue
