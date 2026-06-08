@@ -922,6 +922,12 @@ function logout() {
 <script>
 
     // Authentication headers helper
+    function fmtPrice(p) {
+  if (!p || p === 0) return '$0';
+  if (p >= 1) return '$' + p.toFixed(4);
+  if (p >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toPrecision(4);
+}
     function authHeaders() {
         const token = localStorage.getItem('averion_token');
         return {
@@ -1389,8 +1395,8 @@ function applyBotFilter() {
     const st   = statusInfo(pos);
     return `<tr>
       <td><div class="td-coin"><strong>${pos.coin.replace('/USDT','')}</strong></div></td>
-      <td>$${pos.avg_cost.toFixed(4)}</td>
-      <td>$${pos.current_price.toFixed(4)}</td>
+      <td>${fmtPrice(pos.avg_cost)}</td>
+      <td>${fmtPrice(pos.current_price)}</td>
       <td style="color:${pos.dca_count>0?'var(--purple)':'var(--text3)'};font-weight:700">${pos.dca_count}</td>
       <td style="color:${dc}">${d}d</td>
       <td style="color:${pc};font-weight:700">${sign}${pos.pnl_pct}%</td>
@@ -1530,9 +1536,9 @@ function renderHistory(data) {
       if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
       if(c.key==='entry_date')  return `<td><span class="td-muted">${h.opened_at?new Date(h.opened_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
       if(c.key==='exit_date')   return `<td><span class="td-muted">${h.closed_at?new Date(h.closed_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
-      if(c.key==='entry_price') return `<td>$${ep.toFixed(4)}</td>`;
-      if(c.key==='avg_cost')    return `<td>$${(h.avg_cost||ep).toFixed(4)}</td>`;
-      if(c.key==='exit_price')  return `<td>$${xp.toFixed(4)}</td>`;
+      if(c.key==='entry_price') return `<td>${fmtPrice(ep)}</td>`;
+      if(c.key==='avg_cost')    return `<td>${fmtPrice(h.avg_cost||ep)}</td>`;
+      if(c.key==='exit_price')  return `<td>${fmtPrice(xp)}</td>`;
       if(c.key==='dca_count')   return `<td style="color:var(--purple)">${h.dca_count||0}</td>`;
       if(c.key==='pnl_pct')     return `<td style="color:${pc};font-weight:600">${sign}${pct}%</td>`;
       if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${sign}$${Math.abs(pnl).toFixed(4)}</td>`;
