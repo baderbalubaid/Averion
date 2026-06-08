@@ -931,6 +931,7 @@ function fmtPrice(p) {
   if (!p || p === 0) return '$0';
   if (p >= 1) return '$' + p.toFixed(4);
   if (p >= 0.0001) return '$' + p.toFixed(6);
+  if (p >= 0.00000001) return '$' + p.toFixed(10);
   return '$' + p.toPrecision(4);
 }
     function authHeaders() {
