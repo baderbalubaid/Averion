@@ -97,29 +97,31 @@ def check_st_flag(coin, exchange_name, tickers, r):
 # SMART QUEUE SCORING
 # ═══════════════════════════════
 def calculate_score(position, current_price, bot):
-    avg_cost = float(position[7] or 0)
-    total_invested = float(position[9] or 0)
-    dca_count = position[10]
-    dca_percent = float(bot[10] or 7.0)
-    spacing_mult = float(bot[11] or 1.4)
-    size_mult = float(bot[12] or 1.0)
-    take_profit = float(bot[13] or 3.0)
-    base_order = float(bot[15] or 10.0)
+    # get_queue_candidates columns:
+    # [0]id [1]coin [2]total_invested [3]last_buy_price
+    # [4]avg_cost [5]dca_count [6]category [7]bot_id
+    # [8]user_id [9]dca_percent [10]spacing_mult
+    # [11]size_mult [12]base_order [13]dca_on
+    avg_cost      = float(position[4] or 0)
+    total_invested = float(position[2] or 0)
+    dca_count     = int(position[5] or 0)
+    last_buy_price = float(position[3] or avg_cost)
+    dca_percent   = float(bot[10] or 7.0)
+    spacing_mult  = float(bot[11] or 1.4)
+    size_mult     = float(bot[12] or 1.5)
+    base_order    = float(bot[15] or 100.0)
 
     if avg_cost == 0 or current_price == 0:
         return 0
 
-    # Loss percentage
+    # Loss percentage from avg_cost
     loss_pct = ((avg_cost - current_price) / avg_cost) * 100
     if loss_pct <= 0:
         return 0  # Not in loss · not eligible
 
     # Next DCA trigger price
-    dca_count = int(dca_count)
     effective_spacing = dca_percent * (spacing_mult ** dca_count)
-    next_dca_price = float(position[11] or avg_cost) * (
-        1 - effective_spacing / 100
-    )
+    next_dca_price = last_buy_price * (1 - effective_spacing / 100)
 
     # Next DCA amount
     next_dca_amount = base_order * (size_mult ** dca_count)
@@ -545,7 +547,7 @@ def run_cycle(r):
             score, next_dca_price, next_dca_amount = result
 
             # Check if price reached DCA trigger
-            if current_price < next_dca_price:
+            if current_price > next_dca_price:
                 continue  # Not triggered yet
 
             if score > best_score:
