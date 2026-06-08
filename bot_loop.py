@@ -114,6 +114,7 @@ def calculate_score(position, current_price, bot):
         return 0  # Not in loss · not eligible
 
     # Next DCA trigger price
+    dca_count = int(dca_count)
     effective_spacing = dca_percent * (spacing_mult ** dca_count)
     next_dca_price = float(position[11] or avg_cost) * (
         1 - effective_spacing / 100
