@@ -1308,12 +1308,12 @@ async function renderBotsList() {
 async function startBotInList(e) {
   e.stopPropagation();
   await fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
-  setTimeout(()=>{fetchPositions();renderBotsList();},1000);
+  setTimeout(async ()=>{await fetchPositions();await renderBotsList();},1000);
 }
 async function stopBotInList(e) {
   e.stopPropagation();
   await fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
-  setTimeout(()=>renderBotsList(),1000);
+  setTimeout(async ()=>await renderBotsList(),1000);
 }
 
 function openBotDetail(name, running) {
