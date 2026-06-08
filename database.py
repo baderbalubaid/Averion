@@ -284,12 +284,12 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s,
-                TRUE, NOW()
+                %s, TRUE, NOW()
             ) RETURNING id
         """, (bot_id, user_id, exchange_id, wallet_id,
               coin, direction, avg_cost, quantity,
               total_invested, last_buy_price, category,
-              is_paper, base_coin, sequence_number,
+              is_paper, base_coin, profit_coin, sequence_number,
               coin_trade_number, entry_method))
         return cur.fetchone()[0]
 
