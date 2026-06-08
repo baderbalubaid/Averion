@@ -1228,7 +1228,7 @@ async function saveExchange() {
 
 // ── BOTS ──────────────────────────────────────────────────
 async function renderBotsList() {
-  const container = document.getElementById('botsList');
+  const container = document.getElementById('flatBotsList');
   const exchanges = getExchanges();
   if (exchanges.length === 0) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">🔌</div><div class="empty-text">No exchanges connected.<br>Add one from Home tab.</div></div>`;
