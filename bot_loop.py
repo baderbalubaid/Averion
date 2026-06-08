@@ -572,7 +572,7 @@ def run_cycle(r):
             db.set_position_queued(pos_id, True)
             result = execute_buy(
                 exchange_obj, coin, best_next_amount,
-                pos_id, best_candidate[7], best_candidate[6],
+                pos_id, best_candidate[7], best_candidate[8],
                 exc_id, best_candidate[5] + 1, 'dca', r
             )
 
