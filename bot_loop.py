@@ -316,8 +316,11 @@ def try_open_position(bot, exchange_obj, tickers, r):
         coin = p[4]
         open_coins[coin] = open_coins.get(coin, 0) + 1
 
-    # Find coin to trade
-    for symbol, ticker in tickers.items():
+    # Find coin to trade - randomize order
+    import random
+    ticker_items = list(tickers.items())
+    random.shuffle(ticker_items)
+    for symbol, ticker in ticker_items:
         if not symbol.endswith(f'/{base_coin}'):
             continue
 
