@@ -432,11 +432,11 @@ def toggle_bot(bot_id: int, toggle: BotToggle,
 def get_exchanges(payload: dict = Depends(verify_token)):
     exchanges = db.get_user_exchanges(payload['user_id'])
     return [{'id': e[0], 'exchange': e[1],
-              'custom_name': e[2], 'active': e[3],
-              'paused': e[4] is not None,
-              'pause_reason': e[5],
+              'custom_name': e[2], 'active': e[6],
+              'paused': e[7] is not None,
+              'pause_reason': e[8],
               'last_connected': str(e[6]),
-              'ip_confirmed': e[7]} for e in exchanges]
+              'ip_confirmed': None} for e in exchanges]
 
 # ═══════════════════════════════
 # ATTENTION LOG
@@ -1145,6 +1145,9 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
