@@ -1227,13 +1227,21 @@ async function saveExchange() {
 }
 
 // ── BOTS ──────────────────────────────────────────────────
-function renderBotsList() {
+async function renderBotsList() {
   const container = document.getElementById('botsList');
   const exchanges = getExchanges();
   if (exchanges.length === 0) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">🔌</div><div class="empty-text">No exchanges connected.<br>Add one from Home tab.</div></div>`;
     return;
   }
+
+  // Fetch real bots from API
+  let bots = [];
+  try {
+    const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+    if (res.ok) bots = await res.json();
+  } catch(e) {}
+
   const pnl      = allPositions.reduce((s,p)=>s+p.pnl,0);
   const pnlSign  = pnl>=0?'+':'';
   const pnlColor = pnl>=0?'var(--green)':'var(--red)';
@@ -1241,9 +1249,38 @@ function renderBotsList() {
   container.innerHTML = exchanges.map(exc => {
     const cfg = EXC[exc.id] || {};
     const displayName = exc.name || cfg.name || exc.id;
-    const activeBots = window._activeBots || 0;
-    const totalBots = window._botCount || 0;
-    const botRunning = activeBots > 0;
+    const excBots = bots.filter(b => b.exchange_name === exc.name || b.exchange === exc.id);
+    const activeBots = excBots.filter(b => b.trading_on && b.status === 'open').length;
+    const totalBots = excBots.length;
+
+    const botRows = excBots.length > 0 ? excBots.map(bot => {
+      const botRunning = bot.trading_on && bot.status === 'open';
+      const botPnl = allPositions.filter(p=>p.bot_id===bot.id).reduce((s,p)=>s+p.pnl,0);
+      const botPnlSign = botPnl>=0?'+':'';
+      const botPnlColor = botPnl>=0?'var(--green)':'var(--red)';
+      const botTrades = allPositions.filter(p=>p.bot_id===bot.id).length;
+      return `
+        <div class="bot-row" onclick="openBotDetail('${bot.name}',${botRunning})">
+          <div class="bot-row-left">
+            <div class="bot-indicator ${botRunning?'live':'off'}"></div>
+            <div class="bot-row-info">
+              <div class="bot-row-name">${bot.name}</div>
+              <div class="bot-row-meta">
+                <div class="bot-meta">Trades: <span>${botTrades}</span></div>
+                <div class="bot-meta">P&L: <span style="color:${botPnlColor}">${botPnlSign}$${Math.abs(botPnl).toFixed(2)}</span></div>
+                <div class="bot-meta">Mode: <span>${bot.is_paper?'Paper':'Live'}</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bot-row-right">
+            ${botRunning
+              ? `<button class="btn-xs btn-xs-stop" onclick="stopBotInList(event,${bot.id})">⬛ Stop</button>`
+              : `<button class="btn-xs btn-xs-start" onclick="startBotInList(event,${bot.id})">▶ Start</button>`}
+            <span class="bot-arrow">›</span>
+          </div>
+        </div>`;
+    }).join('') : `<div class="bot-row"><div class="bot-row-left"><div class="bot-row-info"><div class="bot-row-name" style="color:var(--muted)">No bots yet</div></div></div></div>`;
+
     return `
     <div class="bot-section">
       <div class="bot-section-hdr">
@@ -1251,36 +1288,16 @@ function renderBotsList() {
           <div class="bot-exc-logo" style="background:${cfg.bg||'#1E1E35'};color:${cfg.text||'#E2E8F0'}">${cfg.logo||'?'}</div>
           <div>
             <div class="bot-exc-name">${displayName}</div>
-            <div class="bot-exc-sub">$${allPositions.reduce((s,p)=>s+p.total_invested,0).toFixed(2)} total</div>
+            <div class="bot-exc-sub">$${allPositions.filter(p=>excBots.some(b=>b.id===p.bot_id)).reduce((s,p)=>s+p.total_invested,0).toFixed(2)} total</div>
           </div>
         </div>
         <div class="bot-exc-stats">
           <div><div class="bot-exc-stat-lbl">Bots</div><div class="bot-exc-stat-val"><span style="color:var(--green)">${activeBots}</span>/${totalBots}</div></div>
-          <div><div class="bot-exc-stat-lbl">Trades</div><div class="bot-exc-stat-val">${allPositions.length}</div></div>
+          <div><div class="bot-exc-stat-lbl">Trades</div><div class="bot-exc-stat-val">${allPositions.filter(p=>excBots.some(b=>b.id===p.bot_id)).length}</div></div>
         </div>
       </div>
-      <div class="bot-cards-list">
-        <div class="bot-row" onclick="openBotDetail('DCA Long — All Coins',${botRunning})">
-          <div class="bot-row-left">
-            <div class="bot-indicator ${botRunning?'live':'off'}"></div>
-            <div class="bot-row-info">
-              <div class="bot-row-name">DCA Long — All Coins</div>
-              <div class="bot-row-meta">
-                <div class="bot-meta">Trades: <span>${allPositions.length}</span></div>
-                <div class="bot-meta">P&L: <span style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</span></div>
-                <div class="bot-meta">Mode: <span>Paper</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="bot-row-right">
-            ${botRunning
-              ? `<button class="btn-xs btn-xs-stop" onclick="stopBotInList(event)">⬛ Stop</button>`
-              : `<button class="btn-xs btn-xs-start" onclick="startBotInList(event)">▶ Start</button>`}
-            <span class="bot-arrow">›</span>
-          </div>
-        </div>
-      </div>
-      <div class="add-bot-row" onclick="alert('Bot creation wizard — Phase 5')">
+      <div class="bot-cards-list">${botRows}</div>
+      <div class="add-bot-row" onclick="alert('Bot creation wizard coming soon!')">
         <span style="color:var(--accent);font-size:14px">+</span>
         <span class="add-bot-text">Create New Bot on ${displayName}</span>
       </div>
