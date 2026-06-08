@@ -139,8 +139,12 @@ def execute_buy(exchange_obj, coin, amount_usdt,
     symbol = f'{coin}/USDT'
 
     if PAPER_MODE:
-        # Paper trade
+        # Paper trade - search any exchange cache
         price = get_price(coin, '', r, {})
+        if not price:
+            keys = r.keys(f'price:*:{coin}/USDT')
+            if keys:
+                price = float(r.get(keys[0]))
         if not price:
             print(f'No price for {coin} · skipping paper trade')
             return None
@@ -357,7 +361,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 bot_id, user_id, exchange_id, None,
                 coin, direction, price, quantity,
                 base_order, price, category,
-                PAPER_MODE, base_coin,
+                PAPER_MODE, base_coin, 'USDT',
                 sequence_number, coin_trade_number,
                 method
             )
