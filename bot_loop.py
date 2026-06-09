@@ -613,8 +613,15 @@ def run_cycle(r):
                             f'{coin} ST flag detected · position closed',
                             bot_id=pos[1], position_id=pos[0]
                         )
-        # TP check handled by WebSocket realtime callback
-        # Skipped in main cycle for performance
+            # TP check (backup in main cycle · WebSocket also checks)
+            bot_obj = next((b for b in bots if b[0] == pos[1]), None)
+            if bot_obj and check_tp(pos, current_price, bot_obj):
+                result = execute_sell(
+                    exchange_obj, coin, float(pos[8] or 0),
+                    pos[0], pos[1], pos[2], exc_id, 'tp', r, tickers
+                )
+                if result:
+                    positions_to_close.append((pos, result, 'tp'))
 
         # Close positions and handle fees
         for pos, result, reason in positions_to_close:
