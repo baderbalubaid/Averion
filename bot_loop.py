@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
 import entry_signals as es
-import indicators as ind
+import indicators
 _ohlcv_cache = {}
 import telegram as tg
 
@@ -364,8 +364,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 params = {}
             # Use cached OHLCV data (fetched once per coin per cycle)
             if coin not in _ohlcv_cache:
-                import indicators as ind
-                _ohlcv_cache[coin] = ind.to_arrays(db.get_ohlcv(coin, 'mexc', limit=200))
+                _ohlcv_cache[coin] = indicators.to_arrays(db.get_ohlcv(coin, 'mexc', limit=200))
             btc_data = _ohlcv_cache.get('BTC')
             signal = es.check_entry_signal(method, params, coin, 'mexc', btc_data)
             if not signal:
@@ -448,7 +447,7 @@ def run_cycle(r):
     global _ohlcv_cache
     _ohlcv_cache = {}
     btc_rows = db.get_ohlcv('BTC', 'mexc', limit=200)
-    _ohlcv_cache['BTC'] = ind.to_arrays(btc_rows) if btc_rows else None
+    _ohlcv_cache['BTC'] = indicators.to_arrays(btc_rows) if btc_rows else None
 
     # Get all active bots grouped by exchange
     active_bots = db.get_active_bots()
