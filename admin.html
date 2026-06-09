@@ -1038,7 +1038,7 @@
                 <td>${p.dca_count}</td>
                 <td style="color:${pnlColor}">${p.current_price ? pnlSign+p.pnl_pct+'%' : '—'}</td>
                 <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
-                <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
+                <td style="font-size:11px;color:var(--muted)">${fmtLocal(p.opened_at)}</td>
             </tr>`;
         }).join('');
     }
@@ -1090,7 +1090,7 @@
                     <td>${t.dca_count}</td>
                     <td style="color:${pnlColor}">${pnlSign}${t.pnl_pct}%</td>
                     <td style="color:${pnlColor}">${pnlSign}$${Math.abs(t.pnl).toFixed(2)}</td>
-                    <td style="font-size:11px;color:var(--muted)">${(t.closed_at||'').substring(0,16)} · ${reason}</td>
+                    <td style="font-size:11px;color:var(--muted)">${fmtLocal(t.closed_at)} · ${reason}</td>
                 </tr>`;
             }).join('');
         } catch(e) {
