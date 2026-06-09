@@ -158,7 +158,7 @@ def get_user_bots(user_id):
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
             WHERE b.user_id = %s AND b.status != 'deleted'
-            AND b.name NOT SIMILAR TO '(E[0-9]%|BM-%|E1[0-9]%|E2[0-9]%|E18b%|BM_%)'
+            AND (b.is_research = FALSE OR b.is_research IS NULL)
             ORDER BY b.created_at ASC
         """, (user_id,))
         return cur.fetchall()
@@ -185,8 +185,7 @@ def get_research_bots():
                    e.exchange, e.custom_name
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
-            WHERE (b.name SIMILAR TO '(E[0-9]%|BM-%|E1[0-9]%|E2[0-9]%|E18b%)'
-                   OR b.method SIMILAR TO '(E[0-9]%|BM_%)')
+            WHERE (b.is_research = TRUE)
             AND b.status != 'deleted'
             ORDER BY b.method, b.name ASC
         """)
