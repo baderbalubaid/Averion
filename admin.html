@@ -757,6 +757,8 @@
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champion Score</div>
             <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
+            <div class="sub-tab" id="st-r-bots" onclick="switchSubTab('r-bots')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Bots</div>
         </div>
         <div id="sub-r-trades">
             <div class="card">
@@ -938,6 +940,72 @@
     if (!TOKEN) window.location.href = '/login';
 
     // ── TABS ─────────────────────────────────────
+    async function loadResearchBots() {
+        try {
+            const res = await fetch(`${API}/admin/research/bots`, {headers: authHeaders()});
+            const bots = await res.json();
+            const tbody = document.getElementById('research-bots-tbody');
+            document.getElementById('research-bot-count').textContent = `${bots.length} bots`;
+            window._researchBots = bots;
+            renderResearchBotsTable(bots);
+        } catch(e) { console.error(e); }
+    }
+
+    function renderResearchBotsTable(bots) {
+        const tbody = document.getElementById('research-bots-tbody');
+        if (!bots.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No research bots found</td></tr>';
+            return;
+        }
+        tbody.innerHTML = bots.map(b => {
+            const params = typeof b.bot_params === 'string' ? JSON.parse(b.bot_params || '{}') : (b.bot_params || {});
+            const paramStr = Object.entries(params).map(([k,v]) => `${k}:${v}`).join(' · ');
+            const status = b.trading_on
+                ? '<span class="badge badge-green">Active</span>'
+                : '<span class="badge badge-red">Disabled</span>';
+            return `<tr>
+                <td style="font-weight:500">${b.name}</td>
+                <td><span class="badge badge-blue">${b.method}</span></td>
+                <td style="font-size:11px;color:var(--muted);max-width:200px">${paramStr}</td>
+                <td>
+                    <input type="number" min="0" max="100" value="${b.trades_per_bot||0}"
+                           style="width:60px;padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center"
+                           onchange="updateBotTrades(${b.id}, this.value)"/>
+                </td>
+                <td>${status}</td>
+                <td>
+                    <button onclick="toggleResearchBot(${b.id}, ${!b.trading_on})"
+                            style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">
+                        ${b.trading_on ? 'Disable' : 'Enable'}
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function filterResearchBots() {
+        const q = document.getElementById('bot-method-filter').value.toLowerCase();
+        const filtered = (window._researchBots||[]).filter(b =>
+            b.method.toLowerCase().includes(q) || b.name.toLowerCase().includes(q));
+        document.getElementById('research-bot-count').textContent = `${filtered.length} bots`;
+        renderResearchBotsTable(filtered);
+    }
+
+    async function updateBotTrades(botId, value) {
+        await fetch(`${API}/bots/${botId}/toggle`, {
+            method: 'POST', headers: {...authHeaders(), 'Content-Type':'application/json'},
+            body: JSON.stringify({trades_per_bot: parseInt(value)})
+        });
+    }
+
+    async function toggleResearchBot(botId, enable) {
+        await fetch(`${API}/bots/${botId}/toggle`, {
+            method: 'POST', headers: {...authHeaders(), 'Content-Type':'application/json'},
+            body: JSON.stringify({trading_on: enable})
+        });
+        await loadResearchBots();
+    }
+
     function switchSubTab(name) {
         // Update sub-tab styles
         document.querySelectorAll('.sub-tab').forEach(t => {
@@ -949,8 +1017,9 @@
             active.style.borderBottomColor = 'var(--primary)';
             active.style.color = 'var(--text)';
         }
+        if (name === 'r-bots') loadResearchBots();
         // Show/hide sub-content
-        ['r-trades','r-history','r-champion','r-categories'].forEach(s => {
+        ['r-trades','r-history','r-champion','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
             if (el) el.style.display = s === name ? 'block' : 'none';
         });
