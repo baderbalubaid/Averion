@@ -451,7 +451,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
             price = result['price']
             quantity = result['quantity']
 
-            # Auto-expand disabled temporarily
+
             # Open position in DB
             pos_id = db.open_position(
                 bot_id, user_id, exchange_id, None,
