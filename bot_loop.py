@@ -632,6 +632,24 @@ def run_cycle(r):
                     print(f'💰 TP closed: {pos[4]} profit: ${gross_profit:.2f} fee: ${fee_amount:.2f}')
                     tg.notify_trade_closed(pos[2], pos[4], pos[5], float(pos[7] or 0), result.get('price', 0), gross_profit, fee_amount, pos[10], 'tp', PAPER_MODE)
 
+                    # Auto-expand: profitable close → +1 slot for research bots
+                    bot_obj = next((b for b in bots if b[0] == pos[1]), None)
+                    if bot_obj and bot_obj[27] if len(bot_obj) > 27 else False:
+                        with db.get_db() as conn:
+                            cur = conn.cursor()
+                            cur.execute("""
+                                UPDATE bots SET trades_per_bot = LEAST(trades_per_bot + 1, 200)
+                                WHERE id = %s AND is_research = TRUE
+                            """, (pos[1],))
+                else:
+                    # Loss close → -1 slot for research bots (min 1)
+                    with db.get_db() as conn:
+                        cur = conn.cursor()
+                        cur.execute("""
+                            UPDATE bots SET trades_per_bot = GREATEST(trades_per_bot - 1, 1)
+                            WHERE id = %s AND is_research = TRUE
+                        """, (pos[1],))
+
                 # Promote gate reference
                 db.promote_gate_reference(pos[1], pos[4])
 
