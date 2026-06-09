@@ -1046,9 +1046,6 @@
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions (API returned 0)</td></tr>';
                 return;
             }
-                </tr>`;
-            }).join('');
-        } catch(e) {
             tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
         }
     }
