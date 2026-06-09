@@ -620,9 +620,7 @@ def run_cycle(r):
                             f'{coin} ST flag detected · position closed',
                             bot_id=pos[1], position_id=pos[0]
                         )
-            # TP check (backup in main cycle · only for armed positions)
-            if not pos[12]:  # skip if not armed
-                continue
+            # TP check - runs for ALL open positions (arm + trail)
             bot_obj = next((b for b in bots if b[0] == pos[1]), None)
             if bot_obj and check_tp(pos, current_price, bot_obj):
                 result = execute_sell(
