@@ -364,6 +364,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 params = {}
             # Use cached OHLCV data (fetched once per coin per cycle)
             if coin not in _ohlcv_cache:
+                import indicators as ind
                 _ohlcv_cache[coin] = ind.to_arrays(db.get_ohlcv(coin, 'mexc', limit=200))
             btc_data = _ohlcv_cache.get('BTC')
             signal = es.check_entry_signal(method, params, coin, 'mexc', btc_data)
