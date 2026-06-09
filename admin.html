@@ -517,12 +517,10 @@
 
 <!-- TABS -->
 <div class="tabs">
-    <div class="tab active" onclick="switchTab('health')">
-        Health & Control
-    </div>
+    <div class="tab active" onclick="switchTab('health')">Health & Control</div>
+    <div class="tab" onclick="switchTab('research')">Research & Trades</div>
     <div class="tab" onclick="switchTab('users')">Users</div>
     <div class="tab" onclick="switchTab('stats')">Platform Stats</div>
-    <div class="tab" onclick="switchTab('categories')">Coin Categories</div>
     <div class="tab" onclick="switchTab('controls')">Controls</div>
 </div>
 
@@ -748,72 +746,6 @@
     </div>
 
     <!-- ── TAB 4: COIN CATEGORIES ── -->
-    <div class="tab-content" id="tab-categories">
-        <div class="card">
-            <div class="card-title">Market Cap Categories</div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Market Cap Range</th>
-                            <th>DCA %</th>
-                            <th>Spacing Mult</th>
-                            <th>Size Mult</th>
-                            <th>TP %</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge badge-blue">Mega Cap</span></td>
-                            <td>> $100B</td>
-                            <td>2%</td>
-                            <td>1.2x</td>
-                            <td>1.2x</td>
-                            <td>2%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-green">Large Cap</span></td>
-                            <td>$10B - $100B</td>
-                            <td>4%</td>
-                            <td>1.3x</td>
-                            <td>1.3x</td>
-                            <td>3%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge" style="background:rgba(255,165,0,0.15);color:var(--amber)">Mid Cap</span></td>
-                            <td>$1B - $10B</td>
-                            <td>6%</td>
-                            <td>1.4x</td>
-                            <td>1.4x</td>
-                            <td>4%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-amber">Small Cap</span></td>
-                            <td>$100M - $1B</td>
-                            <td>8%</td>
-                            <td>1.5x</td>
-                            <td>1.5x</td>
-                            <td>5%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-red">Micro Cap</span></td>
-                            <td>< $100M</td>
-                            <td>10%</td>
-                            <td>1.6x</td>
-                            <td>1.6x</td>
-                            <td>6%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <p style="color:var(--muted);font-size:12px;margin-top:12px">
-                ℹ️ Category parameters are set by the Smart DCA engine.
-                Updated daily at 04:30 after classification.
-            </p>
-        </div>
-    </div>
-
     <!-- ── TAB 5: CONTROLS ── -->
     <div class="tab-content" id="tab-controls">
         <div class="grid-2">
@@ -948,6 +880,24 @@
     if (!TOKEN) window.location.href = '/login';
 
     // ── TABS ─────────────────────────────────────
+    function switchSubTab(name) {
+        // Update sub-tab styles
+        document.querySelectorAll('.sub-tab').forEach(t => {
+            t.style.borderBottomColor = 'transparent';
+            t.style.color = 'var(--muted)';
+        });
+        const active = document.getElementById('st-' + name);
+        if (active) {
+            active.style.borderBottomColor = 'var(--primary)';
+            active.style.color = 'var(--text)';
+        }
+        // Show/hide sub-content
+        ['r-trades','r-history','r-champion','r-categories'].forEach(s => {
+            const el = document.getElementById('sub-' + s);
+            if (el) el.style.display = s === name ? 'block' : 'none';
+        });
+    }
+
     function switchTab(name) {
         document.querySelectorAll('.tab').forEach((t, i) => {
             t.classList.toggle('active',
