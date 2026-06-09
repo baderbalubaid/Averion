@@ -482,6 +482,19 @@ def get_balance_history(exchange_id: int = 1, days: int = 30,
 # ═══════════════════════════════
 # ADMIN ENDPOINTS
 # ═══════════════════════════════
+@app.get('/admin/research/bots')
+def get_research_bots_admin(payload: dict = Depends(verify_token)):
+    bots = db.get_research_bots()
+    return [{'id': b[0], 'name': b[1], 'method': b[2],
+              'direction': b[3], 'trading_on': b[4],
+              'trades_per_bot': b[5], 'bot_params': b[6],
+              'dca_percent': str(b[7]),
+              'take_profit_percent': str(b[8]),
+              'base_order': str(b[9]),
+              'status': b[10],
+              'exchange': b[11],
+              'exchange_name': b[12]} for b in bots]
+
 @app.get('/admin/stats')
 def admin_stats(payload: dict = Depends(require_admin)):
     stats = db.get_platform_stats()
@@ -1144,6 +1157,9 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
