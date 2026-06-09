@@ -996,14 +996,16 @@
             tbody.innerHTML = positions.map(p => {
                 const pnl = '—';
                 const days = Math.floor((Date.now() - new Date(p.opened_at+'Z')) / 86400000);
+                const pnlColor = p.pnl_pct >= 0 ? 'var(--green)' : 'var(--red)';
+                const pnlSign = p.pnl_pct >= 0 ? '+' : '';
                 return `<tr>
                     <td style="font-size:12px">${p.bot_name}</td>
                     <td><span class="badge badge-blue">${p.method}</span></td>
                     <td><b>${p.coin}</b></td>
-                    <td>$${parseFloat(p.avg_cost).toPrecision(4)}</td>
-                    <td>—</td>
+                    <td>${fmtPrice(p.avg_cost)}</td>
+                    <td>${fmtPrice(p.current_price)}</td>
                     <td>${p.dca_count}</td>
-                    <td>—</td>
+                    <td style="color:${pnlColor}">${pnlSign}${p.pnl_pct}%</td>
                     <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
                     <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
                 </tr>`;
