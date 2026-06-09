@@ -544,6 +544,10 @@
                 <div class="stat-value green" id="trades-today">—</div>
             </div>
             <div class="stat-card">
+                <div class="stat-label">Closed Today</div>
+                <div class="stat-value" id="closed-today">—</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-label">Active Bots</div>
                 <div class="stat-value blue" id="active-bots">—</div>
             </div>
@@ -1290,6 +1294,7 @@
 
             document.getElementById('trades-today').textContent =
                 data.trades_today || 0;
+            document.getElementById('closed-today').textContent = data.closed_today || 0;
             document.getElementById('active-bots').textContent =
                 data.active_bots || 0;
             document.getElementById('open-positions').textContent =
@@ -1494,6 +1499,7 @@
             document.getElementById('stat-owner').textContent =
                 `$${(data.owner_wallet || 0).toFixed(2)}`;
             document.getElementById('stat-trades').textContent = data.trades_today || 0;
+            document.getElementById('closed-today').textContent = data.closed_today || 0;
 
         } catch(e) { console.error(e); }
 
