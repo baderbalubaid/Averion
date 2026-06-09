@@ -16,15 +16,16 @@ def get_ohlcv_data(coin, exchange='mexc', limit=200):
     return ind.to_arrays(rows)
 
 
-def check_entry_signal(method, params, coin, exchange='mexc', btc_data=None):
+def check_entry_signal(method, params, coin, exchange='mexc', btc_data=None, ohlcv_data=None):
     """
     Main entry point. Returns True if entry signal fires.
     method: 'E1' through 'E26' or 'E18b'
     params: dict of parameters from bot_params JSON field
     coin: e.g. 'BTC'
     btc_data: pre-fetched BTC data dict (for E23 relative strength)
+    ohlcv_data: pre-fetched OHLCV arrays (skip DB fetch if provided)
     """
-    d = get_ohlcv_data(coin, exchange)
+    d = ohlcv_data if ohlcv_data is not None else get_ohlcv_data(coin, exchange)
     if d is None:
         return False
 
