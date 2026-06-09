@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
 import entry_signals as es
+import indicators as ind
 _ohlcv_cache = {}
 import telegram as tg
 
@@ -445,7 +446,6 @@ def run_cycle(r):
     # Pre-fetch BTC data and init OHLCV cache for this cycle
     global _ohlcv_cache
     _ohlcv_cache = {}
-    import indicators as ind
     btc_rows = db.get_ohlcv('BTC', 'mexc', limit=200)
     _ohlcv_cache['BTC'] = ind.to_arrays(btc_rows) if btc_rows else None
 
