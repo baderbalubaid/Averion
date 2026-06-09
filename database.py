@@ -347,7 +347,7 @@ def update_peak_price(position_id, peak_price):
             WHERE id = %s
         """, (peak_price, position_id))
 
-def close_position(position_id, close_reason):
+def close_position(position_id, close_reason, sell_price=None, usdt_received=None):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -355,9 +355,11 @@ def close_position(position_id, close_reason):
                 status = 'closed',
                 closed_at = NOW(),
                 close_reason = %s,
-                is_gate_reference = FALSE
+                is_gate_reference = FALSE,
+                avg_sell_price = COALESCE(%s, avg_sell_price),
+                total_sold_usdt = COALESCE(%s, total_sold_usdt)
             WHERE id = %s
-        """, (close_reason, position_id))
+        """, (close_reason, sell_price, usdt_received, position_id))
 
 def promote_gate_reference(bot_id, coin):
     with get_db() as conn:

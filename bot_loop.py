@@ -531,7 +531,9 @@ def run_cycle(r):
 
         # Close positions and handle fees
         for pos, result, reason in positions_to_close:
-            db.close_position(pos[0], reason)
+            db.close_position(pos[0], reason,
+                sell_price=result.get('price'),
+                usdt_received=result.get('usdt_received'))
 
             if reason == 'tp':
                 # Calculate profit and fee
