@@ -747,6 +747,64 @@
 
     <!-- ── TAB 4: COIN CATEGORIES ── -->
     <!-- ── TAB 5: CONTROLS ── -->
+    <div class="tab-content" id="tab-research">
+        <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
+            <div class="sub-tab active" id="st-r-trades" onclick="switchSubTab('r-trades')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid var(--primary);color:var(--text)">Trades</div>
+            <div class="sub-tab" id="st-r-history" onclick="switchSubTab('r-history')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">History</div>
+            <div class="sub-tab" id="st-r-champion" onclick="switchSubTab('r-champion')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champion Score</div>
+            <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
+        </div>
+        <div id="sub-r-trades">
+            <div class="card">
+                <div class="card-title">Research Bot Open Positions</div>
+                <p style="color:var(--muted);font-size:13px">261 research bots · trading_on=FALSE · enable to start collecting data</p>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Bot</th><th>Method</th><th>Coin</th><th>Avg Cost</th><th>Current</th><th>DCA#</th><th>P&L%</th><th>Invested</th><th>Opened</th></tr></thead>
+                    <tbody id="research-trades-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No research trades yet</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+        <div id="sub-r-history" style="display:none">
+            <div class="card">
+                <div class="card-title">Research Trade History</div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Bot</th><th>Method</th><th>Coin</th><th>Entry</th><th>Exit</th><th>DCA#</th><th>P&L%</th><th>P&L$</th><th>Closed</th></tr></thead>
+                    <tbody id="research-history-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No closed research trades yet</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+        <div id="sub-r-champion" style="display:none">
+            <div class="card">
+                <div class="card-title">🏆 RARS Champion Leaderboard</div>
+                <p style="color:var(--muted);font-size:13px;margin-bottom:12px">RARS = 35% Cap Efficiency · 30% Drawdown · 20% Win Rate · 15% Profit Factor</p>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Rank</th><th>Method</th><th>RARS Score</th><th>Cap Efficiency</th><th>Drawdown</th><th>Win Rate</th><th>Profit Factor</th><th>Trades</th></tr></thead>
+                    <tbody id="champion-tbody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Research bots not started · scores appear after first trades</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+        <div id="sub-r-categories" style="display:none">
+            <div class="card">
+                <div class="card-title">Market Cap Categories</div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Category</th><th>Market Cap Range</th><th>DCA %</th><th>Spacing Mult</th><th>Size Mult</th><th>TP %</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="badge badge-blue">Mega Cap</span></td><td>&gt; $100B</td><td>2%</td><td>1.2x</td><td>1.2x</td><td>2%</td></tr>
+                        <tr><td><span class="badge badge-green">Large Cap</span></td><td>$10B–$100B</td><td>4%</td><td>1.3x</td><td>1.3x</td><td>3%</td></tr>
+                        <tr><td><span class="badge" style="background:rgba(255,165,0,0.15);color:var(--amber)">Mid Cap</span></td><td>$1B–$10B</td><td>6%</td><td>1.4x</td><td>1.4x</td><td>4%</td></tr>
+                        <tr><td><span class="badge badge-amber">Small Cap</span></td><td>$100M–$1B</td><td>8%</td><td>1.5x</td><td>1.5x</td><td>5%</td></tr>
+                        <tr><td><span class="badge badge-red">Micro Cap</span></td><td>&lt; $100M</td><td>10%</td><td>1.6x</td><td>1.6x</td><td>6%</td></tr>
+                    </tbody>
+                </table></div>
+                <p style="color:var(--muted);font-size:12px;margin-top:12px">ℹ️ Updated daily at 04:30 after classification.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="tab-content" id="tab-controls">
         <div class="grid-2">
             <div class="card">
