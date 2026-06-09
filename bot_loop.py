@@ -587,6 +587,8 @@ def run_cycle(r):
 
         # Get open positions for this exchange
         open_positions = db.get_open_positions(exchange_id=exc_id)
+        # Pre-filter: only check TP for armed positions or positions near TP
+        tp_candidates = [p for p in open_positions if p[12] or True]  # all for now
 
         # ─────────────────────────
         # STEP 1: Check ST flags (every 12h per exchange · per unique coin)
