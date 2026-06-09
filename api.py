@@ -511,9 +511,14 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             avg_cost = float(r[4] or 0)
             quantity = float(r[11] or 0)
             keys = rc.keys(f'price:*:{coin}/USDT')
-            current_price = float(rc.get(keys[0])) if keys else avg_cost
-            pnl = (current_price - avg_cost) * quantity if avg_cost else 0
-            pnl_pct = ((current_price - avg_cost) / avg_cost * 100) if avg_cost else 0
+            if keys:
+                current_price = float(rc.get(keys[0]))
+                pnl = (current_price - avg_cost) * quantity if avg_cost else 0
+                pnl_pct = round((current_price - avg_cost) / avg_cost * 100, 2) if avg_cost else 0
+            else:
+                current_price = None
+                pnl = 0
+                pnl_pct = 0
             result.append({
                 'id': r[0], 'bot_name': r[1], 'method': r[2],
                 'coin': coin, 'avg_cost': str(r[4]),
@@ -523,6 +528,41 @@ def get_research_positions(payload: dict = Depends(verify_token)):
                 'current_price': current_price,
                 'pnl': round(pnl, 4),
                 'pnl_pct': round(pnl_pct, 2)
+            })
+        return result
+
+@app.get('/admin/research/history')
+def get_research_history(payload: dict = Depends(verify_token)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, b.name, b.method, p.coin,
+                   p.avg_cost, p.total_invested, p.dca_count,
+                   p.opened_at, p.closed_at, p.close_reason,
+                   p.avg_sell_price, p.total_sold_usdt
+            FROM positions p
+            JOIN bots b ON b.id = p.bot_id
+            WHERE p.is_research = TRUE
+            AND p.status = 'closed'
+            ORDER BY p.closed_at DESC
+            LIMIT 200
+        """)
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            avg_cost = float(r[4] or 0)
+            avg_sell = float(r[10] or 0)
+            invested = float(r[5] or 0)
+            sold = float(r[11] or 0)
+            pnl = sold - invested if sold else 0
+            pnl_pct = (pnl / invested * 100) if invested else 0
+            result.append({
+                'id': r[0], 'bot_name': r[1], 'method': r[2],
+                'coin': r[3], 'avg_cost': str(r[4]),
+                'total_invested': str(r[5]), 'dca_count': r[6],
+                'opened_at': str(r[7]), 'closed_at': str(r[8]),
+                'close_reason': r[9], 'avg_sell_price': str(r[10] or 0),
+                'pnl': round(pnl, 4), 'pnl_pct': round(pnl_pct, 2)
             })
         return result
 
@@ -1264,6 +1304,21 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
