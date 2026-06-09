@@ -1,6 +1,6 @@
 # Averion Research Bots — All Methods & Parameter Variants
 
-> Auto-generated from live DB · All bots: TP=5% · DCA=7% · Base=$100
+> All bots: TP=5% · DCA=7% · Base=$100
 
 ## Summary
 
@@ -38,7 +38,7 @@
 | **E8** | VWAP + Swing Structure | 9 |
 | **E9** | Consecutive Red Candles + Volume | 9 |
 
-**Total: 261 bots across 31 methods**
+**Total: 261 bots · 31 methods**
 
 ---
 
