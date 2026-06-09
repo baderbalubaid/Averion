@@ -601,6 +601,7 @@ def admin_stats(payload: dict = Depends(require_admin)):
         'total_reserve': float(stats[5] or 0),
         'owner_balance': float(stats[6] or 0),
         'trades_today': stats[7],
+        'closed_today': stats[8],
         'bot_status': r.get('bot:status') or 'unknown',
         'cycle_time': r.get('bot:cycle_time') or '0',
         'last_cycle': r.get('bot:last_cycle') or 'never'
@@ -1370,6 +1371,15 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)

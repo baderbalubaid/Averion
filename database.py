@@ -971,7 +971,8 @@ def get_platform_stats():
                 (SELECT COUNT(*) FROM positions WHERE status='open' AND is_paper=TRUE) as paper_positions,
                 (SELECT COALESCE(SUM(balance_usdt),0) FROM reserve_wallets) as total_reserve,
                 (SELECT accumulated_fees_usdt FROM owner_balance LIMIT 1) as owner_balance,
-                (SELECT COUNT(*) FROM trades WHERE DATE(timestamp)=CURRENT_DATE) as trades_today
+                (SELECT COUNT(*) FROM trades WHERE DATE(timestamp)=CURRENT_DATE) as trades_today,
+                (SELECT COUNT(*) FROM positions WHERE status='closed' AND DATE(closed_at)=CURRENT_DATE) as closed_today
         """)
         return cur.fetchone()
 
