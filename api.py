@@ -406,6 +406,7 @@ def get_bots(payload: dict = Depends(verify_token)):
 class BotToggle(BaseModel):
     trading_on: Optional[bool] = None
     dca_on: Optional[bool] = None
+    trades_per_bot: Optional[int] = None
 
 @app.post('/bots/{bot_id}/toggle')
 def toggle_bot(bot_id: int, toggle: BotToggle,
@@ -422,6 +423,11 @@ def toggle_bot(bot_id: int, toggle: BotToggle,
                 UPDATE bots SET dca_on = %s
                 WHERE id = %s AND user_id = %s
             """, (toggle.dca_on, bot_id, payload['user_id']))
+        if toggle.trades_per_bot is not None:
+            cur.execute("""
+                UPDATE bots SET trades_per_bot = %s
+                WHERE id = %s AND user_id = %s
+            """, (toggle.trades_per_bot, bot_id, payload['user_id']))
     return {'message': 'Bot updated'}
 
 # ═══════════════════════════════
@@ -1157,6 +1163,39 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
