@@ -961,14 +961,23 @@
 
     // ── TABS ─────────────────────────────────────
     async function loadResearchBots() {
+        const tbody = document.getElementById('research-bots-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
         try {
             const res = await fetch(`${API}/admin/research/bots`, {headers: authHeaders()});
+            if (!res.ok) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px">Error ${res.status}: ${await res.text()}</td></tr>`;
+                return;
+            }
             const bots = await res.json();
-            const tbody = document.getElementById('research-bots-tbody');
-            document.getElementById('research-bot-count').textContent = `${bots.length} bots`;
+            const countEl = document.getElementById('research-bot-count');
+            if (countEl) countEl.textContent = `${bots.length} bots`;
             window._researchBots = bots;
             renderResearchBotsTable(bots);
-        } catch(e) { console.error(e); }
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
     }
 
     function renderResearchBotsTable(bots) {
