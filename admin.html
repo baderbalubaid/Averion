@@ -980,7 +980,7 @@
 
     async function loadResearchTrades() {
         const tbody = document.getElementById('research-trades-tbody');
-        if (!tbody) return;
+        if (!tbody) { setTimeout(loadResearchTrades, 500); return; }
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
         try {
             const res = await fetch(`${API}/admin/research/positions`, {headers: authHeaders()});
