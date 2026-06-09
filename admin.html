@@ -749,18 +749,18 @@
     <!-- ── TAB 5: CONTROLS ── -->
     <div class="tab-content" id="tab-research">
         <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
-            <div class="sub-tab active" id="st-r-trades" onclick="switchSubTab('r-trades')"
-                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid var(--primary);color:var(--text)">Trades</div>
+            <div class="sub-tab active" id="st-r-bots" onclick="switchSubTab('r-bots')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid var(--primary);color:var(--text)">Bots</div>
+            <div class="sub-tab" id="st-r-trades" onclick="switchSubTab('r-trades')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Trades</div>
             <div class="sub-tab" id="st-r-history" onclick="switchSubTab('r-history')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">History</div>
             <div class="sub-tab" id="st-r-champion" onclick="switchSubTab('r-champion')"
-                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champion Score</div>
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champions</div>
             <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
-            <div class="sub-tab" id="st-r-bots" onclick="switchSubTab('r-bots')"
-                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Bots</div>
         </div>
-        <div id="sub-r-trades">
+        <div id="sub-r-trades" style="display:none">
             <div class="card">
                 <div class="card-title">Research Bot Open Positions</div>
                 <p style="color:var(--muted);font-size:13px">261 research bots · trading_on=FALSE · enable to start collecting data</p>
@@ -805,7 +805,7 @@
                 <p style="color:var(--muted);font-size:12px;margin-top:12px">ℹ️ Updated daily at 04:30 after classification.</p>
             </div>
         </div>
-        <div id="sub-r-bots" style="display:none">
+        <div id="sub-r-bots">
             <div class="card">
                 <div class="card-title">Research Bots · 261 total</div>
                 <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
@@ -1046,6 +1046,7 @@
     }
 
     function switchTab(name) {
+        if (name === 'research') loadResearchBots();
         document.querySelectorAll('.tab').forEach((t, i) => {
             t.classList.toggle('active',
                 t.textContent.toLowerCase().includes(name) ||
