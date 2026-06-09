@@ -488,6 +488,29 @@ def get_balance_history(exchange_id: int = 1, days: int = 30,
 # ═══════════════════════════════
 # ADMIN ENDPOINTS
 # ═══════════════════════════════
+@app.get('/admin/research/positions')
+def get_research_positions(payload: dict = Depends(verify_token)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, b.name, b.method, p.coin,
+                   p.avg_cost, p.total_invested, p.dca_count,
+                   p.tp_armed, p.opened_at, p.status,
+                   p.entry_method
+            FROM positions p
+            JOIN bots b ON b.id = p.bot_id
+            WHERE p.is_research = TRUE
+            AND p.status = 'open'
+            ORDER BY p.opened_at DESC
+        """)
+        rows = cur.fetchall()
+        return [{'id': r[0], 'bot_name': r[1], 'method': r[2],
+                 'coin': r[3], 'avg_cost': str(r[4]),
+                 'total_invested': str(r[5]), 'dca_count': r[6],
+                 'tp_armed': r[7], 'opened_at': str(r[8]),
+                 'status': r[9], 'entry_method': r[10]}
+                for r in rows]
+
 @app.get('/admin/research/bots')
 def get_research_bots_admin(payload: dict = Depends(verify_token)):
     bots = db.get_research_bots()
@@ -1193,6 +1216,9 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
