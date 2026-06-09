@@ -504,6 +504,11 @@ def check_gate_conditions(bot, coin, open_positions):
 def run_cycle(r):
     cycle_start = time.time()
     print(f'\n--- Cycle {datetime.utcnow()} ---')
+    # Mark bot as running at START of cycle
+    try:
+        get_redis().setex('bot:status', 600, 'running')
+        get_redis().setex('bot:last_cycle', 600, str(datetime.utcnow()))
+    except: pass
 
     # Pre-fetch BTC data and init OHLCV cache for this cycle
     global _ohlcv_cache
@@ -731,9 +736,9 @@ def run_cycle(r):
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
-    r.setex('bot:cycle_time', 300, str(round(cycle_time, 2)))
-    r.setex('bot:last_cycle', 300, str(datetime.utcnow()))
-    r.setex('bot:status', 300, 'running')
+    r.setex('bot:cycle_time', 600, str(round(cycle_time, 2)))
+    r.setex('bot:last_cycle', 600, str(datetime.utcnow()))
+    r.setex('bot:status', 600, 'running')
     print(f'✅ Cycle complete in {cycle_time:.2f}s')
 
 # ═══════════════════════════════
