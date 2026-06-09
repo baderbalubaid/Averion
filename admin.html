@@ -805,6 +805,26 @@
                 <p style="color:var(--muted);font-size:12px;margin-top:12px">ℹ️ Updated daily at 04:30 after classification.</p>
             </div>
         </div>
+        <div id="sub-r-bots" style="display:none">
+            <div class="card">
+                <div class="card-title">Research Bots · 261 total</div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <input id="bot-method-filter" placeholder="Filter by method (e.g. E1)"
+                           oninput="filterResearchBots()"
+                           style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px"/>
+                    <span id="research-bot-count" style="color:var(--muted);font-size:13px"></span>
+                </div>
+                <div class="table-wrap"><table>
+                    <thead><tr>
+                        <th>Name</th><th>Method</th><th>Key Params</th>
+                        <th>Trades Allowed</th><th>Status</th><th>Action</th>
+                    </tr></thead>
+                    <tbody id="research-bots-tbody">
+                        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Click Bots tab to load</td></tr>
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
     </div>
 
     <div class="tab-content" id="tab-controls">
