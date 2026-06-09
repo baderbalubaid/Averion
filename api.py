@@ -505,12 +505,13 @@ def get_research_positions(payload: dict = Depends(verify_token)):
         """)
         rows = cur.fetchall()
         result = []
+        rc = get_redis()
         for r in rows:
             coin = r[3]
             avg_cost = float(r[4] or 0)
             quantity = float(r[11] or 0)
-            keys = redis_client.keys(f'price:*:{coin}/USDT')
-            current_price = float(redis_client.get(keys[0])) if keys else avg_cost
+            keys = rc.keys(f'price:*:{coin}/USDT')
+            current_price = float(rc.get(keys[0])) if keys else avg_cost
             pnl = (current_price - avg_cost) * quantity if avg_cost else 0
             pnl_pct = ((current_price - avg_cost) / avg_cost * 100) if avg_cost else 0
             result.append({
@@ -1263,6 +1264,12 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
