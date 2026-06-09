@@ -762,8 +762,21 @@
         </div>
         <div id="sub-r-trades" style="display:none">
             <div class="card">
-                <div class="card-title">Research Bot Open Positions</div>
-                <p style="color:var(--muted);font-size:13px">261 research bots · trading_on=FALSE · enable to start collecting data</p>
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>Research Bot Open Positions</span>
+                    <span id="research-trades-count" style="font-size:13px;color:var(--muted);font-weight:400"></span>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <span style="font-size:13px;color:var(--muted)">Sort by:</span>
+                    <select id="trades-sort" onchange="sortResearchTrades()"
+                            style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:13px">
+                        <option value="opened_at">Opened</option>
+                        <option value="pnl_pct">P&L%</option>
+                        <option value="method">Method</option>
+                        <option value="dca_count">DCA#</option>
+                        <option value="coin">Coin</option>
+                    </select>
+                </div>
                 <div class="table-wrap"><table>
                     <thead><tr><th>Bot</th><th>Method</th><th>Coin</th><th>Avg Cost</th><th>Current</th><th>DCA#</th><th>P&L%</th><th>Invested</th><th>Opened</th></tr></thead>
                     <tbody id="research-trades-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No research trades yet</td></tr></tbody>
@@ -963,6 +976,14 @@
     function authHeaders() {
         return {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'};
     }
+    function fmtPrice(p) {
+        p = parseFloat(p);
+        if (!p || p === 0) return '$0';
+        if (p >= 1) return '$' + p.toFixed(4);
+        if (p >= 0.0001) return '$' + p.toFixed(6);
+        if (p >= 0.00000001) return '$' + p.toFixed(10);
+        return '$' + p.toPrecision(4);
+    }
     let allUsers = [];
     let cronData = {};
 
@@ -978,6 +999,36 @@
 
     // ── TABS ─────────────────────────────────────
 
+    function sortResearchTrades() {
+        const key = document.getElementById('trades-sort').value;
+        const sorted = [...(window._researchTrades||[])].sort((a,b) => {
+            if (key === 'pnl_pct') return b.pnl_pct - a.pnl_pct;
+            if (key === 'dca_count') return b.dca_count - a.dca_count;
+            return String(a[key]).localeCompare(String(b[key]));
+        });
+        renderResearchTradesTable(sorted);
+    }
+
+    function renderResearchTradesTable(positions) {
+        const tbody = document.getElementById('research-trades-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = positions.map(p => {
+            const pnlColor = p.pnl_pct >= 0 ? '#27ae60' : '#e74c3c';
+            const pnlSign = p.pnl_pct >= 0 ? '+' : '';
+            return `<tr>
+                <td style="font-size:12px">${p.bot_name}</td>
+                <td><span class="badge badge-blue">${p.method}</span></td>
+                <td><b>${p.coin}</b></td>
+                <td>${fmtPrice(p.avg_cost)}</td>
+                <td>${fmtPrice(p.current_price)}</td>
+                <td>${p.dca_count}</td>
+                <td style="color:${pnlColor}">${pnlSign}${p.pnl_pct}%</td>
+                <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
+                <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
+            </tr>`;
+        }).join('');
+    }
+
     async function loadResearchTrades() {
         const tbody = document.getElementById('research-trades-tbody');
         if (!tbody) { setTimeout(loadResearchTrades, 500); return; }
@@ -987,8 +1038,10 @@
             if (!res.ok) { tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error ${res.status}</td></tr>`; return; }
             const positions = await res.json();
             // Debug: show count
-            document.getElementById('research-bot-count') && 
-                (document.getElementById('research-bot-count').textContent += ` | Trades API: ${positions.length}`);
+            // Show count
+            const countEl = document.getElementById('research-trades-count');
+            if (countEl) countEl.textContent = `${positions.length} open positions`;
+            window._researchTrades = positions;
             if (!positions.length) {
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions (API returned 0)</td></tr>';
                 return;
