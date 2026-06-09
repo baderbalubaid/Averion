@@ -496,7 +496,7 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             SELECT p.id, b.name, b.method, p.coin,
                    p.avg_cost, p.total_invested, p.dca_count,
                    p.tp_armed, p.opened_at, p.status,
-                   p.entry_method
+                   p.entry_method, p.quantity
             FROM positions p
             JOIN bots b ON b.id = p.bot_id
             WHERE p.is_research = TRUE
@@ -504,12 +504,26 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             ORDER BY p.opened_at DESC
         """)
         rows = cur.fetchall()
-        return [{'id': r[0], 'bot_name': r[1], 'method': r[2],
-                 'coin': r[3], 'avg_cost': str(r[4]),
-                 'total_invested': str(r[5]), 'dca_count': r[6],
-                 'tp_armed': r[7], 'opened_at': str(r[8]),
-                 'status': r[9], 'entry_method': r[10]}
-                for r in rows]
+        result = []
+        for r in rows:
+            coin = r[3]
+            avg_cost = float(r[4] or 0)
+            quantity = float(r[11] or 0)
+            keys = redis_client.keys(f'price:*:{coin}/USDT')
+            current_price = float(redis_client.get(keys[0])) if keys else avg_cost
+            pnl = (current_price - avg_cost) * quantity if avg_cost else 0
+            pnl_pct = ((current_price - avg_cost) / avg_cost * 100) if avg_cost else 0
+            result.append({
+                'id': r[0], 'bot_name': r[1], 'method': r[2],
+                'coin': coin, 'avg_cost': str(r[4]),
+                'total_invested': str(r[5]), 'dca_count': r[6],
+                'tp_armed': r[7], 'opened_at': str(r[8]),
+                'status': r[9], 'entry_method': r[10],
+                'current_price': current_price,
+                'pnl': round(pnl, 4),
+                'pnl_pct': round(pnl_pct, 2)
+            })
+        return result
 
 @app.get('/admin/research/bots')
 def get_research_bots_admin(payload: dict = Depends(verify_token)):
@@ -1222,6 +1236,33 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
