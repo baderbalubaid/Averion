@@ -511,6 +511,16 @@ def run_cycle(r):
         get_redis().setex('bot:last_cycle', 600, str(datetime.utcnow()))
     except: pass
 
+    # Sync trades_per_bot = open_count + 1 for all research bots
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE bots b SET trades_per_bot =
+                GREATEST(1, (SELECT COUNT(*) FROM positions p
+                    WHERE p.bot_id=b.id AND p.status='open') + 1)
+            WHERE b.is_research=TRUE AND b.trading_on=TRUE
+        """)
+
     # Pre-fetch BTC data and init OHLCV cache for this cycle
     global _ohlcv_cache
     _ohlcv_cache = {}
@@ -627,13 +637,7 @@ def run_cycle(r):
             db.close_position(pos[0], reason,
                 sell_price=result.get('price'),
                 usdt_received=result.get('usdt_received'))
-            # Auto-shrink: close → trades_per_bot - 1 (min 1)
-            with db.get_db() as conn:
-                cur = conn.cursor()
-                cur.execute("""
-                    UPDATE bots SET trades_per_bot = GREATEST(trades_per_bot - 1, 1)
-                    WHERE id = %s AND is_research = TRUE
-                """, (pos[1],))
+
 
             if reason == 'tp':
                 # Calculate profit and fee
