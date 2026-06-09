@@ -716,9 +716,9 @@ def run_cycle(r):
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
-    r.setex('bot:cycle_time', 120, str(round(cycle_time, 2)))
-    r.setex('bot:last_cycle', 120, str(datetime.utcnow()))
-    r.setex('bot:status', 120, 'running')
+    r.setex('bot:cycle_time', 300, str(round(cycle_time, 2)))
+    r.setex('bot:last_cycle', 300, str(datetime.utcnow()))
+    r.setex('bot:status', 300, 'running')
     print(f'✅ Cycle complete in {cycle_time:.2f}s')
 
 # ═══════════════════════════════
