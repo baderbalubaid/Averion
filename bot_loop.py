@@ -621,6 +621,27 @@ def run_cycle(r):
         # Pre-filter: only check TP for armed positions or positions near TP
         tp_candidates = [p for p in open_positions if p[12] or True]  # all for now
 
+        # Batch arm all positions above TP price
+        price_map = {sym.replace("/USDT",""):float(tick["last"]) for sym,tick in tickers.items() if tick.get("last") and sym.endswith("/USDT")}
+        to_arm = []
+        for pos in open_positions:
+            if pos[12]: continue
+            coin = pos[4]
+            avg = float(pos[7] or 0)
+            if avg == 0: continue
+            price = price_map.get(coin)
+            if not price: continue
+            bot_obj = next((b for b in bots if b[0] == pos[1]), None)
+            if not bot_obj: continue
+            tp_price = avg * (1 + float(bot_obj[13] or 5)/100)
+            if price >= tp_price:
+                to_arm.append((price, pos[0]))
+        if to_arm:
+            with db.get_db() as _conn:
+                _cur = _conn.cursor()
+                _cur.executemany("UPDATE positions SET tp_armed=TRUE, peak_price=%s WHERE id=%s AND tp_armed=FALSE", to_arm)
+            print(f"🎯 Batch armed {len(to_arm)} positions")
+
         # ─────────────────────────
         # STEP 1: Check ST flags (every 12h per exchange · per unique coin)
         # ─────────────────────────
