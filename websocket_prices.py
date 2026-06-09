@@ -36,7 +36,15 @@ class MexcWebSocketPrices:
         self.price_count = 0
         self.last_update = None
         self.errors = 0
-        self.tp_callback = tp_callback  # called on every price update
+        self._tp_callback = tp_callback  # persists through reconnects
+
+    @property
+    def tp_callback(self):
+        return self._tp_callback
+
+    @tp_callback.setter
+    def tp_callback(self, value):
+        self._tp_callback = value  # always stored, survives reconnect
 
     def on_message(self, ws, msg):
         if isinstance(msg, bytes):
@@ -101,7 +109,8 @@ class MexcWebSocketPrices:
         )
         self.ws.run_forever(
             ping_interval=PING_INTERVAL,
-            ping_timeout=10
+            ping_timeout=10,
+            reconnect=5
         )
 
     def run(self):
