@@ -113,21 +113,17 @@ def signal_e3(d, p, _):
 # E4 — Time-Cycle Window
 # ═══════════════════════════════
 def signal_e4(d, p, _):
+    # SMA pullback entry - price below SMA
     if not ind.enough(d, 20):
         return False
-    sma_period = p.get('sma_period', 24)
-
-    import datetime
-    now = datetime.datetime.utcnow()
-    weekday = now.weekday()
-    hour    = now.hour
-    windows = [(6, 22), (0, 0), (2, 12)]
-    in_window = any(weekday == w and hour == h for w, h in windows)
-    if not in_window:
+    sma_period  = p.get('sma_period', 24)
+    drop_pct    = p.get('drop_pct', 2.0)
+    sma = ind.calc_sma(d['close'], sma_period)
+    if sma is None:
         return False
-
-    sma   = ind.calc_sma(d['close'], sma_period)
-    return sma is not None and d['close'][-1] < sma
+    price = d['close'][-1]
+    pct_below = (sma - price) / sma * 100
+    return pct_below >= drop_pct
 
 
 # ═══════════════════════════════
@@ -532,28 +528,19 @@ def signal_e23(d, p, btc_data):
 # ═══════════════════════════════
 def signal_e24(d, p, _):
     """
-    Requires perp market funding rate from CCXT.
-    Falls back to False for spot-only coins.
+    E24 - RSI Oversold + Price below SMA (spot version)
+    Original funding rate version disabled for spot exchanges.
     """
-    if not ind.enough(d, 20):
+    if not ind.enough(d, 30):
         return False
-    funding_threshold = p.get('funding_threshold', -0.10)
-    rsi_threshold     = p.get('rsi_threshold', 40)
+    rsi_threshold = p.get('rsi_threshold', 35)
+    sma_period    = p.get('sma_period', 24)
 
     rsi = ind.calc_rsi(d['close'], 14)
-    if rsi is None or rsi >= rsi_threshold:
+    sma = ind.calc_sma(d['close'], sma_period)
+    if rsi is None or sma is None:
         return False
-
-    # Funding rate check via CCXT (best effort)
-    try:
-        import ccxt
-        ex = ccxt.mexc({'enableRateLimit': True})
-        symbol = f'{d["ts"][0].strftime("%Y") if hasattr(d["ts"][0], "strftime") else ""}USDT'
-        rate = ex.fetch_funding_rate(symbol)
-        funding = rate.get('fundingRate', 0)
-        return funding <= funding_threshold
-    except:
-        return False
+    return rsi < rsi_threshold and d['close'][-1] < sma
 
 
 # ═══════════════════════════════
@@ -628,4 +615,8 @@ SIGNAL_MAP = {
     'E24':  signal_e24,
     'E25':  signal_e25,
     'E26':  signal_e26,
+    'BM_SIMPLE': signal_bm_simple,
+    'BM_STATIC': signal_bm_static,
+    'BM_RANDOM': signal_bm_random,
+    'BM_HOLD':   signal_bm_hold,
 }
