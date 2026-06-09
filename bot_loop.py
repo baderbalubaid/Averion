@@ -282,12 +282,13 @@ def check_tp(position, current_price, bot):
     if current_price >= tp_price and not tp_armed:
         db.arm_tp(position_id, current_price)
         print(f'🎯 TP armed: position {position_id} @ ${current_price:.6f}')
-        return False
+        peak_price = current_price  # update local var immediately
+        tp_armed = True             # update local var immediately
 
     # Update peak price
     if tp_armed and current_price > peak_price:
         db.update_peak_price(position_id, current_price)
-        return False
+        peak_price = current_price  # update local var
 
     # Fire TP when price drops from peak
     if tp_armed and peak_price > 0:
