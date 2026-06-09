@@ -273,7 +273,7 @@ def check_tp(position, current_price, bot):
     tp_percent = float(bot[13] or 5.0)
     trailing_percent = float(bot[14] or 2.0)
 
-    if avg_cost == 0:
+    if avg_cost == 0 or avg_cost < 1e-12:
         return False
 
     tp_price = avg_cost * (1 + tp_percent / 100)
@@ -464,6 +464,9 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 continue
         current_price = float(ticker.get('last') or 0)
         if current_price == 0:
+            continue
+        # Guard: skip if price is suspiciously low (precision issue)
+        if current_price < 1e-12:
             continue
 
         # Get sequence number
