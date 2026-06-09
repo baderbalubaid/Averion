@@ -1002,6 +1002,31 @@
         await loadResearchBots();
     }
 
+    async function bulkSetTrades(scope) {
+        const bots = window._researchBots || [];
+        const filtered = scope === 'all' ? bots : (bots.filter(b => {
+            const q = document.getElementById('bot-method-filter').value.toLowerCase();
+            return !q || b.method.toLowerCase().includes(q) || b.name.toLowerCase().includes(q);
+        }));
+        const val = parseInt(scope === 'all'
+            ? document.getElementById('bulk-all-trades').value
+            : document.getElementById('bulk-method-trades').value);
+        if (isNaN(val)) return;
+        const label = scope === 'all' ? 'ALL 261 bots' : `${filtered.length} filtered bots`;
+        if (!confirm(`Set trades_per_bot=${val} for ${label}?`)) return;
+        let done = 0;
+        for (const b of filtered) {
+            await fetch(`${API}/bots/${b.id}/toggle`, {
+                method: 'POST',
+                headers: {...authHeaders(), 'Content-Type': 'application/json'},
+                body: JSON.stringify({trades_per_bot: val})
+            });
+            done++;
+        }
+        alert(`✅ Updated ${done} bots`);
+        await loadResearchBots();
+    }
+
     async function loadResearchBots() {
         const tbody = document.getElementById('research-bots-tbody');
         if (!tbody) return;
