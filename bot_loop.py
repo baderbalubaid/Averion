@@ -541,6 +541,12 @@ def run_cycle(r):
         if not exchange_obj:
             continue
 
+        # Hook realtime TP checker for this exchange
+        try:
+            ws_prices.tp_callback = make_realtime_tp_checker(exchange_obj, exc_id, exc_row)
+        except Exception:
+            pass
+
         # Use WebSocket prices (already in Redis)
         # Fall back to REST if WebSocket not providing prices
         ws_status = r.get('ws:mexc:status')
