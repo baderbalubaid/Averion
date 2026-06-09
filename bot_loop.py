@@ -578,32 +578,37 @@ def run_cycle(r):
         open_positions = db.get_open_positions(exchange_id=exc_id)
 
         # ─────────────────────────
-        # STEP 1: Check ST flags (per unique coin, not per position)
+        # STEP 1: Check ST flags (every 12h per exchange · per unique coin)
         # ─────────────────────────
         positions_to_close = []
-        # Check ST flag once per unique coin
-        flagged_coins = set()
-        unique_coins = set(pos[4] for pos in open_positions)
-        for coin in unique_coins:
-            if check_st_flag(coin, exc_row[2], tickers, r):
-                flagged_coins.add(coin)
+        st_cache_key = f'st:checked:{exc_row[2]}'
+        should_check_st = not r.get(st_cache_key)
 
-        # Close all positions for flagged coins
-        for pos in open_positions:
-            coin = pos[4]
-            if coin in flagged_coins:
-                result = execute_sell(
-                    exchange_obj, coin, float(pos[8] or 0),
-                    pos[0], pos[1], pos[2], exc_id, 'st_flag', r, tickers
-                )
-                if result:
-                    positions_to_close.append((pos, result, 'st_flag'))
-                    db.add_attention_log(
-                        pos[2], 'red', 'st_flag',
-                        f'{coin} ST flag detected · position closed',
-                        bot_id=pos[1], position_id=pos[0]
+        if should_check_st:
+            print(f'🔍 ST flag check for {exc_row[2]}')
+            flagged_coins = set()
+            unique_coins = set(pos[4] for pos in open_positions)
+            for coin in unique_coins:
+                if check_st_flag(coin, exc_row[2], tickers, r):
+                    flagged_coins.add(coin)
+            # Mark as checked for 12 hours
+            r.setex(st_cache_key, 43200, '1')
+
+            # Close all positions for flagged coins
+            for pos in open_positions:
+                coin = pos[4]
+                if coin in flagged_coins:
+                    result = execute_sell(
+                        exchange_obj, coin, float(pos[8] or 0),
+                        pos[0], pos[1], pos[2], exc_id, 'st_flag', r, tickers
                     )
-
+                    if result:
+                        positions_to_close.append((pos, result, 'st_flag'))
+                        db.add_attention_log(
+                            pos[2], 'red', 'st_flag',
+                            f'{coin} ST flag detected · position closed',
+                            bot_id=pos[1], position_id=pos[0]
+                        )
         # TP check handled by WebSocket realtime callback
         # Skipped in main cycle for performance
 
