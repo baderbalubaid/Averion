@@ -209,11 +209,11 @@ def execute_buy(exchange_obj, coin, amount_usdt,
 
 def execute_sell(exchange_obj, coin, quantity,
                  position_id, bot_id, user_id, exchange_id,
-                 reason, r):
+                 reason, r, tickers=None):
     symbol = f'{coin}/USDT'
 
     if PAPER_MODE:
-        price = get_price(coin, '', r, {})
+        price = get_price(coin, '', r, tickers if tickers else {})
         if not price:
             keys = r.keys(f'price:*:{coin}/USDT')
             if keys:
@@ -524,7 +524,7 @@ def run_cycle(r):
             if check_tp(pos, current_price, bot):
                 result = execute_sell(
                     exchange_obj, coin, float(pos[8] or 0),
-                    pos[0], pos[1], pos[2], exc_id, 'tp', r
+                    pos[0], pos[1], pos[2], exc_id, 'tp', r, tickers
                 )
                 if result:
                     positions_to_close.append((pos, result, 'tp'))
