@@ -587,6 +587,36 @@ def signal_e26(d, p, _):
 # ═══════════════════════════════
 # SIGNAL MAP
 # ═══════════════════════════════
+def signal_bm_simple(d, p, coin):
+    """BM_SIMPLE - buy on any drop_pct drop"""
+    if not ind.enough(d, 2):
+        return False
+    drop_pct = p.get('drop_pct', 7.0)
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-2] - d['close'][-1]) / d['close'][-2] * 100
+    return drop >= drop_pct
+
+def signal_bm_static(d, p, coin):
+    """BM_STATIC - fixed spacing entry"""
+    if not ind.enough(d, 2):
+        return False
+    spacing = p.get('spacing', 1.0)
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-2] - d['close'][-1]) / d['close'][-2] * 100
+    return drop >= spacing
+
+def signal_bm_random(d, p, coin):
+    """BM_RANDOM - random entry for baseline comparison"""
+    import random
+    return random.random() < 0.01
+
+def signal_bm_hold(d, p, coin):
+    """BM_HOLD - buy and hold specific coin"""
+    target = p.get('coin', 'BTC')
+    return coin.upper() == target.upper()
+
 SIGNAL_MAP = {
     'E1':   signal_e1,
     'E2':   signal_e2,
