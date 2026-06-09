@@ -1043,9 +1043,11 @@
             if (countEl) countEl.textContent = `${positions.length} open positions`;
             window._researchTrades = positions;
             if (!positions.length) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions (API returned 0)</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions</td></tr>';
                 return;
             }
+            renderResearchTradesTable(positions);
+        } catch(e) {
             tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
         }
     }
