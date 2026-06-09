@@ -207,7 +207,8 @@ def get_active_bots():
                    b.order_entry_type, b.order_dca_type,
                    b.dca_checkpoint_level, b.dca_checkpoint_on,
                    e.exchange, e.api_key_enc, e.secret_enc,
-                   e.passphrase_enc, e.paused_at
+                   e.passphrase_enc, e.paused_at,
+                   b.bot_params
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
             WHERE b.status = 'open'

@@ -5,6 +5,7 @@ import redis
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
+import entry_signals as es
 import telegram as tg
 
 load_dotenv()
@@ -350,6 +351,23 @@ def try_open_position(bot, exchange_obj, tickers, r):
             continue
 
         category = coin_category.get(coin, 'micro')
+
+        # Check entry signal for research bots
+        if method and (method.startswith('E') or method.startswith('BM')):
+            params = {}
+            try:
+                import json
+                params = json.loads(bot[29]) if bot[29] else {}
+            except:
+                params = {}
+            btc_data = None
+            if method == 'E23':
+                btc_rows = db.get_ohlcv('BTC', 'mexc', limit=200)
+                import indicators as ind
+                btc_data = ind.to_arrays(btc_rows)
+            signal = es.check_entry_signal(method, params, coin, 'mexc', btc_data)
+            if not signal:
+                continue
         current_price = float(ticker.get('last') or 0)
         if current_price == 0:
             continue
