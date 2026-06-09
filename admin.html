@@ -980,6 +980,12 @@
     function authHeaders() {
         return {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'};
     }
+    function fmtLocal(utcStr) {
+        if (!utcStr) return '—';
+        const d = new Date(utcStr.replace(' ', 'T') + 'Z');
+        return d.toLocaleString();
+    }
+
     function fmtPrice(p) {
         p = parseFloat(p);
         if (!p || p === 0) return '$0';
