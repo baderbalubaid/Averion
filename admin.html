@@ -1140,7 +1140,14 @@
             const bots = await res.json();
             const countEl = document.getElementById('research-bot-count');
             if (countEl) countEl.textContent = `${bots.length} bots`;
-            window._researchBots = bots;
+            // Sort bots by method numerically (E1, E2... E10, E11)
+        bots.sort((a, b) => {
+            const numA = parseInt(a.method.replace(/[^0-9]/g,'')) || 0;
+            const numB = parseInt(b.method.replace(/[^0-9]/g,'')) || 0;
+            if (numA !== numB) return numA - numB;
+            return a.name.localeCompare(b.name);
+        });
+        window._researchBots = bots;
             renderResearchBotsTable(bots);
         } catch(e) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px">Error: ${e.message}</td></tr>`;
