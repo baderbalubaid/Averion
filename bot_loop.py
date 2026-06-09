@@ -642,6 +642,7 @@ def run_cycle(r):
                 _cur.executemany("UPDATE positions SET tp_armed=TRUE, peak_price=%s WHERE id=%s AND tp_armed=FALSE", to_arm)
             print(f"🎯 Batch armed {len(to_arm)} positions")
 
+            open_positions = db.get_open_positions(exchange_id=exc_id)
         # ─────────────────────────
         # STEP 1: Check ST flags (every 12h per exchange · per unique coin)
         # ─────────────────────────
