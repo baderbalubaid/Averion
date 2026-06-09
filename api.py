@@ -569,6 +569,14 @@ def get_research_history(payload: dict = Depends(verify_token)):
 @app.get('/admin/research/bots')
 def get_research_bots_admin(payload: dict = Depends(verify_token)):
     bots = db.get_research_bots()
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT bot_id, COUNT(*) as open_count
+            FROM positions WHERE is_research=TRUE AND status='open'
+            GROUP BY bot_id
+        """)
+        open_counts = {r[0]: r[1] for r in cur.fetchall()}
     return [{'id': b[0], 'name': b[1], 'method': b[2],
               'direction': b[3], 'trading_on': b[4],
               'trades_per_bot': b[5], 'bot_params': b[6],
@@ -577,7 +585,8 @@ def get_research_bots_admin(payload: dict = Depends(verify_token)):
               'base_order': str(b[9]),
               'status': b[10],
               'exchange': b[11],
-              'exchange_name': b[12]} for b in bots]
+              'exchange_name': b[12],
+              'open_trades': open_counts.get(b[0], 0)} for b in bots]
 
 @app.get('/admin/stats')
 def admin_stats(payload: dict = Depends(require_admin)):
@@ -1304,6 +1313,18 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
