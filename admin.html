@@ -1020,9 +1020,9 @@
                 <td><span class="badge badge-blue">${p.method}</span></td>
                 <td><b>${p.coin}</b></td>
                 <td>${fmtPrice(p.avg_cost)}</td>
-                <td>${fmtPrice(p.current_price)}</td>
+                <td>${p.current_price ? fmtPrice(p.current_price) : '—'}</td>
                 <td>${p.dca_count}</td>
-                <td style="color:${pnlColor}">${pnlSign}${p.pnl_pct}%</td>
+                <td style="color:${pnlColor}">${p.current_price ? pnlSign+p.pnl_pct+'%' : '—'}</td>
                 <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
                 <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
             </tr>`;
