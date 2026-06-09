@@ -451,6 +451,10 @@ def try_open_position(bot, exchange_obj, tickers, r):
             price = result['price']
             quantity = result['quantity']
 
+            # Auto-expand: new trade opened → trades_per_bot + 1
+            with db.get_db() as conn:
+                cur = conn.cursor()
+                cur.execute("UPDATE bots SET trades_per_bot = trades_per_bot + 1 WHERE id = %s AND is_research = TRUE", (bot_id,))
             # Open position in DB
             pos_id = db.open_position(
                 bot_id, user_id, exchange_id, None,
