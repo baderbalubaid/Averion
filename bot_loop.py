@@ -366,7 +366,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
             if coin not in _ohlcv_cache:
                 _ohlcv_cache[coin] = indicators.to_arrays(db.get_ohlcv(coin, 'mexc', limit=200))
             btc_data = _ohlcv_cache.get('BTC')
-            signal = es.check_entry_signal(method, params, coin, 'mexc', btc_data)
+            signal = es.check_entry_signal(method, params, coin, 'mexc', btc_data, _ohlcv_cache.get(coin))
             if not signal:
                 continue
         current_price = float(ticker.get('last') or 0)
