@@ -1589,6 +1589,7 @@
     setInterval(loadStatus, 30000);
     setInterval(loadHealth, 60000);
     setInterval(loadCronStatus, 60000);
+    setInterval(() => { if(document.getElementById("sub-r-trades").style.display !== "none") loadResearchTrades(); }, 60000);
 </script>
 
 </body>
