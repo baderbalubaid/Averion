@@ -299,6 +299,67 @@ def check_tp(position, current_price, bot):
     return False
 
 # ═══════════════════════════════
+# REALTIME TP CHECKER (WebSocket callback)
+# ═══════════════════════════════
+def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
+    """Returns a callback function for WebSocket price updates."""
+    def on_price_update(coin, price):
+        try:
+            # Get open positions for this coin
+            with db.get_db() as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT p.id, p.bot_id, p.user_id, p.exchange_id,
+                           p.coin, p.direction, p.status,
+                           p.avg_cost, p.quantity, p.total_invested,
+                           p.dca_count, p.last_buy_price,
+                           p.tp_armed, p.peak_price, p.queued,
+                           p.standby_amount, p.standby_price,
+                           p.category, p.is_paper, p.base_coin,
+                           p.sequence_number, p.is_gate_reference,
+                           p.coin_trade_number, p.gate_reference_since,
+                           p.checkpoint_reached, p.pending_buyback,
+                           p.opened_at
+                    FROM positions p
+                    WHERE p.coin = %s AND p.status = 'open'
+                    AND p.exchange_id = %s
+                """, (coin, exc_id))
+                positions = cur.fetchall()
+
+            if not positions:
+                return
+
+            # Get bots for these positions
+            active_bots = db.get_active_bots()
+            r = get_redis()
+            tickers = {f'{coin}/USDT': {'last': price}}
+
+            for pos in positions:
+                bot = next((b for b in active_bots if b[0] == pos[1]), None)
+                if not bot:
+                    continue
+                if check_tp(pos, price, bot):
+                    result = execute_sell(
+                        exchange_obj, coin, float(pos[8] or 0),
+                        pos[0], pos[1], pos[2], exc_id, 'tp', r, tickers
+                    )
+                    if result:
+                        db.close_position(pos[0], 'tp',
+                            sell_price=result.get('price'),
+                            usdt_received=result.get('usdt_received'))
+                        invested = float(pos[9] or 0)
+                        received = result.get('usdt_received', 0)
+                        gross_profit = received - invested
+                        if gross_profit > 0:
+                            fee = gross_profit * 0.20
+                            db.deduct_performance_fee(pos[2], pos[0], fee, gross_profit)
+                        db.promote_gate_reference(pos[1], coin)
+                        print(f'⚡ RT-TP closed: {coin} @ ${price:.6f} profit=${gross_profit:.2f}')
+        except Exception as e:
+            pass  # Never crash WebSocket thread
+    return on_price_update
+
+# ═══════════════════════════════
 # OPEN NEW POSITION
 # ═══════════════════════════════
 def try_open_position(bot, exchange_obj, tickers, r):
@@ -668,6 +729,8 @@ def run_bot():
     import time as _t
     print('⏳ Waiting 5s for WebSocket to connect...')
     _t.sleep(5)
+    # Hook realtime TP checker after exchanges are known
+    # Will be set per exchange in run_cycle
 
     while True:
         try:
