@@ -1125,12 +1125,13 @@
             active.style.color = 'var(--text)';
         }
         if (name === 'r-bots') loadResearchBots();
-        if (name === 'r-trades') loadResearchTrades();
         // Show/hide sub-content
         ['r-trades','r-history','r-champion','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
             if (el) el.style.display = s === name ? 'block' : 'none';
         });
+        // Load data AFTER tab is visible
+        if (name === 'r-trades') loadResearchTrades();
     }
 
     function switchTab(name) {
