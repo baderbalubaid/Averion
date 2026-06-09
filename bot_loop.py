@@ -451,10 +451,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
             price = result['price']
             quantity = result['quantity']
 
-            # Auto-expand: new trade opened → trades_per_bot + 1
-            with db.get_db() as conn:
-                cur = conn.cursor()
-                cur.execute("UPDATE bots SET trades_per_bot = trades_per_bot + 1 WHERE id = %s AND is_research = TRUE", (bot_id,))
+            # Auto-expand disabled temporarily
             # Open position in DB
             pos_id = db.open_position(
                 bot_id, user_id, exchange_id, None,
@@ -613,7 +610,9 @@ def run_cycle(r):
                             f'{coin} ST flag detected · position closed',
                             bot_id=pos[1], position_id=pos[0]
                         )
-            # TP check (backup in main cycle · WebSocket also checks)
+            # TP check (backup in main cycle · only for armed positions)
+            if not pos[12]:  # skip if not armed
+                continue
             bot_obj = next((b for b in bots if b[0] == pos[1]), None)
             if bot_obj and check_tp(pos, current_price, bot_obj):
                 result = execute_sell(
