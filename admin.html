@@ -1052,6 +1052,38 @@
         }
     }
 
+    async function loadResearchHistory() {
+        const tbody = document.getElementById('research-history-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/history`, {headers: authHeaders()});
+            const trades = await res.json();
+            if (!trades.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No closed research trades yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = trades.map(t => {
+                const pnlColor = t.pnl_pct >= 0 ? '#27ae60' : '#e74c3c';
+                const pnlSign = t.pnl_pct >= 0 ? '+' : '';
+                const reason = t.close_reason === 'tp' ? '🎯 TP' : t.close_reason === 'st_flag' ? '🚨 ST' : t.close_reason;
+                return `<tr>
+                    <td style="font-size:12px">${t.bot_name}</td>
+                    <td><span class="badge badge-blue">${t.method}</span></td>
+                    <td><b>${t.coin}</b></td>
+                    <td>${fmtPrice(t.avg_cost)}</td>
+                    <td>${fmtPrice(t.avg_sell_price)}</td>
+                    <td>${t.dca_count}</td>
+                    <td style="color:${pnlColor}">${pnlSign}${t.pnl_pct}%</td>
+                    <td style="color:${pnlColor}">${pnlSign}$${Math.abs(t.pnl).toFixed(2)}</td>
+                    <td style="font-size:11px;color:var(--muted)">${(t.closed_at||'').substring(0,16)} · ${reason}</td>
+                </tr>`;
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
     async function bulkSetTrades(scope) {
         const bots = window._researchBots || [];
         const filtered = scope === 'all' ? bots : (bots.filter(b => {
@@ -1171,6 +1203,7 @@
         });
         // Load data AFTER tab is visible
         if (name === 'r-trades') loadResearchTrades();
+        if (name === 'r-history') loadResearchHistory();
     }
 
     function switchTab(name) {
