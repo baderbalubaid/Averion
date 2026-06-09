@@ -946,6 +946,9 @@
 <script>
     const API = window.location.origin;
     const TOKEN = localStorage.getItem('averion_token');
+    function authHeaders() {
+        return {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'};
+    }
     let allUsers = [];
     let cronData = {};
 
