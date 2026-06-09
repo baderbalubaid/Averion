@@ -158,6 +158,7 @@ def get_user_bots(user_id):
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
             WHERE b.user_id = %s AND b.status != 'deleted'
+            AND b.name NOT SIMILAR TO '(E[0-9]%|BM-%|E1[0-9]%|E2[0-9]%|E18b%|BM_%)'
             ORDER BY b.created_at ASC
         """, (user_id,))
         return cur.fetchall()
@@ -172,6 +173,25 @@ def get_user_bots(user_id):
 # 23=checkpoint_level 24=checkpoint_on
 # 25=exchange 26=api_key_enc 27=secret_enc
 # 28=passphrase_enc 29=paused_at
+
+def get_research_bots():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT b.id, b.name, b.method, b.direction,
+                   b.trading_on, b.trades_per_bot, b.bot_params,
+                   b.dca_percent, b.take_profit_percent,
+                   b.base_order, b.status,
+                   e.exchange, e.custom_name
+            FROM bots b
+            JOIN exchanges e ON e.id = b.exchange_id
+            WHERE (b.name SIMILAR TO '(E[0-9]%|BM-%|E1[0-9]%|E2[0-9]%|E18b%)'
+                   OR b.method SIMILAR TO '(E[0-9]%|BM_%)')
+            AND b.status != 'deleted'
+            ORDER BY b.method, b.name ASC
+        """)
+        return cur.fetchall()
+
 def get_active_bots():
     with get_db() as conn:
         cur = conn.cursor()
