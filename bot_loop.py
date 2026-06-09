@@ -578,21 +578,23 @@ def run_cycle(r):
         open_positions = db.get_open_positions(exchange_id=exc_id)
 
         # ─────────────────────────
-        # STEP 1: Check ST flags + TP
+        # STEP 1: Check ST flags (per unique coin, not per position)
         # ─────────────────────────
         positions_to_close = []
+        # Check ST flag once per unique coin
+        flagged_coins = set()
+        unique_coins = set(pos[4] for pos in open_positions)
+        for coin in unique_coins:
+            if check_st_flag(coin, exc_row[2], tickers, r):
+                flagged_coins.add(coin)
+
+        # Close all positions for flagged coins
         for pos in open_positions:
             coin = pos[4]
-            current_price = get_price(coin, exc_row[2], r, tickers)
-            if not current_price:
-                continue
-
-            # ST flag check
-            if check_st_flag(coin, exc_row[2], tickers, r):
-                print(f'🚨 ST flag: {coin} · selling')
+            if coin in flagged_coins:
                 result = execute_sell(
                     exchange_obj, coin, float(pos[8] or 0),
-                    pos[0], pos[1], pos[2], exc_id, 'st_flag', r
+                    pos[0], pos[1], pos[2], exc_id, 'st_flag', r, tickers
                 )
                 if result:
                     positions_to_close.append((pos, result, 'st_flag'))
@@ -601,10 +603,9 @@ def run_cycle(r):
                         f'{coin} ST flag detected · position closed',
                         bot_id=pos[1], position_id=pos[0]
                     )
-                continue
 
-            # TP check handled by WebSocket realtime callback
-            # Skipped in main cycle for performance
+        # TP check handled by WebSocket realtime callback
+        # Skipped in main cycle for performance
 
         # Close positions and handle fees
         for pos, result, reason in positions_to_close:
