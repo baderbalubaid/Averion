@@ -808,11 +808,25 @@
         <div id="sub-r-bots">
             <div class="card">
                 <div class="card-title">Research Bots · 261 total</div>
-                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
                     <input id="bot-method-filter" placeholder="Filter by method (e.g. E1)"
                            oninput="filterResearchBots()"
-                           style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px"/>
-                    <span id="research-bot-count" style="color:var(--muted);font-size:13px"></span>
+                           style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:180px"/>
+                    <span id="research-bot-count" style="color:var(--muted);font-size:13px;margin-right:8px"></span>
+                    <div style="display:flex;gap:6px;align-items:center;border-left:1px solid var(--border);padding-left:10px">
+                        <span style="font-size:12px;color:var(--muted)">Set filtered trades:</span>
+                        <input id="bulk-method-trades" type="number" min="0" max="100" value="1"
+                               style="width:55px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center"/>
+                        <button onclick="bulkSetTrades('method')"
+                                style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer">Apply to Filtered</button>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;border-left:1px solid var(--border);padding-left:10px">
+                        <span style="font-size:12px;color:var(--muted)">Set ALL 261:</span>
+                        <input id="bulk-all-trades" type="number" min="0" max="100" value="1"
+                               style="width:55px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center"/>
+                        <button onclick="bulkSetTrades('all')"
+                                style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#c0392b22;color:#e74c3c;border-color:#e74c3c;font-size:12px;cursor:pointer">Apply to ALL</button>
+                    </div>
                 </div>
                 <div class="table-wrap"><table>
                     <thead><tr>
@@ -963,6 +977,31 @@
     if (!TOKEN) window.location.href = '/login';
 
     // ── TABS ─────────────────────────────────────
+    async function bulkSetTrades(scope) {
+        const bots = window._researchBots || [];
+        const filtered = scope === 'all' ? bots : (bots.filter(b => {
+            const q = document.getElementById('bot-method-filter').value.toLowerCase();
+            return !q || b.method.toLowerCase().includes(q) || b.name.toLowerCase().includes(q);
+        }));
+        const val = parseInt(scope === 'all'
+            ? document.getElementById('bulk-all-trades').value
+            : document.getElementById('bulk-method-trades').value);
+        if (isNaN(val)) return;
+        const label = scope === 'all' ? 'ALL 261 bots' : `${filtered.length} filtered bots`;
+        if (!confirm(`Set trades_per_bot=${val} for ${label}?`)) return;
+        let done = 0;
+        for (const b of filtered) {
+            await fetch(`${API}/bots/${b.id}/toggle`, {
+                method: 'POST',
+                headers: {...authHeaders(), 'Content-Type': 'application/json'},
+                body: JSON.stringify({trades_per_bot: val})
+            });
+            done++;
+        }
+        alert(`✅ Updated ${done} bots`);
+        await loadResearchBots();
+    }
+
     async function loadResearchBots() {
         const tbody = document.getElementById('research-bots-tbody');
         if (!tbody) return;
