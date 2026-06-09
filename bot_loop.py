@@ -301,30 +301,56 @@ def check_tp(position, current_price, bot):
 # ═══════════════════════════════
 # REALTIME TP CHECKER (WebSocket callback)
 # ═══════════════════════════════
+# In-memory position cache for realtime TP
+_rt_cache = {}
+_rt_cache_time = 0
+_rt_cache_lock = __import__('threading').Lock()
+
+def _refresh_rt_cache(exc_id):
+    global _rt_cache, _rt_cache_time
+    import time as _t
+    try:
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT p.id, p.bot_id, p.user_id, p.exchange_id,
+                       p.coin, p.direction, p.status,
+                       p.avg_cost, p.quantity, p.total_invested,
+                       p.dca_count, p.last_buy_price,
+                       p.tp_armed, p.peak_price, p.queued,
+                       p.standby_amount, p.standby_price,
+                       p.category, p.is_paper, p.base_coin,
+                       p.sequence_number, p.is_gate_reference,
+                       p.coin_trade_number, p.gate_reference_since,
+                       p.checkpoint_reached, p.pending_buyback,
+                       p.opened_at
+                FROM positions p
+                WHERE p.status = 'open' AND p.exchange_id = %s
+            """, (exc_id,))
+            rows = cur.fetchall()
+        cache = {}
+        for row in rows:
+            c = row[4]
+            if c not in cache:
+                cache[c] = []
+            cache[c].append(row)
+        with _rt_cache_lock:
+            _rt_cache.clear()
+            _rt_cache.update(cache)
+            _rt_cache_time = _t.time()
+    except Exception as e:
+        print(f'Cache refresh error: {e}')
+
 def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
     """Returns a callback function for WebSocket price updates."""
     def on_price_update(coin, price):
         try:
-            # Get open positions for this coin
-            with db.get_db() as conn:
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT p.id, p.bot_id, p.user_id, p.exchange_id,
-                           p.coin, p.direction, p.status,
-                           p.avg_cost, p.quantity, p.total_invested,
-                           p.dca_count, p.last_buy_price,
-                           p.tp_armed, p.peak_price, p.queued,
-                           p.standby_amount, p.standby_price,
-                           p.category, p.is_paper, p.base_coin,
-                           p.sequence_number, p.is_gate_reference,
-                           p.coin_trade_number, p.gate_reference_since,
-                           p.checkpoint_reached, p.pending_buyback,
-                           p.opened_at
-                    FROM positions p
-                    WHERE p.coin = %s AND p.status = 'open'
-                    AND p.exchange_id = %s
-                """, (coin, exc_id))
-                positions = cur.fetchall()
+            import time as _t
+            # Refresh cache every 30s
+            if _t.time() - _rt_cache_time > 30:
+                _refresh_rt_cache(exc_id)
+            with _rt_cache_lock:
+                positions = list(_rt_cache.get(coin, []))
 
             if not positions:
                 return
@@ -333,6 +359,10 @@ def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
             active_bots = db.get_active_bots()
             r = get_redis()
             tickers = {f'{coin}/USDT': {'last': price}}
+            # Remove closed positions from cache immediately
+            with _rt_cache_lock:
+                if coin in _rt_cache:
+                    _rt_cache[coin] = [p for p in _rt_cache[coin] if p[6] == 'open']
 
             for pos in positions:
                 bot = next((b for b in active_bots if b[0] == pos[1]), None)
