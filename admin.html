@@ -766,8 +766,11 @@
                     <span>Research Bot Open Positions</span>
                     <span id="research-trades-count" style="font-size:13px;color:var(--muted);font-weight:400"></span>
                 </div>
-                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-                    <span style="font-size:13px;color:var(--muted)">Sort by:</span>
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+                    <input id="trades-method-filter" placeholder="Filter method (e.g. E1)"
+                           oninput="sortResearchTrades()"
+                           style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:13px;width:160px"/>
+                    <span style="font-size:13px;color:var(--muted)">Sort:</span>
                     <select id="trades-sort" onchange="sortResearchTrades()"
                             style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:13px">
                         <option value="opened_at">Opened</option>
@@ -775,6 +778,7 @@
                         <option value="method">Method</option>
                         <option value="dca_count">DCA#</option>
                         <option value="coin">Coin</option>
+                        <option value="bot_name">Bot</option>
                     </select>
                 </div>
                 <div class="table-wrap"><table>
@@ -1001,12 +1005,16 @@
 
     function sortResearchTrades() {
         const key = document.getElementById('trades-sort').value;
-        const sorted = [...(window._researchTrades||[])].sort((a,b) => {
+        const filterEl = document.getElementById('trades-method-filter');
+        const q = filterEl ? filterEl.value.toLowerCase() : '';
+        let data = [...(window._researchTrades||[])];
+        if (q) data = data.filter(p => p.method.toLowerCase().includes(q) || p.bot_name.toLowerCase().includes(q) || p.coin.toLowerCase().includes(q));
+        data.sort((a,b) => {
             if (key === 'pnl_pct') return b.pnl_pct - a.pnl_pct;
             if (key === 'dca_count') return b.dca_count - a.dca_count;
             return String(a[key]).localeCompare(String(b[key]));
         });
-        renderResearchTradesTable(sorted);
+        renderResearchTradesTable(data);
     }
 
     function renderResearchTradesTable(positions) {
