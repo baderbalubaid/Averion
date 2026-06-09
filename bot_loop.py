@@ -384,7 +384,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
     # Check max trades per bot
     open_positions = db.get_open_positions(bot_id=bot_id)
     if len(open_positions) >= trades_per_bot:
-        return
+        return  # Already at max · skip coin scanning entirely
 
     # Get eligible coins
     open_coins = {}
@@ -711,7 +711,22 @@ def run_cycle(r):
         # ─────────────────────────
         # STEP 3: Open new positions
         # ─────────────────────────
-        for bot in bots:
+        # Pre-filter: only bots that haven't reached max trades
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT bot_id, COUNT(*) as cnt
+                FROM positions WHERE status='open'
+                GROUP BY bot_id
+            """)
+            open_counts = {r2[0]: r2[1] for r2 in cur.fetchall()}
+
+        bots_needing_trades = [
+            b for b in bots
+            if open_counts.get(b[0], 0) < int(b[16] or 1)
+        ]
+        print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
+        for bot in bots_needing_trades:
             try_open_position(bot, exchange_obj, tickers, r)
 
     # Record cycle time
