@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
 import entry_signals as es
+from websocket_prices import MexcWebSocketPrices
 import indicators
 _ohlcv_cache = {}
 import telegram as tg
@@ -479,10 +480,24 @@ def run_cycle(r):
         if not exchange_obj:
             continue
 
-        # Fetch all prices at once
-        tickers = fetch_and_cache_prices(
-            exchange_obj, exc_row[2], r
-        )
+        # Use WebSocket prices (already in Redis)
+        # Fall back to REST if WebSocket not providing prices
+        ws_status = r.get('ws:mexc:status')
+        if ws_status == 'connected':
+            # Build tickers from Redis for compatibility
+            tickers = {}
+            keys = r.keys(f'price:{exc_row[2]}:*/USDT')
+            for key in keys:
+                symbol = key.replace(f'price:{exc_row[2]}:', '')
+                price = r.get(key)
+                if price:
+                    tickers[symbol] = {'last': float(price)}
+            if tickers:
+                print(f'✅ WS prices: {len(tickers)} pairs on {exc_row[2]}')
+            else:
+                tickers = fetch_and_cache_prices(exchange_obj, exc_row[2], r)
+        else:
+            tickers = fetch_and_cache_prices(exchange_obj, exc_row[2], r)
 
         if not tickers:
             continue
@@ -646,6 +661,13 @@ def run_bot():
     print('🚀 Bot loop starting...')
     r = get_redis()
     consecutive_errors = 0
+
+    # Start WebSocket price stream in background
+    ws_prices = MexcWebSocketPrices()
+    ws_prices.start_background()
+    import time as _t
+    print('⏳ Waiting 5s for WebSocket to connect...')
+    _t.sleep(5)
 
     while True:
         try:
