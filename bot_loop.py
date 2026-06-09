@@ -52,7 +52,7 @@ def fetch_and_cache_prices(exchange_obj, exchange_name, r):
             if ticker.get('last'):
                 r.setex(
                     f'price:{exchange_name}:{symbol}',
-                    120,
+                    300,
                     str(ticker['last'])
                 )
         print(f'✅ Prices cached: {len(tickers)} pairs on {exchange_name}')
