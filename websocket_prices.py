@@ -29,13 +29,14 @@ def get_redis():
     return redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 class MexcWebSocketPrices:
-    def __init__(self):
+    def __init__(self, tp_callback=None):
         self.r = get_redis()
         self.ws = None
         self.running = False
         self.price_count = 0
         self.last_update = None
         self.errors = 0
+        self.tp_callback = tp_callback  # called on every price update
 
     def on_message(self, ws, msg):
         if isinstance(msg, bytes):
@@ -53,9 +54,14 @@ class MexcWebSocketPrices:
                             t.price
                         )
                         self.price_count += 1
+                        # Event-driven TP check
+                        if self.tp_callback:
+                            try:
+                                self.tp_callback(coin, float(t.price))
+                            except Exception:
+                                pass
                 pipe.execute()
                 self.last_update = datetime.utcnow()
-                # Update status in Redis
                 self.r.setex('ws:mexc:status', 60, 'connected')
                 self.r.setex('ws:mexc:last_update', 60, str(self.last_update))
                 self.r.setex('ws:mexc:price_count', 60, str(self.price_count))
@@ -111,7 +117,9 @@ class MexcWebSocketPrices:
                 print(f'🔄 Reconnecting in {RECONNECT_DELAY}s...')
                 time.sleep(RECONNECT_DELAY)
 
-    def start_background(self):
+    def start_background(self, tp_callback=None):
+        if tp_callback:
+            self.tp_callback = tp_callback
         """Start WebSocket in background thread."""
         t = threading.Thread(target=self.run, daemon=True)
         t.start()
