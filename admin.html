@@ -986,8 +986,11 @@
             const res = await fetch(`${API}/admin/research/positions`, {headers: authHeaders()});
             if (!res.ok) { tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error ${res.status}</td></tr>`; return; }
             const positions = await res.json();
+            // Debug: show count
+            document.getElementById('research-bot-count') && 
+                (document.getElementById('research-bot-count').textContent += ` | Trades API: ${positions.length}`);
             if (!positions.length) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions (API returned 0)</td></tr>';
                 return;
             }
             tbody.innerHTML = positions.map(p => {
