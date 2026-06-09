@@ -617,6 +617,548 @@ def signal_bm_hold(d, p, coin):
     target = p.get('coin', 'BTC')
     return coin.upper() == target.upper()
 
+# ═══════════════════════════════
+# E27 — MACD Histogram Reversal
+# ═══════════════════════════════
+def signal_e27(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    fast = p.get('fast', 12)
+    slow = p.get('slow', 26)
+    signal_period = p.get('signal_period', 9)
+    mode = p.get('mode', 'histogram')
+
+    macd_data = ind.calc_macd(d['close'], fast, slow, signal_period)
+    if macd_data is None:
+        return False
+    hist = macd_data.get('histogram', [])
+    if len(hist) < 3:
+        return False
+    if mode == 'histogram':
+        return hist[-2] < hist[-1] < 0 and hist[-3] < hist[-2]
+    elif mode == 'cross_zero':
+        return hist[-2] < 0 and hist[-1] > 0
+    return False
+
+# ═══════════════════════════════
+# E28 — Keltner Channel Mean Reversion
+# ═══════════════════════════════
+def signal_e28(d, p, _):
+    if not ind.enough(d, 60):
+        return False
+    ema_period = p.get('ema_period', 20)
+    atr_mult   = p.get('atr_mult', 2.0)
+    rsi_max    = p.get('rsi_max', 35)
+
+    kc = ind.calc_keltner(d['high'], d['low'], d['close'], ema_period, atr_mult)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if kc is None or rsi is None:
+        return False
+    return d['close'][-1] < kc['lower'] and rsi < rsi_max
+
+# ═══════════════════════════════
+# E29 — Donchian Breakout Pullback
+# ═══════════════════════════════
+def signal_e29(d, p, _):
+    if not ind.enough(d, 120):
+        return False
+    breakout_high = p.get('breakout_high', 20)
+    pullback_ema  = p.get('pullback_ema', 10)
+    rsi_min       = p.get('rsi_min', 45)
+
+    import numpy as np
+    highest = max(d['high'][-breakout_high:])
+    ema = ind.calc_ema(d['close'], pullback_ema)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if ema is None or rsi is None:
+        return False
+    was_above = any(c > highest * 0.95 for c in d['close'][-breakout_high:-5])
+    pullback = d['close'][-1] < ema
+    return was_above and pullback and rsi > rsi_min
+
+# ═══════════════════════════════
+# E30 — Hurst Exponent Mean Reversion
+# ═══════════════════════════════
+def signal_e30(d, p, _):
+    if not ind.enough(d, 120):
+        return False
+    hurst_max = p.get('hurst_max', 0.45)
+    lookback  = p.get('lookback', 100)
+    drop_pct  = p.get('drop_pct', 5.0)
+
+    import numpy as np
+    prices = np.array(d['close'][-lookback:])
+    # Approximate Hurst exponent using R/S analysis
+    lags = [2, 4, 8, 16, 32]
+    rs_vals = []
+    for lag in lags:
+        if lag >= len(prices):
+            continue
+        ts = prices[-lag:]
+        mean = np.mean(ts)
+        deviation = np.cumsum(ts - mean)
+        r = np.max(deviation) - np.min(deviation)
+        s = np.std(ts)
+        if s > 0:
+            rs_vals.append(r/s)
+    if len(rs_vals) < 3:
+        return False
+    hurst = np.polyfit(np.log(lags[:len(rs_vals)]), np.log(rs_vals), 1)[0]
+
+    if hurst >= hurst_max:
+        return False
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-lookback//4] - d['close'][-1]) / d['close'][-lookback//4] * 100
+    return drop >= drop_pct
+
+# ═══════════════════════════════
+# E31 — Kalman Filter Deviation
+# ═══════════════════════════════
+def signal_e31(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    noise_cov   = p.get('noise_cov', 0.01)
+    deviation   = p.get('deviation_pct', 5.0)
+
+    import numpy as np
+    prices = np.array(d['close'][-50:])
+    # Simple Kalman filter
+    x = prices[0]
+    P = 1.0
+    Q = noise_cov
+    R = 0.1
+    estimates = []
+    for z in prices:
+        P = P + Q
+        K = P / (P + R)
+        x = x + K * (z - x)
+        P = (1 - K) * P
+        estimates.append(x)
+    kalman_val = estimates[-1]
+    if kalman_val == 0:
+        return False
+    dev = (kalman_val - prices[-1]) / kalman_val * 100
+    return dev >= deviation
+
+# ═══════════════════════════════
+# E32 — Session Killzone Sweep
+# ═══════════════════════════════
+def signal_e32(d, p, _):
+    if not ind.enough(d, 5):
+        return False
+    import datetime
+    session   = p.get('session', 'london_ny')
+    drop_pct  = p.get('drop_pct', 3.0)
+    vol_mult  = p.get('vol_mult', 1.5)
+
+    hour = datetime.datetime.utcnow().hour
+    sessions = {
+        'asia_london': list(range(7, 10)),
+        'london_ny':   list(range(13, 16)),
+        'ny_close':    list(range(20, 23)),
+    }
+    if hour not in sessions.get(session, []):
+        return False
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-2] - d['close'][-1]) / d['close'][-2] * 100
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    return drop >= drop_pct and (vr is None or vr >= vol_mult)
+
+# ═══════════════════════════════
+# E33 — Williams %R Reversal
+# ═══════════════════════════════
+def signal_e33(d, p, _):
+    if not ind.enough(d, 20):
+        return False
+    wr_threshold = p.get('wr_threshold', -90)
+    confirmation = p.get('confirmation', 'green')
+
+    import numpy as np
+    period = 14
+    highs = np.array(d['high'][-period:])
+    lows  = np.array(d['low'][-period:])
+    hh = np.max(highs)
+    ll = np.min(lows)
+    if hh == ll:
+        return False
+    wr = (hh - d['close'][-1]) / (hh - ll) * -100
+    if wr > wr_threshold:
+        return False
+    if confirmation == 'green':
+        return d['close'][-1] > d['open'][-1]
+    elif confirmation == 'rsi':
+        rsi = ind.calc_rsi(d['close'], 14)
+        return rsi is not None and rsi > 35
+    elif confirmation == 'vwap':
+        vwap = ind.calc_vwap(d['high'], d['low'], d['close'], d['volume'], 24)
+        return vwap is not None and d['close'][-1] > vwap
+    return True
+
+# ═══════════════════════════════
+# E34 — Choppiness Index Exhaustion
+# ═══════════════════════════════
+def signal_e34(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    lookback  = p.get('lookback', 14)
+    chop_min  = p.get('chop_min', 61.8)
+    drop_pct  = p.get('drop_pct', 3.0)
+
+    highs = np.array(d['high'][-lookback:])
+    lows  = np.array(d['low'][-lookback:])
+    closes = np.array(d['close'][-lookback:])
+    tr = np.maximum(highs[1:] - lows[1:],
+         np.maximum(np.abs(highs[1:] - closes[:-1]),
+                    np.abs(lows[1:] - closes[:-1])))
+    atr_sum = np.sum(tr)
+    hh = np.max(highs)
+    ll = np.min(lows)
+    if (hh - ll) == 0 or atr_sum == 0:
+        return False
+    chop = 100 * np.log10(atr_sum / (hh - ll)) / np.log10(lookback)
+    if chop < chop_min:
+        return False
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-lookback] - d['close'][-1]) / d['close'][-lookback] * 100
+    return drop >= drop_pct
+
+# ═══════════════════════════════
+# E35 — Fisher Transform Reversal
+# ═══════════════════════════════
+def signal_e35(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    period  = p.get('period', 14)
+    trigger = p.get('trigger', -2.0)
+
+    highs  = np.array(d['high'][-period:])
+    lows   = np.array(d['low'][-period:])
+    closes = np.array(d['close'][-period:])
+    hh = np.max(highs)
+    ll = np.min(lows)
+    if hh == ll:
+        return False
+    val = 2 * ((closes[-1] - ll) / (hh - ll)) - 1
+    val = min(max(val, -0.999), 0.999)
+    fisher = 0.5 * np.log((1 + val) / (1 - val))
+    val2 = 2 * ((closes[-2] - ll) / (hh - ll)) - 1
+    val2 = min(max(val2, -0.999), 0.999)
+    fisher2 = 0.5 * np.log((1 + val2) / (1 - val2))
+    return fisher < trigger and fisher > fisher2  # hooking up
+
+# ═══════════════════════════════
+# E36 — ALMA Deviation Entry
+# ═══════════════════════════════
+def signal_e36(d, p, _):
+    if not ind.enough(d, 60):
+        return False
+    import numpy as np
+    window    = p.get('window', 21)
+    offset    = p.get('offset', 0.85)
+    sigma     = p.get('sigma', 6.0)
+    drop_pct  = p.get('drop_pct', 3.0)
+
+    closes = np.array(d['close'][-window:])
+    m = offset * (window - 1)
+    s = window / sigma
+    weights = np.exp(-((np.arange(window) - m) ** 2) / (2 * s * s))
+    weights /= weights.sum()
+    alma = np.dot(weights, closes)
+    if alma == 0:
+        return False
+    dev = (alma - d['close'][-1]) / alma * 100
+    return dev >= drop_pct
+
+# ═══════════════════════════════
+# E37 — BTC Regime Filter
+# ═══════════════════════════════
+def signal_e37(d, p, btc_data):
+    if not ind.enough(d, 20):
+        return False
+    if btc_data is None or not ind.enough(btc_data, 200):
+        return True  # no BTC data - allow entry
+    filter_type = p.get('filter', 'ema200')
+    drop_pct    = p.get('drop_pct', 5.0)
+
+    btc_close = btc_data['close']
+    if filter_type == 'ema200':
+        ema = ind.calc_ema(btc_close, 200)
+        if ema is None or btc_close[-1] < ema:
+            return False
+    elif filter_type == 'ema100':
+        ema = ind.calc_ema(btc_close, 100)
+        if ema is None or btc_close[-1] < ema:
+            return False
+    elif filter_type == 'rsi45':
+        rsi = ind.calc_rsi(btc_close, 14)
+        if rsi is None or rsi < 45:
+            return False
+    elif filter_type == 'drop3':
+        if btc_close[-2] > 0:
+            btc_drop = (btc_close[-25] - btc_close[-1]) / btc_close[-25] * 100
+            if btc_drop > 3:
+                return False
+
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-10] - d['close'][-1]) / d['close'][-10] * 100
+    return drop >= drop_pct
+
+# ═══════════════════════════════
+# E38 — Relative Volume Breakout
+# ═══════════════════════════════
+def signal_e38(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    vol_mult  = p.get('vol_mult', 3.0)
+    drop_pct  = p.get('drop_pct', 5.0)
+    rsi_max   = p.get('rsi_max', 40)
+
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if vr is None or rsi is None:
+        return False
+    if d['close'][-2] == 0:
+        return False
+    drop = (d['close'][-5] - d['close'][-1]) / d['close'][-5] * 100
+    return vr >= vol_mult and drop >= drop_pct and rsi < rsi_max
+
+# ═══════════════════════════════
+# E39 — MFI Oversold Bounce
+# ═══════════════════════════════
+def signal_e39(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    mfi_max  = p.get('mfi_max', 20)
+    rsi_max  = p.get('rsi_max', 35)
+    vol_mult = p.get('vol_mult', 1.0)
+    period = 14
+
+    tp = (np.array(d['high'][-period-1:]) + np.array(d['low'][-period-1:]) + np.array(d['close'][-period-1:])) / 3
+    raw_mf = tp * np.array(d['volume'][-period-1:])
+    pos_mf = sum(raw_mf[i] for i in range(1, period+1) if tp[i] > tp[i-1])
+    neg_mf = sum(raw_mf[i] for i in range(1, period+1) if tp[i] < tp[i-1])
+    if neg_mf == 0:
+        return False
+    mfi = 100 - (100 / (1 + pos_mf/neg_mf))
+    rsi = ind.calc_rsi(d['close'], 14)
+    vr  = ind.calc_volume_ratio(d['volume'], 20)
+    if rsi is None:
+        return False
+    return mfi < mfi_max and rsi < rsi_max and (vr is None or vr >= vol_mult)
+
+# ═══════════════════════════════
+# E40 — Wick Capitulation
+# ═══════════════════════════════
+def signal_e40(d, p, _):
+    if not ind.enough(d, 10):
+        return False
+    wick_ratio = p.get('wick_ratio', 3.0)
+    vol_mult   = p.get('vol_mult', 2.0)
+    drop_pct   = p.get('drop_pct', 5.0)
+
+    o, h, l, c = d['open'][-1], d['high'][-1], d['low'][-1], d['close'][-1]
+    body = abs(c - o)
+    lower_wick = min(o, c) - l
+    if body == 0:
+        return False
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if d['close'][-5] == 0:
+        return False
+    drop = (d['close'][-5] - c) / d['close'][-5] * 100
+    return (lower_wick / body >= wick_ratio and
+            (vr is None or vr >= vol_mult) and
+            drop >= drop_pct)
+
+# ═══════════════════════════════
+# E41 — TTM Squeeze Fakeout
+# ═══════════════════════════════
+def signal_e41(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    bb_period = p.get('bb_period', 20)
+    kc_mult   = p.get('kc_mult', 1.5)
+    fakeout   = p.get('fakeout_pct', 3.0)
+
+    bb = ind.calc_bollinger(d['close'], bb_period, 2.0)
+    kc = ind.calc_keltner(d['high'], d['low'], d['close'], bb_period, kc_mult)
+    if bb is None or kc is None:
+        return False
+    # Squeeze: BB inside KC
+    squeeze = bb['upper'] < kc['upper'] and bb['lower'] > kc['lower']
+    if not squeeze:
+        return False
+    if d['close'][-4] == 0:
+        return False
+    drop = (d['close'][-4] - d['close'][-1]) / d['close'][-4] * 100
+    return drop >= fakeout
+
+# ═══════════════════════════════
+# E42 — Chaikin Money Flow Divergence
+# ═══════════════════════════════
+def signal_e42(d, p, _):
+    if not ind.enough(d, 60):
+        return False
+    import numpy as np
+    period    = p.get('period', 21)
+    cmf_min   = p.get('cmf_min', 0.0)
+    drop_pct  = p.get('drop_pct', 5.0)
+
+    highs  = np.array(d['high'][-period:])
+    lows   = np.array(d['low'][-period:])
+    closes = np.array(d['close'][-period:])
+    vols   = np.array(d['volume'][-period:])
+    hl     = highs - lows
+    hl[hl == 0] = 1e-9
+    mfm = ((closes - lows) - (highs - closes)) / hl
+    mfv = mfm * vols
+    cmf = np.sum(mfv) / np.sum(vols) if np.sum(vols) > 0 else 0
+    if d['close'][-period] == 0:
+        return False
+    drop = (d['close'][-period] - d['close'][-1]) / d['close'][-period] * 100
+    return cmf > cmf_min and drop >= drop_pct
+
+# ═══════════════════════════════
+# E43 — QQE Momentum
+# ═══════════════════════════════
+def signal_e43(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    import numpy as np
+    qqe_factor = p.get('qqe_factor', 4.236)
+    rsi_period = 14
+
+    rsi = ind.calc_rsi(d['close'], rsi_period)
+    if rsi is None:
+        return False
+    # Smooth RSI
+    closes = np.array(d['close'][-30:])
+    rsi_vals = []
+    for i in range(14, len(closes)):
+        r = ind.calc_rsi(closes[:i+1].tolist(), rsi_period)
+        if r is not None:
+            rsi_vals.append(r)
+    if len(rsi_vals) < 5:
+        return False
+    rsi_smooth = sum(rsi_vals[-5:]) / 5
+    atr_rsi = max(rsi_vals[-5:]) - min(rsi_vals[-5:])
+    qqe_line = rsi_smooth - qqe_factor * atr_rsi
+    return rsi < 30 and qqe_line < 30 and rsi > rsi_vals[-2] if len(rsi_vals) >= 2 else False
+
+# ═══════════════════════════════
+# E44 — Multi-Signal Score Bot
+# ═══════════════════════════════
+def signal_e44(d, p, btc_data):
+    if not ind.enough(d, 50):
+        return False
+    min_score   = p.get('min_score', 3)
+    drop_pct    = p.get('drop_pct', 3.0)
+
+    score = 0
+    # RSI oversold
+    rsi = ind.calc_rsi(d['close'], 14)
+    if rsi is not None and rsi < 35: score += 1
+    # Price below VWAP
+    vwap = ind.calc_vwap(d['high'], d['low'], d['close'], d['volume'], 24)
+    if vwap is not None and d['close'][-1] < vwap * 0.97: score += 1
+    # Volume spike
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if vr is not None and vr > 2.0: score += 1
+    # Price drop
+    if d['close'][-10] > 0:
+        drop = (d['close'][-10] - d['close'][-1]) / d['close'][-10] * 100
+        if drop >= drop_pct: score += 1
+    # BTC safe
+    if btc_data is not None and ind.enough(btc_data, 50):
+        btc_rsi = ind.calc_rsi(btc_data['close'], 14)
+        if btc_rsi is not None and btc_rsi > 40: score += 1
+    # BB lower band
+    bb = ind.calc_bollinger(d['close'], 20, 2.0)
+    if bb is not None and d['close'][-1] < bb['lower']: score += 1
+
+    return score >= min_score
+
+# ═══════════════════════════════
+# E45 — Ensemble Best Methods
+# ═══════════════════════════════
+def signal_e45(d, p, btc_data):
+    """Combines E1 + E10 + E22 signals"""
+    if not ind.enough(d, 50):
+        return False
+    mode = p.get('mode', 'any2')
+
+    results = []
+    # E1-style: RSI + VWAP
+    rsi = ind.calc_rsi(d['close'], 14)
+    vwap = ind.calc_vwap(d['high'], d['low'], d['close'], d['volume'], 24)
+    if rsi is not None and vwap is not None:
+        results.append(rsi < 30 and d['close'][-1] < vwap * 0.97)
+    # E10-style: price drop
+    if d['close'][-12] > 0:
+        drop = (d['close'][-12] - d['close'][-1]) / d['close'][-12] * 100
+        results.append(drop >= 5.0)
+    # Volume spike
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    results.append(vr is not None and vr > 2.5)
+
+    hits = sum(1 for r in results if r)
+    if mode == 'any2':
+        return hits >= 2
+    elif mode == 'all':
+        return all(results)
+    return hits >= 1
+
+# ═══════════════════════════════
+# E46 — CVD Approximation (Volume Delta)
+# ═══════════════════════════════
+def signal_e46(d, p, _):
+    """Approximates CVD divergence using price direction + volume"""
+    if not ind.enough(d, 50):
+        return False
+    import numpy as np
+    lookback  = p.get('lookback', 24)
+    drop_pct  = p.get('drop_pct', 5.0)
+    div_pct   = p.get('div_pct', 2.0)
+
+    closes = np.array(d['close'][-lookback:])
+    opens  = np.array(d['open'][-lookback:])
+    vols   = np.array(d['volume'][-lookback:])
+    # Approximate CVD: buy vol when green, sell vol when red
+    delta = np.where(closes > opens, vols, -vols)
+    cvd = np.cumsum(delta)
+    # Price makes lower low but CVD makes higher low
+    price_drop = (closes[0] - closes[-1]) / closes[0] * 100 if closes[0] > 0 else 0
+    cvd_change = (cvd[-1] - cvd[0]) / (abs(cvd[0]) + 1) * 100
+    return price_drop >= drop_pct and cvd_change > div_pct
+
+# ═══════════════════════════════
+# E47 — ATR Expansion Breakout
+# ═══════════════════════════════
+def signal_e47(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    atr_mult  = p.get('atr_mult', 2.0)
+    vol_mult  = p.get('vol_mult', 2.0)
+
+    atr = ind.calc_atr(d['high'], d['low'], d['close'], 14)
+    avg_atr = ind.calc_atr(d['high'], d['low'], d['close'], 50)
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if atr is None or avg_atr is None or avg_atr == 0:
+        return False
+    atr_expansion = atr / avg_atr
+    rsi = ind.calc_rsi(d['close'], 14)
+    return (atr_expansion >= atr_mult and
+            (vr is None or vr >= vol_mult) and
+            rsi is not None and rsi < 40)
+
+
 SIGNAL_MAP = {
     'E1':   signal_e1,
     'E2':   signal_e2,
@@ -649,4 +1191,26 @@ SIGNAL_MAP = {
     'BM_STATIC': signal_bm_static,
     'BM_RANDOM': signal_bm_random,
     'BM_HOLD':   signal_bm_hold,
+    'E27': signal_e27,
+    'E28': signal_e28,
+    'E29': signal_e29,
+    'E30': signal_e30,
+    'E31': signal_e31,
+    'E32': signal_e32,
+    'E33': signal_e33,
+    'E34': signal_e34,
+    'E35': signal_e35,
+    'E36': signal_e36,
+    'E37': signal_e37,
+    'E38': signal_e38,
+    'E39': signal_e39,
+    'E40': signal_e40,
+    'E41': signal_e41,
+    'E42': signal_e42,
+    'E43': signal_e43,
+    'E44': signal_e44,
+    'E45': signal_e45,
+    'E46': signal_e46,
+    'E47': signal_e47,
 }
+
