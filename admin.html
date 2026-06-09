@@ -977,6 +977,38 @@
     if (!TOKEN) window.location.href = '/login';
 
     // ── TABS ─────────────────────────────────────
+    async function loadResearchTrades() {
+        const tbody = document.getElementById('research-trades-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/positions`, {headers: authHeaders()});
+            if (!res.ok) { tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error ${res.status}</td></tr>`; return; }
+            const positions = await res.json();
+            if (!positions.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions</td></tr>';
+                return;
+            }
+            tbody.innerHTML = positions.map(p => {
+                const pnl = '—';
+                const days = Math.floor((Date.now() - new Date(p.opened_at+'Z')) / 86400000);
+                return `<tr>
+                    <td style="font-size:12px">${p.bot_name}</td>
+                    <td><span class="badge badge-blue">${p.method}</span></td>
+                    <td><b>${p.coin}</b></td>
+                    <td>$${parseFloat(p.avg_cost).toPrecision(4)}</td>
+                    <td>—</td>
+                    <td>${p.dca_count}</td>
+                    <td>—</td>
+                    <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
+                    <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
+                </tr>`;
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
     async function bulkSetTrades(scope) {
         const bots = window._researchBots || [];
         const filtered = scope === 'all' ? bots : (bots.filter(b => {
@@ -1000,6 +1032,38 @@
         }
         alert(`✅ Updated ${done} bots`);
         await loadResearchBots();
+    }
+
+    async function loadResearchTrades() {
+        const tbody = document.getElementById('research-trades-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/positions`, {headers: authHeaders()});
+            if (!res.ok) { tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error ${res.status}</td></tr>`; return; }
+            const positions = await res.json();
+            if (!positions.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No open research positions</td></tr>';
+                return;
+            }
+            tbody.innerHTML = positions.map(p => {
+                const pnl = '—';
+                const days = Math.floor((Date.now() - new Date(p.opened_at+'Z')) / 86400000);
+                return `<tr>
+                    <td style="font-size:12px">${p.bot_name}</td>
+                    <td><span class="badge badge-blue">${p.method}</span></td>
+                    <td><b>${p.coin}</b></td>
+                    <td>$${parseFloat(p.avg_cost).toPrecision(4)}</td>
+                    <td>—</td>
+                    <td>${p.dca_count}</td>
+                    <td>—</td>
+                    <td>$${parseFloat(p.total_invested).toFixed(2)}</td>
+                    <td style="font-size:11px;color:var(--muted)">${p.opened_at.substring(0,16)}</td>
+                </tr>`;
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
     }
 
     async function bulkSetTrades(scope) {
@@ -1114,6 +1178,7 @@
             active.style.color = 'var(--text)';
         }
         if (name === 'r-bots') loadResearchBots();
+        if (name === 'r-trades') loadResearchTrades();
         // Show/hide sub-content
         ['r-trades','r-history','r-champion','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
@@ -1122,7 +1187,7 @@
     }
 
     function switchTab(name) {
-        if (name === 'research') loadResearchBots();
+        if (name === 'research') { loadResearchBots(); loadResearchTrades(); }
         document.querySelectorAll('.tab').forEach((t, i) => {
             t.classList.toggle('active',
                 t.textContent.toLowerCase().includes(name) ||
