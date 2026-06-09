@@ -300,17 +300,18 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
                 total_invested, last_buy_price, category,
                 is_paper, base_coin, profit_coin, sequence_number,
                 coin_trade_number, entry_method,
-                is_gate_reference, gate_reference_since
+                is_gate_reference, gate_reference_since, is_research
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, TRUE, NOW()
+                %s, TRUE, NOW(),
+                (SELECT is_research FROM bots WHERE id=%s)
             ) RETURNING id
         """, (bot_id, user_id, exchange_id, wallet_id,
               coin, direction, avg_cost, quantity,
               total_invested, last_buy_price, category,
               is_paper, base_coin, profit_coin, sequence_number,
-              coin_trade_number, entry_method))
+              coin_trade_number, entry_method, bot_id))
         return cur.fetchone()[0]
 
 def update_position_after_dca(position_id, avg_cost,
