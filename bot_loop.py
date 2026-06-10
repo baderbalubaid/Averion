@@ -154,7 +154,7 @@ def execute_buy(exchange_obj, coin, amount_usdt,
             if keys:
                 price = float(r.get(keys[0]))
         if not price:
-            print(f'No price for {coin} · skipping paper trade')
+            pass  # No price · skip silently
             return None
 
         quantity = amount_usdt / price
