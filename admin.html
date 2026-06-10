@@ -1387,7 +1387,24 @@
     }
 
     // ── HEALTH ────────────────────────────────────
-    async function loadHealth() {
+    async function loadWSStatus() {
+       try {
+           const r = await fetch(`${API}/admin/ws-status`, {headers: headers()});
+           const d = await r.json();
+           const statusEl = document.getElementById('ws-mexc-status');
+           const priceCount = document.getElementById('ws-price-count');
+           const totalCount = document.getElementById('ws-total-count');
+           if (statusEl) {
+               const connected = d.status === 'connected';
+               statusEl.textContent = d.status || 'unknown';
+               statusEl.className = connected ? 'badge badge-green' : 'badge badge-red';
+           }
+           if (priceCount) priceCount.textContent = (d.price_count || 0).toLocaleString() + ' coins';
+           if (totalCount) totalCount.textContent = (d.total_updates || 0).toLocaleString() + ' updates';
+       } catch(e) {}
+   }
+
+   async function loadHealth() {
         try {
             const res = await fetch(`${API}/admin/health`,
                 { headers: headers() });
@@ -1676,6 +1693,7 @@
         await loadStatus();
         await loadAdminStats();
         await loadHealth();
+        await loadWSStatus();
         await loadCronStatus();
         loadResearchBots();
     }
@@ -1683,6 +1701,7 @@
     init();
     setInterval(loadStatus, 30000);
     setInterval(loadHealth, 60000);
+    setInterval(loadWSStatus, 10000);
     setInterval(loadCronStatus, 60000);
     setInterval(() => {
         const tradesTab = document.getElementById("sub-r-trades");
