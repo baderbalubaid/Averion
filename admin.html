@@ -1394,7 +1394,7 @@
             const rows = await res.json();
             if (!rows.length) return;
 
-            const latest = rows[rows.length - 1];
+            const latest = rows[0];
             const cpu = latest.cpu || 0;
             const ram = latest.ram || 0;
             const disk = latest.disk || 0;
