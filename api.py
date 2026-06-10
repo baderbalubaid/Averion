@@ -949,12 +949,29 @@ def admin_health(payload: dict = Depends(require_admin)):
            ORDER BY checked_at DESC LIMIT 168
        """)
        rows = cur.fetchall()
-   return [{
+   # Get absolute values from psutil
+   try:
+       import psutil
+       mem = psutil.virtual_memory()
+       disk = psutil.disk_usage('/')
+       ram_total_gb = round(mem.total / 1024**3, 1)
+       ram_used_gb  = round(mem.used / 1024**3, 1)
+       disk_total_gb = round(disk.total / 1024**3, 1)
+       disk_used_gb  = round(disk.used / 1024**3, 1)
+   except:
+       ram_total_gb = ram_used_gb = disk_total_gb = disk_used_gb = 0
+   result = [{
        'cpu': float(r[0] or 0),
        'ram': float(r[1] or 0),
        'disk': float(r[2] or 0),
        'checked_at': str(r[3])
    } for r in rows]
+   if result:
+       result[0]['ram_used_gb'] = ram_used_gb
+       result[0]['ram_total_gb'] = ram_total_gb
+       result[0]['disk_used_gb'] = disk_used_gb
+       result[0]['disk_total_gb'] = disk_total_gb
+   return result
 
 # ═══════════════════════════════
 # AUTH — REGISTER / VERIFY
@@ -1406,3 +1423,21 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
