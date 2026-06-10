@@ -802,6 +802,13 @@
         </div>
         <div id="sub-r-champion" style="display:none">
             <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between">
+                    <span>🏆 Champion Score Board</span>
+                    <button onclick="loadChampions()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                </div>
+                <div id="champion-content"><p style="color:var(--muted)">Click Refresh to load scores</p></div>
+            </div>
+            <div class="card">
                 <div class="card-title">🏆 RARS Champion Leaderboard</div>
                 <p style="color:var(--muted);font-size:13px;margin-bottom:12px">RARS = 35% Cap Efficiency · 30% Drawdown · 20% Win Rate · 15% Profit Factor</p>
                 <div class="table-wrap"><table>
@@ -1077,6 +1084,47 @@
         }
     }
 
+    async function loadChampions() {
+        const el = document.getElementById('champion-content');
+        if (!el) return;
+        el.innerHTML = '<p style="color:var(--muted)">Loading scores...</p>';
+        try {
+            const res = await fetch(`${API}/admin/research/champions`, {headers: authHeaders()});
+            const scores = await res.json();
+            if (!scores.length) {
+                el.innerHTML = '<p style="color:var(--muted)">No data yet · need 3+ closed trades per method</p>';
+                return;
+            }
+            const medals = ['🥇','🥈','🥉'];
+            el.innerHTML = `
+            <table class="data-table" style="width:100%">
+                <thead><tr>
+                    <th>Rank</th><th>Method</th><th>RARS</th>
+                    <th>Trades</th><th>Win%</th><th>Avg P&L</th>
+                    <th>Cap Eff%</th><th>Max DD%</th><th>Hold Hrs</th>
+                </tr></thead>
+                <tbody>
+                ${scores.map((s,i) => `<tr>
+                    <td>${medals[i]||'#'+(i+1)}</td>
+                    <td><b>${s.method}</b></td>
+                    <td><span style="color:${s.rars_score>70?'#27ae60':s.rars_score>50?'#f39c12':'#e74c3c'};font-weight:bold">${s.rars_score}</span></td>
+                    <td>${s.trade_count}</td>
+                    <td style="color:${s.win_rate>=80?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
+                    <td style="color:#27ae60">+$${s.avg_profit_per_trade}</td>
+                    <td>${s.capital_efficiency}%</td>
+                    <td style="color:${s.max_drawdown<5?'#27ae60':'#e74c3c'}">${s.max_drawdown}%</td>
+                    <td>${s.avg_hold_hours}h</td>
+                </tr>`).join('')}
+                </tbody>
+            </table>
+            <p style="color:var(--muted);font-size:12px;margin-top:8px">
+                RARS = 35% Capital Efficiency + 30% Drawdown Control + 20% Win Rate + 15% Profit Factor
+            </p>`;
+        } catch(e) {
+            el.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+        }
+    }
+
     async function loadResearchHistory() {
         const tbody = document.getElementById('research-history-tbody');
         if (!tbody) return;
@@ -1238,6 +1286,7 @@
         // Load data AFTER tab is visible
         if (name === 'r-trades') loadResearchTrades();
         if (name === 'r-history') loadResearchHistory();
+        if (name === 'r-champion') loadChampions();
     }
 
     function switchTab(name) {
