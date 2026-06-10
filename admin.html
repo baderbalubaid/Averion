@@ -838,7 +838,7 @@
         </div>
         <div id="sub-r-bots">
             <div class="card">
-                <div class="card-title">Research Bots · 261 total</div>
+                <div class="card-title">Research Bots · 366 total</div>
                 <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
                     <input id="bot-method-filter" placeholder="Filter by method (e.g. E1)"
                            oninput="filterResearchBots()"
@@ -1352,7 +1352,7 @@
                 badge.className = 'badge badge-red';
                 badge.textContent = 'Stopped';
             }
-            detail.textContent = `Last: ${data.last_cycle || 'never'}`;
+            const lc = data.last_cycle; detail.textContent = 'Last: ' + (lc && lc !== 'never' ? new Date(lc.replace(' ','T')+'Z').toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : 'never');
 
             document.getElementById('last-updated').textContent =
                 `Updated: ${new Date().toLocaleTimeString()}`;
