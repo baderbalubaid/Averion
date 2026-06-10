@@ -550,8 +550,8 @@ def run_cycle(r):
         cur = conn.cursor()
         cur.execute("""
             UPDATE bots b SET trades_per_bot =
-                GREATEST(1, (SELECT COUNT(*) FROM positions p
-                    WHERE p.bot_id=b.id AND p.status='open') + 1)
+                LEAST(250, GREATEST(1, (SELECT COUNT(*) FROM positions p
+                    WHERE p.bot_id=b.id AND p.status='open') + 1))
             WHERE b.is_research=TRUE AND b.trading_on=TRUE
         """)
 
