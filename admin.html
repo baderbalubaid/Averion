@@ -802,9 +802,12 @@
         </div>
         <div id="sub-r-champion" style="display:none">
             <div class="card">
-                <div class="card-title" style="display:flex;justify-content:space-between">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
                     <span>🏆 Champion Score Board</span>
-                    <button onclick="loadChampions()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="loadChampions()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                        <button onclick="downloadChampions()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">⬇ Download</button>
+                    </div>
                 </div>
                 <div id="champion-content"><p style="color:var(--muted)">Click Refresh to load scores</p></div>
             </div>
@@ -1082,6 +1085,21 @@
         } catch(e) {
             tbody.innerHTML = `<tr><td colspan="9" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
         }
+    }
+
+    async function downloadChampions() {
+        const res = await fetch(`${API}/admin/research/champions`, {headers: authHeaders()});
+        const scores = await res.json();
+        if (!scores.length) return;
+        const headers = ['Rank','Method','RARS','Status','Trades','Win%','AvgProfit','AvgDCA','HoldHrs','TotalProfit'];
+        const rows = scores.map((s,i) => [i+1, s.method, s.rars_score, s.status, s.trade_count, s.win_rate, s.avg_profit_per_trade, s.avg_dca, s.avg_hold_hours, s.total_profit]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], {type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `averion_rars_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
     }
 
     async function loadChampions() {
