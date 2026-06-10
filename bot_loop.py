@@ -555,6 +555,17 @@ def run_cycle(r):
             WHERE b.is_research=TRUE AND b.trading_on=TRUE
         """)
 
+    # Run coin classification once per day
+    _classify_key = 'classify:last_run'
+    if not r.get(_classify_key):
+        try:
+            import classify_coins
+            classify_coins.run()
+            r.setex(_classify_key, 86400, '1')  # 24h
+            print('✅ Coin classification updated')
+        except Exception as e:
+            print(f'⚠️ Classification error: {e}')
+
     # Pre-fetch BTC data and init OHLCV cache for this cycle
     global _ohlcv_cache
     _ohlcv_cache = {}
