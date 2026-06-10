@@ -1159,6 +1159,294 @@ def signal_e47(d, p, _):
             rsi is not None and rsi < 40)
 
 
+# ═══════════════════════════════
+# E48 — Volume Before Price
+# Price flat but volume exploding = smart money entering
+# ═══════════════════════════════
+def signal_e48(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    import numpy as np
+    vol_mult  = p.get('vol_mult', 3.0)
+    max_price_move = p.get('max_price_move', 3.0)  # price NOT already pumped
+
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if vr is None or vr < vol_mult:
+        return False
+    if d['close'][-5] == 0:
+        return False
+    price_move = abs(d['close'][-1] - d['close'][-5]) / d['close'][-5] * 100
+    # Volume spiking but price NOT yet moved much
+    return price_move < max_price_move
+
+# ═══════════════════════════════
+# E49 — Relative Strength Explosion
+# Coin moving much stronger than BTC
+# ═══════════════════════════════
+def signal_e49(d, p, btc_data):
+    if not ind.enough(d, 10):
+        return False
+    if btc_data is None or not ind.enough(btc_data, 10):
+        return False
+    min_strength = p.get('min_strength', 5.0)
+    lookback = p.get('lookback', 4)
+
+    if d['close'][-lookback] == 0 or btc_data['close'][-lookback] == 0:
+        return False
+    coin_return = (d['close'][-1] - d['close'][-lookback]) / d['close'][-lookback] * 100
+    btc_return  = (btc_data['close'][-1] - btc_data['close'][-lookback]) / btc_data['close'][-lookback] * 100
+    strength = coin_return - btc_return
+    return strength >= min_strength and coin_return > 0
+
+# ═══════════════════════════════
+# E50 — Compression Breakout
+# BB squeeze → breakout with volume
+# ═══════════════════════════════
+def signal_e50(d, p, _):
+    if not ind.enough(d, 50):
+        return False
+    import numpy as np
+    compression_days = p.get('compression_days', 5)
+    vol_mult = p.get('vol_mult', 3.0)
+
+    # BB width compression
+    bb = ind.calc_bollinger(d['close'], 20, 2.0)
+    if bb is None:
+        return False
+    bb_width = (bb['upper'] - bb['lower']) / d['close'][-1] * 100
+
+    # Historical BB widths
+    widths = []
+    closes = d['close']
+    for i in range(compression_days * 24, len(closes) - 1):
+        bb_h = ind.calc_bollinger(closes[:i], 20, 2.0)
+        if bb_h:
+            widths.append((bb_h['upper'] - bb_h['lower']) / closes[i] * 100)
+        if len(widths) >= 10:
+            break
+
+    if not widths:
+        return False
+    avg_width = sum(widths) / len(widths)
+
+    # Currently compressed AND price breaking up
+    compressed = bb_width < avg_width * 0.7
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    breakout = d['close'][-1] > bb['upper']
+    return compressed and breakout and (vr is None or vr >= vol_mult)
+
+# ═══════════════════════════════
+# E51 — Top Gainers Pullback
+# Buy after first pump + controlled pullback
+# ═══════════════════════════════
+def signal_e51(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    pump_pct    = p.get('pump_pct', 20.0)
+    pullback_pct = p.get('pullback_pct', 8.0)
+    max_pullback = p.get('max_pullback', 20.0)
+
+    # Find recent peak
+    import numpy as np
+    closes = np.array(d['close'][-24:])
+    peak_idx = np.argmax(closes)
+    peak = closes[peak_idx]
+    current = closes[-1]
+    low_before_peak = min(closes[:peak_idx+1]) if peak_idx > 0 else closes[0]
+
+    if low_before_peak == 0 or peak == 0:
+        return False
+
+    pump = (peak - low_before_peak) / low_before_peak * 100
+    pullback = (peak - current) / peak * 100
+
+    return (pump >= pump_pct and
+            pullback >= pullback_pct and
+            pullback <= max_pullback and
+            peak_idx < len(closes) - 1)  # peak not at current candle
+
+# ═══════════════════════════════
+# E52 — Wyckoff Flatline Breakout
+# Dead zone → violent breakout
+# ═══════════════════════════════
+def signal_e52(d, p, _):
+    if not ind.enough(d, 80):
+        return False
+    import numpy as np
+    flatline_hours = p.get('flatline_hours', 48)
+    max_range_pct  = p.get('max_range_pct', 3.0)
+    vol_mult       = p.get('vol_mult', 5.0)
+
+    flat_prices = d['close'][-flatline_hours:-1]
+    if not flat_prices or min(flat_prices) == 0:
+        return False
+
+    price_range = (max(flat_prices) - min(flat_prices)) / min(flat_prices) * 100
+    if price_range > max_range_pct:
+        return False
+
+    # Now breaking out
+    resistance = max(flat_prices)
+    breakout = d['close'][-1] > resistance
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    return breakout and (vr is None or vr >= vol_mult)
+
+# ═══════════════════════════════
+# E53 — Volatility Expansion Chain
+# ATR expanding before price moves
+# ═══════════════════════════════
+def signal_e53(d, p, _):
+    if not ind.enough(d, 60):
+        return False
+    atr_increase = p.get('atr_increase', 0.5)  # 50% increase
+    vol_mult     = p.get('vol_mult', 2.0)
+
+    atr_now = ind.calc_atr(d['high'], d['low'], d['close'], 14)
+    atr_prev = ind.calc_atr(d['high'][:-6], d['low'][:-6], d['close'][:-6], 14)
+    if atr_now is None or atr_prev is None or atr_prev == 0:
+        return False
+
+    atr_expansion = (atr_now - atr_prev) / atr_prev
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    rsi = ind.calc_rsi(d['close'], 14)
+
+    return (atr_expansion >= atr_increase and
+            (vr is None or vr >= vol_mult) and
+            rsi is not None and rsi > 45)  # not oversold, momentum building
+
+# ═══════════════════════════════
+# E54 — Failed Breakdown Reversal
+# Support breaks → everyone panic sells → price reclaims
+# ═══════════════════════════════
+def signal_e54(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    breakdown_pct = p.get('breakdown_pct', 3.0)
+    reclaim_pct   = p.get('reclaim_pct', 0.5)
+
+    # Find recent support (low of last 20 candles excluding last 3)
+    import numpy as np
+    support = min(d['low'][-20:-3])
+    if support == 0:
+        return False
+
+    # Price broke below support
+    broke_below = any(c < support for c in d['close'][-5:-1])
+    if not broke_below:
+        return False
+
+    # How far below
+    min_price = min(d['close'][-5:-1])
+    breakdown = (support - min_price) / support * 100
+    if breakdown < breakdown_pct:
+        return False
+
+    # Now reclaimed support
+    reclaimed = d['close'][-1] > support
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    return reclaimed and (vr is None or vr >= 1.5)
+
+# ═══════════════════════════════
+# E55 — Relative Volume Leaderboard
+# Coin has highest vol/avg ratio = pump candidate
+# ═══════════════════════════════
+def signal_e55(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    min_vol_mult = p.get('min_vol_mult', 5.0)
+    rsi_min      = p.get('rsi_min', 40)
+    rsi_max      = p.get('rsi_max', 70)
+
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if vr is None or rsi is None:
+        return False
+    # High volume but RSI not yet overbought = early pump
+    return vr >= min_vol_mult and rsi_min <= rsi <= rsi_max
+
+# ═══════════════════════════════
+# E56 — Smart Money Footprint
+# Price flat but OBV + volume rising = accumulation
+# ═══════════════════════════════
+def signal_e56(d, p, _):
+    if not ind.enough(d, 30):
+        return False
+    import numpy as np
+    max_price_move = p.get('max_price_move', 2.0)
+    vol_mult       = p.get('vol_mult', 2.0)
+    lookback       = p.get('lookback', 10)
+
+    closes = np.array(d['close'][-lookback:])
+    volumes = np.array(d['volume'][-lookback:])
+
+    if closes[0] == 0:
+        return False
+
+    # Price relatively flat
+    price_move = abs(closes[-1] - closes[0]) / closes[0] * 100
+    if price_move > max_price_move:
+        return False
+
+    # Volume trending up (later candles have more volume)
+    early_vol = np.mean(volumes[:lookback//2])
+    late_vol  = np.mean(volumes[lookback//2:])
+    vol_growing = late_vol > early_vol * vol_mult
+
+    # OBV rising
+    obv = 0
+    obv_vals = []
+    for i in range(1, len(closes)):
+        if closes[i] > closes[i-1]:
+            obv += volumes[i]
+        elif closes[i] < closes[i-1]:
+            obv -= volumes[i]
+        obv_vals.append(obv)
+    obv_rising = len(obv_vals) >= 4 and obv_vals[-1] > obv_vals[-4]
+
+    return vol_growing and obv_rising
+
+# ═══════════════════════════════
+# E57 — Consensus Pump Engine
+# Multiple signals agree = high confidence pump
+# ═══════════════════════════════
+def signal_e57(d, p, btc_data):
+    if not ind.enough(d, 50):
+        return False
+    min_votes = p.get('min_votes', 4)
+
+    votes = 0
+    # Vote 1: Volume surge
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if vr and vr > 3.0: votes += 1
+    # Vote 2: Relative strength vs BTC
+    if btc_data and ind.enough(btc_data, 5):
+        if d['close'][-5] > 0 and btc_data['close'][-5] > 0:
+            coin_r = (d['close'][-1]-d['close'][-5])/d['close'][-5]*100
+            btc_r  = (btc_data['close'][-1]-btc_data['close'][-5])/btc_data['close'][-5]*100
+            if coin_r - btc_r > 3: votes += 1
+    # Vote 3: RSI momentum (not oversold, building)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if rsi and 45 < rsi < 75: votes += 1
+    # Vote 4: ATR expanding
+    atr = ind.calc_atr(d['high'], d['low'], d['close'], 14)
+    atr_slow = ind.calc_atr(d['high'], d['low'], d['close'], 28)
+    if atr and atr_slow and atr_slow > 0 and atr/atr_slow > 1.2: votes += 1
+    # Vote 5: Price above VWAP
+    vwap = ind.calc_vwap(d['high'], d['low'], d['close'], d['volume'], 24)
+    if vwap and d['close'][-1] > vwap: votes += 1
+    # Vote 6: BB squeeze breaking out
+    bb = ind.calc_bollinger(d['close'], 20, 2.0)
+    if bb and d['close'][-1] > bb['upper']: votes += 1
+    # Vote 7: OBV positive
+    closes = d['close'][-10:]
+    vols = d['volume'][-10:]
+    obv = sum(vols[i] if closes[i]>closes[i-1] else -vols[i] for i in range(1,len(closes)))
+    if obv > 0: votes += 1
+
+    return votes >= min_votes
+
+
 SIGNAL_MAP = {
     'E1':   signal_e1,
     'E2':   signal_e2,
@@ -1212,5 +1500,16 @@ SIGNAL_MAP = {
     'E45': signal_e45,
     'E46': signal_e46,
     'E47': signal_e47,
+    'E48': signal_e48,
+    'E49': signal_e49,
+    'E50': signal_e50,
+    'E51': signal_e51,
+    'E52': signal_e52,
+    'E53': signal_e53,
+    'E54': signal_e54,
+    'E55': signal_e55,
+    'E56': signal_e56,
+    'E57': signal_e57,
 }
+
 
