@@ -109,6 +109,10 @@ def run():
         md = f'# Averion Research Report — Full Method Analysis\n\n'
         md += f'> Generated: {now} · Paper trading · MEXC Exchange · {total_bots} bots · {total_methods} methods\n\n'
         md += '---\n\n'
+        md += '> ⚠️ **DATA WARNING:** Early-stage paper trading data (~8-12 hours). '
+        md += 'Most methods have <30 trades. Results are **not statistically significant** yet. '
+        md += 'Use for directional guidance only. Data collection started: 2026-06-10.\n\n'
+        md += '---\n\n'
 
         # Platform overview
         md += '## Platform Overview\n\n'
