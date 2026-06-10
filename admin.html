@@ -803,7 +803,7 @@
                 <div class="table-wrap">
                     <table>
                         <thead><tr>
-                            <th>Coin</th><th>Method</th><th>Category</th>
+                            <th>Score</th><th>Coin</th><th>Method</th><th>Category</th>
                             <th>Avg Cost</th><th>Current</th>
                             <th>Loss%</th><th>DCA Spacing%</th>
                             <th>Trigger at</th><th>Gap%</th><th>DCA#</th>
@@ -1200,6 +1200,7 @@
                 return;
             }
             tbody.innerHTML = data.map(p => `<tr>
+                <td style="color:var(--amber);font-weight:bold">${p.score}</td>
                 <td><b>${p.coin}</b></td>
                 <td style="font-size:11px;color:var(--muted)">${p.method}</td>
                 <td><span class="badge" style="font-size:10px">${p.category}</span></td>
