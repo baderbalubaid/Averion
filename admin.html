@@ -757,6 +757,8 @@
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid var(--primary);color:var(--text)">Bots</div>
             <div class="sub-tab" id="st-r-trades" onclick="switchSubTab('r-trades')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Trades</div>
+            <div class="sub-tab" id="st-r-dca-queue" onclick="switchSubTab('r-dca-queue')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">DCA Queue</div>
             <div class="sub-tab" id="st-r-history" onclick="switchSubTab('r-history')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">History</div>
             <div class="sub-tab" id="st-r-champion" onclick="switchSubTab('r-champion')"
@@ -791,6 +793,29 @@
                 </table></div>
             </div>
         </div>
+        <div id="sub-r-dca-queue" style="display:none">
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>📊 DCA Queue — Positions Closest to Trigger</span>
+                    <button onclick="loadDCAQueue()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                </div>
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Positions sorted by how close they are to their next DCA trigger</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Coin</th><th>Method</th><th>Category</th>
+                            <th>Avg Cost</th><th>Current</th>
+                            <th>Loss%</th><th>DCA Spacing%</th>
+                            <th>Trigger at</th><th>Gap%</th><th>DCA#</th>
+                        </tr></thead>
+                        <tbody id="dca-queue-tbody">
+                            <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="sub-r-history" style="display:none">
             <div class="card">
                 <div class="card-title">Research Trade History</div>
@@ -1164,6 +1189,33 @@
         }
     }
 
+    async function loadDCAQueue() {
+        const tbody = document.getElementById('dca-queue-tbody');
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/dca-queue`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">No positions near DCA trigger</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(p => `<tr>
+                <td><b>${p.coin}</b></td>
+                <td style="font-size:11px;color:var(--muted)">${p.method}</td>
+                <td><span class="badge" style="font-size:10px">${p.category}</span></td>
+                <td>${fmtPrice(p.avg_cost)}</td>
+                <td>${fmtPrice(p.current_price)}</td>
+                <td style="color:var(--red)">${p.loss_pct}%</td>
+                <td style="color:var(--muted)">${p.dca_spacing}%</td>
+                <td style="color:var(--amber)">${fmtPrice(p.trigger_price)}</td>
+                <td style="color:${Math.abs(p.gap_pct) < 1 ? 'var(--red)' : 'var(--amber)'}">${p.gap_pct}%</td>
+                <td>${p.dca_count}</td>
+            </tr>`).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="10" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
     async function loadResearchHistory() {
         const tbody = document.getElementById('research-history-tbody');
         if (!tbody) return;
@@ -1327,6 +1379,7 @@
         // Load data AFTER tab is visible
         if (name === 'r-trades') loadResearchTrades();
         if (name === 'r-history') loadResearchHistory();
+        if (name === 'r-dca-queue') loadDCAQueue();
         if (name === 'r-champion') loadChampions();
     }
 
