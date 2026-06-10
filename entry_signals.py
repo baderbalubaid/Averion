@@ -516,10 +516,16 @@ def signal_e23(d, p, btc_data):
     min_outperform = p.get('min_outperform', 4.0)
     rsi_threshold = p.get('rsi_threshold', 45)
 
+    require_btc_safe = p.get('require_btc_safe', False)
     rs  = ind.calc_relative_strength_vs_btc(d['close'], btc_data['close'], lookback)
     rsi = ind.calc_rsi(d['close'], 14)
     if rs is None or rsi is None:
         return False
+    # Optional BTC regime filter
+    if require_btc_safe:
+        btc_rsi = ind.calc_rsi(btc_data['close'], 14)
+        if btc_rsi is None or btc_rsi < 45:
+            return False
     return rs >= min_outperform and rsi < rsi_threshold
 
 
