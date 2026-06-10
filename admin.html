@@ -1400,8 +1400,10 @@
             const disk = latest.disk || 0;
 
             document.getElementById('cpu-val').textContent = `${cpu}%`;
-            document.getElementById('ram-val').textContent = `${ram}%`;
-            document.getElementById('disk-val').textContent = `${disk}%`;
+            const ramAbs = latest.ram_used_gb ? `${ram}% · ${latest.ram_used_gb}GB/${latest.ram_total_gb}GB` : `${ram}%`;
+            const diskAbs = latest.disk_used_gb ? `${disk}% · ${latest.disk_used_gb}GB/${latest.disk_total_gb}GB` : `${disk}%`;
+            document.getElementById('ram-val').textContent = ramAbs;
+            document.getElementById('disk-val').textContent = diskAbs;
 
             const cpuBar = document.getElementById('cpu-bar');
             cpuBar.style.width = `${cpu}%`;
