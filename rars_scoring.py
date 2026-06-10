@@ -1,14 +1,23 @@
 """
 rars_scoring.py — RARS Champion Scoring Engine
-Calculates scores for all research bot methods
-RARS = 35% Capital Efficiency + 30% Drawdown + 20% Win Rate + 15% Profit Factor
+LOCKED FORMULA: Score = (WR_norm^0.30) x (AP_norm^0.20) x (RS_norm^0.15) x (DD_norm^0.35)
+
+Normalization (locked):
+- WR_norm = Win Rate (0-1)
+- AP_norm = (avg_profit - min) / (max - min) across all methods
+- RS_norm = 1/(recovery_hours+1) then normalized
+- DD_norm = 1 - drawdown_pct, floor at 0.01
+
+Promotion rules (locked):
+- < 30 trades  → score = 0, not eligible
+- 30-99 trades → PROVISIONAL
+- 100+ trades  → full eligibility
 """
 import sys
 sys.path.insert(0, '/home/averion/Averion')
 from dotenv import load_dotenv
 load_dotenv()
 import database as db
-import json
 from datetime import datetime
 
 db.init_pool()
@@ -16,19 +25,16 @@ db.init_pool()
 def calculate_rars():
     with db.get_db() as conn:
         cur = conn.cursor()
-        
-        # Get all closed research positions grouped by method
         cur.execute("""
-            SELECT 
+            SELECT
                 b.method,
-                b.id as bot_id,
-                b.name as bot_name,
                 p.total_invested,
                 p.total_sold_usdt,
                 p.opened_at,
                 p.closed_at,
                 p.dca_count,
-                p.close_reason
+                b.base_order,
+                b.take_profit_percent
             FROM positions p
             JOIN bots b ON b.id = p.bot_id
             WHERE p.status = 'closed'
@@ -46,87 +52,120 @@ def calculate_rars():
         method = row[0]
         if method not in methods:
             methods[method] = []
+        pnl = float(row[2] or 0) - float(row[1] or 0)
+        hold_hours = 0
+        if row[3] and row[4]:
+            hold_hours = (row[4] - row[3]).total_seconds() / 3600
         methods[method].append({
-            'bot_id': row[1],
-            'bot_name': row[2],
-            'invested': float(row[3] or 0),
-            'received': float(row[4] or 0),
-            'opened_at': row[5],
-            'closed_at': row[6],
-            'dca_count': row[7],
-            'reason': row[8],
+            'pnl': pnl,
+            'invested': float(row[1] or 0),
+            'dca_count': int(row[5] or 0),
+            'hold_hours': max(hold_hours, 0.01),
+            'base_order': float(row[6] or 100),
+            'tp_pct': float(row[7] or 5),
         })
 
-    results = []
+    raw = []
     for method, trades in methods.items():
-        if len(trades) < 3:  # need min 3 trades
-            continue
-
-        profits = [t['received'] - t['invested'] for t in trades]
+        profits = [t['pnl'] for t in trades]
         wins = [p for p in profits if p > 0]
         losses = [p for p in profits if p <= 0]
-        
-        total_invested = sum(t['invested'] for t in trades)
-        total_profit = sum(profits)
-        win_rate = len(wins) / len(profits) * 100
-        avg_profit = sum(wins) / len(wins) if wins else 0
-        avg_loss = abs(sum(losses) / len(losses)) if losses else 0.01
-        profit_factor = avg_profit / avg_loss if avg_loss > 0 else avg_profit
-        
-        # Capital efficiency = total profit / total invested * 100
-        cap_efficiency = total_profit / total_invested * 100 if total_invested > 0 else 0
-        
-        # Max drawdown (simplified)
-        max_loss = abs(min(profits)) if losses else 0
-        max_drawdown = max_loss / total_invested * 100 if total_invested > 0 else 0
-        
-        # Avg hold time in hours
-        hold_times = []
-        for t in trades:
-            if t['opened_at'] and t['closed_at']:
-                delta = (t['closed_at'] - t['opened_at']).total_seconds() / 3600
-                hold_times.append(delta)
-        avg_hold = sum(hold_times) / len(hold_times) if hold_times else 0
+        n = len(trades)
 
-        # RARS score (0-100)
-        # Capital efficiency score (35%) - normalize to 0-100
-        ce_score = min(cap_efficiency * 2, 100)  # 50% return = 100 score
-        # Drawdown score (30%) - lower is better
-        dd_score = max(0, 100 - max_drawdown * 4)
-        # Win rate score (20%)
-        wr_score = win_rate
-        # Profit factor score (15%)
-        pf_score = min(profit_factor * 20, 100)
+        # WR: win rate 0-1
+        wr = len(wins) / n
 
-        rars = (ce_score * 0.35 + dd_score * 0.30 + wr_score * 0.20 + pf_score * 0.15)
+        # AP: avg profit per trade
+        avg_profit = sum(profits) / n
 
-        results.append({
+        # RS: recovery speed = 1/(avg_hold_hours+1)
+        avg_hold = sum(t['hold_hours'] for t in trades) / n
+        rs_raw = 1 / (avg_hold + 1)
+
+        # DD: drawdown = avg DCA count / tp_pct ratio
+        # Higher DCA needed = worse drawdown
+        avg_dca = sum(t['dca_count'] for t in trades) / n
+        tp_pct = trades[0]['tp_pct']
+        # Drawdown estimate: each DCA averages down by dca_spacing
+        drawdown_pct = avg_dca * 0.07  # approx 7% per DCA level
+        dd = max(0.01, 1 - drawdown_pct)
+
+        raw.append({
             'method': method,
-            'trade_count': len(trades),
-            'win_rate': round(win_rate, 1),
-            'total_profit': round(total_profit, 2),
-            'avg_profit_per_trade': round(total_profit / len(trades), 2),
-            'capital_efficiency': round(cap_efficiency, 2),
-            'max_drawdown': round(max_drawdown, 2),
-            'profit_factor': round(profit_factor, 2),
+            'trade_count': n,
+            'wr': wr,
+            'avg_profit': avg_profit,
+            'rs_raw': rs_raw,
+            'dd': dd,
             'avg_hold_hours': round(avg_hold, 1),
-            'rars_score': round(rars, 2),
-            'ce_score': round(ce_score, 1),
-            'dd_score': round(dd_score, 1),
-            'wr_score': round(wr_score, 1),
-            'pf_score': round(pf_score, 1),
+            'avg_dca': round(avg_dca, 2),
+            'total_profit': round(sum(profits), 2),
+            'win_count': len(wins),
+            'loss_count': len(losses),
         })
 
-    # Sort by RARS score
+    if not raw:
+        return []
+
+    # Normalize AP and RS across all methods
+    ap_vals = [s['avg_profit'] for s in raw]
+    rs_vals = [s['rs_raw'] for s in raw]
+    ap_min, ap_max = min(ap_vals), max(ap_vals)
+    rs_min, rs_max = min(rs_vals), max(rs_vals)
+
+    results = []
+    for s in raw:
+        # Normalize
+        wr_norm = s['wr']  # already 0-1
+        ap_norm = (s['avg_profit'] - ap_min) / (ap_max - ap_min + 1e-9)
+        rs_norm = (s['rs_raw'] - rs_min) / (rs_max - rs_min + 1e-9)
+        dd_norm = max(s['dd'], 0.01)
+
+        # Epsilon floors
+        wr_norm = max(wr_norm, 0.01)
+        ap_norm = max(ap_norm, 0.01)
+        rs_norm = max(rs_norm, 0.01)
+        dd_norm = max(dd_norm, 0.01)
+
+        # LOCKED FORMULA
+        rars = (wr_norm**0.30) * (ap_norm**0.20) * (rs_norm**0.15) * (dd_norm**0.35)
+        rars_score = round(rars * 100, 2)
+
+        # Eligibility
+        if s['trade_count'] < 30:
+            status = 'NOT_ELIGIBLE'
+            rars_score = 0
+        elif s['trade_count'] < 100:
+            status = 'PROVISIONAL'
+        else:
+            status = 'ELIGIBLE'
+
+        results.append({
+            'method': s['method'],
+            'trade_count': s['trade_count'],
+            'win_rate': round(s['wr'] * 100, 1),
+            'avg_profit_per_trade': round(s['avg_profit'], 2),
+            'avg_hold_hours': s['avg_hold_hours'],
+            'avg_dca': s['avg_dca'],
+            'total_profit': s['total_profit'],
+            'rars_score': rars_score,
+            'status': status,
+            'wr_norm': round(wr_norm, 3),
+            'ap_norm': round(ap_norm, 3),
+            'rs_norm': round(rs_norm, 3),
+            'dd_norm': round(dd_norm, 3),
+        })
+
     results.sort(key=lambda x: -x['rars_score'])
     return results
 
 if __name__ == '__main__':
     scores = calculate_rars()
-    print(f'\n{"="*70}')
+    print(f'\n{"="*85}')
     print(f'RARS CHAMPION SCORES — {datetime.now().strftime("%Y-%m-%d %H:%M")}')
-    print(f'{"="*70}')
-    print(f'{"Rank":<5} {"Method":<8} {"RARS":<7} {"Trades":<8} {"Win%":<7} {"AvgP$":<8} {"Cap%":<7} {"DD%":<6}')
-    print(f'{"-"*70}')
-    for i, s in enumerate(scores[:20], 1):
-        print(f'{i:<5} {s["method"]:<8} {s["rars_score"]:<7} {s["trade_count"]:<8} {s["win_rate"]:<7} {s["avg_profit_per_trade"]:<8} {s["capital_efficiency"]:<7} {s["max_drawdown"]:<6}')
+    print(f'Formula: Score = WR^0.30 × AP^0.20 × RS^0.15 × DD^0.35')
+    print(f'{"="*85}')
+    print(f'{"Rank":<5} {"Method":<10} {"RARS":<8} {"Status":<14} {"Trades":<8} {"Win%":<7} {"AvgP$":<8} {"AvgDCA":<8} {"Hold"}')
+    print(f'{"-"*85}')
+    for i, s in enumerate(scores, 1):
+        print(f'{i:<5} {s["method"]:<10} {s["rars_score"]:<8} {s["status"]:<14} {s["trade_count"]:<8} {s["win_rate"]:<7} {s["avg_profit_per_trade"]:<8} {s["avg_dca"]:<8} {s["avg_hold_hours"]}h')
