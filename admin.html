@@ -838,7 +838,10 @@
         </div>
         <div id="sub-r-bots">
             <div class="card">
-                <div class="card-title">Research Bots · 366 total</div>
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                   <span id="bots-title">Research Bots · 366 total</span>
+                   <button onclick="loadResearchBots()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+               </div>
                 <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
                     <input id="bot-method-filter" placeholder="Filter by method (e.g. E1)"
                            oninput="filterResearchBots()"
@@ -1239,6 +1242,8 @@
             return a.name.localeCompare(b.name);
         });
         window._researchBots = bots;
+        const titleEl = document.getElementById('bots-title');
+        if (titleEl) titleEl.textContent = `Research Bots · ${bots.length} total`;
             renderResearchBotsTable(bots);
         } catch(e) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px">Error: ${e.message}</td></tr>`;
