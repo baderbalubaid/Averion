@@ -526,7 +526,9 @@
 
             localStorage.setItem('averion_token', pendingToken);
             localStorage.setItem('averion_user_id', String(pendingUserId));
-            window.location.href = '/dashboard';
+            localStorage.setItem('averion_verified', 'true');
+            const isAdmin = localStorage.getItem('averion_is_admin');
+            window.location.href = isAdmin === 'true' ? '/ops-admin' : '/dashboard';
 
         } catch(e) {
             showError('verify-error', 'Connection error');
