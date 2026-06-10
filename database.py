@@ -609,19 +609,16 @@ def get_all_coin_categories():
 # ═══════════════════════════════
 # DIAGNOSTICS
 # ═══════════════════════════════
-def record_system_health(cpu, ram, disk, redis_mb,
-                          pg_conn, cycle_time,
-                          active_bots, open_positions):
+def record_system_health(cpu, ram, disk, redis_mb=0,
+                          pg_conn=0, cycle_time=0,
+                          active_bots=0, open_positions=0):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO system_health (
-                cpu_percent, ram_percent, disk_percent,
-                redis_mb, pg_connections, bot_cycle_time,
-                active_bots, open_positions
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (cpu, ram, disk, redis_mb, pg_conn,
-              cycle_time, active_bots, open_positions))
+                cpu_percent, ram_percent, disk_percent
+            ) VALUES (%s, %s, %s)
+        """, (cpu, ram, disk))
         # Delete older than 30 days
         cur.execute("""
             DELETE FROM system_health
