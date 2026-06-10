@@ -1128,9 +1128,9 @@
                     <td><span style="color:${s.rars_score>70?'#27ae60':s.rars_score>50?'#f39c12':'#e74c3c'};font-weight:bold">${s.rars_score}</span></td>
                     <td>${s.trade_count}</td>
                     <td style="color:${s.win_rate>=80?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
-                    <td style="color:#27ae60">+$${s.avg_profit_per_trade}</td>
-                    <td>${s.capital_efficiency}%</td>
-                    <td style="color:${s.max_drawdown<5?'#27ae60':'#e74c3c'}">${s.max_drawdown}%</td>
+                    <td style="color:#27ae60">${s.avg_profit_per_trade>=0?'+':''}$${Math.abs(s.avg_profit_per_trade).toFixed(2)}</td>
+                    <td>${s.capital_efficiency!=null?s.capital_efficiency+'%':'—'}</td>
+                    <td style="color:${(s.max_drawdown||0)<5?'#27ae60':'#e74c3c'}">${s.max_drawdown!=null?s.max_drawdown+'%':'—'}</td>
                     <td>${s.avg_hold_hours}h</td>
                 </tr>`).join('')}
                 </tbody>
