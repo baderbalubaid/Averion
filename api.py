@@ -939,6 +939,16 @@ def generate_diagnostics(payload: dict = Depends(require_admin)):
 # ═══════════════════════════════
 
 
+@app.get('/admin/ws-status')
+def admin_ws_status(payload: dict = Depends(require_admin)):
+    r = get_redis()
+    return {
+        'status': r.get('ws:mexc:status') or 'unknown',
+        'price_count': int(r.get('ws:mexc:price_count') or 0),
+        'total_updates': int(r.get('ws:mexc:total_updates') or 0),
+        'last_update': r.get('ws:mexc:last_update') or 'never',
+    }
+
 @app.get('/admin/health')
 def admin_health(payload: dict = Depends(require_admin)):
    with db.get_db() as conn:
@@ -1467,6 +1477,15 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
