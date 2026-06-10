@@ -84,4 +84,46 @@ if [ "$(date +%u)" = "7" ]; then
     echo "✅ Sunday cleanup complete" | tee -a $LOG_DIR/cleanup.log
 fi
 
+# ═══════════════════════════════
+# RESEARCH REPORT GENERATION
+# ═══════════════════════════════
+echo "--- Research Report ---" | tee -a $LOG_DIR/daily.log
+python3 $AVERION_DIR/generate_research_report.py >> $LOG_DIR/daily.log 2>&1
+echo "✅ Research report generated" | tee -a $LOG_DIR/daily.log
+
+# ═══════════════════════════════
+# DAILY TELEGRAM REPORT
+# ═══════════════════════════════
+echo "--- Telegram Daily Report ---" | tee -a $LOG_DIR/daily.log
+python3 -c "
+import sys; sys.path.insert(0, '$AVERION_DIR')
+from dotenv import load_dotenv; load_dotenv()
+import database as db, telegram as tg
+db.init_pool()
+from datetime import datetime, timedelta
+with db.get_db() as conn:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               COALESCE(SUM(total_sold_usdt - total_invested), 0)
+        FROM positions
+        WHERE status='closed'
+        AND closed_at > NOW() - INTERVAL '24 hours'
+    """)
+    closed_today, profit_today = cur.fetchone()
+    cur.execute("SELECT COUNT(*) FROM positions WHERE status='open'")
+    open_pos = cur.fetchone()[0]
+
+tg.send_admin(f'''📊 <b>Averion Daily Report</b>
+{datetime.utcnow().strftime('%B %d, %Y')}
+
+Closed today: {closed_today}
+Profit today: \${float(profit_today):.2f}
+Open positions: {open_pos:,}
+
+Research: {open_pos:,} open · data collecting
+Generated at: {datetime.utcnow().strftime('%H:%M UTC')}''')
+print('✅ Telegram daily report sent')
+" >> $LOG_DIR/daily.log 2>&1
+
 echo "=== Daily Cron Complete $(date) ===" | tee -a $LOG_DIR/daily.log

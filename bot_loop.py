@@ -859,6 +859,10 @@ def run_cycle(r):
                 )
                 db.set_position_queued(pos_id, False)
                 print(f'✅ DCA executed: {coin} dca#{best_candidate[5]+1} avg=${new_avg:.6f} invested=${new_invested:.2f}')
+                try:
+                    tg.notify_dca(best_candidate[8], coin, best_candidate[5]+1, result['price'], best_next_amount, new_avg, PAPER_MODE)
+                except Exception:
+                    pass
 
         # ─────────────────────────
         # STEP 3: Open new positions
