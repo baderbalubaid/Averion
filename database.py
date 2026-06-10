@@ -550,6 +550,33 @@ def deduct_performance_fee(user_id, position_id,
 # ═══════════════════════════════
 # COIN CLASSIFICATION
 # ═══════════════════════════════
+def get_coin_params(coin, exchange='MEXC'):
+    """Get dynamic DCA/TP/trail params for a coin from coin_parameters table."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT category, dca_spacing, take_profit_pct, trailing_pct, size_mult
+            FROM coin_parameters
+            WHERE coin=%s AND exchange=%s
+        """, (coin, exchange))
+        row = cur.fetchone()
+        if row:
+            return {
+                'category':     row[0],
+                'dca_spacing':  float(row[1]),
+                'take_profit':  float(row[2]),
+                'trailing':     float(row[3]),
+                'size_mult':    float(row[4]),
+            }
+        # Fallback to micro defaults
+        return {
+            'category':    'micro',
+            'dca_spacing': 15.0,
+            'take_profit': 10.0,
+            'trailing':    4.0,
+            'size_mult':   2.0,
+        }
+
 def get_coin_category(coin):
     with get_db() as conn:
         cur = conn.cursor()
