@@ -1372,7 +1372,7 @@
         }
         if (name === 'r-bots') loadResearchBots();
         // Show/hide sub-content
-        ['r-trades','r-history','r-champion','r-categories','r-bots'].forEach(s => {
+        ['r-trades','r-dca-queue','r-history','r-champion','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
             if (el) el.style.display = s === name ? 'block' : 'none';
         });
