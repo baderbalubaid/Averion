@@ -1421,7 +1421,7 @@
                 disk > 50 ? 'var(--amber)' : 'var(--amber)';
 
             document.getElementById('health-updated').textContent =
-                new Date(latest.checked_at).toLocaleTimeString();
+                new Date(latest.checked_at.replace(' ','T')+'Z').toLocaleTimeString();
             // Update service status
             try {
                 const hres = await fetch(`${API}/health`);
