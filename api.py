@@ -567,7 +567,8 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
         loss_pct = round((current - avg_cost) / avg_cost * 100, 2)
         trigger_price = round(avg_cost * (1 - dca_spacing/100), 8)
         gap_pct = round((current - trigger_price) / trigger_price * 100, 2)
-        if loss_pct < -0.5:  # only show positions with some loss
+        # Only show positions where price already crossed DCA trigger
+        if current <= trigger_price:
             next_dca_amount = 100 * (1.0 ** (dca_count + 1))
             score = abs(loss_pct) / next_dca_amount if next_dca_amount > 0 else 0
             result.append({
