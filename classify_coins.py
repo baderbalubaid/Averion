@@ -82,11 +82,27 @@ def run():
                 vol = 0
                 source = 'estimated'
 
+            # Apply +10% cap protection (spec locked)
+            cur.execute("""
+                SELECT recorded_cap FROM coin_history
+                WHERE coin=%s AND exchange='MEXC'
+                ORDER BY id DESC LIMIT 1
+            """, (coin,))
+            prev = cur.fetchone()
+            if prev and prev[0] and cap > 0:
+                prev_cap = float(prev[0])
+                # Cap upward at +10% per day · full drop allowed
+                if cap > prev_cap:
+                    recorded_cap = min(cap, prev_cap * 1.10)
+                else:
+                    recorded_cap = cap  # full drop immediately
+            else:
+                recorded_cap = cap
+
             cur.execute("""
                 INSERT INTO coin_history (coin, exchange, real_cap, recorded_cap, category, volume_24h, source)
                 VALUES (%s, 'MEXC', %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            """, (coin, cap, cap, category, vol, source))
+            """, (coin, cap, recorded_cap, category, vol, source))
             inserted += 1
 
         conn.commit()
