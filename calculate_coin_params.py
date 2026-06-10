@@ -93,7 +93,7 @@ def calculate_params_for_coin(coin, ohlcv_rows, category):
         'median_drop':     round(float(median_drop), 2),
         'median_recovery': round(float(median_recovery), 2),
         'volatility_pct':  volatility,
-        'data_quality':    'calculated' if len(ohlcv_rows) >= 720 else 'partial',
+        'data_quality':    'calculated' if len(ohlcv_rows) >= 168 else 'partial',
     }
 
 def run():
@@ -118,7 +118,7 @@ def run():
     for coin, category in coins:
         try:
             # Get OHLCV data
-            rows = db.get_ohlcv(coin, 'mexc', limit=720)  # 30 days hourly
+            rows = db.get_ohlcv(coin, 'mexc', limit=720)  # up to 30 days hourly
 
             if rows and len(rows) >= 24:
                 params = calculate_params_for_coin(coin, rows, category)

@@ -475,6 +475,12 @@ def try_open_position(bot, exchange_obj, tickers, r):
         coin_trade_number = len(coin_positions) + 1
 
         # Execute entry
+        # Get dynamic params for this coin
+        cp = coin_params_cache.get(coin, {})
+        dynamic_tp    = cp.get('take_profit', float(bot[13] or 5))
+        dynamic_dca   = cp.get('dca_spacing', float(bot[11] or 7))
+        dynamic_trail = cp.get('trailing',    float(bot[14] or 2))
+
         result = execute_buy(
             exchange_obj, coin, base_order,
             None, bot_id, user_id, exchange_id,
@@ -493,7 +499,10 @@ def try_open_position(bot, exchange_obj, tickers, r):
                 base_order, price, category,
                 PAPER_MODE, base_coin, 'USDT',
                 sequence_number, coin_trade_number,
-                method
+                method,
+                take_profit_pct=dynamic_tp,
+                dca_spacing=dynamic_dca,
+                trailing_pct=dynamic_trail
             )
             print(f'✅ Position opened: {coin} #{pos_id}')
             tg.notify_trade_open(user_id, coin, direction, result['price'], base_order, method, PAPER_MODE)
@@ -544,6 +553,21 @@ def run_cycle(r):
         get_redis().setex('bot:status', 600, 'running')
         get_redis().setex('bot:last_cycle', 600, str(datetime.utcnow()))
     except: pass
+
+    # Load coin parameters for dynamic DCA/TP/trail
+    coin_params_cache = {}
+    try:
+        with db.get_db() as _conn:
+            _cur = _conn.cursor()
+            _cur.execute("SELECT coin, dca_spacing, take_profit_pct, trailing_pct FROM coin_parameters")
+            for row in _cur.fetchall():
+                coin_params_cache[row[0]] = {
+                    'dca_spacing': float(row[1]),
+                    'take_profit': float(row[2]),
+                    'trailing':    float(row[3]),
+                }
+    except Exception as e:
+        print(f'⚠️ coin_params load error: {e}')
 
     # Sync trades_per_bot = open_count + 1 for all research bots
     with db.get_db() as conn:
