@@ -325,7 +325,8 @@ def _refresh_rt_cache(exc_id):
                        p.sequence_number, p.is_gate_reference,
                        p.coin_trade_number, p.gate_reference_since,
                        p.checkpoint_reached, p.pending_buyback,
-                       p.opened_at
+                       p.opened_at,
+                       p.pos_tp_pct, p.pos_dca_pct, p.pos_trail_pct
                 FROM positions p
                 WHERE p.status = 'open' AND p.exchange_id = %s
             """, (exc_id,))
