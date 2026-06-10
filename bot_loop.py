@@ -279,6 +279,9 @@ def check_tp(position, current_price, bot):
 
     tp_price = avg_cost * (1 + tp_percent / 100)
 
+    # Option B: if TP% - Trail% < 1% → skip trailing, sell directly at TP
+    direct_tp = (tp_percent - trailing_percent) < 1.0
+
     # Arm TP when price reaches target
     if current_price >= tp_price and not tp_armed:
         db.arm_tp(position_id, current_price)
