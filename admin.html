@@ -1128,7 +1128,6 @@
                     <td><span style="color:${s.rars_score>70?'#27ae60':s.rars_score>50?'#f39c12':'#e74c3c'};font-weight:bold">${s.rars_score}</span></td>
                     <td>${s.trade_count}</td>
                     <td style="color:${s.win_rate>=80?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
-                    <td style="color:#27ae60">${s.avg_profit_per_trade>=0?'+':''}$${Math.abs(s.avg_profit_per_trade).toFixed(2)}</td>
                     <td style="color:${s.avg_profit_per_trade>=0?'#27ae60':'#e74c3c'}">${s.avg_profit_per_trade>=0?'+':''}$${Math.abs(s.avg_profit_per_trade).toFixed(2)}</td>
                     <td>${s.avg_dca}</td>
                     <td>${s.avg_hold_hours}h</td>
@@ -1136,7 +1135,7 @@
                 </tbody>
             </table>
             <p style="color:var(--muted);font-size:12px;margin-top:8px">
-                RARS = 35% Capital Efficiency + 30% Drawdown Control + 20% Win Rate + 15% Profit Factor
+                RARS = WR^0.30 × AP^0.20 × RS^0.15 × DD^0.35 · DD=35% WR=30% AP=20% RS=15%
             </p>`;
         } catch(e) {
             el.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
