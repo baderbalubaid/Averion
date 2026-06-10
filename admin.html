@@ -926,6 +926,24 @@
                 </div>
             </div>
 
+
+            <div class="card">
+                <div class="card-title">🔌 WebSocket Status</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span>MEXC Price Stream</span>
+                        <span id="ws-mexc-status" class="badge badge-green">Checking...</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Coins in Redis</span>
+                        <span id="ws-price-count" style="color:var(--muted)">—</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Last Update</span>
+                        <span id="ws-last-update" style="color:var(--muted)">—</span>
+                    </div>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-title">Emergency Controls</div>
                 <div style="display:flex;flex-direction:column;gap:12px">
@@ -1401,6 +1419,8 @@
            }
            if (priceCount) priceCount.textContent = (d.price_count || 0).toLocaleString() + ' coins';
            if (totalCount) totalCount.textContent = (d.total_updates || 0).toLocaleString() + ' updates';
+            const lastUp = document.getElementById('ws-last-update');
+            if (lastUp && d.last_update && d.last_update !== 'never') lastUp.textContent = new Date(d.last_update.replace(' ','T')+'Z').toLocaleTimeString();
        } catch(e) {}
    }
 
