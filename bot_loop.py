@@ -270,8 +270,9 @@ def check_tp(position, current_price, bot):
     quantity = float(position[8] or 0)
     tp_armed = position[12]
     peak_price = float(position[13] or 0)
-    tp_percent = float(bot[13] or 5.0)
-    trailing_percent = float(bot[14] or 2.0)
+    # Use position-level dynamic params if available, else fall back to bot
+    tp_percent = float(position[27] or bot[13] or 5.0)
+    trailing_percent = float(position[29] or bot[14] or 2.0)
 
     if avg_cost == 0 or avg_cost < 1e-12:
         return False
