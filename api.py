@@ -531,6 +531,17 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             })
         return result
 
+@app.get('/admin/research/champions')
+def get_research_champions(payload: dict = Depends(verify_token)):
+    import sys
+    sys.path.insert(0, '/home/averion/Averion')
+    try:
+        from rars_scoring import calculate_rars
+        scores = calculate_rars()
+        return scores
+    except Exception as e:
+        return []
+
 @app.get('/admin/research/history')
 def get_research_history(payload: dict = Depends(verify_token)):
     with db.get_db() as conn:
@@ -1380,6 +1391,18 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
