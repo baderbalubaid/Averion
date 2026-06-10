@@ -286,18 +286,25 @@ def check_tp(position, current_price, bot):
     if current_price >= tp_price and not tp_armed:
         db.arm_tp(position_id, current_price)
         print(f'🎯 TP armed: position {position_id} @ ${current_price:.6f}')
-        peak_price = current_price  # update local var immediately
-        tp_armed = True             # update local var immediately
+        peak_price = current_price
+        tp_armed = True
+        # Option B: direct sell when TP-Trail gap < 1%
+        if direct_tp:
+            print(f'🚀 Direct TP: position {position_id}')
+            return True
 
     # Update peak price
     if tp_armed and current_price > peak_price:
         db.update_peak_price(position_id, current_price)
-        peak_price = current_price  # update local var
+        peak_price = current_price
 
-    # Fire TP when price drops from peak
+    # Fire trailing TP
     if tp_armed and peak_price > 0:
         trail_price = peak_price * (1 - trailing_percent / 100)
         if current_price <= trail_price:
+            # Option A: minimum profit guard (0.5%)
+            if current_price <= avg_cost * 1.005:
+                return False
             print(f'🚀 TP firing: position {position_id}')
             return True
 
@@ -558,6 +565,20 @@ def run_cycle(r):
         get_redis().setex('bot:status', 600, 'running')
         get_redis().setex('bot:last_cycle', 600, str(datetime.utcnow()))
     except: pass
+
+    # Record system health every 5 minutes
+    import time as _time
+    _now = _time.time()
+    if _now - globals().get('_last_health', 0) >= 300:
+        try:
+            import psutil
+            cpu  = psutil.cpu_percent(interval=0.5)
+            ram  = psutil.virtual_memory().percent
+            disk = psutil.disk_usage('/').percent
+            db.record_system_health(cpu, ram, disk, 0, 0, 0, 0, 0)
+            globals()['_last_health'] = _now
+        except Exception as _e:
+            pass
 
     # Load coin parameters for dynamic DCA/TP/trail
     coin_params_cache = {}
