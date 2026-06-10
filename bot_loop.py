@@ -781,7 +781,7 @@ def run_cycle(r):
                     )
                     print(f'💰 TP closed: {pos[4]} profit: ${gross_profit:.2f} fee: ${fee_amount:.2f}')
                     _pos_bot = next((b for b in bots if b[0] == pos[1]), None)
-                    pos_is_research = bool(_pos_bot and (_pos_bot[4].startswith('E') or _pos_bot[4].startswith('BM'))) if _pos_bot else True
+                    pos_is_research = bool(_pos_bot and _pos_bot[31]) if _pos_bot and len(_pos_bot) > 31 else bool(_pos_bot and (_pos_bot[4].startswith('E') or _pos_bot[4].startswith('BM')))
                     if not pos_is_research:
                         tg.notify_trade_closed(pos[2], pos[4], pos[5], float(pos[7] or 0), result.get('price', 0), gross_profit, fee_amount, pos[10], 'tp', PAPER_MODE)
 
@@ -865,7 +865,7 @@ def run_cycle(r):
                 print(f'✅ DCA executed: {coin} dca#{best_candidate[5]+1} avg=${new_avg:.6f} invested=${new_invested:.2f}')
                 try:
                     _best_bot = next((b for b in bots if b[0] == best_candidate[7]), None)
-                    best_is_research = bool(_best_bot and (_best_bot[4].startswith('E') or _best_bot[4].startswith('BM'))) if _best_bot else True
+                    best_is_research = bool(_best_bot and _best_bot[31]) if _best_bot and len(_best_bot) > 31 else bool(_best_bot and (_best_bot[4].startswith('E') or _best_bot[4].startswith('BM')))
                     if not best_is_research:
                         tg.notify_dca(best_candidate[8], coin, best_candidate[5]+1, result['price'], best_next_amount, new_avg, PAPER_MODE)
                 except Exception:
