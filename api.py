@@ -539,24 +539,27 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
         cur = conn.cursor()
         cur.execute("""
             SELECT p.coin, b.method, p.category,
-                   p.avg_cost, p.dca_count,
-                   cp.dca_spacing
+                   p.avg_cost, p.last_buy_price, p.dca_count,
+                   b.dca_percent, b.spacing_multiplier,
+                   b.size_multiplier, b.base_order
             FROM positions p
             JOIN bots b ON b.id=p.bot_id
-            LEFT JOIN coin_parameters cp ON cp.coin=p.coin
             WHERE p.status='open' AND b.trading_on=TRUE
-            AND p.avg_cost > 0
-            ORDER BY p.avg_cost DESC
-            LIMIT 2000
+            AND p.avg_cost > 0 AND p.last_buy_price > 0
+            LIMIT 5000
         """)
         rows = cur.fetchall()
 
     result = []
     for row in rows:
-        coin, method, category, avg_cost, dca_count, dca_spacing = row
-        avg_cost = float(avg_cost or 0)
-        dca_spacing = float(dca_spacing or 7.0)
-        if avg_cost == 0:
+        coin, method, category, avg_cost, last_buy, dca_count, dca_pct, spacing_mult, size_mult, base_order = row
+        avg_cost     = float(avg_cost or 0)
+        last_buy     = float(last_buy or avg_cost)
+        dca_pct      = float(dca_pct or 7.0)
+        spacing_mult = float(spacing_mult or 1.0)
+        size_mult    = float(size_mult or 1.0)
+        base_order   = float(base_order or 100)
+        if avg_cost == 0 or last_buy == 0:
             continue
         keys = r.keys(f'price:*:{coin}/USDT')
         if not keys:
@@ -564,26 +567,28 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
         current = float(r.get(keys[0]) or 0)
         if current == 0:
             continue
+        # Match exact bot_loop trigger calculation
+        effective_spacing = dca_pct * (spacing_mult ** dca_count)
+        trigger_price = last_buy * (1 - effective_spacing / 100)
+        if current > trigger_price:
+            continue  # not triggered yet
         loss_pct = round((current - avg_cost) / avg_cost * 100, 2)
-        trigger_price = round(avg_cost * (1 - dca_spacing/100), 8)
-        gap_pct = round((current - trigger_price) / trigger_price * 100, 2)
-        # Only show positions where price already crossed DCA trigger
-        if current <= trigger_price:
-            next_dca_amount = 100 * (1.0 ** (dca_count + 1))
-            score = abs(loss_pct) / next_dca_amount if next_dca_amount > 0 else 0
-            result.append({
-                'coin': coin,
-                'method': method,
-                'category': category or 'micro',
-                'avg_cost': float(avg_cost),
-                'current_price': current,
-                'loss_pct': loss_pct,
-                'dca_spacing': dca_spacing,
-                'trigger_price': trigger_price,
-                'gap_pct': gap_pct,
-                'dca_count': dca_count,
-                'score': round(score, 4),
-            })
+        gap_pct  = round((current - trigger_price) / trigger_price * 100, 2)
+        next_dca_amount = base_order * (size_mult ** (dca_count + 1))
+        score = abs(loss_pct) / next_dca_amount if next_dca_amount > 0 else 0
+        result.append({
+            'coin': coin,
+            'method': method,
+            'category': category or 'micro',
+            'avg_cost': float(avg_cost),
+            'current_price': current,
+            'loss_pct': loss_pct,
+            'dca_spacing': round(effective_spacing, 2),
+            'trigger_price': round(trigger_price, 10),
+            'gap_pct': gap_pct,
+            'dca_count': dca_count,
+            'score': round(score, 4),
+        })
 
     result.sort(key=lambda x: -x['score'])
     return result[:100]
@@ -715,9 +720,6 @@ def admin_run_cron_step(step: str,
         subprocess.Popen(['bash', script])
 
     return {'message': f'Step {step} started'}
-
-
-    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 # ═══════════════════════════════
 # EXCHANGES — ADD / TEST / DELETE
@@ -1354,222 +1356,6 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-   uvicorn.run(app, host='0.0.0.0', port=8080)
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
