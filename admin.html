@@ -1015,6 +1015,7 @@
 
     function sortResearchTrades() {
         const key = document.getElementById('trades-sort').value;
+        localStorage.setItem('trades-sort-key', key);
         const filterEl = document.getElementById('trades-method-filter');
         const q = filterEl ? filterEl.value.toLowerCase() : '';
         let data = [...(window._researchTrades||[])];
@@ -1048,6 +1049,12 @@
     }
 
     async function loadResearchTrades() {
+        // Restore saved sort
+        const savedSort = localStorage.getItem('trades-sort-key');
+        if (savedSort) {
+            const sortEl = document.getElementById('trades-sort');
+            if (sortEl) sortEl.value = savedSort;
+        }
         const tbody = document.getElementById('research-trades-tbody');
         if (!tbody) { setTimeout(loadResearchTrades, 500); return; }
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
@@ -1608,7 +1615,13 @@
     setInterval(loadStatus, 30000);
     setInterval(loadHealth, 60000);
     setInterval(loadCronStatus, 60000);
-    setInterval(() => { if(document.getElementById("sub-r-trades").style.display !== "none") loadResearchTrades(); }, 60000);
+    setInterval(() => {
+        const tradesTab = document.getElementById("sub-r-trades");
+        if (tradesTab && tradesTab.style.display !== "none") {
+            const scrollY = window.scrollY;
+            loadResearchTrades().then(() => window.scrollTo(0, scrollY));
+        }
+    }, 30000);
 </script>
 
 </body>
