@@ -393,7 +393,7 @@ def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
 # ═══════════════════════════════
 # OPEN NEW POSITION
 # ═══════════════════════════════
-def try_open_position(bot, exchange_obj, tickers, r):
+def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None):
     bot_id = bot[0]
     user_id = bot[1]
     exchange_id = bot[2]
@@ -476,7 +476,7 @@ def try_open_position(bot, exchange_obj, tickers, r):
 
         # Execute entry
         # Get dynamic params for this coin
-        cp = coin_params_cache.get(coin, {})
+        cp = (coin_params_cache or {}).get(coin, {})
         dynamic_tp    = cp.get('take_profit', float(bot[13] or 5))
         dynamic_dca   = cp.get('dca_spacing', float(bot[11] or 7))
         dynamic_trail = cp.get('trailing',    float(bot[14] or 2))
@@ -851,7 +851,7 @@ def run_cycle(r):
         ]
         print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
         for bot in bots_needing_trades:
-            try_open_position(bot, exchange_obj, tickers, r)
+            try_open_position(bot, exchange_obj, tickers, r, coin_params_cache)
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
