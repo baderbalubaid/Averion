@@ -242,7 +242,11 @@ def run():
                 total_closed += closed_b or 0
                 total_wins += wins_b or 0
                 total_pnl_m += float(total_b or 0)
-                md += f'| {name} | ' + ' | '.join(param_vals) + f' | {closed_b} | {wr}% | ${avg_b} | ${total_b} | {dca_b} | {hold_b}h | {open_b} |\n'
+                avg_b_str = f'${avg_b}' if avg_b is not None else '—'
+                total_b_str = f'${total_b}' if total_b is not None else '—'
+                dca_b_str = str(dca_b) if dca_b is not None else '—'
+                hold_b_str = f'{hold_b}h' if hold_b is not None else '—'
+                md += f'| {name} | ' + ' | '.join(param_vals) + f' | {closed_b} | {wr}% | {avg_b_str} | {total_b_str} | {dca_b_str} | {hold_b_str} | {open_b} |\n'
 
             # Method summary row
             overall_wr = round(total_wins/total_closed*100,1) if total_closed else 0
