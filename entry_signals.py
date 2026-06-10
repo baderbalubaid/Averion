@@ -1447,6 +1447,272 @@ def signal_e57(d, p, btc_data):
     return votes >= min_votes
 
 
+# ═══════════════════════════════
+# E59 — Volume Acceleration (2nd Derivative)
+# Volume growth itself is accelerating = pre-pump signal
+# ═══════════════════════════════
+def signal_e59(d, p, _):
+    if not ind.enough(d, 10):
+        return False
+    import numpy as np
+    accel_mult    = p.get('accel_mult', 2.0)
+    min_vol_usd   = p.get('min_vol_usd', 50000)
+    interval      = p.get('interval', 3)  # candles per interval
+
+    vols = np.array(d['volume'][-interval*3:])
+    closes = np.array(d['close'][-interval*3:])
+    if len(vols) < interval * 3:
+        return False
+
+    # Split into 3 intervals
+    v1 = np.sum(vols[:interval])
+    v2 = np.sum(vols[interval:interval*2])
+    v3 = np.sum(vols[interval*2:])
+
+    if v1 == 0 or v2 == 0:
+        return False
+
+    # Volume must be accelerating: v3 > v2 > v1 with multiplier
+    accel = v3 / v2 if v2 > 0 else 0
+    prev_accel = v2 / v1 if v1 > 0 else 0
+
+    # Min volume check (approximate USD)
+    avg_price = float(np.mean(closes))
+    vol_usd = v3 * avg_price
+
+    return (accel >= accel_mult and
+            v3 > v2 and v2 > v1 and
+            vol_usd >= min_vol_usd)
+
+# ═══════════════════════════════
+# E60 — Consecutive Higher Lows
+# Buyers stepping higher = accumulation before pump
+# ═══════════════════════════════
+def signal_e60(d, p, _):
+    if not ind.enough(d, 20):
+        return False
+    import numpy as np
+    min_higher_lows = p.get('min_higher_lows', 3)
+    min_step_pct    = p.get('min_step_pct', 0.3)
+
+    lows = d['low'][-10:]
+    higher_lows = 0
+    for i in range(1, len(lows)):
+        if lows[i] > lows[i-1] * (1 + min_step_pct/100):
+            higher_lows += 1
+        else:
+            higher_lows = 0  # reset on break
+        if higher_lows >= min_higher_lows:
+            return True
+    return False
+
+# ═══════════════════════════════
+# E61 — Sudden Ranking Change
+# Coin's relative strength rank improving rapidly
+# ═══════════════════════════════
+def signal_e61(d, p, btc_data):
+    if not ind.enough(d, 20):
+        return False
+    if btc_data is None or not ind.enough(btc_data, 20):
+        return False
+    import numpy as np
+    min_strength_gain = p.get('min_strength_gain', 5.0)
+    lookback          = p.get('lookback', 6)
+
+    # Calculate relative strength improvement over lookback
+    if d['close'][-lookback] == 0 or btc_data['close'][-lookback] == 0:
+        return False
+
+    coin_return_now  = (d['close'][-1] - d['close'][-lookback]) / d['close'][-lookback] * 100
+    coin_return_prev = (d['close'][-lookback] - d['close'][-lookback*2]) / d['close'][-lookback*2] * 100 if len(d['close']) >= lookback*2 else 0
+    btc_return_now   = (btc_data['close'][-1] - btc_data['close'][-lookback]) / btc_data['close'][-lookback] * 100
+
+    rs_now  = coin_return_now - btc_return_now
+    rs_gain = rs_now - coin_return_prev
+
+    return rs_gain >= min_strength_gain and coin_return_now > 0
+
+# ═══════════════════════════════
+# E62 — Multi-Timeframe Strength
+# Strong on short TF but not yet on long TF = early signal
+# ═══════════════════════════════
+def signal_e62(d, p, btc_data):
+    if not ind.enough(d, 50):
+        return False
+    import numpy as np
+    short_lookback = p.get('short_lookback', 3)
+    mid_lookback   = p.get('mid_lookback', 12)
+    long_lookback  = p.get('long_lookback', 24)
+    min_short_pct  = p.get('min_short_pct', 2.0)
+    max_long_pct   = p.get('max_long_pct', 5.0)
+
+    if d['close'][-short_lookback] == 0:
+        return False
+    if d['close'][-mid_lookback] == 0:
+        return False
+    if d['close'][-long_lookback] == 0:
+        return False
+
+    short_move = (d['close'][-1] - d['close'][-short_lookback]) / d['close'][-short_lookback] * 100
+    mid_move   = (d['close'][-1] - d['close'][-mid_lookback])   / d['close'][-mid_lookback]   * 100
+    long_move  = (d['close'][-1] - d['close'][-long_lookback])  / d['close'][-long_lookback]  * 100
+
+    # Strong on short TF, building on mid, not yet overbought on long
+    return (short_move >= min_short_pct and
+            mid_move > 0 and
+            abs(long_move) <= max_long_pct)
+
+# ═══════════════════════════════
+# E63 — Leader-Laggard Rotation
+# Leader coin pumped → buy laggards in same category
+# ═══════════════════════════════
+def signal_e63(d, p, btc_data):
+    if not ind.enough(d, 10):
+        return False
+    if btc_data is None or not ind.enough(btc_data, 10):
+        return False
+    leader_pump   = p.get('leader_pump', 3.0)   # BTC pumped X%
+    coin_max_move = p.get('coin_max_move', 1.0)  # coin not yet moved
+    lookback      = p.get('lookback', 3)
+
+    if btc_data['close'][-lookback] == 0 or d['close'][-lookback] == 0:
+        return False
+
+    btc_move  = (btc_data['close'][-1] - btc_data['close'][-lookback]) / btc_data['close'][-lookback] * 100
+    coin_move = (d['close'][-1] - d['close'][-lookback]) / d['close'][-lookback] * 100
+
+    # BTC pumped but coin hasn't moved yet = laggard opportunity
+    return btc_move >= leader_pump and abs(coin_move) <= coin_max_move
+
+# ═══════════════════════════════
+# E64 — False Pump Detector (Inverse/Filter)
+# Price pumped but volume weak = fake pump, SKIP
+# Used as filter in E66/E67, also standalone to study false pumps
+# ═══════════════════════════════
+def signal_e64(d, p, _):
+    if not ind.enough(d, 20):
+        return False
+    pump_pct    = p.get('pump_pct', 5.0)
+    max_vol_mult = p.get('max_vol_mult', 1.5)  # volume NOT spiking
+
+    if d['close'][-4] == 0:
+        return False
+    price_move = (d['close'][-1] - d['close'][-4]) / d['close'][-4] * 100
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+
+    # Price pumped but volume weak = FALSE pump = interesting research
+    return price_move >= pump_pct and (vr is None or vr <= max_vol_mult)
+
+# ═══════════════════════════════
+# E65 — Pump Probability Engine
+# Weighted score from multiple signals
+# ═══════════════════════════════
+def signal_e65(d, p, btc_data):
+    if not ind.enough(d, 50):
+        return False
+    min_score = p.get('min_score', 70)
+
+    score = 0
+
+    # Volume acceleration (20pts)
+    import numpy as np
+    vols = d['volume'][-6:]
+    if len(vols) >= 6:
+        v1 = np.sum(vols[:2])
+        v2 = np.sum(vols[2:4])
+        v3 = np.sum(vols[4:])
+        if v1 > 0 and v2 > 0 and v3 > v2 > v1:
+            score += 20
+
+    # Relative strength vs BTC (20pts)
+    if btc_data and ind.enough(btc_data, 6):
+        if d['close'][-4] > 0 and btc_data['close'][-4] > 0:
+            coin_r = (d['close'][-1]-d['close'][-4])/d['close'][-4]*100
+            btc_r  = (btc_data['close'][-1]-btc_data['close'][-4])/btc_data['close'][-4]*100
+            if coin_r - btc_r > 2: score += 20
+
+    # Volume spike (20pts)
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if vr and vr > 3.0: score += 20
+
+    # RSI momentum building (15pts)
+    rsi = ind.calc_rsi(d['close'], 14)
+    if rsi and 50 < rsi < 75: score += 15
+
+    # ATR expanding (15pts)
+    atr = ind.calc_atr(d['high'], d['low'], d['close'], 14)
+    atr_slow = ind.calc_atr(d['high'], d['low'], d['close'], 28)
+    if atr and atr_slow and atr_slow > 0 and atr/atr_slow > 1.3: score += 15
+
+    # BTC regime safe (10pts)
+    if btc_data and ind.enough(btc_data, 14):
+        btc_rsi = ind.calc_rsi(btc_data['close'], 14)
+        if btc_rsi and btc_rsi > 45: score += 10
+
+    return score >= min_score
+
+# ═══════════════════════════════
+# E66 — Bot Consensus Explosion
+# Count how many different signal types are bullish simultaneously
+# ═══════════════════════════════
+def signal_e66(d, p, btc_data):
+    if not ind.enough(d, 50):
+        return False
+    min_consensus = p.get('min_consensus', 5)
+
+    bullish = 0
+
+    # RSI oversold/neutral
+    rsi = ind.calc_rsi(d['close'], 14)
+    if rsi and rsi < 40: bullish += 1
+
+    # Volume spike
+    vr = ind.calc_volume_ratio(d['volume'], 20)
+    if vr and vr > 2.0: bullish += 1
+
+    # Price above VWAP
+    vwap = ind.calc_vwap(d['high'], d['low'], d['close'], d['volume'], 24)
+    if vwap and d['close'][-1] > vwap: bullish += 1
+
+    # BB lower band touch
+    bb = ind.calc_bollinger(d['close'], 20, 2.0)
+    if bb and d['close'][-1] < bb['lower'] * 1.02: bullish += 1
+
+    # ATR expanding
+    atr = ind.calc_atr(d['high'], d['low'], d['close'], 14)
+    atr_slow = ind.calc_atr(d['high'], d['low'], d['close'], 28)
+    if atr and atr_slow and atr_slow > 0 and atr/atr_slow > 1.2: bullish += 1
+
+    # BTC safe
+    if btc_data and ind.enough(btc_data, 14):
+        btc_rsi = ind.calc_rsi(btc_data['close'], 14)
+        if btc_rsi and btc_rsi > 45: bullish += 1
+
+    # Consecutive higher lows (last 4 candles)
+    lows = d['low'][-4:]
+    if all(lows[i] > lows[i-1] for i in range(1, len(lows))): bullish += 1
+
+    # Price momentum (short term positive)
+    if d['close'][-3] > 0:
+        momentum = (d['close'][-1] - d['close'][-3]) / d['close'][-3] * 100
+        if momentum > 0.5: bullish += 1
+
+    # OBV positive
+    closes = d['close'][-10:]
+    vols = d['volume'][-10:]
+    obv = sum(vols[i] if closes[i]>closes[i-1] else -vols[i] for i in range(1,len(closes)))
+    if obv > 0: bullish += 1
+
+    # Relative strength vs BTC
+    if btc_data and ind.enough(btc_data, 6):
+        if d['close'][-4] > 0 and btc_data['close'][-4] > 0:
+            coin_r = (d['close'][-1]-d['close'][-4])/d['close'][-4]*100
+            btc_r  = (btc_data['close'][-1]-btc_data['close'][-4])/btc_data['close'][-4]*100
+            if coin_r > btc_r: bullish += 1
+
+    return bullish >= min_consensus
+
+
 SIGNAL_MAP = {
     'E1':   signal_e1,
     'E2':   signal_e2,
@@ -1510,6 +1776,15 @@ SIGNAL_MAP = {
     'E55': signal_e55,
     'E56': signal_e56,
     'E57': signal_e57,
+    'E59': signal_e59,
+    'E60': signal_e60,
+    'E61': signal_e61,
+    'E62': signal_e62,
+    'E63': signal_e63,
+    'E64': signal_e64,
+    'E65': signal_e65,
+    'E66': signal_e66,
 }
+
 
 
