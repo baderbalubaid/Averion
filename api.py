@@ -953,13 +953,18 @@ def admin_health(payload: dict = Depends(require_admin)):
    try:
        import psutil
        mem = psutil.virtual_memory()
-       disk = psutil.disk_usage('/')
+       disk_info = psutil.disk_usage('/')
        ram_total_gb = round(mem.total / 1024**3, 1)
        ram_used_gb  = round(mem.used / 1024**3, 1)
-       disk_total_gb = round(disk.total / 1024**3, 1)
-       disk_used_gb  = round(disk.used / 1024**3, 1)
+       disk_total_gb = round(disk_info.total / 1024**3, 1)
+       disk_used_gb  = round(disk_info.used / 1024**3, 1)
+       # Add live CPU/RAM/Disk to latest record
+       cpu_live = psutil.cpu_percent(interval=0.5)
+       ram_live = mem.percent
+       disk_live = disk_info.percent
    except:
        ram_total_gb = ram_used_gb = disk_total_gb = disk_used_gb = 0
+       cpu_live = ram_live = disk_live = 0
    result = [{
        'cpu': float(r[0] or 0),
        'ram': float(r[1] or 0),
@@ -971,6 +976,9 @@ def admin_health(payload: dict = Depends(require_admin)):
        result[0]['ram_total_gb'] = ram_total_gb
        result[0]['disk_used_gb'] = disk_used_gb
        result[0]['disk_total_gb'] = disk_total_gb
+       result[0]['cpu'] = cpu_live
+       result[0]['ram'] = ram_live
+       result[0]['disk'] = disk_live
    return result
 
 # ═══════════════════════════════
@@ -1441,3 +1449,36 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
