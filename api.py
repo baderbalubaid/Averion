@@ -531,6 +531,59 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             })
         return result
 
+@app.get('/admin/research/dca-queue')
+def research_dca_queue(payload: dict = Depends(require_admin)):
+    import redis as _redis
+    r = _redis.Redis(host='localhost', port=6379, decode_responses=True)
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.coin, b.method, p.category,
+                   p.avg_cost, p.dca_count,
+                   cp.dca_spacing
+            FROM positions p
+            JOIN bots b ON b.id=p.bot_id
+            LEFT JOIN coin_parameters cp ON cp.coin=p.coin
+            WHERE p.status='open' AND b.trading_on=TRUE
+            AND p.avg_cost > 0
+            ORDER BY p.avg_cost DESC
+            LIMIT 2000
+        """)
+        rows = cur.fetchall()
+
+    result = []
+    for row in rows:
+        coin, method, category, avg_cost, dca_count, dca_spacing = row
+        avg_cost = float(avg_cost or 0)
+        dca_spacing = float(dca_spacing or 7.0)
+        if avg_cost == 0:
+            continue
+        keys = r.keys(f'price:*:{coin}/USDT')
+        if not keys:
+            continue
+        current = float(r.get(keys[0]) or 0)
+        if current == 0:
+            continue
+        loss_pct = round((current - avg_cost) / avg_cost * 100, 2)
+        trigger_price = round(avg_cost * (1 - dca_spacing/100), 8)
+        gap_pct = round((current - trigger_price) / trigger_price * 100, 2)
+        if loss_pct < -0.5:  # only show positions with some loss
+            result.append({
+                'coin': coin,
+                'method': method,
+                'category': category or 'micro',
+                'avg_cost': float(avg_cost),
+                'current_price': current,
+                'loss_pct': loss_pct,
+                'dca_spacing': dca_spacing,
+                'trigger_price': trigger_price,
+                'gap_pct': gap_pct,
+                'dca_count': dca_count,
+            })
+
+    result.sort(key=lambda x: x['gap_pct'])
+    return result[:100]
+
 @app.get('/admin/research/champions')
 def get_research_champions(payload: dict = Depends(verify_token)):
     import sys
@@ -1501,3 +1554,12 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+   uvicorn.run(app, host='0.0.0.0', port=8080)
