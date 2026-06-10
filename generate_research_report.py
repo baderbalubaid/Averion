@@ -304,6 +304,133 @@ def run():
             md += f'| {r[0]} | {r[1]} | {wr}% | ${r[3]} | {r[4]} | {r[5]}h |\n'
         md += '\n'
 
+        # ── 1. MARKET CAP BREAKDOWN PER TOP METHODS ──
+        md += '## Market Cap Performance by Top Methods\n\n'
+        md += '> Which coin sizes respond best to each method\n\n'
+        cur.execute("""
+            SELECT b.method, p.category,
+                COUNT(*) as trades,
+                COUNT(*) FILTER (WHERE p.total_sold_usdt > p.total_invested) as wins,
+                ROUND(AVG(p.total_sold_usdt - p.total_invested)::numeric,2) as avg_pnl,
+                ROUND(AVG(p.dca_count)::numeric,2) as avg_dca
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='closed' AND b.is_research=TRUE
+            AND b.method IN (
+                SELECT b2.method FROM positions p2
+                JOIN bots b2 ON b2.id=p2.bot_id
+                WHERE p2.status='closed' AND b2.is_research=TRUE
+                GROUP BY b2.method ORDER BY COUNT(*) DESC LIMIT 15
+            )
+            GROUP BY b.method, p.category
+            ORDER BY b.method, avg_pnl DESC
+        """)
+        md += '| Method | Category | Trades | Win% | Avg P&L | Avg DCA |\n'
+        md += '|--------|----------|--------|------|---------|---------|\n'
+        for r in cur.fetchall():
+            wr = round(r[3]/r[2]*100,1) if r[2] else 0
+            md += f'| {r[0]} | {r[1]} | {r[2]} | {wr}% | ${r[3]} | ${r[4]} | {r[5]} |\n'
+        md += '\n'
+
+        # ── 2. BEST PARAM PER METHOD ──
+        md += '## Best Performing Bot Per Method\n\n'
+        cur.execute("""
+            SELECT DISTINCT ON (b.method)
+                b.method, b.name, b.bot_params::text,
+                COUNT(*) FILTER (WHERE p.status='closed') as closed,
+                ROUND(AVG(p.total_sold_usdt - p.total_invested) FILTER (WHERE p.status='closed')::numeric,2) as avg_pnl
+            FROM bots b LEFT JOIN positions p ON p.bot_id=b.id
+            WHERE b.is_research=TRUE
+            GROUP BY b.method, b.name, b.bot_params
+            HAVING COUNT(*) FILTER (WHERE p.status='closed') >= 3
+            ORDER BY b.method, avg_pnl DESC NULLS LAST
+        """)
+        import json as _json
+        md += '| Method | Best Bot | Closed | Avg P&L | Winning Params |\n'
+        md += '|--------|----------|--------|---------|----------------|\n'
+        for r in cur.fetchall():
+            try:
+                params = _json.loads(r[2]) if r[2] else {}
+                param_str = ' · '.join(f'{k}={v}' for k,v in params.items())
+            except:
+                param_str = '—'
+            md += f'| {r[0]} | {r[1]} | {r[3]} | ${r[4]} | {param_str} |\n'
+        md += '\n'
+
+        # ── 3. METHODS WITH ZERO ACTIVITY ──
+        md += '## Methods With Zero Activity\n\n'
+        md += '> These may be too strict or wrong market conditions\n\n'
+        cur.execute("""
+            SELECT b.method, COUNT(DISTINCT b.id) as bots
+            FROM bots b
+            WHERE b.is_research=TRUE
+            AND NOT EXISTS (SELECT 1 FROM positions p WHERE p.bot_id=b.id)
+            GROUP BY b.method ORDER BY b.method
+        """)
+        zero_rows = cur.fetchall()
+        if zero_rows:
+            md += '| Method | Bots | Recommendation |\n'
+            md += '|--------|------|----------------|\n'
+            for r in zero_rows:
+                md += f'| {r[0]} | {r[1]} | No trades · check signal conditions · may need different market regime |\n'
+        else:
+            md += '_All methods have at least some activity_ \n'
+        md += '\n'
+
+        # ── 4. TIME-IN-TRADE VS DRAWDOWN ──
+        md += '## Capital Efficiency — Hold Time vs Drawdown\n\n'
+        md += '> Methods that exit quickly with low DCA = better capital efficiency\n\n'
+        cur.execute("""
+            SELECT b.method,
+                ROUND(AVG(EXTRACT(EPOCH FROM (p.closed_at-p.opened_at))/3600)::numeric,1) as avg_hold_hrs,
+                ROUND(MAX(EXTRACT(EPOCH FROM (p.closed_at-p.opened_at))/3600)::numeric,1) as max_hold_hrs,
+                ROUND(AVG(p.dca_count)::numeric,2) as avg_dca,
+                ROUND(MAX(p.dca_count)::numeric,0) as max_dca,
+                COUNT(*) as trades
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='closed' AND b.is_research=TRUE
+            GROUP BY b.method HAVING COUNT(*) >= 5
+            ORDER BY avg_hold_hrs ASC
+        """)
+        md += '| Method | Avg Hold | Max Hold | Avg DCA | Max DCA | Trades |\n'
+        md += '|--------|----------|----------|---------|---------|--------|\n'
+        for r in cur.fetchall():
+            md += f'| {r[0]} | {r[1]}h | {r[2]}h | {r[3]} | {r[4]} | {r[5]} |\n'
+        md += '\n'
+
+        # ── 5. DATA COLLECTION DURATION ──
+        cur.execute("SELECT MIN(opened_at), MAX(opened_at) FROM positions WHERE is_research=TRUE")
+        time_row = cur.fetchone()
+        if time_row and time_row[0] and time_row[1]:
+            duration = time_row[1] - time_row[0]
+            hours = round(duration.total_seconds()/3600, 1)
+            md += f'## Data Collection Duration\n\n'
+            md += f'| Metric | Value |\n|--------|-------|\n'
+            md += f'| First position opened | {time_row[0].strftime("%Y-%m-%d %H:%M")} |\n'
+            md += f'| Latest position opened | {time_row[1].strftime("%Y-%m-%d %H:%M")} |\n'
+            md += f'| Data collection window | {hours} hours ({round(hours/24,1)} days) |\n'
+            md += f'| Statistical confidence | {"LOW - need 100+ trades per method" if hours < 48 else "MEDIUM - growing" if hours < 168 else "HIGH - good sample"} |\n\n'
+
+        # ── 6. SCALPER ACTIVITY SUMMARY ──
+        md += '## E58 Scalper — Activity Summary\n\n'
+        cur.execute("""
+            SELECT b.name,
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE s.status='open') as open_now,
+                COUNT(*) FILTER (WHERE s.exit_reason='timer') as timer_exits,
+                COUNT(*) FILTER (WHERE s.exit_reason='stop_loss') as sl_exits,
+                ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric,3) as avg_pnl,
+                ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl,
+                ROUND(MAX(s.max_profit_seen)::numeric,2) as best_peak,
+                ROUND(MIN(s.max_loss_seen)::numeric,2) as worst_dip
+            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
+            GROUP BY b.name ORDER BY avg_pnl DESC NULLS LAST
+        """)
+        md += '| Bot | Total | Open | Timer | SL | Avg PnL% | Total$ | Best Peak | Worst Dip |\n'
+        md += '|-----|-------|------|-------|----|----------|--------|-----------|-----------|\n'
+        for r in cur.fetchall():
+            md += f'| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]}% | ${r[6]} | {r[7]}% | {r[8]}% |\n'
+        md += '\n'
+
         # ── QUESTIONS FOR AI ──
         md += '## Questions for AI Analysis\n\n'
         md += '1. Which DCA methods show most consistent edge? Which to promote as champion?\n'
