@@ -557,6 +557,8 @@ def check_gate_conditions(bot, coin, open_positions):
 # ═══════════════════════════════
 # MAIN BOT CYCLE
 # ═══════════════════════════════
+_last_health_time = 0
+
 def run_cycle(r):
     cycle_start = time.time()
     print(f'\n--- Cycle {datetime.utcnow()} ---')
@@ -567,18 +569,18 @@ def run_cycle(r):
     except: pass
 
     # Record system health every 5 minutes
-    import time as _time
-    _now = _time.time()
-    if _now - globals().get('_last_health', 0) >= 300:
+    global _last_health_time
+    if time.time() - _last_health_time >= 300:
         try:
             import psutil
             cpu  = psutil.cpu_percent(interval=0.5)
             ram  = psutil.virtual_memory().percent
             disk = psutil.disk_usage('/').percent
             db.record_system_health(cpu, ram, disk, 0, 0, 0, 0, 0)
-            globals()['_last_health'] = _now
+            _last_health_time = time.time()
+            print(f'📊 Health recorded: CPU={cpu}% RAM={ram}% Disk={disk}%')
         except Exception as _e:
-            pass
+            print(f'⚠️ Health record error: {_e}')
 
     # Load coin parameters for dynamic DCA/TP/trail
     coin_params_cache = {}
