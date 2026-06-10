@@ -568,6 +568,8 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
         trigger_price = round(avg_cost * (1 - dca_spacing/100), 8)
         gap_pct = round((current - trigger_price) / trigger_price * 100, 2)
         if loss_pct < -0.5:  # only show positions with some loss
+            next_dca_amount = 100 * (1.0 ** (dca_count + 1))
+            score = abs(loss_pct) / next_dca_amount if next_dca_amount > 0 else 0
             result.append({
                 'coin': coin,
                 'method': method,
@@ -579,9 +581,10 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
                 'trigger_price': trigger_price,
                 'gap_pct': gap_pct,
                 'dca_count': dca_count,
+                'score': round(score, 4),
             })
 
-    result.sort(key=lambda x: x['gap_pct'])
+    result.sort(key=lambda x: -x['score'])
     return result[:100]
 
 @app.get('/admin/research/champions')
@@ -1563,3 +1566,9 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
