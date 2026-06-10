@@ -799,7 +799,7 @@
                     <span>📊 DCA Queue — Positions Closest to Trigger</span>
                     <button onclick="loadDCAQueue()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
                 </div>
-                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Positions sorted by how close they are to their next DCA trigger</p>
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Positions sorted by how close they are to their next DCA trigger · <span id="dca-queue-count" style="color:var(--green);font-weight:bold">—</span> in queue</p>
                 <div class="table-wrap">
                     <table>
                         <thead><tr>
@@ -1199,6 +1199,7 @@
                 tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">No positions near DCA trigger</td></tr>';
                 return;
             }
+            document.getElementById('dca-queue-count').textContent = data.length + ' positions';
             tbody.innerHTML = data.map(p => `<tr>
                 <td style="color:var(--amber);font-weight:bold">${p.score}</td>
                 <td><b>${p.coin}</b></td>

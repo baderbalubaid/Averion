@@ -541,7 +541,8 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
             SELECT p.coin, b.method, p.category,
                    p.avg_cost, p.last_buy_price, p.dca_count,
                    b.dca_percent, b.spacing_multiplier,
-                   b.size_multiplier, b.base_order
+                   b.size_multiplier, b.base_order,
+                   p.pos_dca_pct
             FROM positions p
             JOIN bots b ON b.id=p.bot_id
             WHERE p.status='open' AND b.trading_on=TRUE
@@ -552,10 +553,10 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
 
     result = []
     for row in rows:
-        coin, method, category, avg_cost, last_buy, dca_count, dca_pct, spacing_mult, size_mult, base_order = row
+        coin, method, category, avg_cost, last_buy, dca_count, dca_pct, spacing_mult, size_mult, base_order, pos_dca_pct = row
         avg_cost     = float(avg_cost or 0)
         last_buy     = float(last_buy or avg_cost)
-        dca_pct      = float(dca_pct or 7.0)
+        dca_pct      = float(pos_dca_pct or dca_pct or 7.0)  # use position-level if available
         spacing_mult = float(spacing_mult or 1.0)
         size_mult    = float(size_mult or 1.0)
         base_order   = float(base_order or 100)
