@@ -38,6 +38,12 @@ E58_BOTS = [
     {'name': 'E58-16', 'trigger_pct': 3.0, 'window_sec': 5.0,  'hold_sec': 45, 'stop_loss_pct': None},
     {'name': 'E58-17', 'trigger_pct': 8.0, 'window_sec': 2.0,  'hold_sec': 15, 'stop_loss_pct': 4.0},
     {'name': 'E58-18', 'trigger_pct': 2.0, 'window_sec': 3.0,  'hold_sec': 60, 'stop_loss_pct': 2.0},
+    {'name': 'E58-19', 'trigger_pct': 1.5, 'window_sec': 0.5,  'hold_sec': 5,  'stop_loss_pct': 1.5},
+    {'name': 'E58-20', 'trigger_pct': 2.0, 'window_sec': 0.5,  'hold_sec': 5,  'stop_loss_pct': 2.0},
+    {'name': 'E58-21', 'trigger_pct': 3.0, 'window_sec': 1.0,  'hold_sec': 3,  'stop_loss_pct': 2.0},
+    {'name': 'E58-22', 'trigger_pct': 1.5, 'window_sec': 1.0,  'hold_sec': 8,  'stop_loss_pct': 1.5},
+    {'name': 'E58-23', 'trigger_pct': 2.5, 'window_sec': 1.0,  'hold_sec': 5,  'stop_loss_pct': 2.0},
+    {'name': 'E58-24', 'trigger_pct': 4.0, 'window_sec': 2.0,  'hold_sec': 8,  'stop_loss_pct': 2.5},
 ]
 
 class ScalperEngine:
