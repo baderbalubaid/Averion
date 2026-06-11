@@ -560,7 +560,7 @@ def research_scalper(payload: dict = Depends(require_admin)):
             p = json.loads(params_raw) if params_raw else {}
         except:
             p = {}
-        win_rate = round(wins/trades*100, 1) if trades else 0
+        win_rate = round(wins/closed*100, 1) if trades else 0
         # Score = win_rate * avg_pnl * speed (1/hold_sec)
         hold_sec = float(p.get('hold_sec', 30))
         avg_pnl_f = float(avg_pnl or 0)
@@ -571,13 +571,13 @@ def research_scalper(payload: dict = Depends(require_admin)):
             'window_sec': p.get('window_sec', '?'),
             'hold_sec': hold_sec,
             'stop_loss_pct': p.get('stop_loss_pct'),
-            'closed': closed,
+            'closed': int(closed or 0),
             'win_rate': win_rate,
             'avg_pnl': float(avg_pnl or 0),
             'total_pnl': float(total_pnl or 0),
             'best': float(best or 0),
             'worst': float(worst or 0),
-            'open_now': open_now,
+            'open_now': int(open_now or 0),
             'score': score,
         })
     result.sort(key=lambda x: -x['score'])
