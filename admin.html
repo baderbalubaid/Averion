@@ -858,11 +858,11 @@
                    <table>
                        <thead><tr>
                            <th>Rank</th><th>Bot</th><th>Trigger%</th><th>Window</th><th>Hold</th><th>SL%</th>
-                           <th>Capital</th><th>Open</th><th>Closed</th><th>Win%</th><th>Avg P&L%</th>
+                           <th>Open</th><th>Closed</th><th>Win%</th><th>Avg P&L%</th>
                            <th>Total P&L</th><th>Best</th><th>Worst</th><th>Score</th>
                        </tr></thead>
                        <tbody id="scalper-tbody">
-                           <tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                           <tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
                        </tbody>
                    </table>
                </div>
@@ -1218,12 +1218,12 @@
 
     async function loadScalper() {
        const tbody = document.getElementById('scalper-tbody');
-       tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+       tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
        try {
            const res = await fetch(`${API}/admin/research/scalper`, {headers: authHeaders()});
            const data = await res.json();
            if (!data.length) {
-               tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">No scalper data yet</td></tr>';
+               tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No scalper data yet</td></tr>';
                return;
            }
            const medals = ['🥇','🥈','🥉'];
@@ -1234,7 +1234,6 @@
                <td>${s.window_sec}s</td>
                <td>${s.hold_sec}s</td>
                <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
-               <td style="color:var(--amber)">$${(s.open_now*100).toLocaleString()}</td>
                <td style="color:var(--muted)">${s.open_now}</td>
                 <td>${s.closed}</td>
                <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
@@ -1245,7 +1244,7 @@
                <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
            </tr>`).join('');
        } catch(e) {
-           tbody.innerHTML = `<tr><td colspan="15" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+           tbody.innerHTML = `<tr><td colspan="14" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
        }
    }
 
