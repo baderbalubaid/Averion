@@ -555,7 +555,7 @@ def research_scalper(payload: dict = Depends(require_admin)):
     import json
     result = []
     for r in rows:
-        name, params_raw, trades, wins, avg_pnl, total_pnl, best, worst, open_now = r
+        name, params_raw, closed, wins, avg_pnl, total_pnl, best, worst, open_now = r
         try:
             p = json.loads(params_raw) if params_raw else {}
         except:
