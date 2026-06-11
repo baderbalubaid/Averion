@@ -858,7 +858,7 @@
                    <table>
                        <thead><tr>
                            <th>Rank</th><th>Bot</th><th>Trigger%</th><th>Window</th><th>Hold</th><th>SL%</th>
-                           <th>Open</th><th>Closed</th><th>Win%</th><th>Avg P&L%</th>
+                           <th>Capital</th><th>Open</th><th>Closed</th><th>Win%</th><th>Avg P&L%</th>
                            <th>Total P&L</th><th>Best</th><th>Worst</th><th>Score</th>
                        </tr></thead>
                        <tbody id="scalper-tbody">
@@ -1234,6 +1234,7 @@
                <td>${s.window_sec}s</td>
                <td>${s.hold_sec}s</td>
                <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
+               <td style="color:var(--amber)">$${(s.open_now*100).toLocaleString()}</td>
                <td style="color:var(--muted)">${s.open_now}</td>
                 <td>${s.trades}</td>
                <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
