@@ -155,7 +155,59 @@ class ScalperEngine:
         self.bot_ids = {}
         self._load_bot_ids()
         self._lock = threading.Lock()
+        # Clean up stuck positions from previous run
+        self._cleanup_stuck_positions()
+        # Start background cleanup thread
+        self._start_cleanup_thread()
         print(f'✅ ScalperEngine initialized · {len(E58_BOTS)} bots')
+
+    def _cleanup_stuck_positions(self):
+        """Close positions stuck open longer than 2x hold_seconds."""
+        try:
+            with db.get_db() as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT s.id, s.coin, s.entry_price, s.hold_seconds,
+                           EXTRACT(EPOCH FROM (NOW() - s.entry_time))::int as seconds_open
+                    FROM scalper_positions s
+                    WHERE s.status = 'open'
+                    AND EXTRACT(EPOCH FROM (NOW() - s.entry_time)) > s.hold_seconds * 2
+                """)
+                stuck = cur.fetchall()
+
+            closed = 0
+            for pos_id, coin, entry_price, hold_sec, seconds_open in stuck:
+                # Get latest price
+                history = self.price_history.get(coin)
+                exit_price = float(history[-1][1]) if history else float(entry_price)
+                pnl_pct = (exit_price - float(entry_price)) / float(entry_price) * 100 if float(entry_price) > 0 else 0
+                pnl_usdt = 100 * pnl_pct / 100
+
+                with db.get_db() as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        UPDATE scalper_positions SET
+                            exit_price = %s, exit_time = NOW(),
+                            pnl_pct = %s, pnl_usdt = %s,
+                            exit_reason = 'timer_recovery', status = 'closed'
+                        WHERE id = %s
+                    """, (exit_price, round(pnl_pct,4), round(pnl_usdt,8), pos_id))
+                closed += 1
+
+            if closed > 0:
+                print(f'🔧 Cleaned {closed} stuck scalper positions')
+        except Exception as e:
+            print(f'⚠️ Cleanup error: {e}')
+
+    def _start_cleanup_thread(self):
+        """Background thread that cleans stuck positions every 30s."""
+        def cleanup_loop():
+            while True:
+                time.sleep(30)
+                self._cleanup_stuck_positions()
+
+        t = threading.Thread(target=cleanup_loop, daemon=True)
+        t.start()
 
     def _load_bot_ids(self):
         try:
