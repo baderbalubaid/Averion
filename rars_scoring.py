@@ -46,6 +46,19 @@ def calculate_rars():
     if not rows:
         return []
 
+    # Get open positions + capital locked per method
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT b.method,
+                   COUNT(*) as open_count,
+                   ROUND(SUM(p.total_invested)::numeric,2) as capital_locked
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='open' AND b.is_research=TRUE
+            GROUP BY b.method
+        """)
+        open_data = {r[0]: {'open':r[1],'capital':float(r[2] or 0)} for r in cur.fetchall()}
+
     # Group by method
     methods = {}
     for row in rows:
@@ -93,6 +106,8 @@ def calculate_rars():
         raw.append({
             'method': method,
             'trade_count': n,
+            'open_positions': open_data.get(method,{}).get('open',0),
+            'capital_locked': open_data.get(method,{}).get('capital',0),
             'wr': wr,
             'avg_profit': avg_profit,
             'rs_raw': rs_raw,
@@ -143,6 +158,8 @@ def calculate_rars():
         results.append({
             'method': s['method'],
             'trade_count': s['trade_count'],
+            'open_positions': s.get('open_positions',0),
+            'capital_locked': s.get('capital_locked',0),
             'win_rate': round(s['wr'] * 100, 1),
             'avg_profit_per_trade': round(s['avg_profit'], 2),
             'avg_hold_hours': s['avg_hold_hours'],
