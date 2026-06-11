@@ -763,7 +763,9 @@
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">History</div>
             <div class="sub-tab" id="st-r-champion" onclick="switchSubTab('r-champion')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champions</div>
-            <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')"
+            <div class="sub-tab" id="st-r-scalper" onclick="switchSubTab('r-scalper')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper</div>
+            <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')" 
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
         </div>
         <div id="sub-r-trades" style="display:none">
@@ -845,7 +847,29 @@
                 </table></div>
             </div>
         </div>
-        <div id="sub-r-categories" style="display:none">
+        <div id="sub-r-scalper" style="display:none">
+           <div class="card">
+               <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                   <span>⚡ Scalper Rankings — E58 WebSocket Momentum</span>
+                   <button onclick="loadScalper()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+               </div>
+               <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Score = Win Rate × Avg P&L × Speed · Higher = Better</p>
+               <div class="table-wrap">
+                   <table>
+                       <thead><tr>
+                           <th>Rank</th><th>Bot</th><th>Trigger%</th><th>Window</th><th>Hold</th><th>SL%</th>
+                           <th>Trades</th><th>Win%</th><th>Avg P&L%</th>
+                           <th>Total P&L</th><th>Best</th><th>Worst</th><th>Score</th>
+                       </tr></thead>
+                       <tbody id="scalper-tbody">
+                           <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
+       </div>
+
+       <div id="sub-r-categories" style="display:none">
             <div class="card">
                 <div class="card-title">Market Cap Categories</div>
                 <div class="table-wrap"><table>
@@ -1192,7 +1216,38 @@
         }
     }
 
-    async function loadDCAQueue() {
+    async function loadScalper() {
+       const tbody = document.getElementById('scalper-tbody');
+       tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+       try {
+           const res = await fetch(`${API}/admin/research/scalper`, {headers: authHeaders()});
+           const data = await res.json();
+           if (!data.length) {
+               tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">No scalper data yet</td></tr>';
+               return;
+           }
+           const medals = ['🥇','🥈','🥉'];
+           tbody.innerHTML = data.map((s,i) => `<tr>
+               <td>${medals[i]||'#'+(i+1)}</td>
+               <td><b>${s.name}</b></td>
+               <td>${s.trigger_pct}%</td>
+               <td>${s.window_sec}s</td>
+               <td>${s.hold_sec}s</td>
+               <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
+               <td>${s.trades}</td>
+               <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
+               <td style="color:${s.avg_pnl>=0?'#27ae60':'#e74c3c'}">${s.avg_pnl>=0?'+':''}${s.avg_pnl}%</td>
+               <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${Math.abs(s.total_pnl)}</td>
+               <td style="color:#27ae60">+${s.best}%</td>
+               <td style="color:#e74c3c">${s.worst}%</td>
+               <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
+           </tr>`).join('');
+       } catch(e) {
+           tbody.innerHTML = `<tr><td colspan="13" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+       }
+   }
+
+   async function loadDCAQueue() {
         const tbody = document.getElementById('dca-queue-tbody');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
         try {
@@ -1377,7 +1432,7 @@
         }
         if (name === 'r-bots') loadResearchBots();
         // Show/hide sub-content
-        ['r-trades','r-dca-queue','r-history','r-champion','r-categories','r-bots'].forEach(s => {
+        ['r-trades','r-dca-queue','r-history','r-champion','r-scalper','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
             if (el) el.style.display = s === name ? 'block' : 'none';
         });
@@ -1386,6 +1441,7 @@
         if (name === 'r-history') loadResearchHistory();
         if (name === 'r-dca-queue') loadDCAQueue();
         if (name === 'r-champion') loadChampions();
+        if (name === 'r-scalper') loadScalper();
     }
 
     function switchTab(name) {
