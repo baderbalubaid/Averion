@@ -1221,6 +1221,7 @@
 
     async function loadScalper(forceResort = true) {
         const tbody = document.getElementById('scalper-tbody');
+        if (!tbody) { console.error('scalper-tbody not found'); return; }
         try {
             const res = await fetch(`${API}/admin/research/scalper`, {headers: authHeaders()});
             const data = await res.json();
