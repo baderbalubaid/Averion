@@ -851,7 +851,7 @@
            <div class="card">
                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
                    <span>⚡ Scalper Rankings — E58 WebSocket Momentum</span>
-                   <button onclick="loadScalper()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                   <button onclick="loadScalper(true)" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
                </div>
                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Score = Win Rate × Avg P&L × Speed · Higher = Better</p>
                <div class="table-wrap">
@@ -1216,37 +1216,60 @@
         }
     }
 
-    async function loadScalper() {
-       const tbody = document.getElementById('scalper-tbody');
-       tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
-       try {
-           const res = await fetch(`${API}/admin/research/scalper`, {headers: authHeaders()});
-           const data = await res.json();
-           if (!data.length) {
-               tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No scalper data yet</td></tr>';
-               return;
-           }
-           const medals = ['🥇','🥈','🥉'];
-           tbody.innerHTML = data.map((s,i) => `<tr>
-               <td>${medals[i]||'#'+(i+1)}</td>
-               <td><b>${s.name}</b></td>
-               <td>${s.trigger_pct}%</td>
-               <td>${s.window_sec}s</td>
-               <td>${s.hold_sec}s</td>
-               <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
-               <td style="color:var(--muted)">${s.open_now}</td>
-                <td>${s.closed}</td>
-               <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
-               <td style="color:${s.avg_pnl>=0?'#27ae60':'#e74c3c'}">${s.avg_pnl>=0?'+':''}${parseFloat(s.avg_pnl||0).toFixed(3)}%</td>
-               <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${Math.abs(parseFloat(s.total_pnl)||0).toFixed(2)}</td>
-               <td style="color:#27ae60">+${s.best}%</td>
-               <td style="color:#e74c3c">${s.worst}%</td>
-               <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
-           </tr>`).join('');
-       } catch(e) {
-           tbody.innerHTML = `<tr><td colspan="14" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
-       }
-   }
+    let _scalperOrder = [];
+    let _scalperInterval = null;
+
+    async function loadScalper(forceResort = true) {
+        const tbody = document.getElementById('scalper-tbody');
+        try {
+            const res = await fetch(`${API}/admin/research/scalper`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No scalper data yet</td></tr>';
+                return;
+            }
+            const medals = ['\u{1F947}','\u{1F948}','\u{1F949}'];
+
+            if (forceResort || _scalperOrder.length === 0) {
+                _scalperOrder = data.map(s => s.name);
+                tbody.innerHTML = data.map((s,i) => `<tr id="scalper-row-${s.name}">
+                    <td>${medals[i]||'#'+(i+1)}</td>
+                    <td><b>${s.name}</b></td>
+                    <td>${s.trigger_pct}%</td>
+                    <td>${s.window_sec}s</td>
+                    <td>${s.hold_sec}s</td>
+                    <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
+                    <td id="sc-open-${s.name}" style="color:var(--muted)">${s.open_now}</td>
+                    <td id="sc-closed-${s.name}">${s.closed}</td>
+                    <td id="sc-wr-${s.name}" style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
+                    <td id="sc-avg-${s.name}" style="color:${s.avg_pnl>=0?'#27ae60':'#e74c3c'}">${s.avg_pnl>=0?'+':''}${parseFloat(s.avg_pnl||0).toFixed(3)}%</td>
+                    <td id="sc-total-${s.name}" style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${Math.abs(parseFloat(s.total_pnl)||0).toFixed(2)}</td>
+                    <td id="sc-best-${s.name}" style="color:#27ae60">+${s.best}%</td>
+                    <td id="sc-worst-${s.name}" style="color:#e74c3c">${s.worst}%</td>
+                    <td id="sc-score-${s.name}" style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
+                </tr>`).join('');
+            } else {
+                const dm = {};
+                data.forEach(s => dm[s.name] = s);
+                _scalperOrder.forEach(name => {
+                    const s = dm[name];
+                    if (!s) return;
+                    const el = id => document.getElementById(id);
+                    if (el(`sc-open-${name}`)) el(`sc-open-${name}`).textContent = s.open_now;
+                    if (el(`sc-closed-${name}`)) el(`sc-closed-${name}`).textContent = s.closed;
+                    if (el(`sc-wr-${name}`)) { el(`sc-wr-${name}`).textContent = s.win_rate+'%'; el(`sc-wr-${name}`).style.color = s.win_rate>=50?'#27ae60':'#e74c3c'; }
+                    if (el(`sc-avg-${name}`)) { el(`sc-avg-${name}`).textContent = (s.avg_pnl>=0?'+':'')+parseFloat(s.avg_pnl||0).toFixed(3)+'%'; el(`sc-avg-${name}`).style.color = s.avg_pnl>=0?'#27ae60':'#e74c3c'; }
+                    if (el(`sc-total-${name}`)) { el(`sc-total-${name}`).textContent = (s.total_pnl>=0?'+':'')+'$'+Math.abs(parseFloat(s.total_pnl)||0).toFixed(2); el(`sc-total-${name}`).style.color = s.total_pnl>=0?'#27ae60':'#e74c3c'; }
+                    if (el(`sc-best-${name}`)) el(`sc-best-${name}`).textContent = '+'+s.best+'%';
+                    if (el(`sc-worst-${name}`)) el(`sc-worst-${name}`).textContent = s.worst+'%';
+                    if (el(`sc-score-${name}`)) { el(`sc-score-${name}`).textContent = s.score; el(`sc-score-${name}`).style.color = s.score>0?'#27ae60':'#e74c3c'; }
+                });
+            }
+        } catch(e) {
+            if (_scalperOrder.length === 0)
+                tbody.innerHTML = `<tr><td colspan="14" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
 
    async function loadDCAQueue() {
         const tbody = document.getElementById('dca-queue-tbody');
