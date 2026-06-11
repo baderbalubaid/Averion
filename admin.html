@@ -1236,7 +1236,7 @@
                <td style="color:var(--muted)">${s.stop_loss_pct||'off'}</td>
                <td style="color:var(--amber)">$${(s.open_now*100).toLocaleString()}</td>
                <td style="color:var(--muted)">${s.open_now}</td>
-                <td>${s.trades}</td>
+                <td>${s.closed}</td>
                <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
                <td style="color:${s.avg_pnl>=0?'#27ae60':'#e74c3c'}">${s.avg_pnl>=0?'+':''}${s.avg_pnl}%</td>
                <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${Math.abs(s.total_pnl)}</td>
