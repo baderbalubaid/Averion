@@ -531,6 +531,58 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             })
         return result
 
+@app.get('/admin/research/scalper')
+def research_scalper(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT b.name, b.bot_params::text,
+                   COUNT(*) as trades,
+                   COUNT(*) FILTER (WHERE s.pnl_pct > 0) as wins,
+                   ROUND(AVG(s.pnl_pct)::numeric, 3) as avg_pnl,
+                   ROUND(SUM(s.pnl_usdt)::numeric, 2) as total_pnl,
+                   ROUND(MAX(s.pnl_pct)::numeric, 2) as best,
+                   ROUND(MIN(s.pnl_pct)::numeric, 2) as worst,
+                   COUNT(*) FILTER (WHERE s.status='open') as open_now
+            FROM scalper_positions s
+            JOIN bots b ON b.id=s.bot_id
+            WHERE s.status='closed'
+            GROUP BY b.name, b.bot_params
+            ORDER BY avg_pnl DESC NULLS LAST
+        """)
+        rows = cur.fetchall()
+
+    import json
+    result = []
+    for r in rows:
+        name, params_raw, trades, wins, avg_pnl, total_pnl, best, worst, open_now = r
+        try:
+            p = json.loads(params_raw) if params_raw else {}
+        except:
+            p = {}
+        win_rate = round(wins/trades*100, 1) if trades else 0
+        # Score = win_rate * avg_pnl * speed (1/hold_sec)
+        hold_sec = float(p.get('hold_sec', 30))
+        avg_pnl_f = float(avg_pnl or 0)
+        score = round((win_rate/100) * max(avg_pnl_f, 0) * (1/hold_sec) * 1000, 4)
+        result.append({
+            'name': name,
+            'trigger_pct': p.get('trigger_pct', '?'),
+            'window_sec': p.get('window_sec', '?'),
+            'hold_sec': hold_sec,
+            'stop_loss_pct': p.get('stop_loss_pct'),
+            'trades': trades,
+            'win_rate': win_rate,
+            'avg_pnl': float(avg_pnl or 0),
+            'total_pnl': float(total_pnl or 0),
+            'best': float(best or 0),
+            'worst': float(worst or 0),
+            'open_now': open_now,
+            'score': score,
+        })
+    result.sort(key=lambda x: -x['score'])
+    return result
+
 @app.get('/admin/research/dca-queue')
 def research_dca_queue(payload: dict = Depends(require_admin)):
     import redis as _redis
@@ -1357,6 +1409,9 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
