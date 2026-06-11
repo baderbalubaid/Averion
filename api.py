@@ -537,17 +537,17 @@ def research_scalper(payload: dict = Depends(require_admin)):
         cur = conn.cursor()
         cur.execute("""
             SELECT b.name, b.bot_params::text,
-                   COUNT(*) as trades,
-                   COUNT(*) FILTER (WHERE s.pnl_pct > 0) as wins,
-                   ROUND(AVG(s.pnl_pct)::numeric, 3) as avg_pnl,
-                   ROUND(SUM(s.pnl_usdt)::numeric, 2) as total_pnl,
-                   ROUND(MAX(s.pnl_pct)::numeric, 2) as best,
-                   ROUND(MIN(s.pnl_pct)::numeric, 2) as worst,
+                   COUNT(*) FILTER (WHERE s.status='closed') as closed,
+                   COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0) as wins,
+                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 3) as avg_pnl,
+                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric, 2) as total_pnl,
+                   ROUND(MAX(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 2) as best,
+                   ROUND(MIN(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 2) as worst,
                    COUNT(*) FILTER (WHERE s.status='open') as open_now
             FROM scalper_positions s
             JOIN bots b ON b.id=s.bot_id
-            WHERE s.status='closed'
             GROUP BY b.name, b.bot_params
+            HAVING COUNT(*) FILTER (WHERE s.status='closed') > 0
             ORDER BY avg_pnl DESC NULLS LAST
         """)
         rows = cur.fetchall()
