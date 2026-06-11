@@ -1442,7 +1442,16 @@
         if (name === 'r-history') loadResearchHistory();
         if (name === 'r-dca-queue') loadDCAQueue();
         if (name === 'r-champion') loadChampions();
-        if (name === 'r-scalper') loadScalper();
+        if (name === 'r-scalper') {
+            loadScalper(true);
+            if (_scalperInterval) clearInterval(_scalperInterval);
+            _scalperInterval = setInterval(() => loadScalper(false), 15000);
+        } else {
+            if (typeof _scalperInterval !== 'undefined' && _scalperInterval) {
+                clearInterval(_scalperInterval);
+                _scalperInterval = null;
+            }
+        }
     }
 
     function switchTab(name) {
