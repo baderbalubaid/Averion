@@ -564,14 +564,14 @@ def research_scalper(payload: dict = Depends(require_admin)):
         # Score = win_rate * avg_pnl * speed (1/hold_sec)
         hold_sec = float(p.get('hold_sec', 30))
         avg_pnl_f = float(avg_pnl or 0)
-        score = round((win_rate/100) * max(avg_pnl_f, 0) * (1/hold_sec) * 1000, 4)
+        score = round((win_rate/100) * max(avg_pnl_f, 0) * (1/max(hold_sec,1)) * 1000, 4)
         result.append({
             'name': name,
             'trigger_pct': p.get('trigger_pct', '?'),
             'window_sec': p.get('window_sec', '?'),
             'hold_sec': hold_sec,
             'stop_loss_pct': p.get('stop_loss_pct'),
-            'trades': trades,
+            'closed': closed,
             'win_rate': win_rate,
             'avg_pnl': float(avg_pnl or 0),
             'total_pnl': float(total_pnl or 0),
