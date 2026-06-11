@@ -193,7 +193,7 @@ def execute_buy(exchange_obj, coin, amount_usdt,
 
         except ccxt.AuthenticationError as e:
             db.pause_exchange(exchange_id, 'API key invalid', 'auth_error')
-            send_admin(f'🔴 Exchange paused: API key invalid\nExchange ID: {exchange_id}')
+            tg.send_admin(f'🔴 Exchange paused: API key invalid\nExchange ID: {exchange_id}')
             db.record_bot_event(bot_id, user_id, 'api_auth_error',
                                coin=coin, error_message=str(e))
             return None
@@ -517,6 +517,7 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None):
                 trailing_pct=dynamic_trail
             )
             print(f'✅ Position opened: {coin} #{pos_id}')
+            is_research = bot[4].startswith('E') or bot[4].startswith('BM') if bot else False
             if not is_research:
                 tg.notify_trade_open(user_id, coin, direction, result['price'], base_order, method, PAPER_MODE)
             break
@@ -933,7 +934,7 @@ def run_bot():
                                error_message=str(e))
 
             if consecutive_errors >= 3:
-                send_admin(
+                tg.send_admin(
                     f'🔴 Averion: {consecutive_errors} consecutive errors\n{str(e)[:200]}'
                 )
 
