@@ -188,6 +188,61 @@ def run():
                 md += f'| {i} | **{r["method"]}** | {r["rars"]} | {r["status"]} | {r["trades"]} | {wr_pct}% | ${r["avg_pnl"]} | {r["avg_dca"]} | {r["avg_hold"]}h |\n'
         md += '\n---\n\n'
 
+        # ── ENHANCED METHOD SUMMARY ──
+        md += '## Enhanced Method Summary\n\n'
+        md += '> Avg Win/Loss · Clean Win% · Profit Factor · Robustness\n\n'
+        cur.execute("""
+            SELECT b.method,
+                COUNT(*) as trades,
+                COUNT(*) FILTER (WHERE p.total_sold_usdt > p.total_invested) as wins,
+                ROUND(AVG(p.total_sold_usdt - p.total_invested)::numeric,2) as avg_pnl,
+                ROUND(SUM(p.total_sold_usdt - p.total_invested)::numeric,2) as total_pnl,
+                ROUND(AVG(CASE WHEN p.total_sold_usdt > p.total_invested THEN p.total_sold_usdt - p.total_invested END)::numeric,2) as avg_win,
+                ROUND(AVG(CASE WHEN p.total_sold_usdt <= p.total_invested THEN p.total_sold_usdt - p.total_invested END)::numeric,2) as avg_loss,
+                COUNT(*) FILTER (WHERE p.total_sold_usdt > p.total_invested AND p.dca_count = 0) as clean_wins,
+                ROUND(SUM(CASE WHEN p.total_sold_usdt > p.total_invested THEN p.total_sold_usdt - p.total_invested ELSE 0 END)::numeric,2) as gross_win,
+                ROUND(SUM(CASE WHEN p.total_sold_usdt <= p.total_invested THEN p.total_invested - p.total_sold_usdt ELSE 0 END)::numeric,2) as gross_loss,
+                array_agg(p.total_sold_usdt - p.total_invested ORDER BY p.total_sold_usdt - p.total_invested DESC) as all_pnls
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='closed' AND b.is_research=TRUE
+            GROUP BY b.method HAVING COUNT(*) >= 3
+            ORDER BY total_pnl DESC
+        """)
+        md += '| Method | Trades | Win% | Clean Win% | Avg Win | Avg Loss | PF | Total P&L | Excl Top5 | Robustness% |\n'
+        md += '|--------|--------|------|------------|---------|----------|----|-----------|-----------|-------------|\n'
+        for r in cur.fetchall():
+            method, trades, wins, avg_pnl, total_pnl, avg_win, avg_loss, clean_wins, gross_win, gross_loss, all_pnls = r
+            win_rate = round(wins/trades*100,1) if trades > 0 else 0
+            clean_pct = round(clean_wins/trades*100,1) if trades > 0 else 0
+            pf = round(float(gross_win or 0)/float(gross_loss or 1),2)
+            pnls = [float(x) for x in (all_pnls or [])]
+            total_f = float(total_pnl or 0)
+            excl5 = round(sum(pnls[5:]),2) if len(pnls)>5 else total_f
+            rob = round(excl5/total_f*100,1) if total_f > 0 else 0
+            md += f'| {method} | {trades} | {win_rate}% | {clean_pct}% | ${avg_win} | ${avg_loss} | {pf} | ${total_f} | ${excl5} | {rob}% |\n'
+        md += '\n'
+
+        # ── OPEN POSITION HEALTH ──
+        md += '## Open Position Health Per Method\n\n'
+        md += '> Avg age shows which methods get stuck. Older = struggling to recover.\n\n'
+        cur.execute("""
+            SELECT b.method,
+                COUNT(*) as open_count,
+                ROUND(AVG(EXTRACT(EPOCH FROM (NOW()-p.opened_at))/3600)::numeric,1) as avg_age_hrs,
+                ROUND(MAX(EXTRACT(EPOCH FROM (NOW()-p.opened_at))/3600)::numeric,1) as max_age_hrs,
+                ROUND(AVG(p.dca_count)::numeric,2) as avg_dca,
+                ROUND(SUM(p.total_invested)::numeric,2) as capital_locked
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='open' AND b.is_research=TRUE
+            GROUP BY b.method HAVING COUNT(*) >= 3
+            ORDER BY avg_age_hrs DESC LIMIT 20
+        """)
+        md += '| Method | Open | Avg Age (hrs) | Max Age (hrs) | Avg DCA | Capital Locked |\n'
+        md += '|--------|------|---------------|---------------|---------|----------------|\n'
+        for r in cur.fetchall():
+            md += f'| {r[0]} | {r[1]} | {r[2]}h | {r[3]}h | {r[4]} | ${r[5]} |\n'
+        md += '\n'
+
         # ── PER METHOD DETAIL ──
         cur.execute("""
             SELECT DISTINCT method FROM bots WHERE is_research=TRUE
@@ -332,6 +387,33 @@ def run():
         md += '\n'
 
         # ── 2. BEST PARAM PER METHOD ──
+        # ── PROFIT EXCLUDING TOP 5 TRADES ──
+        md += '## Method Robustness — Profit Excluding Top 5 Trades\n\n'
+        md += '> Robustness% = Excl Top 5 ÷ Total P&L — higher = more consistent edge, not lucky\n\n'
+        cur.execute("""
+            SELECT b.method,
+                COUNT(*) as trades,
+                ROUND(SUM(p.total_sold_usdt - p.total_invested)::numeric,2) as total_pnl,
+                array_agg(p.total_sold_usdt - p.total_invested ORDER BY p.total_sold_usdt - p.total_invested DESC) as all_pnls,
+                ROUND(SUM(CASE WHEN p.total_sold_usdt > p.total_invested THEN p.total_sold_usdt - p.total_invested ELSE 0 END)::numeric,2) as gross_win,
+                ROUND(SUM(CASE WHEN p.total_sold_usdt <= p.total_invested THEN p.total_invested - p.total_sold_usdt ELSE 0 END)::numeric,2) as gross_loss
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='closed' AND b.is_research=TRUE
+            GROUP BY b.method HAVING COUNT(*) >= 5
+            ORDER BY total_pnl DESC
+        """)
+        md += '| Method | Trades | Total P&L | Excl Top 5 | Robustness% | Profit Factor |\n'
+        md += '|--------|--------|-----------|------------|-------------|---------------|\n'
+        for r in cur.fetchall():
+            method, trades, total_pnl, all_pnls, gross_win, gross_loss = r
+            total_pnl = float(total_pnl or 0)
+            pnls = [float(x) for x in (all_pnls or [])]
+            excl_top5 = round(sum(pnls[5:]), 2) if len(pnls) > 5 else total_pnl
+            robustness = round(excl_top5/total_pnl*100, 1) if total_pnl > 0 else 0
+            pf = round(float(gross_win or 0)/float(gross_loss or 1), 2)
+            md += f'| {method} | {trades} | ${total_pnl} | ${excl_top5} | {robustness}% | {pf} |\n'
+        md += '\n'
+
         md += '## Best Performing Bot Per Method\n\n'
         cur.execute("""
             SELECT DISTINCT ON (b.method)
