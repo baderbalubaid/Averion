@@ -292,7 +292,9 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
                   total_invested, last_buy_price, category,
                   is_paper, base_coin, profit_coin, sequence_number,
                   coin_trade_number, entry_method=None,
-                  take_profit_pct=None, dca_spacing=None, trailing_pct=None):
+                  take_profit_pct=None, dca_spacing=None, trailing_pct=None,
+                  btc_price_at_entry=None, btc_sma50_at_entry=None,
+                  btc_24h_change_pct=None, btc_regime=None, btc_dominance=None):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -303,20 +305,25 @@ def open_position(bot_id, user_id, exchange_id, wallet_id,
                 is_paper, base_coin, profit_coin, sequence_number,
                 coin_trade_number, entry_method,
                 is_gate_reference, gate_reference_since, is_research,
-                pos_tp_pct, pos_dca_pct, pos_trail_pct
+                pos_tp_pct, pos_dca_pct, pos_trail_pct,
+                btc_price_at_entry, btc_sma50_at_entry,
+                btc_24h_change_pct, btc_regime, btc_dominance
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, TRUE, NOW(),
                 (SELECT is_research FROM bots WHERE id=%s),
-                %s, %s, %s
+                %s, %s, %s,
+                %s, %s, %s, %s, %s
             ) RETURNING id
         """, (bot_id, user_id, exchange_id, wallet_id,
               coin, direction, avg_cost, quantity,
               total_invested, last_buy_price, category,
               is_paper, base_coin, profit_coin, sequence_number,
               coin_trade_number, entry_method, bot_id,
-              take_profit_pct, dca_spacing, trailing_pct))
+              take_profit_pct, dca_spacing, trailing_pct,
+              btc_price_at_entry, btc_sma50_at_entry,
+              btc_24h_change_pct, btc_regime, btc_dominance))
         return cur.fetchone()[0]
 
 def update_position_after_dca(position_id, avg_cost,
