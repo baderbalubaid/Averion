@@ -127,3 +127,6 @@ print('✅ Telegram daily report sent')
 " >> $LOG_DIR/daily.log 2>&1
 
 echo "=== Daily Cron Complete $(date) ===" | tee -a $LOG_DIR/daily.log
+
+# Fetch BTC daily candle for SMA50
+python3 /home/averion/Averion/fetch_btc_daily.py
