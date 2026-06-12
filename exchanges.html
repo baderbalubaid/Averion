@@ -8,25 +8,27 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<script src="/base.js"></script>
 <div id="app" style="display:flex;width:100%;height:100vh">
-    <!-- Sidebar injected by base.js -->
+    <div id="sidebar-placeholder"></div>
+    <div class="main" id="main-content">
+        <div id="topbar-placeholder"></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
+            <div style="font-size:48px">🚧</div>
+            <div style="font-size:18px;font-weight:600">Exchanges</div>
+            <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+        </div>
+    </div>
 </div>
+<div class="bottom-nav" id="bottom-nav"></div>
+<script src="/base.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         if (!requireAuth()) return;
-        const app = document.getElementById('app');
-        app.innerHTML = getSidebarHTML() + `
-        <div class="main">
-            ${getTopbarHTML('Exchanges')}
-            <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
-                <div style="font-size:48px">🚧</div>
-                <div style="font-size:18px;font-weight:600">/exchanges</div>
-                <div style="font-size:13px">Coming soon — migrating from dashboard</div>
-            </div>
-        </div>`;
+        document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+        document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Exchanges');
         buildNav();
         buildUserRow();
+        buildMobileNav();
     });
 </script>
 </body>
