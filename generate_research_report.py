@@ -386,8 +386,36 @@ def run():
             md += f'| {r[0]} | {r[1]} | {r[2]} | {wr}% | ${r[3]} | ${r[4]} | {r[5]} |\n'
         md += '\n'
 
+        # ── BTC REGIME BREAKDOWN ──
+        md += '## Method Performance by BTC Regime\n\n'
+        md += '> bull = BTC >2% above SMA50 · bear = <2% below · sideways = between\n\n'
+        cur.execute("""
+           SELECT b.method, p.btc_regime,
+               COUNT(*) as trades,
+               COUNT(*) FILTER (WHERE p.total_sold_usdt > p.total_invested) as wins,
+               ROUND(AVG(p.total_sold_usdt - p.total_invested)::numeric,2) as avg_pnl,
+               ROUND(SUM(p.total_sold_usdt - p.total_invested)::numeric,2) as total_pnl
+           FROM positions p JOIN bots b ON b.id=p.bot_id
+           WHERE p.status='closed' AND b.is_research=TRUE
+           AND p.btc_regime IS NOT NULL
+           GROUP BY b.method, p.btc_regime
+           HAVING COUNT(*) >= 3
+           ORDER BY b.method, p.btc_regime
+        """)
+        regime_rows = cur.fetchall()
+        if regime_rows:
+           md += '| Method | Regime | Trades | Win% | Avg P&L | Total P&L |\n'
+           md += '|--------|--------|--------|------|---------|-----------|\n'
+           for r2 in regime_rows:
+               method, regime, trades, wins, avg_pnl, total_pnl = r2
+               wr = round(wins/trades*100,1) if trades else 0
+               md += f'| {method} | {regime} | {trades} | {wr}% | ${avg_pnl} | ${total_pnl} |\n'
+           md += '\n'
+        else:
+           md += '_Not enough regime data yet — collecting now_\n\n'
+
         # ── 2. BEST PARAM PER METHOD ──
-        # ── PROFIT EXCLUDING TOP 5 TRADES ──
+       # ── PROFIT EXCLUDING TOP 5 TRADES ──
         md += '## Method Robustness — Profit Excluding Top 5 Trades\n\n'
         md += '> Robustness% = Excl Top 5 ÷ Total P&L — higher = more consistent edge, not lucky\n\n'
         cur.execute("""
@@ -524,7 +552,7 @@ def run():
         md += '7. For pump detection — which precursor signals show most promise?\n'
         md += '8. Is there a consensus signal pattern across multiple methods on same coin?\n'
 
-    path = '/home/averion/Averion/docs/RESEARCH_REPORT_FULL.md'
+    path = '/home/averion/Averion/reports/RESEARCH_REPORT_FULL.md'
     with open(path, 'w') as f:
         f.write(md)
     print(f'✅ Full research report generated!')
