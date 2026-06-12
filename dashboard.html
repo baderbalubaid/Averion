@@ -382,19 +382,19 @@ function logout() {
   </div>
   <div class="sidebar-nav">
     <div class="nav-section-lbl">Overview</div>
-    <div class="nav-link active" onclick="switchTab('home',this)">
+    <div class="nav-link active" onclick="window.location='/dashboard'">
       <span class="nav-icon">🏠</span><span>Home</span>
     </div>
-    <div class="nav-link" onclick="switchTab('bots',this)">
+    <div class="nav-link" onclick="window.location='/bots'">
       <span class="nav-icon">🤖</span><span>Bots</span>
       <span class="nav-badge" id="navBotsBadge">0</span>
     </div>
     <div class="nav-section-lbl" style="margin-top:8px">Analytics</div>
-    <div class="nav-link" onclick="switchTab('history',this)">
+    <div class="nav-link" onclick="window.location='/history'">
       <span class="nav-icon">📊</span><span>History</span>
     </div>
     <div class="nav-section-lbl" style="margin-top:8px">System</div>
-    <div class="nav-link" onclick="switchTab('settings',this)">
+    <div class="nav-link" onclick="window.location='/settings'">
       <span class="nav-icon">⚙️</span><span>Settings</span>
     </div>
   </div>
@@ -838,16 +838,16 @@ function logout() {
 
 <!-- ── BOTTOM NAV (mobile only) ── -->
 <nav class="bottom-nav" id="bottomNav">
-  <button class="bnav-item active" onclick="switchTabMobile('home',this)">
+  <button class="bnav-item active" onclick="window.location='/dashboard'">
     <span class="bnav-icon">🏠</span><span>Home</span>
   </button>
-  <button class="bnav-item" onclick="switchTabMobile('bots',this)">
+  <button class="bnav-item" onclick="window.location='/bots'">
     <span class="bnav-icon">🤖</span><span>Bots</span>
   </button>
-  <button class="bnav-item" onclick="switchTabMobile('history',this)">
+  <button class="bnav-item" onclick="window.location='/history'">
     <span class="bnav-icon">📊</span><span>History</span>
   </button>
-  <button class="bnav-item" onclick="switchTabMobile('settings',this)">
+  <button class="bnav-item" onclick="window.location='/settings'">
     <span class="bnav-icon">⚙️</span><span>Settings</span>
   </button>
 </nav>
