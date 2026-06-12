@@ -735,7 +735,7 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
         })
 
     result.sort(key=lambda x: -x['score'])
-    return result[:100]
+    return result
 
 @app.get('/admin/research/champions')
 def get_research_champions(payload: dict = Depends(verify_token)):
