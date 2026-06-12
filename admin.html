@@ -762,9 +762,13 @@
             <div class="sub-tab" id="st-r-history" onclick="switchSubTab('r-history')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">History</div>
             <div class="sub-tab" id="st-r-champion" onclick="switchSubTab('r-champion')"
-                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champions</div>
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champ RARS</div>
+            <div class="sub-tab" id="st-r-champ-score" onclick="switchSubTab('r-champ-score')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Champ Score</div>
             <div class="sub-tab" id="st-r-scalper" onclick="switchSubTab('r-scalper')"
-                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper</div>
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper RARS</div>
+            <div class="sub-tab" id="st-r-scalper-score" onclick="switchSubTab('r-scalper-score')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper Score</div>
             <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')" 
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
         </div>
@@ -847,6 +851,28 @@
                 </table></div>
             </div>
         </div>
+        <div id="sub-r-champ-score" style="display:none">
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>🏆 Champion Score — Reliability Ranking</span>
+                    <button onclick="loadChampScore()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                </div>
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Score = 40% Total P&L + 30% Excl Top 5 + 20% Profit Factor + 10% Trade Count · Robustness = Excl Top 5 ÷ Total P&L</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Rank</th><th>Method</th><th>Total P&L</th>
+                            <th>Excl Top 5</th><th>Profit Factor</th>
+                            <th>Trades</th><th>Robustness%</th><th>Score</th>
+                        </tr></thead>
+                        <tbody id="champ-score-tbody">
+                            <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="sub-r-scalper" style="display:none">
            <div class="card">
                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -868,6 +894,28 @@
                </div>
            </div>
        </div>
+
+       <div id="sub-r-scalper-score" style="display:none">
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>⚡ Scalper Score — Reliability Ranking</span>
+                    <button onclick="loadScalperScore()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                </div>
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Score = 40% Total P&L + 30% Excl Top 5 + 20% Profit Factor + 10% Trade Count</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Rank</th><th>Bot</th><th>Trigger%</th><th>Hold</th>
+                            <th>Total P&L</th><th>Excl Top 5</th>
+                            <th>Profit Factor</th><th>Trades</th><th>Robustness%</th><th>Score</th>
+                        </tr></thead>
+                        <tbody id="scalper-score-tbody">
+                            <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
        <div id="sub-r-categories" style="display:none">
             <div class="card">
@@ -1272,6 +1320,54 @@
         }
     }
 
+    async function loadChampScore() {
+        const tbody = document.getElementById('champ-score-tbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/champ-score`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No data yet</td></tr>'; return; }
+            const medals = ['🥇','🥈','🥉'];
+            tbody.innerHTML = data.map((s,i) => `<tr>
+                <td>${medals[i]||'#'+(i+1)}</td>
+                <td><b>${s.method}</b></td>
+                <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${parseFloat(s.total_pnl||0).toFixed(2)}</td>
+                <td style="color:${s.excl_top5>=0?'#27ae60':'#e74c3c'}">${s.excl_top5>=0?'+':''}$${parseFloat(s.excl_top5||0).toFixed(2)}</td>
+                <td style="color:${s.profit_factor>=1?'#27ae60':'#e74c3c'}">${parseFloat(s.profit_factor||0).toFixed(2)}</td>
+                <td style="color:var(--muted)">${s.trade_count}</td>
+                <td style="color:${s.robustness>=70?'#27ae60':s.robustness>=40?'#f39c12':'#e74c3c'}">${s.robustness}%</td>
+                <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
+            </tr>`).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="8" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadScalperScore() {
+        const tbody = document.getElementById('scalper-score-tbody');
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/scalper-score`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">No data yet</td></tr>'; return; }
+            const medals = ['🥇','🥈','🥉'];
+            tbody.innerHTML = data.map((s,i) => `<tr>
+                <td>${medals[i]||'#'+(i+1)}</td>
+                <td><b>${s.name}</b></td>
+                <td>${s.trigger_pct}%</td>
+                <td>${s.hold_sec}s</td>
+                <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${parseFloat(s.total_pnl||0).toFixed(2)}</td>
+                <td style="color:${s.excl_top5>=0?'#27ae60':'#e74c3c'}">${s.excl_top5>=0?'+':''}$${parseFloat(s.excl_top5||0).toFixed(2)}</td>
+                <td style="color:${s.profit_factor>=1?'#27ae60':'#e74c3c'}">${parseFloat(s.profit_factor||0).toFixed(2)}</td>
+                <td style="color:var(--muted)">${s.trade_count}</td>
+                <td style="color:${s.robustness>=70?'#27ae60':s.robustness>=40?'#f39c12':'#e74c3c'}">${s.robustness}%</td>
+                <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${s.score}</td>
+            </tr>`).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="10" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
    async function loadDCAQueue() {
         const tbody = document.getElementById('dca-queue-tbody');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
@@ -1457,7 +1553,7 @@
         }
         if (name === 'r-bots') loadResearchBots();
         // Show/hide sub-content
-        ['r-trades','r-dca-queue','r-history','r-champion','r-scalper','r-categories','r-bots'].forEach(s => {
+        ['r-trades','r-dca-queue','r-history','r-champion','r-champ-score','r-scalper','r-scalper-score','r-categories','r-bots'].forEach(s => {
             const el = document.getElementById('sub-' + s);
             if (el) el.style.display = s === name ? 'block' : 'none';
         });
@@ -1466,6 +1562,8 @@
         if (name === 'r-history') loadResearchHistory();
         if (name === 'r-dca-queue') loadDCAQueue();
         if (name === 'r-champion') loadChampions();
+        if (name === 'r-champ-score') loadChampScore();
+        if (name === 'r-scalper-score') loadScalperScore();
         if (name === 'r-scalper') {
             loadScalper(true);
             if (_scalperInterval) clearInterval(_scalperInterval);
