@@ -23,7 +23,9 @@ DCA_COLUMNS = [
     'dca_count', 'entry_time', 'exit_time', 'hold_hours',
     'tp_armed', 'peak_price', 'last_buy_price',
     'pos_tp_pct', 'pos_dca_pct', 'pos_trail_pct',
-    'is_paper', 'sequence_number', 'coin_trade_number'
+    'is_paper', 'sequence_number', 'coin_trade_number',
+    'btc_price_at_entry', 'btc_sma50_at_entry',
+    'btc_24h_change_pct', 'btc_regime', 'btc_dominance'
 ]
 
 SCALPER_COLUMNS = [
@@ -34,7 +36,9 @@ SCALPER_COLUMNS = [
     'pnl_pct', 'pnl_usd',
     'max_profit_seen', 'max_loss_seen',
     'exit_reason', 'base_order',
-    'raw_price_change_pct', 'missed_profit_pct'
+    'raw_price_change_pct', 'missed_profit_pct',
+    'btc_price_at_entry', 'btc_sma50_at_entry',
+    'btc_24h_change_pct', 'btc_regime', 'btc_dominance'
 ]
 
 def get_dca_trades(bot_ids):
@@ -59,7 +63,9 @@ def get_dca_trades(bot_ids):
                 END,
                 p.tp_armed, p.peak_price, p.last_buy_price,
                 p.pos_tp_pct, p.pos_dca_pct, p.pos_trail_pct,
-                p.is_paper, p.sequence_number, p.coin_trade_number
+                p.is_paper, p.sequence_number, p.coin_trade_number,
+                p.btc_price_at_entry, p.btc_sma50_at_entry,
+                p.btc_24h_change_pct, p.btc_regime, p.btc_dominance
             FROM positions p JOIN bots b ON b.id=p.bot_id
             WHERE b.id = ANY(%s)
             ORDER BY b.name, p.opened_at
@@ -92,7 +98,9 @@ def get_scalper_trades(bot_ids):
                 ELSE NULL END,
                 CASE WHEN s.max_profit_seen IS NOT NULL AND s.pnl_pct IS NOT NULL THEN
                     ROUND((s.max_profit_seen-s.pnl_pct)::numeric,3)
-                ELSE NULL END
+                ELSE NULL END,
+                s.btc_price_at_entry, s.btc_sma50_at_entry,
+                s.btc_24h_change_pct, s.btc_regime, s.btc_dominance
             FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
             WHERE b.id = ANY(%s)
             ORDER BY b.name, s.entry_time
@@ -240,25 +248,25 @@ if __name__ == '__main__':
     # DCA RARS
     ids = get_top20_dca_rars()
     trades = get_dca_trades(ids)
-    n = write_csv('/home/averion/Averion/docs/TOP20_DCA_RARS_TRADES.csv', DCA_COLUMNS, trades)
+    n = write_csv('/home/averion/Averion/reports/TOP20_DCA_RARS_TRADES.csv', DCA_COLUMNS, trades)
     print(f'✅ TOP20_DCA_RARS_TRADES.csv: {n} trades · {len(ids)} bots')
 
     # DCA Score
     ids = get_top20_dca_score()
     trades = get_dca_trades(ids)
-    n = write_csv('/home/averion/Averion/docs/TOP20_DCA_SCORE_TRADES.csv', DCA_COLUMNS, trades)
+    n = write_csv('/home/averion/Averion/reports/TOP20_DCA_SCORE_TRADES.csv', DCA_COLUMNS, trades)
     print(f'✅ TOP20_DCA_SCORE_TRADES.csv: {n} trades · {len(ids)} bots')
 
     # Scalper RARS
     ids = get_top20_scalper_rars()
     trades = get_scalper_trades(ids)
-    n = write_csv('/home/averion/Averion/docs/TOP20_SCALPER_RARS_TRADES.csv', SCALPER_COLUMNS, trades)
+    n = write_csv('/home/averion/Averion/reports/TOP20_SCALPER_RARS_TRADES.csv', SCALPER_COLUMNS, trades)
     print(f'✅ TOP20_SCALPER_RARS_TRADES.csv: {n} trades · {len(ids)} bots')
 
     # Scalper Score
     ids = get_top20_scalper_score()
     trades = get_scalper_trades(ids)
-    n = write_csv('/home/averion/Averion/docs/TOP20_SCALPER_SCORE_TRADES.csv', SCALPER_COLUMNS, trades)
+    n = write_csv('/home/averion/Averion/reports/TOP20_SCALPER_SCORE_TRADES.csv', SCALPER_COLUMNS, trades)
     print(f'✅ TOP20_SCALPER_SCORE_TRADES.csv: {n} trades · {len(ids)} bots')
 
     print('\n✅ All 4 CSVs generated!')

@@ -162,6 +162,34 @@ def run():
             md += f'| {coin} | {trades} | {wr}% | {avg_pnl}% | ${total_pnl_b} |\n'
         md += '\n'
 
+        # ── BTC REGIME BREAKDOWN ──
+        md += '## Scalper Performance by BTC Regime\n\n'
+        md += '> bull = BTC >2% above SMA50 · bear = <2% below · sideways = between\n\n'
+        cur.execute("""
+            SELECT b.name, s.btc_regime,
+                COUNT(*) FILTER (WHERE s.status='closed') as trades,
+                COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0) as wins,
+                ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric,3) as avg_pnl,
+                ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl
+            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
+            WHERE s.btc_regime IS NOT NULL
+            GROUP BY b.name, s.btc_regime
+            HAVING COUNT(*) FILTER (WHERE s.status='closed') >= 3
+            ORDER BY b.name, s.btc_regime
+            LIMIT 50
+        """)
+        regime_rows = cur.fetchall()
+        if regime_rows:
+            md += '| Bot | Regime | Trades | Win% | Avg P&L% | Total P&L |\n'
+            md += '|-----|--------|--------|------|----------|-----------|\n'
+            for r2 in regime_rows:
+                bot_name, regime, trades, wins, avg_pnl, total_pnl = r2
+                wr = round(wins/trades*100,1) if trades else 0
+                md += f'| {bot_name} | {regime} | {trades} | {wr}% | {avg_pnl}% | ${total_pnl} |\n'
+            md += '\n'
+        else:
+            md += '_Not enough regime data yet — collecting now_\n\n'
+
         # Questions for AI
         md += '## Questions for AI Analysis\n\n'
         md += '1. Which trigger% shows best risk/reward? Is higher trigger better?\n'
@@ -172,7 +200,7 @@ def run():
         md += '6. Any signs the strategy is fundamentally flawed?\n'
         md += '7. What new parameter combinations should we test?\n'
 
-    path = '/home/averion/Averion/docs/RESEARCH_REPORT_SCALPER.md'
+    path = '/home/averion/Averion/reports/RESEARCH_REPORT_SCALPER.md'
     with open(path, 'w') as f:
         f.write(md)
     print(f'✅ Scalper report generated: {path}')
