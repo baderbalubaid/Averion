@@ -405,7 +405,52 @@ def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
 # ═══════════════════════════════
 # OPEN NEW POSITION
 # ═══════════════════════════════
-def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None):
+def get_btc_regime_data(r):
+    """Fetch BTC regime data once per cycle from DB + CoinGecko."""
+    try:
+        import requests
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT close FROM btc_daily
+                ORDER BY timestamp DESC LIMIT 50
+            """)
+            rows = cur.fetchall()
+        if len(rows) < 2:
+            return None
+        btc_price = float(rows[0][0])
+        btc_prev = float(rows[1][0])
+        sma50 = sum(float(r2[0]) for r2 in rows) / len(rows)
+        change_24h = round((btc_price - btc_prev) / btc_prev * 100, 4)
+        regime = 'bull' if btc_price > sma50 * 1.02 else 'bear' if btc_price < sma50 * 0.98 else 'sideways'
+
+        # BTC dominance from Redis cache or CoinGecko
+        dominance = None
+        cached = r.get('btc:dominance')
+        if cached:
+            dominance = float(cached)
+        else:
+            try:
+                resp = requests.get('https://api.coingecko.com/api/v3/global', timeout=5)
+                if resp.status_code == 200:
+                    dominance = round(resp.json()['data']['market_cap_percentage']['btc'], 2)
+                    r.setex('btc:dominance', 3600, dominance)
+            except:
+                pass
+
+        return {
+            'btc_price': btc_price,
+            'btc_sma50': round(sma50, 2),
+            'btc_24h_change': change_24h,
+            'btc_regime': regime,
+            'btc_dominance': dominance
+        }
+    except Exception as e:
+        print(f'⚠️ BTC regime error: {e}')
+        return None
+
+
+def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc_regime_data=None):
     bot_id = bot[0]
     user_id = bot[1]
     exchange_id = bot[2]
@@ -514,7 +559,12 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None):
                 method,
                 take_profit_pct=dynamic_tp,
                 dca_spacing=dynamic_dca,
-                trailing_pct=dynamic_trail
+                trailing_pct=dynamic_trail,
+                btc_price_at_entry=btc_regime_data.get('btc_price') if btc_regime_data else None,
+                btc_sma50_at_entry=btc_regime_data.get('btc_sma50') if btc_regime_data else None,
+                btc_24h_change_pct=btc_regime_data.get('btc_24h_change') if btc_regime_data else None,
+                btc_regime=btc_regime_data.get('btc_regime') if btc_regime_data else None,
+                btc_dominance=btc_regime_data.get('btc_dominance') if btc_regime_data else None
             )
             print(f'✅ Position opened: {coin} #{pos_id}')
             is_research = bot[4].startswith('E') or bot[4].startswith('BM') if bot else False
@@ -711,6 +761,11 @@ def run_cycle(r):
             print(f"🎯 Batch armed {len(to_arm)} positions")
 
             open_positions = db.get_open_positions(exchange_id=exc_id)
+        # ── BTC REGIME (once per cycle) ──
+        btc_regime_data = get_btc_regime_data(r)
+        if btc_regime_data:
+            print(f'📈 BTC: ${btc_regime_data["btc_price"]:,.0f} · SMA50=${btc_regime_data["btc_sma50"]:,.0f} · {btc_regime_data["btc_regime"].upper()} · 24h={btc_regime_data["btc_24h_change"]:+.2f}%')
+
         # ─────────────────────────
         # STEP 1: Check ST flags (every 12h per exchange · per unique coin)
         # ─────────────────────────
@@ -891,7 +946,7 @@ def run_cycle(r):
         ]
         print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
         for bot in bots_needing_trades:
-            try_open_position(bot, exchange_obj, tickers, r, coin_params_cache)
+            try_open_position(bot, exchange_obj, tickers, r, coin_params_cache, btc_regime_data)
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
