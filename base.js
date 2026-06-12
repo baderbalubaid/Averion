@@ -60,7 +60,7 @@ function buildNav() {
     if (!nav) return;
 
     nav.innerHTML = NAV_ITEMS.map(item => `
-        <a href="${item.url}" class="nav-link ${currentPath === item.url ? 'active' : ''}">
+        <a href="${item.url}" class="nav-link ${currentPath === item.url ? 'active' : ''}" style="text-decoration:none">
             <span class="nav-icon">${item.icon}</span>
             <span>${item.label}</span>
         </a>
