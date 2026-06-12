@@ -18,15 +18,19 @@ echo "2️⃣  Scalper Research Report..."
 python3 generate_scalper_report.py
 
 echo "3️⃣  Top 25 Trade CSVs..."
+
+echo "4️⃣  Scalper Monthly Results..."
+python3 generate_scalper_results.py
 python3 generate_top25_csv.py
 
-echo "4️⃣  Pushing to GitHub..."
+echo "5  Pushing to GitHub..."
 git add reports/RESEARCH_REPORT_FULL.md \
         reports/RESEARCH_REPORT_SCALPER.md \
         reports/TOP20_DCA_RARS_TRADES.csv \
         reports/TOP20_DCA_SCORE_TRADES.csv \
         reports/TOP20_SCALPER_RARS_TRADES.csv \
-        reports/TOP20_SCALPER_SCORE_TRADES.csv
+        reports/TOP20_SCALPER_SCORE_TRADES.csv \
+        reports/SCALPER_RESULTS.md
 git commit -m "docs: reports $(date '+%Y-%m-%d %H:%M')" --allow-empty
 git push https://baderbalubaid:${GITHUB_TOKEN}@github.com/baderbalubaid/Averion.git main
 
