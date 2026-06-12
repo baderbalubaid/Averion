@@ -46,15 +46,23 @@ def get_top20_scalper_score():
     return scored[:20]
 
 def get_daily_pnl(bot_id, target_date):
-    """Get cumulative P&L up to end of target_date (UTC)."""
+    """Get P&L from daily snapshot for target_date."""
     with db.get_db() as conn:
         cur = conn.cursor()
+        cur.execute("""
+            SELECT cumulative_pnl 
+            FROM scalper_daily_snapshots
+            WHERE bot_id = %s AND snapshot_date = %s
+        """, (bot_id, target_date))
+        row = cur.fetchone()
+        if row:
+            return float(row[0])
+        # Fallback: calculate from live data if no snapshot
         next_day = target_date + timedelta(days=1)
         cur.execute("""
             SELECT ROUND(COALESCE(SUM(pnl_usdt), 0)::numeric, 2)
             FROM scalper_positions
-            WHERE bot_id = %s
-            AND status = 'closed'
+            WHERE bot_id = %s AND status = 'closed'
             AND exit_time < %s
         """, (bot_id, next_day))
         return float(cur.fetchone()[0] or 0)
@@ -83,9 +91,20 @@ def generate():
     days_in_month = (next_month - date(current_year, current_month, 1)).days
     all_days = list(range(1, days_in_month + 1))
 
-    # Check if SCALPER_RESULTS.md exists to get start balances
     results_path = '/home/averion/Averion/reports/SCALPER_RESULTS.md'
-    start_balances = {b['name']: 0.0 for b in top20}
+    # Get start balance = P&L before first day of current month
+    month_start = date(current_year, current_month, 1)
+    start_balances = {}
+    for bot in top20:
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT ROUND(COALESCE(SUM(pnl_usdt), 0)::numeric, 2)
+                FROM scalper_positions
+                WHERE bot_id = %s AND status = 'closed'
+                AND exit_time < %s
+            """, (bot['id'], month_start))
+            start_balances[bot['name']] = float(cur.fetchone()[0] or 0)
 
     # Build table
     month_name = today.strftime('%B %Y')
