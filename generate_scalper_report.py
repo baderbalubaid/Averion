@@ -62,20 +62,25 @@ def run():
                    COUNT(*) FILTER (WHERE s.status='open') as open_now,
                    COUNT(*) FILTER (WHERE s.exit_reason='stop_loss') as sl_exits,
                    COUNT(*) FILTER (WHERE s.exit_reason='timer') as timer_exits,
-                   COUNT(*) FILTER (WHERE s.exit_reason='timer_recovery') as recovered
+                   COUNT(*) FILTER (WHERE s.exit_reason='timer_recovery') as recovered,
+                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0)::numeric,3) as avg_win_pct,
+                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed' AND s.pnl_pct <= 0)::numeric,3) as avg_loss_pct,
+                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed' AND s.pnl_usdt > 0)::numeric,2) as gross_win,
+                   ROUND(SUM(ABS(s.pnl_usdt)) FILTER (WHERE s.status='closed' AND s.pnl_usdt <= 0)::numeric,2) as gross_loss,
+                   array_agg(s.pnl_usdt ORDER BY s.pnl_usdt DESC) FILTER (WHERE s.status='closed') as all_pnls
             FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
             GROUP BY b.name, b.bot_params
             HAVING COUNT(*) FILTER (WHERE s.status='closed') > 0
-            ORDER BY avg_pnl DESC NULLS LAST
+            ORDER BY total_pnl DESC NULLS LAST
         """)
         rows = cur.fetchall()
 
         md += '## Full Rankings\n\n'
-        md += '| Rank | Bot | Trigger% | Window | Hold | SL% | Open | Closed | Win% | Avg P&L% | Total P&L | Best | Worst | Timer | SL | Recovered |\n'
+        md += '| Rank | Bot | Trigger% | Window | Hold | SL% | Open | Closed | Win% | Avg Win% | Avg Loss% | PF | Total P&L | Excl Top5 | Robustness% | Timer | SL | Recovered |\n'
         md += '|------|-----|----------|--------|------|-----|------|--------|------|----------|-----------|------|-------|-------|----|-----------|\n'
 
         for i, r in enumerate(rows, 1):
-            name, params_raw, closed, wins_b, avg_pnl, total_pnl_b, best, worst, open_now, sl_exits, timer_exits, recovered = r
+            name, params_raw, closed, wins_b, avg_pnl, total_pnl_b, best, worst, open_now, sl_exits, timer_exits, recovered, avg_win_pct, avg_loss_pct, gross_win, gross_loss, all_pnls = r
             try:
                 p = json.loads(params_raw) if params_raw else {}
             except:
@@ -85,7 +90,12 @@ def run():
             trigger = p.get('trigger_pct','?')
             window = p.get('window_sec','?')
             sl = p.get('stop_loss_pct','off')
-            md += f'| {i} | {name} | {trigger}% | {window}s | {hold}s | {sl} | {open_now} | {closed} | {wr}% | {avg_pnl}% | ${total_pnl_b} | {best}% | {worst}% | {timer_exits} | {sl_exits} | {recovered} |\n'
+            pf = round(float(gross_win or 0)/float(gross_loss or 1),2)
+            pnls = [float(x) for x in (all_pnls or [])]
+            total_f = float(total_pnl_b or 0)
+            excl5 = round(sum(pnls[5:]),2) if len(pnls)>5 else total_f
+            rob = round(excl5/total_f*100,1) if total_f > 0 else 0
+            md += f'| {i} | {name} | {trigger}% | {window}s | {hold}s | {sl} | {open_now} | {closed} | {wr}% | {avg_win_pct}% | {avg_loss_pct}% | {pf} | ${total_f} | ${excl5} | {rob}% | {timer_exits} | {sl_exits} | {recovered} |\n'
 
         md += '\n'
 

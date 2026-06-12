@@ -14,19 +14,19 @@ def generate_dca_csv():
     with db.get_db() as conn:
         cur = conn.cursor()
 
-        # Get top 25 DCA bots by RARS (avg_pnl proxy, min 10 closed trades)
+        # Get top 20 DCA methods by total P&L
         cur.execute("""
             SELECT b.id, b.name, b.method, b.bot_params::text,
                    COUNT(*) FILTER (WHERE p.status='closed') as closed,
-                   ROUND(AVG(p.total_sold_usdt - p.total_invested) FILTER (WHERE p.status='closed')::numeric,2) as avg_pnl,
+                   ROUND(SUM(p.total_sold_usdt - p.total_invested) FILTER (WHERE p.status='closed')::numeric,2) as total_pnl,
                    COUNT(*) FILTER (WHERE p.status='closed' AND p.total_sold_usdt > p.total_invested) as wins
             FROM bots b
             LEFT JOIN positions p ON p.bot_id=b.id
             WHERE b.is_research=TRUE AND b.method NOT LIKE 'BM%'
             GROUP BY b.id, b.name, b.method, b.bot_params
-            HAVING COUNT(*) FILTER (WHERE p.status='closed') >= 10
-            ORDER BY avg_pnl DESC NULLS LAST
-            LIMIT 25
+            HAVING COUNT(*) FILTER (WHERE p.status='closed') >= 5
+            ORDER BY total_pnl DESC NULLS LAST
+            LIMIT 20
         """)
         top_bots = cur.fetchall()
         top_bot_ids = [r[0] for r in top_bots]
@@ -36,7 +36,7 @@ def generate_dca_csv():
             print('No DCA bots with enough data')
             return
 
-        # Get all trades for top 25 bots
+        # Get all trades for top 20 bots
         cur.execute("""
             SELECT 
                 b.name as bot_name,
@@ -80,7 +80,7 @@ def generate_dca_csv():
         """, (top_bot_ids,))
         trades = cur.fetchall()
 
-    path = '/home/averion/Averion/docs/TOP25_DCA_TRADES.csv'
+    path = '/home/averion/Averion/docs/TOP20_DCA_TRADES.csv'
     with open(path, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
@@ -90,6 +90,7 @@ def generate_dca_csv():
             'total_invested_usd', 'total_sold_usd',
             'pnl_usd', 'pnl_pct',
             'dca_count', 'entry_time', 'exit_time', 'hold_hours',
+            'is_clean_win',
             'tp_armed', 'peak_price', 'last_buy_price',
             'pos_tp_pct', 'pos_dca_pct', 'pos_trail_pct',
             'is_paper', 'sequence_number', 'coin_trade_number'
@@ -118,7 +119,7 @@ def generate_scalper_csv():
             GROUP BY b.id, b.name, b.bot_params
             HAVING COUNT(*) FILTER (WHERE s.status='closed') >= 3
             ORDER BY avg_pnl DESC NULLS LAST
-            LIMIT 25
+            LIMIT 20
         """)
         top_bots = cur.fetchall()
         top_bot_ids = [r[0] for r in top_bots]
@@ -166,7 +167,7 @@ def generate_scalper_csv():
         """, (top_bot_ids,))
         trades = cur.fetchall()
 
-    path = '/home/averion/Averion/docs/TOP25_SCALPER_TRADES.csv'
+    path = '/home/averion/Averion/docs/TOP20_SCALPER_TRADES.csv'
     with open(path, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
