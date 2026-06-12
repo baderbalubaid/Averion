@@ -6,10 +6,6 @@ cd /home/averion/Averion
 
 # Load token from .env
 GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d'=' -f2)
-if [ -z "$GITHUB_TOKEN" ]; then
-    # Fallback: hardcoded (acceptable since .env is not pushed to GitHub)
-    GITHUB_TOKEN="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"
-fi
 
 echo "================================================"
 echo " Averion Research Reports — $(date '+%Y-%m-%d %H:%M')"
