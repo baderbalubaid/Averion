@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Averion — History</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<script src="/base.js"></script>
+<div id="app" style="display:flex;width:100%;height:100vh">
+    <!-- Sidebar injected by base.js -->
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!requireAuth()) return;
+        const app = document.getElementById('app');
+        app.innerHTML = getSidebarHTML() + `
+        <div class="main">
+            ${getTopbarHTML('History')}
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
+                <div style="font-size:48px">🚧</div>
+                <div style="font-size:18px;font-weight:600">/history</div>
+                <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+            </div>
+        </div>`;
+        buildNav();
+        buildUserRow();
+    });
+</script>
+</body>
+</html>

@@ -107,6 +107,42 @@ def clear_login_fails(ip: str):
 # ═══════════════════════════════
 # STATIC FILES
 # ═══════════════════════════════
+@app.get('/bots')
+def bots_page():
+    return FileResponse('bots.html')
+
+@app.get('/trades')
+def trades_page():
+    return FileResponse('trades.html')
+
+@app.get('/history')
+def history_page():
+    return FileResponse('history.html')
+
+@app.get('/reports')
+def reports_page():
+    return FileResponse('reports.html')
+
+@app.get('/exchanges')
+def exchanges_page():
+    return FileResponse('exchanges.html')
+
+@app.get('/create-bot')
+def create_bot_page():
+    return FileResponse('create-bot.html')
+
+@app.get('/settings')
+def settings_page():
+    return FileResponse('settings.html')
+
+@app.get('/styles.css')
+def styles_css():
+    return FileResponse('styles.css', media_type='text/css')
+
+@app.get('/base.js')
+def base_js():
+    return FileResponse('base.js', media_type='application/javascript')
+
 @app.get('/dashboard')
 def dashboard():
     return FileResponse('dashboard.html')
@@ -1500,6 +1536,10 @@ def health_check():
        redis_ok = False
    status = "ok" if db_ok and redis_ok else "degraded"
    return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
+
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
