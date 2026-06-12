@@ -531,6 +531,97 @@ def get_research_positions(payload: dict = Depends(verify_token)):
             })
         return result
 
+@app.get('/admin/research/champ-score')
+def research_champ_score(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT b.method,
+                   COUNT(*) as trades,
+                   ROUND(SUM(p.total_sold_usdt - p.total_invested)::numeric,2) as total_pnl,
+                   ROUND(SUM(CASE WHEN p.total_sold_usdt > p.total_invested THEN p.total_sold_usdt - p.total_invested ELSE 0 END)::numeric,2) as gross_win,
+                   ROUND(SUM(CASE WHEN p.total_sold_usdt <= p.total_invested THEN p.total_invested - p.total_sold_usdt ELSE 0 END)::numeric,2) as gross_loss,
+                   array_agg(p.total_sold_usdt - p.total_invested ORDER BY p.total_sold_usdt - p.total_invested DESC) as all_pnls
+            FROM positions p JOIN bots b ON b.id=p.bot_id
+            WHERE p.status='closed' AND b.is_research=TRUE
+            GROUP BY b.method
+        """)
+        rows = cur.fetchall()
+
+    result = []
+    for r in rows:
+        method, trades, total_pnl, gross_win, gross_loss, all_pnls = r
+        total_pnl = float(total_pnl or 0)
+        gross_win = float(gross_win or 0)
+        gross_loss = float(gross_loss or 0)
+        # Excl top 5
+        pnls = [float(x) for x in (all_pnls or [])]
+        excl_top5 = round(sum(pnls[5:]), 2) if len(pnls) > 5 else round(total_pnl, 2)
+        # Profit factor
+        pf = round(gross_win / gross_loss, 2) if gross_loss > 0 else round(gross_win, 2)
+        # Robustness
+        robustness = round(excl_top5 / total_pnl * 100, 1) if total_pnl > 0 else 0
+        # Score = 40% total + 30% excl top5 + 20% pf normalized + 10% trades normalized
+        score = round(total_pnl * 0.4 + excl_top5 * 0.3 + pf * 0.2 + trades * 0.1, 2)
+        result.append({
+            'method': method,
+            'trade_count': int(trades),
+            'total_pnl': total_pnl,
+            'excl_top5': excl_top5,
+            'profit_factor': pf,
+            'robustness': robustness,
+            'score': score,
+        })
+    result.sort(key=lambda x: -x['score'])
+    return result
+
+@app.get('/admin/research/scalper-score')
+def research_scalper_score(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT b.name, b.bot_params::text,
+                   COUNT(*) FILTER (WHERE s.status='closed') as trades,
+                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl,
+                   ROUND(SUM(CASE WHEN s.pnl_usdt > 0 THEN s.pnl_usdt ELSE 0 END) FILTER (WHERE s.status='closed')::numeric,2) as gross_win,
+                   ROUND(SUM(CASE WHEN s.pnl_usdt <= 0 THEN ABS(s.pnl_usdt) ELSE 0 END) FILTER (WHERE s.status='closed')::numeric,2) as gross_loss,
+                   array_agg(s.pnl_usdt ORDER BY s.pnl_usdt DESC) FILTER (WHERE s.status='closed') as all_pnls
+            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
+            GROUP BY b.name, b.bot_params
+            HAVING COUNT(*) FILTER (WHERE s.status='closed') > 0
+        """)
+        rows = cur.fetchall()
+
+    import json as _json
+    result = []
+    for r in rows:
+        name, params_raw, trades, total_pnl, gross_win, gross_loss, all_pnls = r
+        try:
+            p = _json.loads(params_raw) if params_raw else {}
+        except:
+            p = {}
+        total_pnl = float(total_pnl or 0)
+        gross_win = float(gross_win or 0)
+        gross_loss = float(gross_loss or 0)
+        pnls = [float(x) for x in (all_pnls or [])]
+        excl_top5 = round(sum(pnls[5:]), 2) if len(pnls) > 5 else round(total_pnl, 2)
+        pf = round(gross_win / gross_loss, 2) if gross_loss > 0 else round(gross_win, 2)
+        robustness = round(excl_top5 / total_pnl * 100, 1) if total_pnl > 0 else 0
+        score = round(total_pnl * 0.4 + excl_top5 * 0.3 + pf * 0.2 + trades * 0.1, 2)
+        result.append({
+            'name': name,
+            'trigger_pct': p.get('trigger_pct','?'),
+            'hold_sec': p.get('hold_sec','?'),
+            'trade_count': int(trades),
+            'total_pnl': total_pnl,
+            'excl_top5': excl_top5,
+            'profit_factor': pf,
+            'robustness': robustness,
+            'score': score,
+        })
+    result.sort(key=lambda x: -x['score'])
+    return result
+
 @app.get('/admin/research/scalper')
 def research_scalper(payload: dict = Depends(require_admin)):
     with db.get_db() as conn:
