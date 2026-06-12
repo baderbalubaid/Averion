@@ -765,6 +765,8 @@ def run_cycle(r):
         btc_regime_data = get_btc_regime_data(r)
         if btc_regime_data:
             print(f'📈 BTC: ${btc_regime_data["btc_price"]:,.0f} · SMA50=${btc_regime_data["btc_sma50"]:,.0f} · {btc_regime_data["btc_regime"].upper()} · 24h={btc_regime_data["btc_24h_change"]:+.2f}%')
+            import json as _json
+            r.setex('btc:regime_data', 600, _json.dumps(btc_regime_data))
 
         # ─────────────────────────
         # STEP 1: Check ST flags (every 12h per exchange · per unique coin)

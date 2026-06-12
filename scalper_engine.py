@@ -156,6 +156,9 @@ class ScalperEngine:
         self._load_bot_ids()
         self._lock = threading.Lock()
         # Clean up stuck positions from previous run
+        # Redis connection
+        import redis as _redis
+        self.r = _redis.Redis(host='localhost', port=6379, decode_responses=True)
         self._cleanup_stuck_positions()
         # Start background cleanup thread
         self._start_cleanup_thread()
@@ -269,16 +272,36 @@ class ScalperEngine:
         try:
             with db.get_db() as conn:
                 cur = conn.cursor()
+                # Get BTC regime from Redis
+                btc_price = None; btc_sma50 = None
+                btc_24h = None; btc_regime = None; btc_dom = None
+                try:
+                    import json as _json
+                    btc_cached = self.r.get('btc:regime_data')
+                    if btc_cached:
+                        btc_data = _json.loads(btc_cached)
+                        btc_price = btc_data.get('btc_price')
+                        btc_sma50 = btc_data.get('btc_sma50')
+                        btc_24h = btc_data.get('btc_24h_change')
+                        btc_regime = btc_data.get('btc_regime')
+                        btc_dom = btc_data.get('btc_dominance')
+                except:
+                    pass
+
                 cur.execute("""
                     INSERT INTO scalper_positions
                         (bot_id, coin, entry_price, hold_seconds,
                          trigger_jump_pct, trigger_window_sec,
-                         stop_loss_pct, base_order, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'open')
+                         stop_loss_pct, base_order, status,
+                         btc_price_at_entry, btc_sma50_at_entry,
+                         btc_24h_change_pct, btc_regime, btc_dominance)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'open',
+                            %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (bot_id, coin, price, bot['hold_sec'],
                       trigger_jump, bot['window_sec'],
-                      bot.get('stop_loss_pct'), BASE_ORDER))
+                      bot.get('stop_loss_pct'), BASE_ORDER,
+                      btc_price, btc_sma50, btc_24h, btc_regime, btc_dom))
                 pos_id = cur.fetchone()[0]
 
             with self._lock:
