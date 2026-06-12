@@ -168,6 +168,9 @@ def admin_dashboard():
 
 @app.get('/')
 def homepage():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url='/dashboard')
+def homepage_old():
     return FileResponse('index.html')
 
 @app.get('/login')
