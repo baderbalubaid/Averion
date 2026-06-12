@@ -863,7 +863,7 @@ def run_cycle(r):
                     best_candidate[5] + 1
                 )
                 db.set_position_queued(pos_id, False)
-                print(f'✅ DCA executed: {coin} dca#{best_candidate[5]+1} avg=${new_avg:.6f} invested=${new_invested:.2f}')
+                print(f'✅ DCA executed: {coin} dca#{best_candidate[5]+1} avg=${new_avg:.6f} invested=${new_invested:.2f} time={datetime.utcnow().strftime("%H:%M:%S")}')
                 try:
                     _best_bot = next((b for b in bots if b[0] == best_candidate[7]), None)
                     best_is_research = bool(_best_bot and _best_bot[31]) if _best_bot and len(_best_bot) > 31 else bool(_best_bot and (_best_bot[4].startswith('E') or _best_bot[4].startswith('BM')))
@@ -898,7 +898,7 @@ def run_cycle(r):
     r.setex('bot:cycle_time', 600, str(round(cycle_time, 2)))
     r.setex('bot:last_cycle', 600, str(datetime.utcnow()))
     r.setex('bot:status', 600, 'running')
-    print(f'✅ Cycle complete in {cycle_time:.2f}s')
+    print(f'✅ Cycle complete in {cycle_time:.2f}s · {datetime.utcnow().strftime("%H:%M:%S")}')
 
 # ═══════════════════════════════
 # BOT LOOP ENTRY
