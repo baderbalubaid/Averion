@@ -143,7 +143,7 @@ async function loadHomeStats() {
 
 async function loadExchanges() {
     try {
-        const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+        const res = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
         const data = await res.json();
         const el = document.getElementById('homeExchanges');
         if (!data.length) {
@@ -168,7 +168,7 @@ async function loadExchanges() {
 
 async function loadCapitalChart(range) {
     try {
-        const excRes = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+        const excRes = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
         const exchanges = await excRes.json();
         if (!exchanges.length) return;
 
