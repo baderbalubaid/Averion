@@ -389,13 +389,26 @@ function logout() {
       <span class="nav-icon">🤖</span><span>Bots</span>
       <span class="nav-badge" id="navBotsBadge">0</span>
     </div>
-    <div class="nav-section-lbl" style="margin-top:8px">Analytics</div>
+    <div class="nav-section-lbl" style="margin-top:8px">Trading</div>
+    <div class="nav-link" onclick="window.location='/trades'">
+      <span class="nav-icon">📊</span><span>Trades</span>
+    </div>
     <div class="nav-link" onclick="window.location='/history'">
-      <span class="nav-icon">📊</span><span>History</span>
+      <span class="nav-icon">📜</span><span>History</span>
+    </div>
+    <div class="nav-section-lbl" style="margin-top:8px">Account</div>
+    <div class="nav-link" onclick="window.location='/exchanges'">
+      <span class="nav-icon">🔗</span><span>Exchanges</span>
+    </div>
+    <div class="nav-link" onclick="window.location='/reports'">
+      <span class="nav-icon">📈</span><span>Reports</span>
     </div>
     <div class="nav-section-lbl" style="margin-top:8px">System</div>
     <div class="nav-link" onclick="window.location='/settings'">
       <span class="nav-icon">⚙️</span><span>Settings</span>
+    </div>
+    <div class="nav-link" onclick="window.location='/create-bot'">
+      <span class="nav-icon">+</span><span>Create Bot</span>
     </div>
   </div>
   <div class="sidebar-footer">
