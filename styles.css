@@ -339,3 +339,5 @@ tr:hover td{background:#6366F106}
 <!-- ══          CSS STYLES END             ══ -->
 <!-- ═══════════════════════════════════════ -->
 
+
+@supports (padding-bottom: env(safe-area-inset-bottom)){.bottom-nav{padding-bottom:env(safe-area-inset-bottom)}.content{padding-bottom:calc(70px + env(safe-area-inset-bottom))}}
