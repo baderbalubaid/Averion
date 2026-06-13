@@ -5,31 +5,302 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Averion — History</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh">
-    <div id="sidebar-placeholder"></div>
-    <div class="main" id="main-content">
-        <div id="topbar-placeholder"></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
-            <div style="font-size:48px">🚧</div>
-            <div style="font-size:18px;font-weight:600">History</div>
-            <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+   <div id="sidebar-placeholder"></div>
+   <div class="main">
+       <div id="topbar-placeholder"></div>
+       <div style="flex:1;overflow-y:auto;padding:24px">
+    <div class="tab-content" id="tab-history">
+      <div class="hero-stats" style="margin-bottom:16px;grid-template-columns:repeat(3,1fr)">
+        <div class="hero-card">
+          <div class="hero-lbl">Closed Trades</div>
+          <div class="hero-val" id="hs-count" style="color:var(--blue)">0</div>
         </div>
+        <div class="hero-card g">
+          <div class="hero-lbl">Total Profit</div>
+          <div class="hero-val" id="hs-profit">$0.00</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-lbl">Win Rate</div>
+          <div class="hero-val" id="hs-winrate" style="color:var(--green)">0%</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-lbl">Avg Hold</div>
+          <div class="hero-val" id="hs-avghold" style="color:var(--text2)">—</div>
+        </div>
+        <div class="hero-card a">
+          <div class="hero-lbl">Fees (20%)</div>
+          <div class="hero-val" id="hs-fees" style="color:var(--amber)">$0.00</div>
+          <div class="hero-sub">performance fee due</div>
+        </div>
+        <div class="hero-card b">
+          <div class="hero-lbl">Net Profit</div>
+          <div class="hero-val" id="hs-net">$0.00</div>
+          <div class="hero-sub">after fees</div>
+        </div>
+      </div>
+
+      <div class="hist-filters">
+        <select class="filter-sel" id="hf-exchange" onchange="applyHistoryFilter()">
+          <option value="">All Exchanges</option>
+          <option value="MEXC">MEXC</option>
+          <option value="Binance">Binance</option>
+        </select>
+        <select class="filter-sel" id="hf-coin" onchange="applyHistoryFilter()">
+          <option value="">All Coins</option>
+        </select>
+        <div class="date-presets">
+          <button class="date-preset" onclick="setDateFilter('today',this)">Today</button>
+          <button class="date-preset" onclick="setDateFilter('7d',this)">7d</button>
+          <button class="date-preset" onclick="setDateFilter('30d',this)">30d</button>
+          <button class="date-preset active" onclick="setDateFilter('all',this)">All</button>
+        </div>
+        <div class="date-range-wrap">
+          <span class="date-range-lbl">From</span>
+          <input class="date-input" type="date" id="hf-from" onchange="applyHistoryFilter()">
+          <span class="date-range-lbl">To</span>
+          <input class="date-input" type="date" id="hf-to" onchange="applyHistoryFilter()">
+          <button class="date-preset" onclick="clearDateRange()">✕ Clear</button>
+        </div>
+        <button class="col-btn" onclick="toggleColumnPicker()">⊞ Columns</button>
+      </div>
+
+      <div id="columnPicker" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Show / Hide Columns</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="columnToggles"></div>
+      </div>
+
+      <div class="tbl-container" style="margin:0 0 14px">
+        <div class="tbl-hdr">
+          <span class="tbl-title">Closed Positions</span>
+          <span class="tbl-count" id="hs-tbl-count">0 trades</span>
+        </div>
+        <table>
+          <thead><tr id="historyThead"></tr></thead>
+          <tbody id="historyTable"><tr><td class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- ══════════════ SETTINGS TAB (account info) ══════════════ -->
+<!-- ═══════════════════════════════════════ -->
+<!-- ══          SETTINGS TAB               ══ -->
+<!-- ═══════════════════════════════════════ -->
+
+       </div>
+   </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
-<script src="/base.js"></script>
+<script src="/base.js?v=4"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!requireAuth()) return;
-        document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-        document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('History');
-        buildNav();
-        buildUserRow();
-        buildMobileNav();
-    });
+// ── GLOBALS ──
+let allHistory = [];
+let _historyDateFilter = 'all';
+let _historyDateFrom = null;
+let _historyDateTo = null;
+let _colPickerOpen = false;
+
+const HISTORY_COLS = [
+  {key:'coin',        label:'Coin',        show:true},
+  {key:'exchange',    label:'Exchange',    show:true},
+  {key:'entry_date',  label:'Entry Date',  show:true},
+  {key:'exit_date',   label:'Exit Date',   show:true},
+  {key:'entry_price', label:'Entry Price', show:true},
+  {key:'avg_cost',    label:'Avg Cost',    show:false},
+  {key:'exit_price',  label:'Exit Price',  show:true},
+  {key:'dca_count',   label:'DCA#',        show:true},
+  {key:'pnl_pct',     label:'P&L%',        show:true},
+  {key:'pnl_usd',     label:'P&L$',        show:true},
+  {key:'hold',        label:'Hold Time',   show:false},
+  {key:'exit_reason', label:'Exit',        show:true},
+  {key:'fee',         label:'Fee (20%)',   show:true},
+  {key:'net_profit',  label:'Net Profit',  show:true},
+];
+
+let allPositions  = [];
+let allHistory    = [];
+let botFilter     = 'all';
+let botSort       = 'pnl_pct';
+let botSortAsc    = true;
+let currentBotRunning = true;
+let histDateFilter = 'all';
+
+// ── TAB NAVIGATION ────────────────────────────────────────
+const TAB_TITLES = {home:'Home',bots:'Bots',history:'History',settings:'Settings'};
+
+
+
+async function fetchHistory() {
+  try {
+    const res  = await fetch(`${API}/history`, {headers: authHeaders()});
+    allHistory = await res.json();
+  } catch(e) { allHistory=[]; }
+  buildCoinFilter();
+  applyHistoryFilter();
+}
+function buildCoinFilter() {
+  const sel   = document.getElementById('hf-coin');
+  const coins = [...new Set(allHistory.map(h=>h.coin).filter(Boolean))];
+  sel.innerHTML = '<option value="">All Coins</option>' +
+    coins.map(c=>`<option>${c}</option>`).join('');
+}
+function setDateFilter(type,el){
+  histDateFilter=type;
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  // Clear custom date range when preset selected
+  const f=document.getElementById('hf-from');
+  const t=document.getElementById('hf-to');
+  if(f) f.value='';
+  if(t) t.value='';
+  applyHistoryFilter();
+}
+
+function clearDateRange(){
+  document.getElementById('hf-from').value='';
+  document.getElementById('hf-to').value='';
+  // Reactivate All preset
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.date-preset').forEach(b=>{if(b.textContent==='All')b.classList.add('active')});
+  histDateFilter='all';
+  applyHistoryFilter();
+}
+function applyHistoryFilter() {
+  const exc    = document.getElementById('hf-exchange').value;
+  const coin   = document.getElementById('hf-coin').value;
+  const fromEl = document.getElementById('hf-from');
+  const toEl   = document.getElementById('hf-to');
+  const fromDate = fromEl && fromEl.value ? new Date(fromEl.value) : null;
+  const toDate   = toEl   && toEl.value   ? new Date(toEl.value + 'T23:59:59') : null;
+  const now    = Date.now();
+
+  let data = allHistory.filter(h => {
+    if (exc  && h.exchange !== exc)  return false;
+    if (coin && h.coin    !== coin)  return false;
+
+    // Custom date range takes priority over presets
+    if (fromDate || toDate) {
+      const closed = new Date(h.closed_at);
+      if (fromDate && closed < fromDate) return false;
+      if (toDate   && closed > toDate)   return false;
+      return true;
+    }
+
+    // Preset filters
+    if (histDateFilter==='today') {
+      if (new Date(h.closed_at).toDateString()!==new Date().toDateString()) return false;
+    }
+    if (histDateFilter==='7d'  && now-new Date(h.closed_at)>7*86400000)  return false;
+    if (histDateFilter==='30d' && now-new Date(h.closed_at)>30*86400000) return false;
+    return true;
+  });
+  renderHistory(data);
+}
+function renderHistory(data) {
+  const count = data.length;
+  let profit=0, wins=0, totalDays=0;
+  data.forEach(h => {
+    const p=h.realized_pnl||0;
+    profit+=p;
+    if(p>0) wins++;
+    totalDays += h.days_held||0;
+  });
+  const fees   = Math.max(0, profit * 0.20);
+  const net    = profit - fees;
+
+  document.getElementById('hs-count').textContent = count;
+  document.getElementById('hs-tbl-count').textContent = count+' trades';
+
+  const pe = document.getElementById('hs-profit');
+  pe.textContent = (profit>=0?'+':'')+'$'+Math.abs(profit).toFixed(2);
+  pe.style.color = profit>=0?'var(--green)':'var(--red)';
+
+  document.getElementById('hs-winrate').textContent = count>0?Math.round(wins/count*100)+'%':'0%';
+  document.getElementById('hs-avghold').textContent = count>0?Math.round(totalDays/count)+'d':'—';
+
+  const fe = document.getElementById('hs-fees');
+  fe.textContent = '-$'+fees.toFixed(2);
+  fe.style.color = fees>0?'var(--amber)':'var(--text3)';
+
+  const ne = document.getElementById('hs-net');
+  ne.textContent = (net>=0?'+':'')+'$'+Math.abs(net).toFixed(2);
+  ne.style.color = net>=0?'var(--green)':'var(--red)';
+
+  const visibleCols = HISTORY_COLS.filter(c=>c.show);
+  document.getElementById('historyThead').innerHTML =
+    visibleCols.map(c=>`<th>${c.label}</th>`).join('');
+
+  const tbody = document.getElementById('historyTable');
+  if (!count) {
+    tbody.innerHTML=`<tr><td colspan="${visibleCols.length}"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No closed trades yet.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(h => {
+    const pnl  = h.realized_pnl||0;
+    const pc   = pnl>=0?'var(--green)':'var(--red)';
+    const sign = pnl>=0?'+':'';
+    const ep   = h.entry_price||0;
+    const xp   = h.exit_price||ep;
+    const pct  = ep>0?((xp-ep)/ep*100).toFixed(2):'0.00';
+    return `<tr>${visibleCols.map(c=>{
+      if(c.key==='coin')        return `<td><div class="td-coin"><strong>${(h.coin||'—').replace('/USDT','')}</strong></div></td>`;
+      if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
+      if(c.key==='entry_date')  return `<td><span class="td-muted">${h.opened_at?new Date(h.opened_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
+      if(c.key==='exit_date')   return `<td><span class="td-muted">${h.closed_at?new Date(h.closed_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
+      if(c.key==='entry_price') return `<td>${fmtPrice(ep)}</td>`;
+      if(c.key==='avg_cost')    return `<td>${fmtPrice(h.avg_cost||ep)}</td>`;
+      if(c.key==='exit_price')  return `<td>${fmtPrice(xp)}</td>`;
+      if(c.key==='dca_count')   return `<td style="color:var(--purple)">${h.dca_count||0}</td>`;
+      if(c.key==='pnl_pct')     return `<td style="color:${pc};font-weight:600">${sign}${pct}%</td>`;
+      if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${sign}$${Math.abs(pnl).toFixed(4)}</td>`;
+      if(c.key==='hold')        return `<td><span class="td-muted">${h.days_held||0}d</span></td>`;
+      if(c.key==='exit_reason') return `<td><span class="badge badge-closed">${h.exit_reason||'closed'}</span></td>`;
+      if(c.key==='fee'){
+        const p=h.realized_pnl||0;
+        const f=Math.max(0,p*0.20);
+        return `<td style="color:var(--amber)">-$${f.toFixed(4)}</td>`;
+      }
+      if(c.key==='net_profit'){
+        const p=h.realized_pnl||0;
+        const n=p-Math.max(0,p*0.20);
+        const pc=n>=0?'var(--green)':'var(--red)';
+        const sg=n>=0?'+':'';
+        return `<td style="color:${pc};font-weight:700">${sg}$${Math.abs(n).toFixed(4)}</td>`;
+      }
+      return '<td>—</td>';
+    }).join('')}</tr>`;
+  }).join('');
+}
+function buildColumnToggles() {
+  document.getElementById('columnToggles').innerHTML =
+    HISTORY_COLS.map((c,i)=>`
+    <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg3);border-radius:7px;cursor:pointer;font-size:11px;color:var(--text2)">
+      <input type="checkbox" ${c.show?'checked':''} onchange="toggleCol(${i},this.checked)" style="accent-color:var(--accent)">
+      ${c.label}
+    </label>`).join('');
+}
+function toggleColumnPicker(){
+  const el=document.getElementById('columnPicker');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function toggleCol(i,show){ HISTORY_COLS[i].show=show; applyHistoryFilter(); }
+
+
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async () => {
+   if (!requireAuth()) return;
+   document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+   document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('History');
+   buildNav();
+   buildUserRow();
+   buildMobileNav();
+   await fetchHistory();
+   buildColumnToggles();
+});
 </script>
 </body>
 </html>
