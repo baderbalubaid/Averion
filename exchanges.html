@@ -216,6 +216,22 @@ async function saveExchange() {
   const secret = document.getElementById('m-secret')?.value.trim() || '';
   if (!key) { alert('Please enter your API key'); return; }
   try {
+    const res = await fetch(`${API}/exchanges`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({exchange: id, custom_name: name, api_key: key, secret: secret})
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Error: ' + (data.detail || 'Failed to save')); return; }
+    closeModal();
+    alert(`✅ ${name} connected!`);
+    loadAll();
+  } catch(e) {
+    alert('Connection error · please try again');
+  }
+}
+
+// ── BOTS ──────────────────────────────────────────────────
 
 }
 
