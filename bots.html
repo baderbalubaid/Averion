@@ -45,7 +45,7 @@
 let allBots = [];
 let currentFilter = 'all';
 
-function setFilter(type, el) {
+async function setFilter(type, el) {
     currentFilter = type;
     document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
     if (el) el.classList.add('active');
