@@ -62,7 +62,7 @@ function buildNav() {
     // Debug: show path visually
     const dbg = document.createElement('div');
     dbg.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;font-size:10px;padding:2px 6px;z-index:9999';
-    dbg.textContent = 'PATH:' + currentPath;
+    dbg.textContent = 'PATH:' + currentPath + ' NAV:' + NAV_ITEMS.filter(i => i.url !== currentPath).length + '/' + NAV_ITEMS.length;
     document.body.appendChild(dbg);
     if (!nav) return;
 
