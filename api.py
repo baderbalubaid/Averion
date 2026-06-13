@@ -326,7 +326,7 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
     # Get variant params from research bots
     with db.get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT bot_params::text FROM bots WHERE name=%s AND method='E58'", (variant_name,))
+        cur.execute("SELECT bot_params::text FROM bots WHERE name=%s AND method='S58'", (variant_name,))
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail='Variant not found')
