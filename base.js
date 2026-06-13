@@ -60,8 +60,8 @@ function buildNav() {
     const nav = document.getElementById('sidebar-nav');
     if (!nav) return;
 
-    nav.innerHTML = NAV_ITEMS.map(item => `
-        <a href="${item.url}" class="nav-link ${currentPath === item.url ? 'active' : ''}" style="text-decoration:none!important;color:inherit">
+    nav.innerHTML = NAV_ITEMS.filter(item => item.url !== currentPath).map(item => `
+        <a href="${item.url}" class="nav-link" style="text-decoration:none!important;color:inherit">
             <span class="nav-icon">${item.icon}</span>
             <span>${item.label}</span>
         </a>
