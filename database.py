@@ -159,6 +159,7 @@ def get_user_bots(user_id):
             JOIN exchanges e ON e.id = b.exchange_id
             WHERE b.user_id = %s AND b.status != 'deleted'
             AND (b.is_research = FALSE OR b.is_research IS NULL)
+            AND (b.is_template = FALSE OR b.is_template IS NULL)
             ORDER BY b.created_at ASC
         """, (user_id,))
         return cur.fetchall()
