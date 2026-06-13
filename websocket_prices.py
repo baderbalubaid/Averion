@@ -13,6 +13,11 @@ try:
     from scalper_engine import on_price_update as scalper_on_price
 except Exception:
     scalper_on_price = None
+
+try:
+    from live_scalper_engine import on_price_update as live_scalper_on_price
+except Exception:
+    live_scalper_on_price = None
 import websocket
 from datetime import datetime
 
