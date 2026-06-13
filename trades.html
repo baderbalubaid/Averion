@@ -137,7 +137,8 @@ function renderTable(data) {
 async function loadTrades() {
     try {
         const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
-        allPositions = await res.json();
+        const all = await res.json();
+        allPositions = all.filter(p => p.status === 'open');
 
         // Update stats
         const total = allPositions.reduce((s,p) => s + (p.total_invested||0), 0);
