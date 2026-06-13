@@ -101,13 +101,11 @@ function buildMobileNav() {
         { icon: '🏠', label: 'Home', url: '/dashboard' },
         { icon: '🤖', label: 'Bots', url: '/bots' },
         { icon: '📊', label: 'Trades', url: '/trades' },
-        { icon: '🔗', label: 'Exchanges', url: '/exchanges' },
         { icon: '📜', label: 'History', url: '/history' },
         { icon: '📈', label: 'Reports', url: '/reports' },
         { icon: '⚙️', label: 'Settings', url: '/settings' },
-        { icon: '+', label: 'Create', url: '/create-bot' },
     ];
-    const mobileItems = allItems.filter(i => i.url !== currentPath).slice(0, 5);
+    const mobileItems = allItems.filter(i => i.url !== currentPath);
 
     bnav.innerHTML = mobileItems.map(item => `
         <a href="${item.url}" class="bnav-item" style="text-decoration:none!important">
