@@ -79,25 +79,6 @@ let capitalChart = null;
 let chartRange = '7d';
 let allBalHistory = [];
 
-function getExchanges() { return _exchanges; }
-function setExchanges(list) { _exchanges = list; }
-
-    fees > 0 ? `20% of $${pnl.toFixed(2)} profit` : 'No fees due';
-
-  // Show fees banner if fees > 0
-  const banner = document.getElementById('feesBanner');
-  if (fees > 0) {
-    banner.style.display = 'flex';
-    document.getElementById('feesAmount').textContent = '$' + fees.toFixed(2);
-    document.getElementById('feesDesc').textContent = `20% of $${pnl.toFixed(2)} realized profit`;
-  } else {
-    banner.style.display = 'none';
-  }
-
-  renderExchanges();
-}
-
-// ── EXCHANGES ─────────────────────────────────────────────
 function getExchanges() {
   try { return window._exchangesCache || JSON.parse(localStorage.getItem('av_exchanges') || '[]'); }
   catch(e) { return []; }
