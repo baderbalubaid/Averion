@@ -555,7 +555,8 @@ def get_bots(payload: dict = Depends(verify_token)):
               'order_entry_type': b[16],
               'order_dca_type': b[17],
               'exchange': b[18],
-              'exchange_name': b[19]} for b in bots]
+              'exchange_name': b[19],
+              'base_order': float(b[20]) if b[20] else 0} for b in bots]
 
 class BotToggle(BaseModel):
     trading_on: Optional[bool] = None
