@@ -579,6 +579,22 @@ def update_bot(bot_id: int, data: dict, payload: dict = Depends(verify_token)):
         conn.commit()
     return {'message': 'Updated'}
 
+@app.post('/bots/{bot_id}/update')
+def update_bot(bot_id: int, data: dict, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE AND is_template=FALSE",
+                    (bot_id, user_id))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail='Bot not found')
+        if 'name' in data:
+            cur.execute("UPDATE bots SET name=%s WHERE id=%s", (data['name'], bot_id))
+        if 'base_order' in data:
+            cur.execute("UPDATE bots SET base_order=%s WHERE id=%s", (data['base_order'], bot_id))
+        conn.commit()
+    return {'message': 'Updated'}
+
 @app.post('/bots/{bot_id}/toggle')
 def toggle_bot(bot_id: int, toggle: BotToggle,
                payload: dict = Depends(verify_token)):
