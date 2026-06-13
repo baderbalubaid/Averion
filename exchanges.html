@@ -405,8 +405,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!requireAuth()) return;
     alert('auth ok');
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    alert('sidebar injected');
     document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Exchanges');
     buildNav();
+    alert('nav built');
     buildUserRow();
     buildMobileNav();
     await initExchanges();
