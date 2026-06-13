@@ -77,6 +77,12 @@ class MexcWebSocketPrices:
                                 scalper_on_price(coin, float(t.price))
                             except Exception:
                                 pass
+                        # Feed live scalper engine
+                        if live_scalper_on_price:
+                            try:
+                                live_scalper_on_price(coin, float(t.price))
+                            except Exception:
+                                pass
                         # Event-driven TP check
                         if self.tp_callback:
                             try:
