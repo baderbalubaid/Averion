@@ -127,8 +127,9 @@ const TAB_TITLES = {home:'Home',bots:'Bots',history:'History',settings:'Settings
 
 async function fetchHistory() {
   try {
-    const res  = await fetch(`${API}/history`, {headers: authHeaders()});
-    allHistory = await res.json();
+    const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
+    const all = await res.json();
+    allHistory = all.filter(p => p.status === 'closed');
   } catch(e) { allHistory=[]; }
   buildCoinFilter();
   applyHistoryFilter();
