@@ -401,14 +401,11 @@ async function initExchanges() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    document.body.style.background = 'green'; // debug
     if (!requireAuth()) return;
-    alert('auth ok');
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-    alert('sidebar injected');
     document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Exchanges');
     buildNav();
-    alert('nav built');
+    document.querySelector('.sidebar').style.cssText = 'display:flex!important;width:220px;background:#0E0E1C;border-right:1px solid #1E1E35;flex-direction:column;height:100vh';
     buildUserRow();
     buildMobileNav();
     await initExchanges();
