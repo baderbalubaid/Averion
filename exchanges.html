@@ -22,19 +22,6 @@
         </div>
     </div>
 </div>
-   <span class="bnav-icon">🤖</span><span>Bots</span>
- </button>
- <button class="bnav-item" onclick="window.location='/trades'">
-   <span class="bnav-icon">📊</span><span>Trades</span>
- </button>
- <button class="bnav-item" onclick="window.location='/exchanges'">
-   <span class="bnav-icon">🔗</span><span>Exchanges</span>
- </button>
- <button class="bnav-item" onclick="window.location='/settings'">
-   <span class="bnav-icon">⚙️</span><span>More</span>
- </button>
-</nav>
-
 <!-- ── ADD EXCHANGE MODAL ── -->
 <div class="modal-overlay" id="addModal">
   <div class="modal">
@@ -65,6 +52,22 @@
       <div class="form-group">
         <label class="form-label">API Secret</label>
         <input class="form-input" id="m-secret" type="password" placeholder="Paste your API secret">
+      </div>
+      <div class="form-group" id="m-pass-group" style="display:none">
+        <label class="form-label">Passphrase</label>
+        <input class="form-input" id="m-passphrase" type="password" placeholder="Required for this exchange">
+      </div>
+      <div class="form-hint">ℹ️ Enable <strong>Read + Trade</strong> only. Never enable withdrawals.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" style="flex:2;justify-content:center" onclick="saveExchange()">✓ Test & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FEATURE REQUEST MODAL ── -->
+<div class="modal-overlay" id="featureModal">
 
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=5"></script>
