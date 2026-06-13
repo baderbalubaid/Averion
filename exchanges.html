@@ -233,22 +233,6 @@ async function saveExchange() {
 
 // ── BOTS ──────────────────────────────────────────────────
 
-}
-
-// ── CONTROLS ──────────────────────────────────────────────
-async function closePos(id) {
-  if (!confirm('Close this position?')) return;
-  await fetch(`${API}/positions/${id}/close`, {method: 'POST', headers: authHeaders()});
-  await fetchPositions();
-}
-
-
-// ── EXCHANGE DETAIL (Items 11 + 12) ──────────────────────
-let currentExcId  = null;
-let capitalChart  = null;
-let chartRange    = '7d';
-let allBalHistory = [];
-
 function openExcDetail(excId) {
   currentExcId = excId;
   const cfg  = EXC[excId] || {};
@@ -388,6 +372,22 @@ function renderChart(range) {
         }
       },
       scales: {
+        x: {
+          grid:   { color: '#1E1E3520' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 }, maxTicksLimit:7 },
+          border: { display: false }
+        },
+        y: {
+          grid:   { color: '#1E1E3530' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 },
+                    callback: v => '$' + v.toFixed(0) },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
 
 
 async function initExchanges() {
