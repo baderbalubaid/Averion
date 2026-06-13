@@ -60,7 +60,6 @@ async function renderBots() {
     else if (currentFilter === 'stopped') data = data.filter(b => !b.trading_on || b.status !== 'open');
     else if (currentFilter === 'paper') data = data.filter(b => b.is_paper);
 
-    document.getElementById('botsList').innerHTML = 'DEBUG: allBots=' + allBots.length + ' data=' + data.length;
     if (!data || !data.length) {
         list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">
             <div style="font-size:32px;margin-bottom:8px">🤖</div>
@@ -73,11 +72,13 @@ async function renderBots() {
     // Get positions per bot
     let positions = [];
     try {
-        const pr = await fetch(`${API}/positions`, {headers: authHeaders()});
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const pr = await fetch(`${API}/positions`, {headers: authHeaders(), signal: controller.signal});
+        clearTimeout(timeout);
         if (pr.ok) positions = await pr.json();
-    } catch(e) {}
+    } catch(e) { positions = []; }
 
-    console.log('Rendering', data.length, 'bots, positions:', positions.length);
     list.innerHTML = data.map(bot => {
         const running = bot.trading_on && bot.status === 'open';
         const statusColor = running ? 'var(--green)' : 'var(--text3)';
