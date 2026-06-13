@@ -19,66 +19,12 @@
             </div>
             <div id="excGrid"></div>
         </div>
-        <div id="exc-detail" style="display:none;flex:1;overflow-y:auto">
-    <div id="tab-excdetail" style="display:none">
-      <div style="margin:-24px">
-        <div class="bot-detail-hdr">
-          <div class="bot-detail-back" onclick="closeExcDetail()">&#8249; Home</div>
-          <div class="bot-detail-title" id="excDetailName">Exchange</div>
-          <div class="dropdown">
-            <div class="exc-menu-btn" onclick="toggleDropdown(event,'dd-detail')">&#8943;</div>
-            <div class="dropdown-menu" id="dd-detail">
-              <div class="dropdown-item">&#10003; &nbsp;Test Connection</div>
-              <div class="dropdown-item">&#9999; &nbsp;Edit API Keys</div>
-              <div class="dropdown-item">&#127991; &nbsp;Rename</div>
-              <div class="dropdown-item danger">&#10005; &nbsp;Delete Exchange</div>
-            </div>
-          </div>
-        </div>
-        <div class="stats4">
-          <div class="stat4"><div class="stat4-lbl">Total Capital</div><div class="stat4-val" id="exc-capital">$0.00</div></div>
-          <div class="stat4"><div class="stat4-lbl">Total Profit</div><div class="stat4-val" id="exc-profit" style="color:var(--green)">$0.00</div></div>
-          <div class="stat4"><div class="stat4-lbl">Open Trades</div><div class="stat4-val" id="exc-open" style="color:var(--blue)">0</div></div>
-          <div class="stat4"><div class="stat4-lbl">24h P&L</div><div class="stat4-val" id="exc-pnl">$0.00</div></div>
-        </div>
-        <div style="padding:0 14px 14px">
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-              <div style="font-size:12px;font-weight:700">Capital History</div>
-              <div style="display:flex;gap:6px">
-                <button class="f-btn active" onclick="setChartRange('7d',this)">7D</button>
-                <button class="f-btn" onclick="setChartRange('30d',this)">30D</button>
-                <button class="f-btn" onclick="setChartRange('all',this)">All</button>
-              </div>
-            </div>
-            <div style="position:relative;height:200px">
-              <canvas id="capitalChart"></canvas>
-            </div>
-            <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:8px">
-              Hover over chart to see date and value
-            </div>
-          </div>
-        </div>
-        <div style="padding:0 14px">
-          <div class="sec-hdr">
-            <div class="sec-title">Bots on this Exchange</div>
-          </div>
-          <div id="excDetailBots"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════ BOTS TAB ══════════════ -->
-<!-- ═══════════════════════════════════════ -->
-<!-- ══          BOTS TAB                   ══ -->
-<!-- ═══════════════════════════════════════ -->
-    <div class="tab-content" id="tab-bots">
-
-        </div>
     </div>
 </div>
-<!-- Add Exchange Modal -->
-<div class="modal-backdrop" id="addModal">
+<!-- Modal -->
+    <div class="modal-hdr">
+      <span class="modal-title">Add Exchange</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -120,7 +66,6 @@
 <!-- ── FEATURE REQUEST MODAL ── -->
 <div class="modal-overlay" id="featureModal">
 
-</div>
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=4"></script>
 <script>
@@ -382,14 +327,74 @@ function renderChart(range) {
   const values = data.map(d => d.value || d.value_usdt || 0);
   const first  = values[0] || 0;
   const last   = values[values.length-1] || 0;
+  const color  = last >= first ? '#10D98A' : '#F4645F';
+
+  const ctx = document.getElementById('capitalChart').getContext('2d');
+  if (capitalChart) capitalChart.destroy();
+
+  capitalChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: color,
+        borderWidth: 2,
+        backgroundColor: color + '18',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: color,
+        pointBorderColor: '#07070F',
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0E0E1C',
+          borderColor: '#252540',
+          borderWidth: 1,
+          titleColor: '#8888AA',
+          bodyColor: '#F0F0FF',
+          titleFont: { family: 'Inter', size: 10 },
+          bodyFont:  { family: 'Inter', size: 13, weight: '700' },
+          padding: 10,
+          callbacks: {
+            title: items => items[0]?.label || '',
+            label: item  => ' $' + parseFloat(item.raw).toFixed(2),
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:   { color: '#1E1E3520' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 }, maxTicksLimit:7 },
+          border: { display: false }
+        },
+        y: {
+          grid:   { color: '#1E1E3530' },
+          ticks:  { color: '#55556A', font: { family:'Inter', size:9 },
+                    callback: v => '$' + v.toFixed(0) },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
 
 
 async function initExchanges() {
     try {
         const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
         if (res.ok) {
-            const data = await res.json();
-            setExchanges(data);
+            setExchanges(await res.json());
             renderExchanges();
         }
     } catch(e) { console.error(e); }
