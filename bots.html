@@ -12,24 +12,353 @@
     <div id="sidebar-placeholder"></div>
     <div class="main" id="main-content">
         <div id="topbar-placeholder"></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
-            <div style="font-size:48px">🚧</div>
-            <div style="font-size:18px;font-weight:600">Bots</div>
-            <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+        <div class="content" style="flex:1;overflow-y:auto;padding:24px" id="page-content">
+    <div class="tab-content" id="tab-bots">
+      <div id="bots-l1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:15px;font-weight:800">Bots</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px" id="botsSubtitle">Loading...</div>
+          </div>
+          <button class="btn btn-accent btn-sm" onclick="alert('Bot creation wizard - Phase 5')">+ New Bot</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">
+          <button class="f-btn active" onclick="setBotListFilter('all',this)">All</button>
+          <button class="f-btn" onclick="setBotListFilter('running',this)">&#128994; Running</button>
+          <button class="f-btn" onclick="setBotListFilter('stopped',this)">&#11035; Stopped</button>
+          <button class="f-btn" onclick="setBotListFilter('paper',this)">&#128196; Paper</button>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden" id="flatBotsList">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+      <div id="bots-l2" style="display:none;margin:-24px">
+        <div class="bot-detail-hdr">
+          <div class="bot-detail-back" onclick="backToBots()">‹ Bots</div>
+          <div class="bot-detail-title" id="bdTitle">Bot</div>
+          <div class="bot-detail-badge" id="bdBadge">● Live</div>
+        </div>
+        <div class="stats4">
+          <div class="stat4"><div class="stat4-lbl">Open</div><div class="stat4-val" id="bd-open" style="color:var(--blue)">0</div></div>
+          <div class="stat4"><div class="stat4-lbl">Invested</div><div class="stat4-val" id="bd-inv" style="color:var(--purple)">$0</div></div>
+          <div class="stat4"><div class="stat4-lbl">P&L$</div><div class="stat4-val" id="bd-pnl">$0</div></div>
+          <div class="stat4"><div class="stat4-lbl">P&L%</div><div class="stat4-val" id="bd-pnlpct">0%</div></div>
+        </div>
+        <div style="display:flex;gap:8px;padding:0 14px 12px">
+          <button class="btn btn-red btn-sm" id="bdToggleBtn" onclick="toggleBot()">⬛ Stop Bot</button>
+          <button class="btn btn-ghost btn-sm" onclick="applyBotFilter()">↻ Refresh</button>
+        </div>
+        <div class="search-wrap">
+          <input class="search-input" id="bdSearch" onkeyup="applyBotFilter()" placeholder="🔍 Search coin...">
+        </div>
+        <div class="filter-bar">
+          <button class="f-btn active" onclick="setBotFilter('all',this)">All</button>
+          <button class="f-btn" onclick="setBotFilter('profit',this)">📈 Profit</button>
+          <button class="f-btn" onclick="setBotFilter('loss',this)">📉 Loss</button>
+          <button class="f-btn" onclick="setBotFilter('dca',this)">🔄 DCA'd</button>
+          <button class="f-btn" onclick="setBotFilter('stuck',this)">⏳ Stuck</button>
+          <button class="f-btn" onclick="setBotFilter('tp',this)">🚀 TP Armed</button>
+        </div>
+        <div class="tbl-container">
+          <div class="tbl-hdr">
+            <span class="tbl-title">Positions</span>
+            <span class="tbl-count" id="bd-count">0 open</span>
+          </div>
+          <table>
+            <thead><tr>
+              <th onclick="sortBd('coin')">Coin ↕</th>
+              <th>Avg Cost</th><th>Current</th>
+              <th onclick="sortBd('dca_count')">DCA# ↕</th>
+              <th onclick="sortBd('days_open')">Days ↕</th>
+              <th onclick="sortBd('pnl_pct')">P&L% ↕</th>
+              <th onclick="sortBd('pnl')">P&L$ ↕</th>
+              <th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="bdTable"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ HISTORY TAB ══════════════ -->
+<!-- ═══════════════════════════════════════ -->
+<!-- ══          HISTORY TAB                ══ -->
+<!-- ═══════════════════════════════════════ -->
+
         </div>
     </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
-<script src="/base.js"></script>
+<script src="/base.js?v=3"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!requireAuth()) return;
-        document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-        document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Bots');
-        buildNav();
-        buildUserRow();
-        buildMobileNav();
-    });
+const TOKEN = getToken();
+
+function fmtPrice(p) {
+  if (!p || p === 0) return '$0';
+  if (p >= 1) return '$' + p.toFixed(4);
+  if (p >= 0.0001) return '$' + p.toFixed(6);
+  if (p >= 0.00000001) return '$' + p.toFixed(10);
+  return '$' + p.toPrecision(4);
+}
+    function authHeaders() {
+        const token = localStorage.getItem('averion_token');
+        return {
+            'Authorization': 'Bearer ' + (token || ''),
+
+async function fetchBotCount() {
+  try {
+    const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+    if (res.ok) {
+      const bots = await res.json();
+      window._botCount = bots.length;
+      window._activeBots = bots.filter(b => b.status === 'active').length;
+    }
+  } catch(e) {}
+}
+
+
+  try {
+    const res = await fetch(`${API}/status`, {headers: authHeaders()});
+    const d   = await res.json();
+    document.getElementById('btcPrice').textContent =
+      '$' + (d.btc_price||0).toLocaleString('en-US',{maximumFractionDigits:2});
+    document.getElementById('navBotsBadge').textContent = allPositions.length;
+  } catch(e) {
+    document.getElementById('btcPrice').textContent = 'Offline';
+  }
+}
+
+// ── POSITIONS ─────────────────────────────────────────────
+
+  try {
+    const res = await fetch(`${API}/positions`, {headers: authHeaders()});
+    allPositions = await res.json();
+    renderHome();
+    if (document.getElementById('bots-l2').style.display !== 'none') applyBotFilter();
+  } catch(e) {}
+}
+
+function statusInfo(pos) {
+  const d = pos.days_open || 0;
+  if (pos.tp_armed) return {label:'🚀 TP Armed', cls:'badge-tp'};
+  if (d > 60)       return {label:'🔴 Critical', cls:'badge-critical'};
+  if (d > 30)       return {label:'🟡 Stuck',    cls:'badge-stuck'};
+  if (pos.queued)   return {label:'⏳ Queued',   cls:'badge-queued'};
+  return {label:'🟢 Active', cls:'badge-active'};
+}
+
+// ── HOME ──────────────────────────────────────────────────
+
+function getExchanges() {
+  try { return window._exchangesCache || JSON.parse(localStorage.getItem('av_exchanges') || '[]'); }
+  catch(e) { return []; }
+}
+function setExchanges(list) {
+  try { localStorage.setItem('av_exchanges', JSON.stringify(list)); } catch(e) {}
+}
+
+
+async function renderBotsList() {
+  const container = document.getElementById('flatBotsList');
+  const exchanges = getExchanges();
+  if (exchanges.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🔌</div><div class="empty-text">No exchanges connected.<br>Add one from Home tab.</div></div>`;
+    return;
+  }
+
+  // Fetch real bots from API
+  let bots = [];
+  try {
+    const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+    if (res.ok) bots = await res.json();
+  } catch(e) {}
+
+  const pnl      = allPositions.reduce((s,p)=>s+p.pnl,0);
+  const pnlSign  = pnl>=0?'+':'';
+  const pnlColor = pnl>=0?'var(--green)':'var(--red)';
+
+  container.innerHTML = exchanges.map(exc => {
+    const cfg = EXC[exc.id] || {};
+    const displayName = exc.name || cfg.name || exc.id;
+    const excBots = bots.filter(b => b.exchange_name === exc.name || b.exchange === exc.id);
+    const activeBots = excBots.filter(b => b.trading_on && b.status === 'open').length;
+    const totalBots = excBots.length;
+
+    const botRows = excBots.length > 0 ? excBots.map(bot => {
+      const botRunning = bot.trading_on && bot.status === 'open';
+      const botPnl = allPositions.filter(p=>p.bot_id===bot.id).reduce((s,p)=>s+p.pnl,0);
+      const botPnlSign = botPnl>=0?'+':'';
+      const botPnlColor = botPnl>=0?'var(--green)':'var(--red)';
+      const botTrades = allPositions.filter(p=>p.bot_id===bot.id).length;
+      return `
+        <div class="bot-row" onclick="openBotDetail('${bot.name}',${botRunning})">
+          <div class="bot-row-left">
+            <div class="bot-indicator ${botRunning?'live':'off'}"></div>
+            <div class="bot-row-info">
+              <div class="bot-row-name">${bot.name}</div>
+              <div class="bot-row-meta">
+                <div class="bot-meta">Trades: <span>${botTrades}</span></div>
+                <div class="bot-meta">P&L: <span style="color:${botPnlColor}">${botPnlSign}$${Math.abs(botPnl).toFixed(2)}</span></div>
+                <div class="bot-meta">Mode: <span>${bot.is_paper?'Paper':'Live'}</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bot-row-right">
+            ${botRunning
+              ? `<button class="btn-xs btn-xs-stop" onclick="stopBotInList(event,${bot.id})">⬛ Stop</button>`
+              : `<button class="btn-xs btn-xs-start" onclick="startBotInList(event,${bot.id})">▶ Start</button>`}
+            <span class="bot-arrow">›</span>
+          </div>
+        </div>`;
+    }).join('') : `<div class="bot-row"><div class="bot-row-left"><div class="bot-row-info"><div class="bot-row-name" style="color:var(--muted)">No bots yet</div></div></div></div>`;
+
+    return `
+    <div class="bot-section">
+      <div class="bot-section-hdr">
+        <div class="bot-exc-left">
+          <div class="bot-exc-logo" style="background:${cfg.bg||'#1E1E35'};color:${cfg.text||'#E2E8F0'}">${cfg.logo||'?'}</div>
+          <div>
+            <div class="bot-exc-name">${displayName}</div>
+            <div class="bot-exc-sub">$${allPositions.filter(p=>excBots.some(b=>b.id===p.bot_id)).reduce((s,p)=>s+p.total_invested,0).toFixed(2)} total</div>
+          </div>
+        </div>
+        <div class="bot-exc-stats">
+          <div><div class="bot-exc-stat-lbl">Bots</div><div class="bot-exc-stat-val"><span style="color:var(--green)">${activeBots}</span>/${totalBots}</div></div>
+          <div><div class="bot-exc-stat-lbl">Trades</div><div class="bot-exc-stat-val">${allPositions.filter(p=>excBots.some(b=>b.id===p.bot_id)).length}</div></div>
+        </div>
+      </div>
+      <div class="bot-cards-list">${botRows}</div>
+      <div class="add-bot-row" onclick="alert('Bot creation wizard coming soon!')">
+        <span style="color:var(--accent);font-size:14px">+</span>
+        <span class="add-bot-text">Create New Bot on ${displayName}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function startBotInList(e) {
+  e.stopPropagation();
+  await fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
+  setTimeout(async ()=>{await fetchPositions();await renderBotsList();},1000);
+}
+async function stopBotInList(e) {
+  e.stopPropagation();
+  await fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
+  setTimeout(async ()=>await renderBotsList(),1000);
+}
+
+function openBotDetail(name, running) {
+  currentBotRunning = running;
+  document.getElementById('bots-l1').style.display = 'none';
+  document.getElementById('bots-l2').style.display = 'block';
+  document.getElementById('bdTitle').textContent = name;
+  updateBdHeader();
+  applyBotFilter();
+}
+function backToBots() {
+  document.getElementById('bots-l1').style.display = 'block';
+  document.getElementById('bots-l2').style.display = 'none';
+  renderBotsList();
+}
+function updateBdHeader() {
+  const badge = document.getElementById('bdBadge');
+  const btn   = document.getElementById('bdToggleBtn');
+  if (currentBotRunning) {
+    badge.textContent='● Live'; badge.className='bot-detail-badge';
+    btn.textContent='⬛ Stop Bot'; btn.className='btn btn-red btn-sm';
+  } else {
+    badge.textContent='○ Stopped'; badge.className='bot-detail-badge off';
+    btn.textContent='▶ Start Bot'; btn.className='btn btn-green btn-sm';
+  }
+}
+async function toggleBot() {
+  if (currentBotRunning) await fetch(`${API}/stop`, {method: 'POST', headers: authHeaders()});
+  else await fetch(`${API}/start`, {method: 'POST', headers: authHeaders()});
+  currentBotRunning = !currentBotRunning;
+  updateBdHeader();
+}
+
+function applyBotFilter() {
+  const search = (document.getElementById('bdSearch')?.value||'').toLowerCase();
+  let data = allPositions.filter(p => {
+    if (!p.coin.toLowerCase().includes(search)) return false;
+    const d = p.days_open||0;
+    if (botFilter==='profit') return p.pnl>=0;
+    if (botFilter==='loss')   return p.pnl<0;
+    if (botFilter==='dca')    return p.dca_count>0;
+    if (botFilter==='stuck')  return d>30;
+    if (botFilter==='tp')     return p.tp_armed;
+    return true;
+  });
+  data.sort((a,b)=>{
+    let av=a[botSort]??0, bv=b[botSort]??0;
+    if(typeof av==='string') return botSortAsc?av.localeCompare(bv):bv.localeCompare(av);
+    return botSortAsc?av-bv:bv-av;
+  });
+  const invested = data.reduce((s,p)=>s+p.total_invested,0);
+  const pnl = data.reduce((s,p)=>s+p.pnl,0);
+  const pct = invested>0?(pnl/invested*100).toFixed(2):'0.00';
+  document.getElementById('bd-open').textContent = data.length;
+  document.getElementById('bd-inv').textContent = '$'+invested.toFixed(2);
+  const pe = document.getElementById('bd-pnl');
+  pe.textContent = (pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);
+  pe.style.color = pnl>=0?'var(--green)':'var(--red)';
+  const pp = document.getElementById('bd-pnlpct');
+  pp.textContent = (pnl>=0?'+':'')+pct+'%';
+  pp.style.color = pnl>=0?'var(--green)':'var(--red)';
+  document.getElementById('bd-count').textContent = data.length+' open';
+  const tbody = document.getElementById('bdTable');
+  if (!data.length) {
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-icon">🤖</div><div class="empty-text">No positions match filter</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(pos => {
+    const pc   = pos.pnl>=0?'var(--green)':'var(--red)';
+    const sign = pos.pnl>=0?'+':'';
+    const d    = pos.days_open||0;
+    const dc   = d>60?'var(--red)':d>30?'var(--amber)':'var(--text3)';
+    const st   = statusInfo(pos);
+    return `<tr>
+      <td><div class="td-coin"><strong>${pos.coin.replace('/USDT','')}</strong></div></td>
+      <td>${fmtPrice(pos.avg_cost)}</td>
+      <td>${fmtPrice(pos.current_price)}</td>
+      <td style="color:${pos.dca_count>0?'var(--purple)':'var(--text3)'};font-weight:700">${pos.dca_count}</td>
+      <td style="color:${dc}">${d}d</td>
+      <td style="color:${pc};font-weight:700">${sign}${pos.pnl_pct}%</td>
+      <td style="color:${pc}">${sign}$${Math.abs(pos.pnl).toFixed(4)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td><button class="close-btn" onclick="closePos(${pos.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function setBotFilter(type,el){
+  botFilter=type;
+  document.querySelectorAll('#bots-l2 .f-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  applyBotFilter();
+}
+function sortBd(key){
+  if(botSort===key)botSortAsc=!botSortAsc;
+  else{botSort=key;botSortAsc=true;}
+  applyBotFilter();
+}
+
+// ── HISTORY ───────────────────────────────────────────────
+
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Bots');
+    buildNav();
+    buildUserRow();
+    buildMobileNav();
+    
+    // Load data
+    await fetchBotCount();
+    await renderBotsList();
+});
 </script>
 </body>
 </html>
