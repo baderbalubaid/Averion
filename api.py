@@ -295,7 +295,7 @@ def get_scalper_variants(payload: dict = Depends(verify_token)):
         cur = conn.cursor()
         cur.execute("""
             SELECT name, bot_params::text
-            FROM bots WHERE method='E58' AND is_research=FALSE
+            FROM bots WHERE method='S58' AND is_research=FALSE
             ORDER BY name
         """)
         rows = cur.fetchall()
@@ -333,7 +333,7 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
         params = _json.loads(row[0]) if row[0] else {}
 
         # Create bot name e.g. S1 from E58-1
-        bot_name = variant_name.replace('E58-', 'S')
+        bot_name = 'S-live-' + variant_name.replace('S', '')
 
         # Check if already exists for this user
         cur.execute("SELECT id FROM bots WHERE user_id=%s AND name=%s", (user_id, bot_name))
