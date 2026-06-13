@@ -66,7 +66,9 @@ function buildNav() {
     document.body.appendChild(dbg);
     if (!nav) return;
 
-    nav.innerHTML = NAV_ITEMS.filter(item => item.url !== currentPath).map(item => `
+    const filtered = NAV_ITEMS.filter(item => item.url !== currentPath);
+    console.log('filtered count:', filtered.length, 'from:', NAV_ITEMS.length);
+    nav.innerHTML = filtered.map(item => `
         <a href="${item.url}" class="nav-link" style="text-decoration:none!important;color:inherit">
             <span class="nav-icon">${item.icon}</span>
             <span>${item.label}</span>
