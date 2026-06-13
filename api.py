@@ -336,12 +336,14 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
             raise HTTPException(status_code=404, detail='Variant not found')
         params = _json.loads(row[0]) if row[0] else {}
 
-        # Create bot name e.g. S1, S1-2, S1-3
-        base_name = variant_name
-        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND (name=%s OR name LIKE %s)", 
-                    (user_id, base_name, base_name + '-%'))
-        count = cur.fetchone()[0]
-        bot_name = base_name if count == 0 else f'{base_name}-{count + 1}'
+        # Use provided name or auto-generate
+        bot_name = data.get('bot_name', '').strip()
+        if not bot_name:
+            base_name = variant_name
+            cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND (name=%s OR name LIKE %s)", 
+                        (user_id, base_name, base_name + '-%'))
+            count = cur.fetchone()[0]
+            bot_name = base_name if count == 0 else f'{base_name}-{count + 1}'
 
         cur.execute("""
             INSERT INTO bots (
