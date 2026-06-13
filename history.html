@@ -111,6 +111,7 @@ const HISTORY_COLS = [
   {key:'exit_price',  label:'Exit Price',  show:true},
   {key:'dca_count',   label:'DCA#',        show:true},
   {key:'pnl_pct',     label:'P&L%',        show:true},
+  {key:'hold_time',   label:'Hold Time',   show:true},
   {key:'pnl_usd',     label:'P&L$',        show:true},
   {key:'hold',        label:'Hold Time',   show:false},
   {key:'exit_reason', label:'Exit',        show:true},
@@ -226,7 +227,7 @@ function renderHistory(data) {
   document.getElementById('hs-tbl-count').textContent = count+' trades';
 
   const pe = document.getElementById('hs-profit');
-  pe.textContent = (profit>=0?'+':'')+'$'+Math.abs(profit).toFixed(2);
+  pe.textContent = fmtPnl(profit);
   pe.style.color = profit>=0?'var(--green)':'var(--red)';
 
   document.getElementById('hs-winrate').textContent = count>0?Math.round(wins/count*100)+'%':'0%';
@@ -237,7 +238,7 @@ function renderHistory(data) {
   fe.style.color = fees>0?'var(--amber)':'var(--text3)';
 
   const ne = document.getElementById('hs-net');
-  ne.textContent = (net>=0?'+':'')+'$'+Math.abs(net).toFixed(2);
+  ne.textContent = fmtPnl(net);
   ne.style.color = net>=0?'var(--green)':'var(--red)';
 
   const visibleCols = HISTORY_COLS.filter(c=>c.show);
@@ -259,14 +260,19 @@ function renderHistory(data) {
     return `<tr>${visibleCols.map(c=>{
       if(c.key==='coin')        return `<td><div class="td-coin"><strong>${(h.coin||'—').replace('/USDT','')}</strong></div></td>`;
       if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
-      if(c.key==='entry_date')  return `<td><span class="td-muted">${h.opened_at?new Date(h.opened_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
-      if(c.key==='exit_date')   return `<td><span class="td-muted">${h.closed_at?new Date(h.closed_at+'Z').toLocaleDateString('en-SA',{timeZone:'Asia/Riyadh'}):'—'}</span></td>`;
+      if(c.key==='entry_date')  return `<td><span class="td-muted">${fmtDate(h.entry_date || h.opened_at)}</span></td>`;
+      if(c.key==='exit_date')   return `<td><span class="td-muted">${fmtDate(h.exit_date || h.closed_at)}</span></td>`;
       if(c.key==='entry_price') return `<td>${fmtPrice(ep)}</td>`;
       if(c.key==='avg_cost')    return `<td>${fmtPrice(h.avg_cost||ep)}</td>`;
       if(c.key==='exit_price')  return `<td>${fmtPrice(xp)}</td>`;
       if(c.key==='dca_count')   return `<td style="color:var(--purple)">${h.dca_count||0}</td>`;
       if(c.key==='pnl_pct')     return `<td style="color:${pc};font-weight:600">${sign}${pct}%</td>`;
-      if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${sign}$${Math.abs(pnl).toFixed(4)}</td>`;
+      if(c.key==='hold_time') {
+        const secs = h.hold_seconds || 0;
+        const timeStr = secs >= 60 ? Math.floor(secs/60)+'m '+( secs%60)+'s' : secs+'s';
+        return `<td><span class="td-muted">${timeStr}</span></td>`;
+      }
+      if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${fmtPnl(pnl)}</td>`;
       if(c.key==='hold')        return `<td><span class="td-muted">${h.days_held||0}d</span></td>`;
       if(c.key==='exit_reason') return `<td><span class="badge badge-closed">${h.exit_reason||'closed'}</span></td>`;
       if(c.key==='fee'){
