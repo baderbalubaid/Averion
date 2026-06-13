@@ -150,6 +150,16 @@ function fmtPct(n) {
     return sign + Math.abs(val).toFixed(2) + '%';
 }
 
+function parseUTC(utcStr) {
+    if (!utcStr || utcStr === 'None' || utcStr === 'null') return null;
+    // Ensure UTC parsing - add Z if missing
+    const s = utcStr.toString().trim();
+    if (s.endsWith('Z') || s.includes('+') || s.match(/[+-]\d{2}:\d{2}$/)) {
+        return new Date(s);
+    }
+    return new Date(s + 'Z'); // treat as UTC
+}
+
 function is12h() {
     return localStorage.getItem('averion_time_format') === '12h';
 }
@@ -157,7 +167,7 @@ function is12h() {
 function fmtLocal(utcStr) {
     if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
     try {
-        return new Date(utcStr).toLocaleString('en-US', {
+        return parseUTC(utcStr).toLocaleString('en-US', {
             timeZone: getUserTimezone(),
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -169,7 +179,7 @@ function fmtLocal(utcStr) {
 function fmtDate(utcStr) {
     if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
     try {
-        return new Date(utcStr).toLocaleString('en-US', {
+        return parseUTC(utcStr).toLocaleString('en-US', {
             timeZone: getUserTimezone(),
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit',
@@ -181,7 +191,7 @@ function fmtDate(utcStr) {
 function fmtTime(utcStr) {
     if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
     try {
-        return new Date(utcStr).toLocaleString('en-US', {
+        return parseUTC(utcStr).toLocaleString('en-US', {
             timeZone: getUserTimezone(),
             hour: '2-digit', minute: '2-digit', second: '2-digit',
             hour12: is12h()
@@ -191,7 +201,7 @@ function fmtTime(utcStr) {
 
 function fmtAgo(utcStr) {
     if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
-    const diff = Date.now() - new Date(utcStr).getTime();
+    const diff = Date.now() - parseUTC(utcStr).getTime();
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);

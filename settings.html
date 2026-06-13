@@ -126,7 +126,6 @@ function loadTimeFormatUI() {
 }
 
 function saveTimezone(tz) {
-    alert('Saving: ' + tz);
     if (tz === 'auto') {
         localStorage.removeItem('averion_timezone');
         const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -134,14 +133,10 @@ function saveTimezone(tz) {
     } else {
         localStorage.setItem('averion_timezone', tz);
         document.getElementById('tz-current').textContent = tz;
-        alert('Saved! Check: ' + localStorage.getItem('averion_timezone'));
     }
 }
 
 function loadTimezoneUI() {
-    // Debug - show saved value
-    const dbg = localStorage.getItem('averion_timezone');
-    document.getElementById('tz-current').textContent = 'Saved: ' + (dbg || 'nothing');
     const saved = localStorage.getItem('averion_timezone');
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const sel = document.getElementById('tz-select');
