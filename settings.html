@@ -137,6 +137,9 @@ function saveTimezone(tz) {
 }
 
 function loadTimezoneUI() {
+    // Debug - show saved value
+    const dbg = localStorage.getItem('averion_timezone');
+    document.getElementById('tz-current').textContent = 'Saved: ' + (dbg || 'nothing');
     const saved = localStorage.getItem('averion_timezone');
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const sel = document.getElementById('tz-select');
