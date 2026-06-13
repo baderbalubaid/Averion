@@ -378,7 +378,7 @@ def home_stats(payload: dict = Depends(verify_token)):
         cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE", (user_id,))
         active_bots = cur.fetchone()[0]
         cur.execute("""
-            SELECT COUNT(*), COALESCE(SUM(base_order),0) 
+            SELECT COUNT(*), COALESCE(SUM(lp.base_order),0) 
             FROM live_positions lp JOIN bots b ON lp.bot_id=b.id 
             WHERE lp.user_id=%s AND lp.status='open' AND b.is_research=FALSE AND b.is_template=FALSE
         """, (user_id,))
