@@ -49,10 +49,10 @@ function setFilter(type, el) {
     currentFilter = type;
     document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
     if (el) el.classList.add('active');
-    renderBots();
+    await renderBots();
 }
 
-function renderBots() {
+async function renderBots() {
     const list = document.getElementById('botsList');
     let data = allBots;
 
