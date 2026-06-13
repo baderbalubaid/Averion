@@ -578,7 +578,7 @@ def toggle_bot(bot_id: int, toggle: BotToggle,
 # ═══════════════════════════════
 # EXCHANGES
 # ═══════════════════════════════
-@app.get('/exchanges')
+@app.get('/api/exchanges')
 def get_exchanges(payload: dict = Depends(verify_token)):
     exchanges = db.get_user_exchanges(payload['user_id'])
     return [{'id': e[0], 'exchange': e[1],
@@ -1021,7 +1021,7 @@ class ExchangeCreate(BaseModel):
    passphrase: Optional[str] = None
    ip_whitelist_confirmed: bool = False
 
-@app.post('/exchanges')
+@app.post('/api/exchanges')
 def add_exchange(req: ExchangeCreate,
                 payload: dict = Depends(verify_token)):
    from cryptography.fernet import Fernet
