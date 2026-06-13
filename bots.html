@@ -74,7 +74,7 @@ function renderBots() {
         const statusColor = running ? 'var(--green)' : 'var(--text3)';
         const statusLabel = running ? '● Running' : '○ Stopped';
         return `
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
+        <div onclick="window.location='/bots/${bot.id}'" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                 <div style="font-size:13px;font-weight:700">${bot.name}</div>
                 <div style="font-size:11px;color:${statusColor};font-weight:600">${statusLabel}</div>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Averion — Bot Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=5">
+</head>
+<body>
+<div id="app" style="display:flex;width:100%;height:100vh">
+    <div id="sidebar-placeholder"></div>
+    <div class="main">
+        <div id="topbar-placeholder"></div>
+        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <button onclick="window.location='/bots'" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0">‹</button>
+                <div style="flex:1">
+                    <div style="font-size:15px;font-weight:800" id="bot-name">Loading...</div>
+                    <div style="font-size:11px;color:var(--text3)" id="bot-status">—</div>
+                </div>
+                <button id="toggle-btn" onclick="toggleBot()" 
+                    style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none">
+                    —
+                </button>
+            </div>
+
+            <!-- 4 Stats -->
+            <div class="hero-stats" style="margin-bottom:16px">
+                <div class="hero-card">
+                    <div class="hero-icon">📊</div>
+                    <div class="hero-lbl">Open</div>
+                    <div class="hero-val" id="stat-open">0</div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon">💰</div>
+                    <div class="hero-lbl">Invested</div>
+                    <div class="hero-val" id="stat-invested">$0</div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon">📈</div>
+                    <div class="hero-lbl">P&L$</div>
+                    <div class="hero-val" id="stat-pnl">$0</div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon">📉</div>
+                    <div class="hero-lbl">P&L%</div>
+                    <div class="hero-val" id="stat-pnlpct">0%</div>
+                </div>
+            </div>
+
+            <!-- Search + Filter -->
+            <input class="search-input" id="searchInput" onkeyup="applyFilter()"
+                placeholder="🔍 Search coin..." style="width:100%;margin-bottom:10px">
+            <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">
+                <button class="f-btn active" onclick="setFilter('all',this)">All</button>
+                <button class="f-btn" onclick="setFilter('profit',this)">📈 Profit</button>
+                <button class="f-btn" onclick="setFilter('loss',this)">📉 Loss</button>
+                <button class="f-btn" onclick="setFilter('tp',this)">🚀 TP Armed</button>
+                <button class="f-btn" onclick="setFilter('stuck',this)">⏳ Stuck</button>
+            </div>
+
+            <!-- Positions table -->
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+                <table style="width:100%;border-collapse:collapse;min-width:500px">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3)">Coin</th>
+                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">Avg Cost</th>
+                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">Current</th>
+                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">DCA#</th>
+                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">P&L%</th>
+                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">P&L$</th>
+                            <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3)">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="posTable">
+                        <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="bottom-nav" id="bottom-nav"></div>
+<script src="/base.js?v=5"></script>
+<script>
+const botId = parseInt(window.location.pathname.split('/').pop());
+let botData = null;
+let allPositions = [];
+let currentFilter = 'all';
+
+function statusInfo(pos) {
+    const d = pos.days_open || 0;
+    if (pos.tp_armed) return {label:'🚀 TP Armed', color:'var(--accent)'};
+    if (d > 60) return {label:'🔴 Critical', color:'var(--red)'};
+    if (d > 30) return {label:'🟡 Stuck', color:'var(--amber)'};
+    return {label:'🟢 Active', color:'var(--green)'};
+}
+
+function setFilter(type, el) {
+    currentFilter = type;
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    applyFilter();
+}
+
+function applyFilter() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    let data = allPositions;
+    if (currentFilter === 'profit') data = data.filter(p => p.pnl > 0);
+    else if (currentFilter === 'loss') data = data.filter(p => p.pnl < 0);
+    else if (currentFilter === 'tp') data = data.filter(p => p.tp_armed);
+    else if (currentFilter === 'stuck') data = data.filter(p => (p.days_open||0) > 30);
+    if (search) data = data.filter(p => p.coin.toLowerCase().includes(search));
+    renderTable(data);
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('posTable');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No positions</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(p => {
+        const pnl = parseFloat(p.pnl || 0);
+        const pnlPct = parseFloat(p.pnl_pct || 0);
+        const color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        const st = statusInfo(p);
+        return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.avg_cost)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.dca_count||0}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</td>
+            <td style="padding:8px 10px;font-size:10px;color:${st.color}">${st.label}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updateStats() {
+    const total = allPositions.reduce((s,p) => s+(p.total_invested||0), 0);
+    const pnl = allPositions.reduce((s,p) => s+(p.pnl||0), 0);
+    const pnlPct = total > 0 ? (pnl/total*100) : 0;
+    document.getElementById('stat-open').textContent = allPositions.length;
+    document.getElementById('stat-invested').textContent = '$'+total.toFixed(0);
+    const pnlEl = document.getElementById('stat-pnl');
+    pnlEl.textContent = (pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);
+    pnlEl.style.color = pnl>=0?'var(--green)':'var(--red)';
+    const pctEl = document.getElementById('stat-pnlpct');
+    pctEl.textContent = (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%';
+    pctEl.style.color = pnlPct>=0?'var(--green)':'var(--red)';
+}
+
+function updateToggleBtn() {
+    const btn = document.getElementById('toggle-btn');
+    const running = botData && botData.trading_on && botData.status === 'open';
+    btn.textContent = running ? '⬛ Stop' : '▶ Start';
+    btn.style.background = running ? 'var(--red)20' : 'var(--green)20';
+    btn.style.color = running ? 'var(--red)' : 'var(--green)';
+    
+    const statusEl = document.getElementById('bot-status');
+    statusEl.textContent = running ? '● Running' : '○ Stopped';
+    statusEl.style.color = running ? 'var(--green)' : 'var(--text3)';
+}
+
+async function toggleBot() {
+    if (!botData) return;
+    const newState = !(botData.trading_on && botData.status === 'open');
+    try {
+        await fetch(`${API}/bots/${botId}/toggle`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({trading_on: newState})
+        });
+        botData.trading_on = newState;
+        updateToggleBtn();
+    } catch(e) { console.error(e); }
+}
+
+async function loadBot() {
+    try {
+        const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
+        const bots = await res.json();
+        botData = bots.find(b => b.id === botId);
+        if (!botData) {
+            document.getElementById('bot-name').textContent = 'Bot not found';
+            return;
+        }
+        document.getElementById('bot-name').textContent = botData.name;
+        updateToggleBtn();
+    } catch(e) { console.error(e); }
+}
+
+async function loadPositions() {
+    try {
+        const res = await fetch(`${API}/positions`, {headers: authHeaders()});
+        const all = await res.json();
+        allPositions = all.filter(p => p.bot_id === botId);
+        updateStats();
+        applyFilter();
+    } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Bot Detail');
+    buildNav();
+    buildUserRow();
+    buildMobileNav();
+    await loadBot();
+    await loadPositions();
+});
+</script>
+</body>
+</html>
