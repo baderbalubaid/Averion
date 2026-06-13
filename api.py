@@ -295,7 +295,7 @@ def get_scalper_variants(payload: dict = Depends(verify_token)):
         cur = conn.cursor()
         cur.execute("""
             SELECT name, bot_params::text
-            FROM bots WHERE method='S58' AND is_research=FALSE
+            FROM bots WHERE method='S58' AND is_template=TRUE
             ORDER BY name
         """)
         rows = cur.fetchall()
