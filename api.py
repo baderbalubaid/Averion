@@ -382,7 +382,7 @@ def home_stats(payload: dict = Depends(verify_token)):
         today_pnl, today_closed = float(row2[0]), int(row2[1])
         cur.execute("SELECT COALESCE(SUM(p.total_sold_usdt - p.total_invested),0) FROM positions p JOIN bots b ON p.bot_id=b.id WHERE p.user_id=%s AND p.status='closed' AND b.is_research=FALSE", (user_id,))
         total_profit = float(cur.fetchone()[0])
-        cur.execute("SELECT COALESCE(SUM(amount_usdt),0) FROM fee_debt WHERE user_id=%s AND paid_at IS NULL", (user_id,))
+        cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f JOIN positions p ON f.position_id=p.id JOIN bots b ON p.bot_id=b.id WHERE f.user_id=%s AND f.paid_at IS NULL AND b.is_research=FALSE", (user_id,))
         fee_debt = float(cur.fetchone()[0])
     return {
         'active_bots': int(active_bots),
