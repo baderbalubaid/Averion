@@ -150,6 +150,10 @@ function fmtPct(n) {
     return sign + Math.abs(val).toFixed(2) + '%';
 }
 
+function is12h() {
+    return localStorage.getItem('averion_time_format') === '12h';
+}
+
 function fmtLocal(utcStr) {
     if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
     try {
@@ -157,7 +161,7 @@ function fmtLocal(utcStr) {
             timeZone: getUserTimezone(),
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
+            hour12: is12h()
         });
     } catch(e) { return utcStr; }
 }
@@ -169,7 +173,7 @@ function fmtDate(utcStr) {
             timeZone: getUserTimezone(),
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit',
-            hour12: false
+            hour12: is12h()
         });
     } catch(e) { return utcStr; }
 }
@@ -180,7 +184,7 @@ function fmtTime(utcStr) {
         return new Date(utcStr).toLocaleString('en-US', {
             timeZone: getUserTimezone(),
             hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
+            hour12: is12h()
         });
     } catch(e) { return utcStr; }
 }
