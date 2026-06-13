@@ -116,7 +116,8 @@
 <script>
 function saveTimeFormat(fmt) {
     localStorage.setItem('averion_time_format', fmt);
-    document.getElementById('tf-current').textContent = fmt === '24h' ? '24-hour' : '12-hour';
+    const readback = localStorage.getItem('averion_time_format');
+    document.getElementById('tf-current').textContent = (fmt === '24h' ? '24-hour' : '12-hour') + ' ✅ saved=' + readback;
 }
 
 function loadTimeFormatUI() {
