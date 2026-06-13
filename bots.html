@@ -76,6 +76,7 @@ async function renderBots() {
         if (pr.ok) positions = await pr.json();
     } catch(e) {}
 
+    console.log('Rendering', data.length, 'bots, positions:', positions.length);
     list.innerHTML = data.map(bot => {
         const running = bot.trading_on && bot.status === 'open';
         const statusColor = running ? 'var(--green)' : 'var(--text3)';
