@@ -5,31 +5,119 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Averion — Reports</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh">
     <div id="sidebar-placeholder"></div>
-    <div class="main" id="main-content">
+    <div class="main">
         <div id="topbar-placeholder"></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
-            <div style="font-size:48px">🚧</div>
-            <div style="font-size:18px;font-weight:600">Reports</div>
-            <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+        <div style="flex:1;overflow-y:auto;padding:16px">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div>
+                    <div style="font-size:15px;font-weight:800">Research Reports</div>
+                    <div style="font-size:11px;color:var(--text3);margin-top:2px">Generated from live paper trading data</div>
+                </div>
+            </div>
+
+            <!-- DCA Reports -->
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">DCA Methods</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_REPORT_FULL.md" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📊</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">DCA Research Report</div>
+                        <div style="font-size:11px;color:var(--text3)">Full methods analysis · RARS · Robustness · BTC Regime</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ Open</div>
+                </a>
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_DCA_RARS_TRADES.csv" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📋</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Top 20 DCA · RARS Trades</div>
+                        <div style="font-size:11px;color:var(--text3)">All trades for top 20 bots by RARS score</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ CSV</div>
+                </a>
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_DCA_SCORE_TRADES.csv" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📋</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Top 20 DCA · Score Trades</div>
+                        <div style="font-size:11px;color:var(--text3)">All trades for top 20 bots by Champ Score</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ CSV</div>
+                </a>
+            </div>
+
+            <!-- Scalper Reports -->
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Scalper E58</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_REPORT_SCALPER.md" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">⚡</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Scalper Research Report</div>
+                        <div style="font-size:11px;color:var(--text3)">120 bots · Trigger/Hold analysis · BTC Regime</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ Open</div>
+                </a>
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/SCALPER_RESULTS.md" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📅</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Scalper Monthly P&L</div>
+                        <div style="font-size:11px;color:var(--text3)">Daily P&L tracker · Top 20 by Score</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ Open</div>
+                </a>
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_SCALPER_RARS_TRADES.csv" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📋</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Top 20 Scalper · RARS Trades</div>
+                        <div style="font-size:11px;color:var(--text3)">All trades for top 20 scalper bots by avg P&L</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ CSV</div>
+                </a>
+                <a href="https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_SCALPER_SCORE_TRADES.csv" target="_blank"
+                   style="text-decoration:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+                    <div style="font-size:24px">📋</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Top 20 Scalper · Score Trades</div>
+                        <div style="font-size:11px;color:var(--text3)">All trades for top 20 scalper bots by Champ Score</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--accent)">↗ CSV</div>
+                </a>
+            </div>
+
+            <!-- Generate button -->
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px">Regenerate All Reports</div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Run on server to update with latest data</div>
+                <code style="background:var(--bg3);padding:8px 12px;border-radius:8px;font-size:11px;color:var(--accent);display:block">
+                    bash /home/averion/Averion/generate_reports.sh
+                </code>
+            </div>
+
         </div>
     </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
-<script src="/base.js"></script>
+<script src="/base.js?v=4"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!requireAuth()) return;
-        document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-        document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Reports');
-        buildNav();
-        buildUserRow();
-        buildMobileNav();
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Reports');
+    buildNav();
+    buildUserRow();
+    buildMobileNav();
+});
 </script>
 </body>
 </html>
