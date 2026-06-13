@@ -121,7 +121,8 @@ function saveTimeFormat(fmt) {
 
 function loadTimeFormatUI() {
     const saved = localStorage.getItem('averion_time_format') || '24h';
-    document.getElementById('tf-select').value = saved;
+    const sel = document.getElementById('tf-select');
+    sel.value = saved;
     document.getElementById('tf-current').textContent = saved === '24h' ? '24-hour' : '12-hour';
 }
 
@@ -142,7 +143,23 @@ function loadTimezoneUI() {
     const sel = document.getElementById('tz-select');
     const desc = document.getElementById('tz-current');
     if (saved) {
-        sel.value = saved;
+        // Try to set select value
+        let found = false;
+        for (let opt of sel.options) {
+            if (opt.value === saved) {
+                sel.value = saved;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            // Add option if not in list
+            const opt = document.createElement('option');
+            opt.value = saved;
+            opt.textContent = saved;
+            sel.appendChild(opt);
+            sel.value = saved;
+        }
         desc.textContent = saved;
     } else {
         sel.value = 'auto';
