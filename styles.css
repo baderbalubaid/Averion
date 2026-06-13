@@ -7,7 +7,7 @@
   --text:#F0F0FF;--text2:#8888AA;--text3:#55556A;
 }
 
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
 
 /* ── SIDEBAR (desktop only) ── */
 .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh}
@@ -31,7 +31,7 @@ a.nav-link,a.nav-link:hover,a.nav-link:visited{text-decoration:none!important;co
 .user-plan{font-size:10px;color:var(--text3)}
 
 /* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh;min-height:0}
+.main{flex:1;display:flex;flex-direction:column;min-height:0}
 
 /* ── TOPBAR ── */
 .topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
