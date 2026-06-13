@@ -198,7 +198,7 @@ async function loadBot() {
 
 async function loadPositions() {
     try {
-        const res = await fetch(`${API}/positions`, {headers: authHeaders()});
+        const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
         const all = await res.json();
         allPositions = all.filter(p => p.bot_id === botId);
         updateStats();

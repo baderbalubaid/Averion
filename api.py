@@ -377,15 +377,29 @@ def home_stats(payload: dict = Depends(verify_token)):
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE", (user_id,))
         active_bots = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*), COALESCE(SUM(total_invested),0) FROM positions p JOIN bots b ON p.bot_id=b.id WHERE p.user_id=%s AND p.status='open' AND b.is_research=FALSE", (user_id,))
+        cur.execute("""
+            SELECT COUNT(*), COALESCE(SUM(base_order),0) 
+            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id 
+            WHERE lp.user_id=%s AND lp.status='open' AND b.is_research=FALSE AND b.is_template=FALSE
+        """, (user_id,))
         row = cur.fetchone()
         open_trades, total_invested = row[0], float(row[1])
-        cur.execute("SELECT COUNT(*) FROM positions p JOIN bots b ON p.bot_id=b.id WHERE p.user_id=%s AND p.status='open' AND p.queued=TRUE AND b.is_research=FALSE", (user_id,))
-        dca_queue = cur.fetchone()[0]
-        cur.execute("SELECT COALESCE(SUM(p.total_sold_usdt - p.total_invested),0), COUNT(*) FROM positions p JOIN bots b ON p.bot_id=b.id WHERE p.user_id=%s AND p.status='closed' AND p.closed_at >= CURRENT_DATE AND b.is_research=FALSE", (user_id,))
+        dca_queue = 0  # Scalper has no DCA queue
+        cur.execute("""
+            SELECT COALESCE(SUM(lp.pnl_usdt),0), COUNT(*) 
+            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s AND lp.status='closed' 
+            AND lp.exit_time >= CURRENT_DATE
+            AND b.is_research=FALSE AND b.is_template=FALSE
+        """, (user_id,))
         row2 = cur.fetchone()
         today_pnl, today_closed = float(row2[0]), int(row2[1])
-        cur.execute("SELECT COALESCE(SUM(p.total_sold_usdt - p.total_invested),0) FROM positions p JOIN bots b ON p.bot_id=b.id WHERE p.user_id=%s AND p.status='closed' AND b.is_research=FALSE", (user_id,))
+        cur.execute("""
+            SELECT COALESCE(SUM(lp.pnl_usdt),0) 
+            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s AND lp.status='closed'
+            AND b.is_research=FALSE AND b.is_template=FALSE
+        """, (user_id,))
         total_profit = float(cur.fetchone()[0])
         cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f JOIN positions p ON f.position_id=p.id JOIN bots b ON p.bot_id=b.id WHERE f.user_id=%s AND f.paid_at IS NULL AND b.is_research=FALSE", (user_id,))
         fee_debt = float(cur.fetchone()[0])
