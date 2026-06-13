@@ -59,13 +59,73 @@
         <!-- Exchanges -->
         <div class="settings-group">
           <div class="settings-group-title">Exchanges</div>
+          <div class="settings-row" onclick="window.location='/exchanges'">
+            <div>
+              <div class="settings-lbl">Manage Exchanges</div>
+              <div class="settings-desc">Add, edit or remove exchanges</div>
+            </div>
+            <div class="settings-val"><span class="settings-arrow">›</span></div>
+          </div>
+        </div>
 
+        <!-- Preferences -->
+        <div class="settings-group">
+          <div class="settings-group-title">Preferences</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-lbl">Timezone</div>
+              <div class="settings-desc" id="tz-current">Auto-detecting...</div>
+            </div>
+            <div class="settings-val">
+              <select id="tz-select" onchange="saveTimezone(this.value)"
+                style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;cursor:pointer">
+                <option value="auto">Auto-detect</option>
+                <option value="UTC">UTC</option>
+                <option value="Asia/Riyadh">Asia/Riyadh (GMT+3)</option>
+                <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                <option value="Asia/Kuwait">Asia/Kuwait (GMT+3)</option>
+                <option value="Asia/Bahrain">Asia/Bahrain (GMT+3)</option>
+                <option value="Asia/Qatar">Asia/Qatar (GMT+3)</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="Europe/Paris">Europe/Paris (GMT+1)</option>
+                <option value="America/New_York">America/New_York (GMT-5)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (GMT-8)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+              </select>
+            </div>
+          </div>
         </div>
     </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=5"></script>
 <script>
+function saveTimezone(tz) {
+    if (tz === 'auto') {
+        localStorage.removeItem('averion_timezone');
+        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        document.getElementById('tz-current').textContent = `Auto (${detected})`;
+    } else {
+        localStorage.setItem('averion_timezone', tz);
+        document.getElementById('tz-current').textContent = tz;
+    }
+}
+
+function loadTimezoneUI() {
+    const saved = localStorage.getItem('averion_timezone');
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const sel = document.getElementById('tz-select');
+    const desc = document.getElementById('tz-current');
+    if (saved) {
+        sel.value = saved;
+        desc.textContent = saved;
+    } else {
+        sel.value = 'auto';
+        desc.textContent = `Auto (${detected})`;
+    }
+}
+
 function renderSettings() {
   const excCount = getExchanges().length;
   const setExc = document.getElementById('set-exc-count');
@@ -126,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildUserRow();
     buildMobileNav();
     renderSettings();
+    loadTimezoneUI();
 });
 </script>
 </body>
