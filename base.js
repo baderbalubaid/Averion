@@ -60,7 +60,7 @@ function buildNav() {
     if (!nav) return;
 
     nav.innerHTML = NAV_ITEMS.map(item => `
-        <a href="${item.url}" class="nav-link ${currentPath === item.url ? 'active' : ''}" style="text-decoration:none">
+        <a href="${item.url}" class="nav-link ${currentPath === item.url ? 'active' : ''}" style="text-decoration:none!important;color:inherit">
             <span class="nav-icon">${item.icon}</span>
             <span>${item.label}</span>
         </a>
@@ -105,7 +105,7 @@ function buildMobileNav() {
     ];
 
     bnav.innerHTML = mobileItems.map(item => `
-        <a href="${item.url}" class="bnav-item ${currentPath === item.url ? 'active' : ''}">
+        <a href="${item.url}" class="bnav-item ${currentPath === item.url ? 'active' : ''}" style="text-decoration:none!important">
             <span class="bnav-icon">${item.icon}</span>
             <span class="bnav-label">${item.label}</span>
         </a>
