@@ -66,9 +66,6 @@
   </div>
 </div>
 
-<!-- ── FEATURE REQUEST MODAL ── -->
-<div class="modal-overlay" id="featureModal">
-
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=5"></script>
 <script>
@@ -405,7 +402,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
     document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Exchanges');
     buildNav();
-    document.querySelector('.sidebar').style.cssText = 'display:flex!important;width:220px;background:#0E0E1C;border-right:1px solid #1E1E35;flex-direction:column;height:100vh';
     buildUserRow();
     buildMobileNav();
     await initExchanges();
