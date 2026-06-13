@@ -57,6 +57,7 @@ const NAV_ITEMS = [
 
 function buildNav() {
     const currentPath = window.location.pathname;
+    console.log('currentPath:', currentPath);
     const nav = document.getElementById('sidebar-nav');
     if (!nav) return;
 
