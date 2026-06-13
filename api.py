@@ -288,6 +288,83 @@ def get_status():
 # ═══════════════════════════════
 # POSITIONS
 # ═══════════════════════════════
+@app.get('/scalper-variants')
+def get_scalper_variants(payload: dict = Depends(verify_token)):
+    import json as _json
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT name, bot_params::text
+            FROM bots WHERE method='E58' AND is_research=FALSE
+            ORDER BY name
+        """)
+        rows = cur.fetchall()
+    result = []
+    for name, params_raw in rows:
+        try:
+            p = _json.loads(params_raw) if params_raw else {}
+        except:
+            p = {}
+        result.append({
+            'name': name,
+            'trigger_pct': p.get('trigger_pct', '?'),
+            'window_sec': p.get('window_sec', '?'),
+            'hold_sec': p.get('hold_sec', '?'),
+            'stop_loss_pct': p.get('stop_loss_pct'),
+        })
+    return result
+
+@app.post('/bots/create-scalper')
+def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
+    import json as _json
+    user_id = payload['user_id']
+    exchange_id = data.get('exchange_id')
+    variant_name = data.get('variant_name')
+    base_order = float(data.get('base_order', 2))
+    max_capital = float(data.get('max_capital', 10))
+
+    # Get variant params from research bots
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT bot_params::text FROM bots WHERE name=%s AND method='E58'", (variant_name,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail='Variant not found')
+        params = _json.loads(row[0]) if row[0] else {}
+
+        # Create bot name e.g. S1 from E58-1
+        bot_name = variant_name.replace('E58-', 'S')
+
+        # Check if already exists for this user
+        cur.execute("SELECT id FROM bots WHERE user_id=%s AND name=%s", (user_id, bot_name))
+        if cur.fetchone():
+            raise HTTPException(status_code=400, detail=f'{bot_name} already exists')
+
+        cur.execute("""
+            INSERT INTO bots (
+                user_id, exchange_id, wallet_id, name, method,
+                direction, base_order, dca_percent, spacing_multiplier,
+                size_multiplier, take_profit_percent, trailing_percent,
+                base_coin, is_paper, trades_per_bot, trades_per_coin,
+                gate_dca_enabled, gate_timer_enabled, gate_timer_hours,
+                order_entry_type, order_dca_type, status,
+                trading_on, is_research, bot_params
+            ) VALUES (
+                %s, %s, 1, %s, 'S58',
+                'long', %s, 7, 1.0,
+                1.0, 5, 2,
+                'USDT', TRUE, 999, 1,
+                FALSE, FALSE, 24,
+                'market', 'market', 'open',
+                TRUE, FALSE, %s
+            ) RETURNING id
+        """, (user_id, exchange_id, bot_name, base_order,
+                _json.dumps(params)))
+        bot_id = cur.fetchone()[0]
+        conn.commit()
+
+    return {'bot_id': bot_id, 'name': bot_name, 'message': f'{bot_name} created successfully'}
+
 @app.get('/home-stats')
 def home_stats(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
