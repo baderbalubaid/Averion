@@ -154,7 +154,7 @@ def get_user_bots(user_id):
                    b.trades_per_coin, b.gate_dca_enabled,
                    b.gate_timer_enabled, b.gate_timer_hours,
                    b.order_entry_type, b.order_dca_type,
-                   e.exchange, e.custom_name
+                   e.exchange, e.custom_name, b.base_order
             FROM bots b
             JOIN exchanges e ON e.id = b.exchange_id
             WHERE b.user_id = %s AND b.status != 'deleted'
