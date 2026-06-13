@@ -92,6 +92,19 @@
 <script src="/base.js?v=3"></script>
 <script>
 const TOKEN = getToken();
+let _exchanges = [];
+let _botDetailData = [];
+let _bdSort = {key:'coin', dir:1};
+let _bdFilter = 'all';
+let _botListFilter = 'all';
+
+function setBotListFilter(type, el) {
+    _botListFilter = type;
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderBotsList();
+}
+
 
 function fmtPrice(p) {
   if (!p || p === 0) return '$0';
