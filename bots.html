@@ -125,6 +125,8 @@ async function fetchExchanges() {
         const res = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
         if (res.ok) {
             const data = await res.json();
+            // Normalize exchange data
+            data.forEach(e => { e.name = e.custom_name || e.exchange; e.is_paper = true; });
             setExchanges(data);
         }
     } catch(e) {}
@@ -151,8 +153,8 @@ async function renderBotsList() {
 
   container.innerHTML = exchanges.map(exc => {
     const cfg = EXC[exc.id] || {};
-    const displayName = exc.name || cfg.name || exc.id;
-    const excBots = bots.filter(b => b.exchange_name === exc.name || b.exchange === exc.id);
+    const displayName = exc.custom_name || exc.exchange_name || exc.exchange || exc.id;
+    const excBots = bots.filter(b => b.exchange_name === (exc.custom_name || exc.exchange) || b.exchange === exc.exchange);
     const activeBots = excBots.filter(b => b.trading_on && b.status === 'open').length;
     const totalBots = excBots.length;
 
