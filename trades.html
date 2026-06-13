@@ -136,7 +136,7 @@ function renderTable(data) {
 
 async function loadTrades() {
     try {
-        const res = await fetch(`${API}/positions`, {headers: authHeaders()});
+        const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
         allPositions = await res.json();
 
         // Update stats
