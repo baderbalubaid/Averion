@@ -128,11 +128,6 @@ let botSortAsc    = true;
 let currentBotRunning = true;
 let histDateFilter = 'all';
 
-// ── TAB NAVIGATION ────────────────────────────────────────
-const TAB_TITLES = {home:'Home',bots:'Bots',history:'History',settings:'Settings'};
-
-
-
 async function fetchHistory() {
   try {
     const res  = await fetch(`${API}/history`, {headers: authHeaders()});
