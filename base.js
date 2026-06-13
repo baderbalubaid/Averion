@@ -59,6 +59,11 @@ function buildNav() {
     const currentPath = window.location.pathname;
     console.log('currentPath:', currentPath);
     const nav = document.getElementById('sidebar-nav');
+    // Debug: show path visually
+    const dbg = document.createElement('div');
+    dbg.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;font-size:10px;padding:2px 6px;z-index:9999';
+    dbg.textContent = 'PATH:' + currentPath;
+    document.body.appendChild(dbg);
     if (!nav) return;
 
     nav.innerHTML = NAV_ITEMS.filter(item => item.url !== currentPath).map(item => `
