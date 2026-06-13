@@ -288,6 +288,37 @@ def get_status():
 # ═══════════════════════════════
 # POSITIONS
 # ═══════════════════════════════
+@app.get('/home-stats')
+def home_stats(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE", (user_id,))
+        active_bots = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*), COALESCE(SUM(total_invested),0) FROM positions WHERE user_id=%s AND status='open'", (user_id,))
+        row = cur.fetchone()
+        open_trades, total_invested = row[0], float(row[1])
+        cur.execute("SELECT COUNT(*) FROM positions WHERE user_id=%s AND status='open' AND queued=TRUE", (user_id,))
+        dca_queue = cur.fetchone()[0]
+        cur.execute("SELECT COALESCE(SUM(total_sold_usdt - total_invested),0), COUNT(*) FROM positions WHERE user_id=%s AND status='closed' AND closed_at >= CURRENT_DATE", (user_id,))
+        row2 = cur.fetchone()
+        today_pnl, today_closed = float(row2[0]), int(row2[1])
+        cur.execute("SELECT COALESCE(SUM(total_sold_usdt - total_invested),0) FROM positions WHERE user_id=%s AND status='closed'", (user_id,))
+        total_profit = float(cur.fetchone()[0])
+        cur.execute("SELECT COALESCE(SUM(amount),0) FROM fee_debt WHERE user_id=%s AND paid=FALSE", (user_id,))
+        fee_debt = float(cur.fetchone()[0])
+    return {
+        'active_bots': int(active_bots),
+        'open_trades': int(open_trades),
+        'total_invested': total_invested,
+        'dca_queue': int(dca_queue),
+        'today_pnl': today_pnl,
+        'today_closed': today_closed,
+        'total_profit': total_profit,
+        'fee_debt': fee_debt,
+    }
+
+# ═══════════════════════════════
 @app.get('/positions')
 def get_positions(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
@@ -1541,3 +1572,7 @@ def health_check():
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
 
+
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8080)
