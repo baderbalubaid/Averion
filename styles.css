@@ -296,6 +296,7 @@ tr:hover td{background:#6366F106}
   .sidebar{display:none}
   .main{height:100vh}
   .bottom-nav{display:flex}
+  .main > div:last-child{padding-bottom:80px}
   .page{padding:16px;padding-bottom:80px}
   .hero-stats{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
   .hero-card{padding:14px}
