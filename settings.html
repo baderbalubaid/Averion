@@ -5,31 +5,132 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Averion — Settings</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh">
     <div id="sidebar-placeholder"></div>
-    <div class="main" id="main-content">
+    <div class="main">
         <div id="topbar-placeholder"></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--text2)">
-            <div style="font-size:48px">🚧</div>
-            <div style="font-size:18px;font-weight:600">Settings</div>
-            <div style="font-size:13px">Coming soon — migrating from dashboard</div>
+        <div style="flex:1;overflow-y:auto;padding:24px">
+    <div id="tab-settings">
+      <div style="max-width:560px">
+
+        <!-- Profile -->
+        <div class="settings-group">
+          <div class="settings-group-title">Profile</div>
+          <div class="settings-row" onclick="editField('email')">
+            <div>
+              <div class="settings-lbl">Email Address</div>
+              <div class="settings-desc" id="set-email">bader@example.com</div>
+            </div>
+            <div class="settings-val"><span>Edit</span><span class="settings-arrow">›</span></div>
+          </div>
+          <div class="settings-row" onclick="editField('phone')">
+            <div>
+              <div class="settings-lbl">Phone Number</div>
+              <div class="settings-desc" id="set-phone">+966 — not set</div>
+            </div>
+            <div class="settings-val"><span>Edit</span><span class="settings-arrow">›</span></div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="settings-group">
+          <div class="settings-group-title">Security</div>
+          <div class="settings-row" onclick="toggle2FA()">
+            <div>
+              <div class="settings-lbl">Two-Factor Authentication</div>
+              <div class="settings-desc">Telegram code on new device login</div>
+            </div>
+            <button class="toggle" id="toggle2fa" style="background:var(--text3)">
+              <div class="toggle-thumb" id="thumb2fa" style="left:3px"></div>
+            </button>
+          </div>
+          <div class="settings-row" onclick="editField('password')">
+            <div>
+              <div class="settings-lbl">Change Password</div>
+              <div class="settings-desc">Last changed — never</div>
+            </div>
+            <div class="settings-val"><span>Change</span><span class="settings-arrow">›</span></div>
+          </div>
+        </div>
+
+        <!-- Exchanges -->
+        <div class="settings-group">
+          <div class="settings-group-title">Exchanges</div>
+          <div class="settings-row" onclick="switchTab('home', document.querySelector('.nav-link'))">
+
         </div>
     </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
-<script src="/base.js"></script>
+<script src="/base.js?v=4"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!requireAuth()) return;
-        document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-        document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Settings');
-        buildNav();
-        buildUserRow();
-        buildMobileNav();
-    });
+
+function renderSettings() {
+  const excCount = getExchanges().length;
+  const setExc = document.getElementById('set-exc-count');
+  if (setExc) setExc.textContent = `${excCount} connected`;
+}
+
+function editField(field) {
+  const labels = {
+    email:'New Email Address',
+    phone:'New Phone Number (+966...)',
+    password:'New Password'
+  };
+  const val = prompt(labels[field]||field);
+  if (!val) return;
+  if (field==='email') document.getElementById('set-email').textContent = val;
+  if (field==='phone') document.getElementById('set-phone').textContent = val;
+  alert('✅ Updated! (Full backend auth — Phase 6)');
+}
+
+function toggle2FA() {
+  const t  = document.getElementById('toggle2fa');
+  const th = document.getElementById('thumb2fa');
+  const on = th.style.left === '22px';
+  if (on) { t.style.background='var(--text3)'; th.style.left='3px'; }
+  else    { t.style.background='var(--accent)'; th.style.left='22px'; }
+}
+
+function toggleNotif(id) {
+  const t  = document.getElementById('toggle'+id.charAt(0).toUpperCase()+id.slice(1));
+  const th = document.getElementById('thumb'+id.charAt(0).toUpperCase()+id.slice(1));
+  const on = th.style.left === '22px';
+  if (on) { t.style.background='var(--text3)'; th.style.left='3px'; }
+  else    { t.style.background='var(--accent)'; th.style.left='22px'; }
+  if (id === 'telegram') {
+    document.getElementById('telegramSetup').style.display = on ? 'none' : 'flex';
+  }
+}
+
+function openFeatureRequest() {
+  document.getElementById('featureModal').classList.add('open');
+}
+function submitFeature() {
+  const text = document.getElementById('featureText').value.trim();
+  if (!text) { alert('Please describe the feature'); return; }
+  document.getElementById('featureModal').classList.remove('open');
+  document.getElementById('featureText').value = '';
+  alert('✅ Feature request submitted! Thank you.');
+}
+
+// ── CONTROLS ──────────────────────────────────────────────
+async function closePos(id) {
+  if (!confirm('Close this position?')) return;
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Settings');
+    buildNav();
+    buildUserRow();
+    buildMobileNav();
+    renderSettings();
+});
 </script>
 </body>
 </html>
