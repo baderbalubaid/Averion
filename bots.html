@@ -111,7 +111,7 @@ function setExchanges(list) { _exchanges = list; }
 
 async function fetchBotCount() {
     try {
-        const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+        const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
         if (res.ok) {
             const data = await res.json();
             const el = document.getElementById('botsSubtitle');
@@ -141,7 +141,7 @@ async function renderBotsList() {
   // Fetch real bots from API
   let bots = [];
   try {
-    const res = await fetch(`${API}/bots`, {headers: authHeaders()});
+    const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
     if (res.ok) bots = await res.json();
   } catch(e) {}
 

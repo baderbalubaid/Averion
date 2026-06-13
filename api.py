@@ -530,7 +530,7 @@ def get_history(payload: dict = Depends(verify_token)):
 # ═══════════════════════════════
 # BOTS
 # ═══════════════════════════════
-@app.get('/bots')
+@app.get('/api/bots')
 def get_bots(payload: dict = Depends(verify_token)):
     bots = db.get_user_bots(payload['user_id'])
     return [{'id': b[0], 'name': b[1], 'method': b[2],
