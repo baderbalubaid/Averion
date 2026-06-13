@@ -401,6 +401,7 @@ async function initExchanges() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    document.body.style.background = 'green'; // debug
     if (!requireAuth()) return;
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
     document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Exchanges');
