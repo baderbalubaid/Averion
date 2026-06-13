@@ -539,6 +539,66 @@ def get_history(payload: dict = Depends(verify_token)):
 # ═══════════════════════════════
 # BOTS
 # ═══════════════════════════════
+@app.get('/live-positions')
+def get_live_positions(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    r = get_redis()
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT lp.id, lp.bot_id, lp.user_id, lp.coin,
+                   lp.entry_price, lp.exit_price, lp.base_order,
+                   lp.hold_seconds, lp.pnl_pct, lp.pnl_usdt,
+                   lp.status, lp.entry_time, lp.exit_time,
+                   lp.exit_reason, lp.trigger_jump_pct,
+                   b.name as bot_name
+            FROM live_positions lp
+            JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s
+            ORDER BY lp.id DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+
+    result = []
+    for p in rows:
+        coin = p[3]
+        entry_price = float(p[4] or 0)
+        current_price = entry_price
+        if p[10] == 'open':
+            try:
+                keys = r.keys(f'price:*:{coin}/USDT')
+                if keys:
+                    current_price = float(r.get(keys[0]) or entry_price)
+            except:
+                pass
+        
+        pnl_pct = float(p[8] or 0)
+        pnl_usdt = float(p[9] or 0)
+        
+        if p[10] == 'open' and entry_price > 0:
+            pnl_pct = (current_price - entry_price) / entry_price * 100
+            pnl_usdt = float(p[6] or 2) * pnl_pct / 100
+
+        result.append({
+            'id': p[0],
+            'bot_id': p[1],
+            'coin': coin,
+            'entry_price': entry_price,
+            'current_price': current_price,
+            'exit_price': float(p[5] or 0),
+            'base_order': float(p[6] or 2),
+            'hold_seconds': p[7],
+            'pnl_pct': round(pnl_pct, 4),
+            'pnl_usdt': round(pnl_usdt, 6),
+            'status': p[10],
+            'entry_time': str(p[11]),
+            'exit_time': str(p[12]) if p[12] else None,
+            'exit_reason': p[13],
+            'trigger_jump_pct': float(p[14] or 0),
+            'bot_name': p[15],
+        })
+    return result
+
 @app.get('/api/bots')
 def get_bots(payload: dict = Depends(verify_token)):
     bots = db.get_user_bots(payload['user_id'])
