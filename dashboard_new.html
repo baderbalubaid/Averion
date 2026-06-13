@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Averion — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=4">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div id="app" style="display:flex;width:100%;height:100vh">
+    <div id="sidebar-placeholder"></div>
+    <div class="main">
+        <div id="topbar-placeholder"></div>
+        <div style="flex:1;overflow-y:auto;padding:16px" id="home-content">
+
+            <!-- Warning Banner -->
+            <div id="warningBanner" style="display:none;background:#e74c3c15;border:1px solid #e74c3c40;border-radius:12px;padding:12px 16px;margin-bottom:16px">
+                <div id="warningMessages"></div>
+            </div>
+
+            <!-- Financial Stats -->
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Financial</div>
+            <div class="hero-stats" style="margin-bottom:16px">
+                <div class="hero-card">
+                    <div class="hero-icon">💰</div>
+                    <div class="hero-lbl">Total Capital</div>
+                    <div class="hero-val" id="h-capital">$0.00</div>
+                </div>
+                <div class="hero-card g">
+                    <div class="hero-icon">📈</div>
+                    <div class="hero-lbl">24h P&L</div>
+                    <div class="hero-val" id="h-24h">$0.00</div>
+                </div>
+                <div class="hero-card b">
+                    <div class="hero-icon">🚀</div>
+                    <div class="hero-lbl">Total Profit</div>
+                    <div class="hero-val" id="h-profit">$0.00</div>
+                </div>
+                <div class="hero-card a">
+                    <div class="hero-icon">💸</div>
+                    <div class="hero-lbl">Fees Due</div>
+                    <div class="hero-val" id="h-fees">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Operational Stats -->
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Operational</div>
+            <div class="hero-stats" style="margin-bottom:16px">
+                <div class="hero-card">
+                    <div class="hero-icon">🤖</div>
+                    <div class="hero-lbl">Active Bots</div>
+                    <div class="hero-val" id="h-bots">0</div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon">📊</div>
+                    <div class="hero-lbl">Open Trades</div>
+                    <div class="hero-val" id="h-trades">0</div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon">⏳</div>
+                    <div class="hero-lbl">DCA Queue</div>
+                    <div class="hero-val" id="h-dca">0</div>
+                </div>
+                <div class="hero-card g">
+                    <div class="hero-icon">✅</div>
+                    <div class="hero-lbl">Today's P&L</div>
+                    <div class="hero-val" id="h-today">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Capital Chart -->
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                    <div style="font-size:13px;font-weight:700">Capital History</div>
+                    <div style="display:flex;gap:6px">
+                        <button class="f-btn active" onclick="setChartRange('7d',this)">7D</button>
+                        <button class="f-btn" onclick="setChartRange('30d',this)">30D</button>
+                        <button class="f-btn" onclick="setChartRange('90d',this)">90D</button>
+                        <button class="f-btn" onclick="setChartRange('all',this)">All</button>
+                    </div>
+                </div>
+                <div style="position:relative;height:180px">
+                    <canvas id="capitalChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Exchanges -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div style="font-size:13px;font-weight:700">Exchanges</div>
+                <a href="/exchanges" style="font-size:11px;color:var(--accent);text-decoration:none">Manage →</a>
+            </div>
+            <div id="homeExchanges" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                <div style="color:var(--text3);font-size:12px;padding:12px">Loading...</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="bottom-nav" id="bottom-nav"></div>
+<script src="/base.js?v=4"></script>
+<script>
+let capitalChartObj = null;
+let chartRange = '7d';
+
+async function loadHomeStats() {
+    try {
+        const res = await fetch(`${API}/home-stats`, {headers: authHeaders()});
+        const d = await res.json();
+
+        // Financial
+        document.getElementById('h-capital').textContent = '$' + (d.total_invested||0).toFixed(2);
+        const profit = d.total_profit || 0;
+        document.getElementById('h-profit').textContent = (profit>=0?'+':'') + '$' + Math.abs(profit).toFixed(2);
+        document.getElementById('h-profit').style.color = profit>=0?'var(--green)':'var(--red)';
+        document.getElementById('h-fees').textContent = '$' + (d.fee_debt||0).toFixed(2);
+        document.getElementById('h-fees').style.color = d.fee_debt > 0 ? 'var(--amber)' : 'var(--text)';
+
+        // Operational
+        document.getElementById('h-bots').textContent = d.active_bots || 0;
+        document.getElementById('h-trades').textContent = d.open_trades || 0;
+        document.getElementById('h-dca').textContent = d.dca_queue || 0;
+        const todayPnl = d.today_pnl || 0;
+        document.getElementById('h-today').textContent = (todayPnl>=0?'+':'') + '$' + Math.abs(todayPnl).toFixed(2);
+        document.getElementById('h-today').style.color = todayPnl>=0?'var(--green)':'var(--red)';
+
+        // 24h P&L (use today_pnl as proxy)
+        document.getElementById('h-24h').textContent = (todayPnl>=0?'+':'') + '$' + Math.abs(todayPnl).toFixed(2);
+        document.getElementById('h-24h').style.color = todayPnl>=0?'var(--green)':'var(--red)';
+
+        // Warnings
+        const warnings = [];
+        if (d.fee_debt > 0) warnings.push(`💸 Performance fee of $${d.fee_debt.toFixed(2)} is due`);
+        if (warnings.length > 0) {
+            document.getElementById('warningBanner').style.display = 'block';
+            document.getElementById('warningMessages').innerHTML = warnings.map(w =>
+                `<div style="color:#e74c3c;font-size:12px;font-weight:600">${w}</div>`
+            ).join('');
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function loadExchanges() {
+    try {
+        const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+        const data = await res.json();
+        const el = document.getElementById('homeExchanges');
+        if (!data.length) {
+            el.innerHTML = `<div style="background:var(--bg2);border:1px dashed var(--border2);border-radius:12px;padding:16px;text-align:center">
+                <div style="color:var(--text3);font-size:12px;margin-bottom:8px">No exchanges connected</div>
+                <a href="/exchanges" style="font-size:12px;color:var(--accent);text-decoration:none">+ Add Exchange</a>
+            </div>`;
+            return;
+        }
+        el.innerHTML = data.map(exc => `
+            <div onclick="window.location='/exchanges'" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+                <div style="width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px">🔗</div>
+                <div style="flex:1">
+                    <div style="font-size:13px;font-weight:600">${exc.custom_name || exc.exchange_name}</div>
+                    <div style="font-size:11px;color:var(--text3)">${exc.is_paper ? '📄 Paper' : '🔴 Live'}</div>
+                </div>
+                <div style="font-size:11px;color:var(--text3)">›</div>
+            </div>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+async function loadCapitalChart(range) {
+    try {
+        const excRes = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+        const exchanges = await excRes.json();
+        if (!exchanges.length) return;
+
+        const excId = exchanges[0].id;
+        const res = await fetch(`${API}/balance-history?exchange_id=${excId}&days=${range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 365}`, {headers: authHeaders()});
+        const data = await res.json();
+
+        const ctx = document.getElementById('capitalChart').getContext('2d');
+        if (capitalChartObj) capitalChartObj.destroy();
+
+        capitalChartObj = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [{
+                    data: data.map(d => d.balance),
+                    borderColor: '#6366F1',
+                    backgroundColor: '#6366F115',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => '$' + ctx.raw.toFixed(2) } }
+                },
+                scales: {
+                    x: { grid: { color: '#1E1E35' }, ticks: { color: '#55556A', font: { size: 10 } } },
+                    y: { grid: { color: '#1E1E35' }, ticks: { color: '#55556A', font: { size: 10 }, callback: v => '$'+v } }
+                }
+            }
+        });
+    } catch(e) { console.error('Chart error:', e); }
+}
+
+function setChartRange(range, el) {
+    chartRange = range;
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    loadCapitalChart(range);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Dashboard');
+    buildNav();
+    buildUserRow();
+    buildMobileNav();
+    await Promise.all([loadHomeStats(), loadExchanges()]);
+    loadCapitalChart('7d');
+});
+</script>
+</body>
+</html>
