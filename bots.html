@@ -60,6 +60,7 @@ async function renderBots() {
     else if (currentFilter === 'stopped') data = data.filter(b => !b.trading_on || b.status !== 'open');
     else if (currentFilter === 'paper') data = data.filter(b => b.is_paper);
 
+    document.getElementById('botsList').innerHTML = 'DEBUG: allBots=' + allBots.length + ' data=' + data.length;
     if (!data || !data.length) {
         list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">
             <div style="font-size:32px;margin-bottom:8px">🤖</div>
