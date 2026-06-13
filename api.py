@@ -111,6 +111,10 @@ def clear_login_fails(ip: str):
 def bots_page():
     return FileResponse('bots.html')
 
+@app.get('/bots/{bot_id}')
+def bot_detail_page(bot_id: int):
+    return FileResponse('bot-detail.html')
+
 @app.get('/trades')
 def trades_page():
     return FileResponse('trades.html')
@@ -332,13 +336,12 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
             raise HTTPException(status_code=404, detail='Variant not found')
         params = _json.loads(row[0]) if row[0] else {}
 
-        # Create bot name e.g. S1 from E58-1
-        bot_name = 'S-live-' + variant_name.replace('S', '')
-
-        # Check if already exists for this user
-        cur.execute("SELECT id FROM bots WHERE user_id=%s AND name=%s", (user_id, bot_name))
-        if cur.fetchone():
-            raise HTTPException(status_code=400, detail=f'{bot_name} already exists')
+        # Create bot name e.g. S1, S1-2, S1-3
+        base_name = variant_name
+        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND (name=%s OR name LIKE %s)", 
+                    (user_id, base_name, base_name + '-%'))
+        count = cur.fetchone()[0]
+        bot_name = base_name if count == 0 else f'{base_name}-{count + 1}'
 
         cur.execute("""
             INSERT INTO bots (
@@ -481,6 +484,10 @@ def close_position(position_id: int,
 # ═══════════════════════════════
 # TRADES / HISTORY
 # ═══════════════════════════════
+@app.get('/bots/{bot_id}')
+def bot_detail_page(bot_id: int):
+    return FileResponse('bot-detail.html')
+
 @app.get('/trades')
 def get_trades(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
