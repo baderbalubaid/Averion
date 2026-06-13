@@ -126,6 +126,7 @@ function loadTimeFormatUI() {
 }
 
 function saveTimezone(tz) {
+    alert('Saving: ' + tz);
     if (tz === 'auto') {
         localStorage.removeItem('averion_timezone');
         const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -133,6 +134,7 @@ function saveTimezone(tz) {
     } else {
         localStorage.setItem('averion_timezone', tz);
         document.getElementById('tz-current').textContent = tz;
+        alert('Saved! Check: ' + localStorage.getItem('averion_timezone'));
     }
 }
 
