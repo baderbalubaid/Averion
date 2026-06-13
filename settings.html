@@ -59,7 +59,6 @@
         <!-- Exchanges -->
         <div class="settings-group">
           <div class="settings-group-title">Exchanges</div>
-          <div class="settings-row" onclick="switchTab('home', document.querySelector('.nav-link'))">
 
         </div>
     </div>
@@ -67,7 +66,6 @@
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=4"></script>
 <script>
-
 function renderSettings() {
   const excCount = getExchanges().length;
   const setExc = document.getElementById('set-exc-count');
@@ -118,8 +116,6 @@ function submitFeature() {
 }
 
 // ── CONTROLS ──────────────────────────────────────────────
-async function closePos(id) {
-  if (!confirm('Close this position?')) return;
 
 
 document.addEventListener('DOMContentLoaded', async () => {
