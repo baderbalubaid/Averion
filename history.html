@@ -129,7 +129,25 @@ async function fetchHistory() {
   try {
     const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
     const all = await res.json();
-    allHistory = all.filter(p => p.status === 'closed');
+    // Map live_positions fields to history format
+    allHistory = all.filter(p => p.status === 'closed').map(p => ({
+        id: p.id,
+        coin: p.coin,
+        exchange: 'MEXC',
+        entry_price: p.entry_price,
+        exit_price: p.exit_price,
+        avg_cost: p.entry_price,
+        entry_date: p.entry_time,
+        exit_date: p.exit_time,
+        closed_at: p.exit_time,
+        realized_pnl: p.pnl_usdt,
+        pnl_pct: p.pnl_pct,
+        dca_count: 0,
+        days_held: 0,
+        hold_seconds: p.hold_seconds,
+        exit_reason: p.exit_reason,
+        bot_name: p.bot_name,
+    }));
   } catch(e) { allHistory=[]; }
   buildCoinFilter();
   applyHistoryFilter();
