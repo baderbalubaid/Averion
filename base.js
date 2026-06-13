@@ -98,7 +98,7 @@ function buildMobileNav() {
     if (!bnav) return;
 
     const mobileItems = [
-        { icon: '⬡', label: 'Home', url: '/dashboard' },
+        { icon: '🏠', label: 'Home', url: '/dashboard' },
         { icon: '🤖', label: 'Bots', url: '/bots' },
         { icon: '📊', label: 'Trades', url: '/trades' },
         { icon: '📜', label: 'History', url: '/history' },
