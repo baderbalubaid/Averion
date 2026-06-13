@@ -116,28 +116,85 @@ function buildMobileNav() {
 }
 
 // ── UTILITIES ──
+// ── Get user timezone (auto from browser, overridable from settings) ──
+function getUserTimezone() {
+    return localStorage.getItem('averion_timezone') || 
+           Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 function fmtPrice(p) {
-    if (!p || p == 0) return '$0';
+    if (p === null || p === undefined || p === '') return '$0';
     const n = parseFloat(p);
-    if (n >= 1000) return '$' + n.toLocaleString('en', {maximumFractionDigits: 2});
-    if (n >= 1) return '$' + n.toFixed(4);
-    if (n >= 0.001) return '$' + n.toFixed(6);
-    return '$' + n.toFixed(8);
+    if (isNaN(n)) return '$0';
+    const sign = n < 0 ? '-' : '';
+    const abs = Math.abs(n);
+    if (abs >= 1000) return sign + '$' + abs.toLocaleString('en-US', {maximumFractionDigits: 2});
+    if (abs >= 1) return sign + '$' + abs.toFixed(4);
+    if (abs >= 0.001) return sign + '$' + abs.toFixed(6);
+    return sign + '$' + abs.toFixed(8);
+}
+
+function fmtPnl(n) {
+    if (n === null || n === undefined) return '$0.00';
+    const val = parseFloat(n);
+    if (isNaN(val)) return '$0.00';
+    const sign = val >= 0 ? '+' : '-';
+    return sign + '$' + Math.abs(val).toFixed(2);
+}
+
+function fmtPct(n) {
+    if (n === null || n === undefined) return '0.00%';
+    const val = parseFloat(n);
+    if (isNaN(val)) return '0.00%';
+    const sign = val >= 0 ? '+' : '-';
+    return sign + Math.abs(val).toFixed(2) + '%';
 }
 
 function fmtLocal(utcStr) {
-    if (!utcStr) return '—';
-    return new Date(utcStr).toLocaleString();
+    if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
+    try {
+        return new Date(utcStr).toLocaleString('en-US', {
+            timeZone: getUserTimezone(),
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+    } catch(e) { return utcStr; }
+}
+
+function fmtDate(utcStr) {
+    if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
+    try {
+        return new Date(utcStr).toLocaleString('en-US', {
+            timeZone: getUserTimezone(),
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+            hour12: false
+        });
+    } catch(e) { return utcStr; }
+}
+
+function fmtTime(utcStr) {
+    if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
+    try {
+        return new Date(utcStr).toLocaleString('en-US', {
+            timeZone: getUserTimezone(),
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+    } catch(e) { return utcStr; }
 }
 
 function fmtAgo(utcStr) {
-    if (!utcStr) return '—';
+    if (!utcStr || utcStr === 'None' || utcStr === 'null') return '—';
     const diff = Date.now() - new Date(utcStr).getTime();
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
     if (h > 24) return `${Math.floor(h/24)}d ago`;
     if (h > 0) return `${h}h ${m}m ago`;
-    return `${m}m ago`;
+    if (m > 0) return `${m}m ${s}s ago`;
+    return `${s}s ago`;
 }
 
 // ── SIDEBAR HTML TEMPLATE ──
