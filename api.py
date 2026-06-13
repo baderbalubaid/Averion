@@ -145,7 +145,7 @@ def base_js():
 
 @app.get('/dashboard')
 def dashboard():
-    return FileResponse('dashboard.html')
+    return FileResponse('dashboard_new.html')
 
 @app.get('/auth/email-verified')
 def check_email_verified(payload: dict = Depends(verify_token)):
