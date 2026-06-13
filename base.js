@@ -45,13 +45,14 @@ function getUser() {
 
 // ── NAVIGATION ──
 const NAV_ITEMS = [
-    { icon: '⬡', label: 'Dashboard', url: '/dashboard' },
+    { icon: '🏠', label: 'Dashboard', url: '/dashboard' },
     { icon: '🤖', label: 'Bots', url: '/bots' },
     { icon: '📊', label: 'Trades', url: '/trades' },
     { icon: '📜', label: 'History', url: '/history' },
-    { icon: '📈', label: 'Reports', url: '/reports' },
     { icon: '🔗', label: 'Exchanges', url: '/exchanges' },
+    { icon: '📈', label: 'Reports', url: '/reports' },
     { icon: '⚙️', label: 'Settings', url: '/settings' },
+    { icon: '+', label: 'Create Bot', url: '/create-bot' },
 ];
 
 function buildNav() {
