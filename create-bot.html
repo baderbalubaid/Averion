@@ -161,27 +161,43 @@
       <div id="step-5-dca" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">Coin Selection</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Which coins should this bot trade</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
           <div class="choice-card" id="coin-all-card" onclick="selectCoinMode('all')">
             <div style="display:flex;align-items:center;gap:12px">
               <div style="font-size:24px">🌐</div>
-              <div>
+              <div style="flex:1">
                 <div style="font-size:14px;font-weight:700">All Coins</div>
                 <div style="font-size:11px;color:var(--text3);margin-top:2px">Bot trades any qualifying coin · recommended</div>
               </div>
+              <div id="coin-all-check" style="display:none;color:var(--green);font-size:18px;font-weight:700">✔</div>
             </div>
           </div>
           <div class="choice-card" id="coin-specific-card" onclick="selectCoinMode('specific')">
             <div style="display:flex;align-items:center;gap:12px">
               <div style="font-size:24px">🎯</div>
-              <div>
+              <div style="flex:1">
                 <div style="font-size:14px;font-weight:700">Specific Coins</div>
-                <div style="font-size:11px;color:var(--text3);margin-top:2px">Choose which coins to trade</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px" id="coin-specific-label">Choose which coins to trade</div>
               </div>
+              <div id="coin-specific-check" style="display:none;color:var(--green);font-size:18px;font-weight:700">✔</div>
             </div>
           </div>
         </div>
-        <button onclick="goNextFromCoin()" style="width:100%;margin-top:16px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+
+        <!-- Coin picker (shown when specific selected) -->
+        <div id="coin-picker" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+            <input id="coin-search" type="text" placeholder="🔍 Search coin..." oninput="filterCoins()"
+              style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none">
+          </div>
+          <div id="coin-list" style="max-height:280px;overflow-y:auto;padding:6px 0"></div>
+          <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:var(--text3)" id="coin-selected-count">0 selected</span>
+            <button onclick="doneCoinSelection()" style="padding:7px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Done</button>
+          </div>
+        </div>
+
+        <button onclick="goNextFromCoin()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
       </div>
 
       <!-- ── STEP 5 SCALPER: Order Size ── -->
@@ -203,8 +219,22 @@
       <!-- ── STEP 6 DCA: DCA Settings ── -->
       <div id="step-6-dca" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">DCA Settings</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">How aggressively to average down</div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">How aggressively to average down</div>
+        <!-- Smart/Custom toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button id="dca-set-smart-btn" onclick="setDcaSettingsMode('smart')"
+            style="flex:1;padding:9px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--accent);background:#6366F115;color:var(--accent)">🧠 Smart</button>
+          <button id="dca-set-custom-btn" onclick="setDcaSettingsMode('custom')"
+            style="flex:1;padding:9px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg2);color:var(--text3)">⚙️ Custom</button>
+        </div>
+        <!-- Smart label -->
+        <div id="dca-set-smart-label" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">🧠</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:3px">Managed automatically</div>
+          <div style="font-size:11px;color:var(--text3)">Spacing and multiplier set per coin based on category and ATR</div>
+        </div>
+        <!-- Custom fields -->
+        <div id="dca-set-custom-fields" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
           <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-size:13px;font-weight:600">DCA Spacing</div>
@@ -241,8 +271,22 @@
       <!-- ── STEP 7 DCA: Exit Settings ── -->
       <div id="step-7-dca" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">Exit Settings</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">When to take profit</div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">When to take profit</div>
+        <!-- Smart/Custom toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button id="dca-exit-smart-btn" onclick="setDcaExitMode('smart')"
+            style="flex:1;padding:9px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--accent);background:#6366F115;color:var(--accent)">🧠 Smart</button>
+          <button id="dca-exit-custom-btn" onclick="setDcaExitMode('custom')"
+            style="flex:1;padding:9px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg2);color:var(--text3)">⚙️ Custom</button>
+        </div>
+        <!-- Smart label -->
+        <div id="dca-exit-smart-label" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">🧠</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:3px">Managed automatically</div>
+          <div style="font-size:11px;color:var(--text3)">TP% and trailing set per coin based on category and volatility</div>
+        </div>
+        <!-- Custom fields -->
+        <div id="dca-exit-custom-fields" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
           <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-size:13px;font-weight:600">Take Profit</div>
@@ -400,6 +444,13 @@ function showStep(id) {
   // Re-init coin selection state
   if (id === 'step-5-dca') {
     setTimeout(() => selectCoinMode(selectedCoinMode), 50);
+  }
+  // Init DCA settings/exit modes
+  if (id === 'step-6-dca') {
+    setTimeout(() => initDcaStepModes(), 50);
+  }
+  if (id === 'step-7-dca') {
+    setTimeout(() => setDcaExitMode(dcaExitMode), 50);
   }
 
   // Back button
@@ -794,24 +845,135 @@ function selectDcaDirection(dir) {
 // ── Step 4 DCA: Entry ─────────────────────────────────────────────
 function selectDcaEntry(key) {
   selectedEntryMethod = key;
-  if (key === 'dca_smart') {
-    // Smart skips coin, DCA settings, exit settings — straight to order size
-    const idx = history.lastIndexOf('step-4-dca');
-    if (idx !== -1) history.splice(idx + 1);
-    showStep('step-8-dca');
-    buildSizePresets('dca');
-  } else {
-    showStep('step-5-dca');
-  }
+  // All entries go to coin selection
+  // Smart defaults DCA/exit to Smart mode, user can switch
+  showStep('step-5-dca');
 }
 
 // ── Step 5 DCA: Coin ──────────────────────────────────────────────
+// DCA settings mode
+let dcaSettingsMode = 'smart';
+let dcaExitMode = 'smart';
+let selectedCoins = [];
+let allAvailableCoins = [];
+
+function setDcaSettingsMode(mode) {
+  dcaSettingsMode = mode;
+  const smartBtn = document.getElementById('dca-set-smart-btn');
+  const customBtn = document.getElementById('dca-set-custom-btn');
+  const smartLabel = document.getElementById('dca-set-smart-label');
+  const customFields = document.getElementById('dca-set-custom-fields');
+  if (mode === 'smart') {
+    smartBtn.style.borderColor = 'var(--accent)'; smartBtn.style.background = '#6366F115'; smartBtn.style.color = 'var(--accent)';
+    customBtn.style.borderColor = 'var(--border)'; customBtn.style.background = 'var(--bg2)'; customBtn.style.color = 'var(--text3)';
+    smartLabel.style.display = 'block'; customFields.style.display = 'none';
+  } else {
+    customBtn.style.borderColor = 'var(--accent)'; customBtn.style.background = '#6366F115'; customBtn.style.color = 'var(--accent)';
+    smartBtn.style.borderColor = 'var(--border)'; smartBtn.style.background = 'var(--bg2)'; smartBtn.style.color = 'var(--text3)';
+    smartLabel.style.display = 'none'; customFields.style.display = 'block';
+  }
+}
+
+function setDcaExitMode(mode) {
+  dcaExitMode = mode;
+  const smartBtn = document.getElementById('dca-exit-smart-btn');
+  const customBtn = document.getElementById('dca-exit-custom-btn');
+  const smartLabel = document.getElementById('dca-exit-smart-label');
+  const customFields = document.getElementById('dca-exit-custom-fields');
+  if (mode === 'smart') {
+    smartBtn.style.borderColor = 'var(--accent)'; smartBtn.style.background = '#6366F115'; smartBtn.style.color = 'var(--accent)';
+    customBtn.style.borderColor = 'var(--border)'; customBtn.style.background = 'var(--bg2)'; customBtn.style.color = 'var(--text3)';
+    smartLabel.style.display = 'block'; customFields.style.display = 'none';
+  } else {
+    customBtn.style.borderColor = 'var(--accent)'; customBtn.style.background = '#6366F115'; customBtn.style.color = 'var(--accent)';
+    smartBtn.style.borderColor = 'var(--border)'; smartBtn.style.background = 'var(--bg2)'; smartBtn.style.color = 'var(--text3)';
+    smartLabel.style.display = 'none'; customFields.style.display = 'block';
+  }
+}
+
+// When navigating to DCA settings/exit — set default mode based on entry
+function initDcaStepModes() {
+  const isSmartEntry = selectedEntryMethod === 'dca_smart';
+  setDcaSettingsMode(isSmartEntry ? 'smart' : 'custom');
+  setDcaExitMode(isSmartEntry ? 'smart' : 'custom');
+}
+
 function selectCoinMode(mode) {
   selectedCoinMode = mode;
   const allCard = document.getElementById('coin-all-card');
   const specCard = document.getElementById('coin-specific-card');
+  const allCheck = document.getElementById('coin-all-check');
+  const specCheck = document.getElementById('coin-specific-check');
+  const picker = document.getElementById('coin-picker');
   if (allCard) allCard.classList.toggle('selected', mode === 'all');
   if (specCard) specCard.classList.toggle('selected', mode === 'specific');
+  if (allCheck) allCheck.style.display = mode === 'all' ? 'block' : 'none';
+  if (specCheck) specCheck.style.display = mode === 'specific' ? 'block' : 'none';
+  if (picker) {
+    if (mode === 'specific') {
+      picker.style.display = 'block';
+      loadCoinList();
+    } else {
+      picker.style.display = 'none';
+    }
+  }
+}
+
+async function loadCoinList() {
+  const list = document.getElementById('coin-list');
+  if (allAvailableCoins.length) { renderCoinList(); return; }
+  list.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:12px">Loading coins...</div>';
+  try {
+    // Get coins from exchange via redis prices
+    const res = await fetch(`${API}/api/coins`, {headers: authHeaders()});
+    if (res.ok) {
+      allAvailableCoins = await res.json();
+    } else {
+      // Fallback: common coins
+      allAvailableCoins = ['BTC','ETH','BNB','XRP','SOL','DOGE','ADA','TRX','AVAX','DOT','MATIC','LTC','LINK','UNI','ATOM','XLM','BCH','NEAR','APT','OP'];
+    }
+  } catch(e) {
+    allAvailableCoins = ['BTC','ETH','BNB','XRP','SOL','DOGE','ADA','TRX','AVAX','DOT','MATIC','LTC','LINK','UNI','ATOM'];
+  }
+  renderCoinList();
+}
+
+function filterCoins() {
+  renderCoinList(document.getElementById('coin-search').value.toLowerCase());
+}
+
+function renderCoinList(filter = '') {
+  const list = document.getElementById('coin-list');
+  const coins = filter
+    ? allAvailableCoins.filter(c => c.toLowerCase().includes(filter))
+    : allAvailableCoins;
+  // Selected first, then alphabetical
+  const selected = coins.filter(c => selectedCoins.includes(c));
+  const rest = coins.filter(c => !selectedCoins.includes(c)).sort();
+  const ordered = [...selected, ...rest];
+  list.innerHTML = ordered.map(coin => `
+    <div onclick="toggleCoin('${coin}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;${selectedCoins.includes(coin) ? 'background:#6366F108' : ''}">
+      <span style="font-size:13px;font-weight:${selectedCoins.includes(coin) ? '700' : '500'}">${coin}</span>
+      ${selectedCoins.includes(coin) ? '<span style="color:var(--green);font-size:16px;font-weight:700">✔</span>' : '<span style="color:var(--border2);font-size:16px">○</span>'}
+    </div>`).join('');
+  document.getElementById('coin-selected-count').textContent = `${selectedCoins.length} selected`;
+}
+
+function toggleCoin(coin) {
+  const idx = selectedCoins.indexOf(coin);
+  if (idx === -1) selectedCoins.push(coin);
+  else selectedCoins.splice(idx, 1);
+  renderCoinList(document.getElementById('coin-search')?.value?.toLowerCase() || '');
+}
+
+function doneCoinSelection() {
+  const label = document.getElementById('coin-specific-label');
+  if (label) {
+    label.textContent = selectedCoins.length > 0
+      ? selectedCoins.slice(0,3).join(', ') + (selectedCoins.length > 3 ? ` +${selectedCoins.length-3} more` : '')
+      : 'Choose which coins to trade';
+  }
 }
 
 function goNextFromCoin() {
@@ -919,10 +1081,9 @@ function buildReviewDca() {
     <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Direction</span><span style="font-weight:700">📈 Long</span></div>
     <div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${entryLabel}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700">${selectedCoinMode === 'all' ? '🌐 All Coins' : '🎯 Specific'}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">DCA Spacing</span><span style="font-weight:700">${document.getElementById('dca-spacing')?.value || 7}%</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Take Profit</span><span style="font-weight:700">${document.getElementById('dca-tp')?.value || 5}%</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Trailing</span><span style="font-weight:700">${document.getElementById('dca-trail')?.value || 2}%</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700;font-size:11px">${selectedCoinMode === 'all' ? '🌐 All Coins' : selectedCoins.length > 0 ? '🎯 ' + selectedCoins.slice(0,3).join(', ') + (selectedCoins.length > 3 ? ' +' + (selectedCoins.length-3) : '') : '🎯 Specific'}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">DCA Settings</span><span style="font-weight:700">${dcaSettingsMode === 'smart' ? '🧠 Smart' : document.getElementById('dca-spacing')?.value + '% spacing'}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Exit Settings</span><span style="font-weight:700">${dcaExitMode === 'smart' ? '🧠 Smart' : document.getElementById('dca-tp')?.value + '% TP · ' + document.getElementById('dca-trail')?.value + '% trail'}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
 }
@@ -977,11 +1138,13 @@ async function createBot(type) {
         direction: selectedDirection,
         entry_method: selectedEntryMethod,
         coin_mode: selectedCoinMode,
-        dca_percent: parseFloat(document.getElementById('dca-spacing').value),
-        size_multiplier: parseFloat(document.getElementById('dca-size-mult').value),
-        max_dca_levels: parseInt(document.getElementById('dca-max-levels').value),
-        take_profit_percent: parseFloat(document.getElementById('dca-tp').value),
-        trailing_percent: parseFloat(document.getElementById('dca-trail').value),
+        dca_settings_mode: dcaSettingsMode,
+        exit_mode: dcaExitMode,
+        dca_percent: dcaSettingsMode === 'smart' ? null : parseFloat(document.getElementById('dca-spacing').value),
+        size_multiplier: dcaSettingsMode === 'smart' ? null : parseFloat(document.getElementById('dca-size-mult').value),
+        max_dca_levels: dcaSettingsMode === 'smart' ? null : parseInt(document.getElementById('dca-max-levels').value),
+        take_profit_percent: dcaExitMode === 'smart' ? null : parseFloat(document.getElementById('dca-tp').value),
+        trailing_percent: dcaExitMode === 'smart' ? null : parseFloat(document.getElementById('dca-trail').value),
         base_order: selectedSize,
       };
       const res = await fetch(`${API}/bots/create-dca`, {
