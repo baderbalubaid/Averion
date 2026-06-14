@@ -352,7 +352,7 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
             AND method LIKE 'DCA%'
         """, (user_id,))
         count = cur.fetchone()[0] + 1
-        bot_name = f'DCA-{count}'
+        bot_name = data.get('bot_name', '').strip() or f'DCA-{count}'
 
         # Determine method based on entry
         method_map = {
