@@ -1038,22 +1038,119 @@ def get_live_positions(payload: dict = Depends(verify_token)):
 
 @app.get('/api/bots')
 def get_bots(payload: dict = Depends(verify_token)):
-    bots = db.get_user_bots(payload['user_id'])
-    return [{'id': b[0], 'name': b[1], 'method': b[2],
-              'direction': b[3], 'trading_on': b[4],
-              'dca_on': b[5], 'is_paper': b[6],
-              'status': b[7], 'expires_at': str(b[8]),
-              'auto_renew': b[9], 'base_coin': b[10],
-              'trades_per_bot': b[11],
-              'trades_per_coin': b[12],
-              'gate_dca_enabled': b[13],
-              'gate_timer_enabled': b[14],
-              'gate_timer_hours': b[15],
-              'order_entry_type': b[16],
-              'order_dca_type': b[17],
-              'exchange': b[18],
-              'exchange_name': b[19],
-              'base_order': float(b[20]) if b[20] else 0} for b in bots]
+    user_id = payload['user_id']
+    bots = db.get_user_bots(user_id)
+    r = get_redis()
+
+    # Get open DCA positions per bot for current worth
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        # Scalper positions worth
+        cur.execute("""
+            SELECT lp.bot_id, lp.coin, lp.base_order
+            FROM live_positions lp
+            JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s AND lp.status='open'
+            AND b.is_research=FALSE AND b.is_template=FALSE
+        """, (user_id,))
+        scalper_pos = cur.fetchall()
+
+        # DCA positions worth
+        cur.execute("""
+            SELECT bot_id, coin, quantity, total_invested
+            FROM live_dca_positions
+            WHERE user_id=%s AND status='open'
+        """, (user_id,))
+        dca_pos = cur.fetchall()
+
+        # Wallet info per bot
+        cur.execute("""
+            SELECT b.id, vw.current_balance, vw.allocation_amount,
+                   vw.name as wallet_name, vw.committed_usdt
+            FROM bots b
+            JOIN virtual_wallets vw ON b.wallet_id=vw.id
+            WHERE b.user_id=%s AND b.is_research=FALSE AND b.is_template=FALSE
+        """, (user_id,))
+        wallet_rows = {r[0]: {'available': float(r[1] or 0),
+                               'total': float(r[2] or 0),
+                               'wallet_name': r[3],
+                               'deployed': float(r[4] or 0)} for r in cur.fetchall()}
+
+    # Calculate current worth per bot
+    bot_worth = {}
+
+    # Scalper: base_order is invested amount
+    for pos in scalper_pos:
+        bot_id, coin, base_order = pos
+        invested = float(base_order or 0)
+        try:
+            keys = r.keys(f'price:*:{coin}/USDT')
+            if keys:
+                # For scalper, worth ≈ invested (no quantity stored)
+                bot_worth.setdefault(bot_id, {'invested': 0, 'worth': 0})
+                bot_worth[bot_id]['invested'] += invested
+                bot_worth[bot_id]['worth'] += invested  # approximation
+        except Exception:
+            pass
+
+    # DCA: quantity × current_price
+    for pos in dca_pos:
+        bot_id, coin, quantity, total_invested = pos
+        qty = float(quantity or 0)
+        invested = float(total_invested or 0)
+        try:
+            keys = r.keys(f'price:*:{coin}/USDT')
+            current_price = float(r.get(keys[0])) if keys else 0
+            worth = qty * current_price if current_price > 0 else invested
+        except Exception:
+            worth = invested
+        bot_worth.setdefault(bot_id, {'invested': 0, 'worth': 0})
+        bot_worth[bot_id]['invested'] += invested
+        bot_worth[bot_id]['worth'] += worth
+
+    result = []
+    for b in bots:
+        bot_id = b[0]
+        worth_data = bot_worth.get(bot_id, {'invested': 0, 'worth': 0})
+        wallet = wallet_rows.get(bot_id, {})
+        invested = worth_data['invested']
+        worth = worth_data['worth']
+        pnl = worth - invested
+        pnl_pct = (pnl / invested * 100) if invested > 0 else 0
+
+        result.append({
+            'id': bot_id,
+            'name': b[1],
+            'method': b[2],
+            'direction': b[3],
+            'trading_on': b[4],
+            'dca_on': b[5],
+            'is_paper': b[6],
+            'status': b[7],
+            'expires_at': str(b[8]),
+            'auto_renew': b[9],
+            'base_coin': b[10],
+            'trades_per_bot': b[11],
+            'trades_per_coin': b[12],
+            'gate_dca_enabled': b[13],
+            'gate_timer_enabled': b[14],
+            'gate_timer_hours': b[15],
+            'order_entry_type': b[16],
+            'order_dca_type': b[17],
+            'exchange': b[18],
+            'exchange_name': b[19],
+            'base_order': float(b[20]) if b[20] else 0,
+            'current_worth': round(worth, 2),
+            'total_invested': round(invested, 2),
+            'pnl_usdt': round(pnl, 2),
+            'pnl_pct': round(pnl_pct, 2),
+            'open_positions': len([p for p in dca_pos if p[0] == bot_id]) +
+                              len([p for p in scalper_pos if p[0] == bot_id]),
+            'wallet_name': wallet.get('wallet_name', '—'),
+            'wallet_available': wallet.get('available', 0),
+            'wallet_total': wallet.get('total', 0),
+        })
+    return result
 
 class BotToggle(BaseModel):
     trading_on: Optional[bool] = None

@@ -121,38 +121,41 @@ async function renderBots() {
         const running = bot.trading_on && bot.status === 'open';
         const statusColor = running ? 'var(--green)' : 'var(--text3)';
         const statusLabel = running ? '● Running' : '○ Stopped';
-        const botPos = positions.filter(p => p.bot_id === bot.id);
-        const openTrades = botPos.length;
-        const pnl = botPos.reduce((s,p) => s+(p.pnl||0), 0);
-        const capital = botPos.reduce((s,p) => s+(p.total_invested||0), 0);
+        const openTrades = bot.open_positions || 0;
+        const worth = bot.current_worth || 0;
+        const invested = bot.total_invested || 0;
+        const pnl = bot.pnl_usdt || 0;
+        const pnlPct = bot.pnl_pct || 0;
         const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const exchange = bot.exchange_name || bot.exchange || '—';
+        const walletName = bot.wallet_name || '—';
         const strategy = bot.method || '—';
-        const baseOrder = bot.base_order || '—';
+        const baseOrder = bot.base_order || 0;
+        const isDca = strategy.startsWith('DCA');
+        const typeEmoji = isDca ? '📈' : '⚡';
         return `
         <div onclick="window.location='/bots/${bot.id}'" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                <div style="font-size:14px;font-weight:700">${bot.name}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <div style="font-size:14px;font-weight:700">${typeEmoji} ${bot.name}</div>
                 <div style="font-size:11px;color:${statusColor};font-weight:600">${statusLabel}</div>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${exchange} · ${strategy}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${exchange} · ${walletName} · $${baseOrder}/trade</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
                 <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                    <div style="font-size:11px;color:var(--text3)">Base Order</div>
-                    <div style="font-size:13px;font-weight:700">$${baseOrder}</div>
-                </div>
-                <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                    <div style="font-size:11px;color:var(--text3)">Open Trades</div>
+                    <div style="font-size:10px;color:var(--text3)">Trades</div>
                     <div style="font-size:13px;font-weight:700">${openTrades}</div>
                 </div>
                 <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                    <div style="font-size:11px;color:var(--text3)">Capital</div>
-                    <div style="font-size:13px;font-weight:700">$${capital.toFixed(0)}</div>
+                    <div style="font-size:10px;color:var(--text3)">Worth</div>
+                    <div style="font-size:13px;font-weight:700">$${worth.toFixed(2)}</div>
+                </div>
+                <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                    <div style="font-size:10px;color:var(--text3)">P&L</div>
+                    <div style="font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
                 </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="font-size:12px;color:var(--text3)">P&L</div>
-                <div style="font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
+                <div style="font-size:11px;color:var(--text3)">Invested <strong>$${invested.toFixed(2)}</strong> · P&L% <strong style="color:${pnlColor}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</strong></div>
             </div>
             <div style="display:flex;gap:8px">
                 <button onclick="event.stopPropagation();openEditModal(${bot.id},'${bot.name}',${bot.base_order})"
