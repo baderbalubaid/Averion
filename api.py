@@ -390,20 +390,10 @@ def execute_reset(reset_type: str, payload: dict = Depends(verify_token)):
     with db.get_db() as conn:
         cur = conn.cursor()
         if reset_type in ('trades', 'bots', 'exchanges', 'all'):
-            cur.execute("SELECT id, coin, entry_price, base_order FROM live_positions WHERE user_id=%s AND status='open'", (user_id,))
-            open_pos = cur.fetchall()
-            for pos in open_pos:
-                pos_id, coin, entry_price, base_order = pos
-                try:
-                    keys = redis_client.keys(f'price:*:{coin}/USDT')
-                    exit_price = float(redis_client.get(keys[0])) if keys else float(entry_price)
-                except:
-                    exit_price = float(entry_price)
-                ep = float(entry_price or 0)
-                pnl_pct = (exit_price - ep) / ep * 100 if ep > 0 else 0
-                pnl_usdt = float(base_order or 2) * pnl_pct / 100
-                cur.execute("UPDATE live_positions SET status='closed', exit_price=%s, exit_time=NOW(), pnl_pct=%s, pnl_usdt=%s, exit_reason='manual_reset' WHERE id=%s",
-                    (exit_price, round(pnl_pct,4), round(pnl_usdt,6), pos_id))
+            # Delete ALL live positions (open + closed history)
+            cur.execute("DELETE FROM live_positions WHERE user_id=%s", (user_id,))
+            # Reset wallet
+            cur.execute("UPDATE virtual_wallets SET current_balance=10000, committed_usdt=0 WHERE user_id=%s", (user_id,))
         if reset_type in ('bots', 'exchanges', 'all'):
             cur.execute("SELECT id FROM bots WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE", (user_id,))
             bot_ids = [row[0] for row in cur.fetchall()]
@@ -415,8 +405,7 @@ def execute_reset(reset_type: str, payload: dict = Depends(verify_token)):
                 cur.execute("DELETE FROM bots WHERE id = ANY(%s)", (bot_ids,))
         if reset_type in ('exchanges', 'all'):
             cur.execute("DELETE FROM exchanges WHERE user_id=%s", (user_id,))
-        if reset_type == 'all':
-            cur.execute("UPDATE virtual_wallets SET current_balance=10000, committed_usdt=0 WHERE user_id=%s", (user_id,))
+        # wallet already reset above
         conn.commit()
     messages = {
         'trades': 'All open positions closed',
