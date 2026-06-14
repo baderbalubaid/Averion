@@ -1864,7 +1864,10 @@ def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
                 committed_usdt=0, updated_at=NOW()
             FROM bots b WHERE b.id=%s AND b.wallet_id=vw.id
         """, (bot_id,))
-        # Hard delete
+        # Delete all position data then bot
+        cur.execute("DELETE FROM wallet_transactions WHERE position_id IN (SELECT id FROM live_dca_positions WHERE bot_id=%s)", (bot_id,))
+        cur.execute("DELETE FROM live_dca_positions WHERE bot_id=%s", (bot_id,))
+        cur.execute("DELETE FROM live_positions WHERE bot_id=%s", (bot_id,))
         cur.execute("DELETE FROM bots WHERE id=%s AND user_id=%s", (bot_id, user_id))
         conn.commit()
     return {'message': 'Bot deleted successfully'}
