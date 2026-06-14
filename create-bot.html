@@ -926,16 +926,14 @@ async function loadCoinList() {
   if (allAvailableCoins.length) { renderCoinList(); return; }
   list.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:12px">Loading coins...</div>';
   try {
-    // Get coins from exchange via redis prices
     const res = await fetch(`${API}/api/coins`, {headers: authHeaders()});
     if (res.ok) {
-      allAvailableCoins = await res.json();
-    } else {
-      // Fallback: common coins
-      allAvailableCoins = ['BTC','ETH','BNB','XRP','SOL','DOGE','ADA','TRX','AVAX','DOT','MATIC','LTC','LINK','UNI','ATOM','XLM','BCH','NEAR','APT','OP'];
+      const coins = await res.json();
+      if (coins.length > 0) { allAvailableCoins = coins; }
     }
-  } catch(e) {
-    allAvailableCoins = ['BTC','ETH','BNB','XRP','SOL','DOGE','ADA','TRX','AVAX','DOT','MATIC','LTC','LINK','UNI','ATOM'];
+  } catch(e) {}
+  if (!allAvailableCoins.length) {
+    allAvailableCoins = ['ACT','ADA','AGLD','AI16Z','AIXBT','ALGO','ALT','APE','APT','ARB','ATOM','AVAX','AXS','BERA','BGB','BLUR','BNB','BNX','BRETT','BTC','BTT','CAKE','CATI','CHZ','CKB','COMP','CRO','CRV','DOGE','DOT','DYDX','EIGEN','ENS','EOS','ETH','ETHFI','FET','FIL','FLOW','FTM','FXS','GALA','GMT','GMX','GRASS','GRT','HBAR','ICP','IMX','INJ','IO','JASMY','JTO','JUP','KAS','KAVA','KSM','LAYER','LDO','LINK','LPT','LRC','LTC','MANTA','MASK','MATIC','MEME','MINA','MKR','MOG','MOVE','NEAR','NEO','NOT','NULS','OP','ORDI','PENDLE','PEOPLE','PEPE','POL','PYTH','RUNE','SAND','SEI','SHIB','SKL','SNX','SOL','STX','SUI','SUPER','SUSHI','TAO','THETA','TIA','TON','TRB','TRX','UNI','VET','W','WIF','WLD','XLM','XMR','XRP','XTZ','YFI','ZEC','ZIL','ZK','ZRO'];
   }
   renderCoinList();
 }
@@ -1088,31 +1086,40 @@ function buildReviewScalper() {
 
 
 function buildReviewDca() {
-  const entryLabel = {
-    dca_smart: '🧠 Smart (champion)',
-    dca_asap: '⚡ ASAP',
-    dca_custom: '⚙️ Custom',
-    dca_templates: '📋 Template',
-  }[selectedEntryMethod] || selectedEntryMethod;
   const dcaName = generateBotName('dca');
   setTimeout(() => {
     const nameEl = document.getElementById('final-name-dca');
     if (nameEl && !nameEl.value) nameEl.value = dcaName;
   }, 50);
-  document.getElementById('review-dca-content').innerHTML = `
-    <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${dcaName}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">📈 DCA Bot</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Direction</span><span style="font-weight:700">📈 Long</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${entryLabel}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700;font-size:11px">${selectedCoinMode === 'all' ? '🌐 All Coins' : selectedCoins.length > 0 ? '🎯 ' + selectedCoins.slice(0,3).join(', ') + (selectedCoins.length > 3 ? ' +' + (selectedCoins.length-3) : '') : '🎯 Specific'}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">DCA Settings</span><span style="font-weight:700">${dcaSettingsMode === 'smart' ? '🧠 Smart' : document.getElementById('dca-spacing')?.value + '% spacing'}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Exit Settings</span><span style="font-weight:700">${dcaExitMode === 'smart' ? '🧠 Smart' : document.getElementById('dca-tp')?.value + '% TP · ' + document.getElementById('dca-trail')?.value + '% trail'}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
+  const entryLabel = {
+    dca_smart: '🧠 Smart (champion)',
+    dca_asap: '⚡ ASAP',
+    dca_custom: '⚙️ Custom',
+    dca_templates: '📋 Template',
+  }[selectedEntryMethod] || '—';
+  const coinLabel = selectedCoinMode === 'all'
+    ? '🌐 All Coins'
+    : selectedCoins.length > 0
+      ? '🎯 ' + selectedCoins.slice(0,3).join(', ') + (selectedCoins.length > 3 ? ' +' + (selectedCoins.length-3) + ' more' : '')
+      : '🎯 None selected';
+  const dcaSetLabel = dcaSettingsMode === 'smart'
+    ? '🧠 Smart'
+    : (document.getElementById('dca-spacing')?.value || '7') + '% spacing · ' + (document.getElementById('dca-size-mult')?.value || '1.5') + '× mult';
+  const exitLabel = dcaExitMode === 'smart'
+    ? '🧠 Smart'
+    : (document.getElementById('dca-tp')?.value || '5') + '% TP · ' + (document.getElementById('dca-trail')?.value || '2') + '% trail';
+  document.getElementById('review-dca-content').innerHTML =
+    '<div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">📈 DCA Bot</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">' + (selectedExchange ? selectedExchange.name : '—') + '</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">' + (selectedWallet ? selectedWallet.name : '—') + ' <span style="color:var(--text3);font-size:11px;font-weight:400">($' + (selectedWallet ? (selectedWallet.available||0).toFixed(2) : '0.00') + ' free)</span></span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Direction</span><span style="font-weight:700">📈 Long</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">' + entryLabel + '</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700;font-size:11px">' + coinLabel + '</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">DCA</span><span style="font-weight:700;font-size:11px">' + dcaSetLabel + '</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Exit</span><span style="font-weight:700;font-size:11px">' + exitLabel + '</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$' + selectedSize + ' per trade</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>';
 }
-
 // Override showStep to build reviews when needed
 const _origShowStep = showStep;
 window.goStep = function(id) {
