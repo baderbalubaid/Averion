@@ -379,16 +379,34 @@ def get_wallets(payload: dict = Depends(verify_token)):
     with db.get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, name, currency, allocation_amount, current_balance,
-                   committed_usdt, is_paper, exchange_id
+            SELECT id, name, currency, allocation_type, allocation_amount,
+                   current_balance, committed_usdt, standby_reserved,
+                   is_paper, exchange_id, coin
             FROM virtual_wallets WHERE user_id=%s ORDER BY created_at ASC
         """, (user_id,))
         rows = cur.fetchall()
-    return [{'id': r[0], 'name': r[1], 'currency': r[2],
-             'allocation_amount': float(r[3] or 0),
-             'current_balance': float(r[4] or 0),
-             'committed_usdt': float(r[5] or 0),
-             'is_paper': r[6], 'exchange_id': r[7]} for r in rows]
+        # Count bots per wallet
+        cur.execute("""
+            SELECT wallet_id, COUNT(*) FROM bots
+            WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE
+            GROUP BY wallet_id
+        """, (user_id,))
+        bot_counts = {r[0]: r[1] for r in cur.fetchall()}
+    return [{
+        'id': r[0], 'name': r[1], 'currency': r[2],
+        'cap_type': r[3],
+        'allocation_amount': float(r[4] or 0),
+        'current_balance': float(r[5] or 0),
+        'committed_usdt': float(r[6] or 0),
+        'standby_reserved': float(r[7] or 0),
+        'is_paper': r[8],
+        'exchange_id': r[9],
+        'coin': r[10],
+        'bot_count': bot_counts.get(r[0], 0),
+        'deployed': float(r[6] or 0),
+        'queued': float(r[7] or 0),
+        'available': float(r[5] or 0),
+    } for r in rows]
 
 @app.post('/wallets')
 def create_wallet(data: dict, payload: dict = Depends(verify_token)):
@@ -397,6 +415,9 @@ def create_wallet(data: dict, payload: dict = Depends(verify_token)):
     balance = float(data.get('balance', 1000))
     exchange_id = data.get('exchange_id', 2)
     is_paper = data.get('is_paper', True)
+    cap_type = data.get('cap_type', 'fixed')
+    coin = data.get('coin', None)
+    currency = coin if coin else 'USDT'
     if not name:
         raise HTTPException(status_code=400, detail='Wallet name required')
     with db.get_db() as conn:
@@ -404,20 +425,36 @@ def create_wallet(data: dict, payload: dict = Depends(verify_token)):
         cur.execute("""
             INSERT INTO virtual_wallets
                 (user_id, exchange_id, name, currency, allocation_type,
-                 allocation_amount, current_balance, is_paper)
-            VALUES (%s, %s, %s, 'USDT', 'fixed', %s, %s, %s)
+                 allocation_amount, current_balance, is_paper, coin)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (user_id, exchange_id, name, balance, balance, is_paper))
+        """, (user_id, exchange_id, name, currency, cap_type,
+                balance, balance, is_paper, coin))
         wallet_id = cur.fetchone()[0]
         conn.commit()
-    return {'id': wallet_id, 'message': f'Wallet created'}
+    return {'id': wallet_id, 'message': 'Wallet created'}
+
+@app.put('/wallets/{wallet_id}')
+def update_wallet(wallet_id: int, data: dict, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        if 'name' in data:
+            cur.execute("UPDATE virtual_wallets SET name=%s WHERE id=%s AND user_id=%s",
+                       (data['name'], wallet_id, user_id))
+        if 'balance' in data:
+            cur.execute("""UPDATE virtual_wallets SET allocation_amount=%s, current_balance=%s
+                          WHERE id=%s AND user_id=%s AND is_paper=TRUE""",
+                       (data['balance'], data['balance'], wallet_id, user_id))
+        cur.execute("UPDATE virtual_wallets SET updated_at=NOW() WHERE id=%s", (wallet_id,))
+        conn.commit()
+    return {'message': 'Wallet updated'}
 
 @app.delete('/wallets/{wallet_id}')
 def delete_wallet(wallet_id: int, payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
     with db.get_db() as conn:
         cur = conn.cursor()
-        # Check no bots using this wallet
         cur.execute("SELECT COUNT(*) FROM bots WHERE wallet_id=%s AND is_research=FALSE", (wallet_id,))
         if cur.fetchone()[0] > 0:
             raise HTTPException(status_code=400, detail='Wallet in use by bots')
