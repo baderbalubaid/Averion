@@ -370,6 +370,61 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
 
     return {'bot_id': bot_id, 'name': bot_name, 'message': f'{bot_name} created successfully'}
 
+# ═══════════════════════════════
+# VIRTUAL WALLETS
+# ═══════════════════════════════
+@app.get('/wallets')
+def get_wallets(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, name, currency, allocation_amount, current_balance,
+                   committed_usdt, is_paper, exchange_id
+            FROM virtual_wallets WHERE user_id=%s ORDER BY created_at ASC
+        """, (user_id,))
+        rows = cur.fetchall()
+    return [{'id': r[0], 'name': r[1], 'currency': r[2],
+             'allocation_amount': float(r[3] or 0),
+             'current_balance': float(r[4] or 0),
+             'committed_usdt': float(r[5] or 0),
+             'is_paper': r[6], 'exchange_id': r[7]} for r in rows]
+
+@app.post('/wallets')
+def create_wallet(data: dict, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    name = data.get('name', '').strip()
+    balance = float(data.get('balance', 1000))
+    exchange_id = data.get('exchange_id', 2)
+    is_paper = data.get('is_paper', True)
+    if not name:
+        raise HTTPException(status_code=400, detail='Wallet name required')
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO virtual_wallets
+                (user_id, exchange_id, name, currency, allocation_type,
+                 allocation_amount, current_balance, is_paper)
+            VALUES (%s, %s, %s, 'USDT', 'fixed', %s, %s, %s)
+            RETURNING id
+        """, (user_id, exchange_id, name, balance, balance, is_paper))
+        wallet_id = cur.fetchone()[0]
+        conn.commit()
+    return {'id': wallet_id, 'message': f'Wallet created'}
+
+@app.delete('/wallets/{wallet_id}')
+def delete_wallet(wallet_id: int, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        # Check no bots using this wallet
+        cur.execute("SELECT COUNT(*) FROM bots WHERE wallet_id=%s AND is_research=FALSE", (wallet_id,))
+        if cur.fetchone()[0] > 0:
+            raise HTTPException(status_code=400, detail='Wallet in use by bots')
+        cur.execute("DELETE FROM virtual_wallets WHERE id=%s AND user_id=%s", (wallet_id, user_id))
+        conn.commit()
+    return {'message': 'Wallet deleted'}
+
 @app.get('/reset-summary')
 def reset_summary(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
