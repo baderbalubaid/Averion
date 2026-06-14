@@ -486,7 +486,7 @@ function renderWallets() {
         <div style="font-size:11px;color:var(--text3)">${w.is_paper ? '📄 Paper' : '💰 Real'} · ${w.currency}</div>
       </div>
       <div style="display:flex;gap:16px;font-size:11px">
-        <div><span style="color:var(--text3)">Available</span> <span style="font-weight:700;color:var(--green)">$${available.toFixed(2)}</span></div>
+        <div><span style="color:var(--text3)">Free</span> <span style="font-weight:700;color:var(--green)">$${available.toFixed(2)}</span></div>
         <div><span style="color:var(--text3)">Deployed</span> <span style="font-weight:700">$${deployed.toFixed(2)}</span></div>
         <div><span style="color:var(--text3)">Total</span> <span style="font-weight:700">$${total.toFixed(2)}</span></div>
       </div>
@@ -794,7 +794,7 @@ function updateWalletPreview(type) {
   if (!el || !selectedWallet) return;
   const available = selectedWallet.available || 0;
   const pct = available > 0 ? ((selectedSize / available) * 100).toFixed(1) : 0;
-  el.innerHTML = `Using <strong>$${selectedSize}</strong> per trade · Wallet has <strong style="color:var(--green)">$${available.toFixed(2)}</strong> available (${pct}% per trade)`;
+  el.innerHTML = `Using <strong>$${selectedSize}</strong> per trade · Wallet has <strong style="color:var(--green)">$${available.toFixed(2)}</strong> free (${pct}% per trade)`;
 }
 
 // ── Review ─────────────────────────────────────────────────────────
