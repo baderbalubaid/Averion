@@ -335,6 +335,33 @@
           </div>
         </div>
         <div id="wallet-preview-dca" style="font-size:11px;color:var(--text3);margin-bottom:16px;padding:0 2px"></div>
+
+        <!-- Trades limits -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Max Open Trades</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">Total simultaneous positions for this bot</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-trades-per-bot" value="5" min="1" max="50"
+                inputmode="numeric"
+                style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+            </div>
+          </div>
+          <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Max Per Coin</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">Simultaneous positions per coin</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-trades-per-coin" value="1" min="1" max="5"
+                inputmode="numeric"
+                style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+            </div>
+          </div>
+        </div>
+
         <button onclick="validateAndGoReview('dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
       </div>
 
@@ -887,6 +914,8 @@ function selectDcaDirection(dir) {
 // ── Step 4 DCA: Entry ─────────────────────────────────────────────
 let dcaTemplates = [];
 let selectedTemplate = null;
+let selectedTemplateId = null;
+let selectedTemplateParams = null;
 
 async function loadDcaTemplates() {
   const list = document.getElementById('template-list');
@@ -907,29 +936,66 @@ function filterTemplates() {
 function renderTemplates(filter = '') {
   const list = document.getElementById('template-list');
   const filtered = filter
-    ? dcaTemplates.filter(t => t.method.toLowerCase().includes(filter))
+    ? dcaTemplates.filter(t =>
+        t.label.toLowerCase().includes(filter) ||
+        t.method.toLowerCase().includes(filter))
     : dcaTemplates;
+
   if (!filtered.length) {
-    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No methods found</div>';
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No templates found</div>';
     return;
   }
-  list.innerHTML = filtered.map(t => `
-    <div class="choice-card ${selectedTemplate === t.method ? 'selected' : ''}"
-         id="tmpl-${t.method}" onclick="selectTemplate('${t.method}')">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:700">${t.method}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.bot_count} variants · TP ${t.tp_range} · DCA ${t.dca_range}</div>
-        </div>
-        ${selectedTemplate === t.method ? '<span style="color:var(--green);font-size:18px;font-weight:700">✔</span>' : ''}
-      </div>
-    </div>`).join('');
+
+  // Group by method
+  const groups = {};
+  filtered.forEach(t => {
+    if (!groups[t.method]) groups[t.method] = [];
+    groups[t.method].push(t);
+  });
+
+  let html = '';
+  Object.keys(groups).sort((a,b) => {
+    const na = parseInt(a.replace(/\D/g,'')) || 0;
+    const nb = parseInt(b.replace(/\D/g,'')) || 0;
+    return na - nb;
+  }).forEach(method => {
+    const variants = groups[method];
+    // Method header
+    html += `<div style="font-size:10px;font-weight:700;color:var(--text3);
+      text-transform:uppercase;letter-spacing:0.5px;padding:8px 4px 4px">
+      ${method} · ${variants.length} variant${variants.length>1?'s':''}</div>`;
+    // Variants
+    variants.forEach(t => {
+      const isSelected = selectedTemplate === t.label;
+      html += `
+        <div class="choice-card ${isSelected ? 'selected' : ''}"
+             id="tmpl-${t.label.replace('-','_')}"
+             onclick="selectTemplate('${t.label}', ${t.id}, ${t.take_profit_percent}, ${t.dca_percent}, ${t.size_multiplier}, ${t.trailing_percent})"
+             style="margin-bottom:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:700">${t.label}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">
+                TP ${t.take_profit_percent}% · DCA ${t.dca_percent}% · Mult ${t.size_multiplier}× · Trail ${t.trailing_percent}%
+              </div>
+            </div>
+            ${isSelected ? '<span style="color:var(--green);font-size:18px;font-weight:700">✔</span>' : ''}
+          </div>
+        </div>`;
+    });
+  });
+  list.innerHTML = html;
 }
 
-function selectTemplate(method) {
-  selectedTemplate = method;
+function selectTemplate(label, id, tp, dca, mult, trail) {
+  selectedTemplate = label;
+  selectedTemplateId = id;
+  // Pre-fill DCA settings with template params
+  dcaSettingsMode = 'custom';
+  dcaExitMode = 'custom';
+  // Store for later use in review + API
+  selectedTemplateParams = { tp, dca, mult, trail };
   renderTemplates(document.getElementById('template-search')?.value?.toLowerCase() || '');
-  // Auto advance after short delay
   setTimeout(() => showStep('step-5-dca'), 300);
 }
 
@@ -1210,6 +1276,7 @@ function buildReviewDca() {
     '<div class="review-row"><span style="color:var(--text3)">DCA</span><span style="font-weight:700;font-size:11px">' + dcaSetLabel + '</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Exit</span><span style="font-weight:700;font-size:11px">' + exitLabel + '</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$' + selectedSize + ' per trade</span></div>' +
+    '<div class="review-row"><span style="color:var(--text3)">Max Trades</span><span style="font-weight:700">' + (document.getElementById('dca-trades-per-bot')?.value || 5) + ' total · ' + (document.getElementById('dca-trades-per-coin')?.value || 1) + ' per coin</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>';
 }
 // goStep is just showStep — reviews built directly in validateAndGoReview
@@ -1259,11 +1326,21 @@ async function createBot(type) {
         coin_mode: selectedCoinMode,
         dca_settings_mode: dcaSettingsMode,
         exit_mode: dcaExitMode,
-        dca_percent: dcaSettingsMode === 'smart' ? null : parseFloat(document.getElementById('dca-spacing').value),
-        size_multiplier: dcaSettingsMode === 'smart' ? null : parseFloat(document.getElementById('dca-size-mult').value),
-        max_dca_levels: dcaSettingsMode === 'smart' ? null : parseInt(document.getElementById('dca-max-levels').value),
-        take_profit_percent: dcaExitMode === 'smart' ? null : parseFloat(document.getElementById('dca-tp').value),
-        trailing_percent: dcaExitMode === 'smart' ? null : parseFloat(document.getElementById('dca-trail').value),
+        template_id: selectedTemplateId,
+        dca_percent: selectedTemplateParams ? selectedTemplateParams.dca :
+                     dcaSettingsMode === 'smart' ? null :
+                     parseFloat(document.getElementById('dca-spacing').value),
+        size_multiplier: selectedTemplateParams ? selectedTemplateParams.mult :
+                         dcaSettingsMode === 'smart' ? null :
+                         parseFloat(document.getElementById('dca-size-mult').value),
+        take_profit_percent: selectedTemplateParams ? selectedTemplateParams.tp :
+                             dcaExitMode === 'smart' ? null :
+                             parseFloat(document.getElementById('dca-tp').value),
+        trailing_percent: selectedTemplateParams ? selectedTemplateParams.trail :
+                          dcaExitMode === 'smart' ? null :
+                          parseFloat(document.getElementById('dca-trail').value),
+        trades_per_bot: parseInt(document.getElementById('dca-trades-per-bot')?.value || 5),
+        trades_per_coin: parseInt(document.getElementById('dca-trades-per-coin')?.value || 1),
         base_order: selectedSize,
       };
       const res = await fetch(`${API}/bots/create-dca`, {
@@ -1289,7 +1366,9 @@ function resetWizard() {
   botType = null; selectedExchange = null; selectedWallet = null;
   selectedEntryMethod = null; selectedVariant = null;
   selectedDirection = 'long'; selectedCoinMode = 'all'; selectedSize = 0;
-  selectedCoins = []; allAvailableCoins = []; selectedTemplate = null; dcaTemplates = [];
+  selectedCoins = []; allAvailableCoins = [];
+  selectedTemplate = null; selectedTemplateId = null;
+  selectedTemplateParams = null; dcaTemplates = [];
   dcaSettingsMode = 'smart'; dcaExitMode = 'smart';
   history = [];
   document.getElementById('launch-btn-scalper').style.display = 'block';

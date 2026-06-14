@@ -311,25 +311,37 @@ def get_dca_templates(payload: dict = Depends(verify_token)):
     with db.get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT method, COUNT(*) as bot_count,
-                   MIN(take_profit_percent) as min_tp,
-                   MAX(take_profit_percent) as max_tp,
-                   MIN(dca_percent) as min_dca,
-                   MAX(dca_percent) as max_dca
-            FROM bots
-            WHERE is_research=TRUE
-            AND method LIKE 'E%'
-            AND method != 'E58'
-            GROUP BY method
+            SELECT
+                b.id,
+                b.method,
+                b.name,
+                b.take_profit_percent,
+                b.dca_percent,
+                b.size_multiplier,
+                b.trailing_percent,
+                ROW_NUMBER() OVER (
+                    PARTITION BY b.method
+                    ORDER BY b.id ASC
+                ) as variant_num
+            FROM bots b
+            WHERE b.is_research=TRUE
+            AND b.method LIKE 'E%'
+            AND b.method != 'E58'
             ORDER BY
-                CAST(NULLIF(REGEXP_REPLACE(method, '[^0-9]', '', 'g'), '') AS INTEGER) ASC
+                CAST(NULLIF(REGEXP_REPLACE(b.method, '[^0-9]', '', 'g'), '') AS INTEGER) ASC,
+                b.id ASC
         """)
         rows = cur.fetchall()
     return [{
-        'method': r[0],
-        'bot_count': r[1],
-        'tp_range': f'{float(r[2] or 0):.1f}–{float(r[3] or 0):.1f}%',
-        'dca_range': f'{float(r[4] or 0):.1f}–{float(r[5] or 0):.1f}%',
+        'id': r[0],
+        'method': r[1],
+        'name': r[2],
+        'label': f"{r[1]}-{r[7]}",
+        'take_profit_percent': float(r[3] or 5),
+        'dca_percent': float(r[4] or 7),
+        'size_multiplier': float(r[5] or 1.5),
+        'trailing_percent': float(r[6] or 2),
+        'variant_num': r[7],
     } for r in rows]
 
 @app.get('/admin-features')
@@ -403,11 +415,23 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
         }
         method = method_map.get(entry_method, 'DCA_ASAP')
 
+        trades_per_bot = int(data.get('trades_per_bot', 5))
+        trades_per_coin = int(data.get('trades_per_coin', 1))
+        template_id = data.get('template_id')
+
         bot_params = _json.dumps({
             'entry_method': entry_method,
             'coin_mode': coin_mode,
             'direction': direction,
+            'template_id': template_id,
+            'dca_settings_mode': data.get('dca_settings_mode', 'smart'),
+            'exit_mode': data.get('exit_mode', 'smart'),
         })
+
+        tp = float(data.get('take_profit_percent') or 5)
+        trail = float(data.get('trailing_percent') or 2)
+        dca_pct = float(data.get('dca_percent') or 7)
+        size_mult = float(data.get('size_multiplier') or 1.5)
 
         cur.execute("""
             INSERT INTO bots (
@@ -417,20 +441,22 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
                 base_coin, is_paper, trades_per_bot, trades_per_coin,
                 gate_dca_enabled, gate_timer_enabled, gate_timer_hours,
                 order_entry_type, order_dca_type, status,
-                trading_on, is_research, is_template, bot_params
+                trading_on, is_research, is_template, bot_params,
+                entry_method
             ) VALUES (
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, 1.4,
                 %s, %s, %s,
-                'USDT', TRUE, 999, 1,
+                'USDT', TRUE, %s, %s,
                 TRUE, FALSE, 24,
                 'market', 'market', 'open',
-                TRUE, FALSE, FALSE, %s
+                TRUE, FALSE, FALSE, %s, %s
             ) RETURNING id
         """, (user_id, exchange_id, wallet_id, bot_name, method,
-                direction, base_order, dca_percent,
-                size_multiplier, take_profit_percent, trailing_percent,
-                bot_params))
+                direction, base_order, dca_pct,
+                size_mult, tp, trail,
+                trades_per_bot, trades_per_coin,
+                bot_params, entry_method))
         bot_id = cur.fetchone()[0]
         conn.commit()
 
