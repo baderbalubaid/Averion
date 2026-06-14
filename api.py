@@ -306,6 +306,32 @@ def get_available_coins(payload: dict = Depends(verify_token)):
         pass
     return []
 
+@app.get('/dca-templates')
+def get_dca_templates(payload: dict = Depends(verify_token)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT method, COUNT(*) as bot_count,
+                   MIN(take_profit_percent) as min_tp,
+                   MAX(take_profit_percent) as max_tp,
+                   MIN(dca_percent) as min_dca,
+                   MAX(dca_percent) as max_dca
+            FROM bots
+            WHERE is_research=TRUE
+            AND method LIKE 'E%'
+            AND method != 'E58'
+            GROUP BY method
+            ORDER BY
+                CAST(NULLIF(REGEXP_REPLACE(method, '[^0-9]', '', 'g'), '') AS INTEGER) ASC
+        """)
+        rows = cur.fetchall()
+    return [{
+        'method': r[0],
+        'bot_count': r[1],
+        'tp_range': f'{float(r[2] or 0):.1f}–{float(r[3] or 0):.1f}%',
+        'dca_range': f'{float(r[4] or 0):.1f}–{float(r[5] or 0):.1f}%',
+    } for r in rows]
+
 @app.get('/admin-features')
 def get_admin_features():
     with db.get_db() as conn:

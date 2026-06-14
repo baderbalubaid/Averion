@@ -157,6 +157,15 @@
         <div id="dca-entry-methods" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
+      <!-- ── STEP 4b DCA: Template Picker ── -->
+      <div id="step-4b-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Select Template</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Pick a research entry method (E1–E66)</div>
+        <input id="template-search" type="text" placeholder="🔍 Search method..." oninput="filterTemplates()"
+          style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box">
+        <div id="template-list" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto"></div>
+      </div>
+
       <!-- ── STEP 5 DCA: Coin Selection ── -->
       <div id="step-5-dca" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">Coin Selection</div>
@@ -430,7 +439,7 @@ function currentIdx() {
 
 function showStep(id) {
   // Hide all
-  document.querySelectorAll('#step-0,#step-1,#step-2,#step-3-scalper,#step-3-dca,#step-4-scalper,#step-4-dca,#step-5-scalper,#step-5-dca,#step-6-dca,#step-7-dca,#step-8-dca,#review-scalper,#review-dca').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#step-0,#step-1,#step-2,#step-3-scalper,#step-3-dca,#step-4-scalper,#step-4-dca,#step-4b-dca,#step-5-scalper,#step-5-dca,#step-6-dca,#step-7-dca,#step-8-dca,#review-scalper,#review-dca').forEach(el => el.style.display = 'none');
   const el = document.getElementById(id);
   if (el) el.style.display = 'block';
   currentStepId = id;
@@ -876,11 +885,62 @@ function selectDcaDirection(dir) {
 }
 
 // ── Step 4 DCA: Entry ─────────────────────────────────────────────
+let dcaTemplates = [];
+let selectedTemplate = null;
+
+async function loadDcaTemplates() {
+  const list = document.getElementById('template-list');
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">Loading...</div>';
+  try {
+    const res = await fetch(`${API}/dca-templates`, {headers: authHeaders()});
+    dcaTemplates = await res.json();
+    renderTemplates();
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:12px;padding:10px">Error loading templates</div>';
+  }
+}
+
+function filterTemplates() {
+  renderTemplates(document.getElementById('template-search').value.toLowerCase());
+}
+
+function renderTemplates(filter = '') {
+  const list = document.getElementById('template-list');
+  const filtered = filter
+    ? dcaTemplates.filter(t => t.method.toLowerCase().includes(filter))
+    : dcaTemplates;
+  if (!filtered.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No methods found</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(t => `
+    <div class="choice-card ${selectedTemplate === t.method ? 'selected' : ''}"
+         id="tmpl-${t.method}" onclick="selectTemplate('${t.method}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:700">${t.method}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.bot_count} variants · TP ${t.tp_range} · DCA ${t.dca_range}</div>
+        </div>
+        ${selectedTemplate === t.method ? '<span style="color:var(--green);font-size:18px;font-weight:700">✔</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function selectTemplate(method) {
+  selectedTemplate = method;
+  renderTemplates(document.getElementById('template-search')?.value?.toLowerCase() || '');
+  // Auto advance after short delay
+  setTimeout(() => showStep('step-5-dca'), 300);
+}
+
 function selectDcaEntry(key) {
   selectedEntryMethod = key;
-  // All entries go to coin selection
-  // Smart defaults DCA/exit to Smart mode, user can switch
-  showStep('step-5-dca');
+  if (key === 'dca_templates') {
+    showStep('step-4b-dca');
+    loadDcaTemplates();
+  } else {
+    showStep('step-5-dca');
+  }
 }
 
 // ── Step 5 DCA: Coin ──────────────────────────────────────────────
@@ -1145,6 +1205,7 @@ function buildReviewDca() {
     '<div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">' + (selectedWallet ? selectedWallet.name : '—') + ' <span style="color:var(--text3);font-size:11px;font-weight:400">($' + (selectedWallet ? (selectedWallet.available||0).toFixed(2) : '0.00') + ' free)</span></span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Direction</span><span style="font-weight:700">📈 Long</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">' + entryLabel + '</span></div>' +
+    (selectedTemplate ? '<div class="review-row"><span style="color:var(--text3)">Template</span><span style="font-weight:700">' + selectedTemplate + '</span></div>' : '') +
     '<div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700;font-size:11px">' + coinLabel + '</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">DCA</span><span style="font-weight:700;font-size:11px">' + dcaSetLabel + '</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Exit</span><span style="font-weight:700;font-size:11px">' + exitLabel + '</span></div>' +
@@ -1228,7 +1289,7 @@ function resetWizard() {
   botType = null; selectedExchange = null; selectedWallet = null;
   selectedEntryMethod = null; selectedVariant = null;
   selectedDirection = 'long'; selectedCoinMode = 'all'; selectedSize = 0;
-  selectedCoins = []; allAvailableCoins = [];
+  selectedCoins = []; allAvailableCoins = []; selectedTemplate = null; dcaTemplates = [];
   dcaSettingsMode = 'smart'; dcaExitMode = 'smart';
   history = [];
   document.getElementById('launch-btn-scalper').style.display = 'block';
