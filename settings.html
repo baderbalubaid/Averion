@@ -234,7 +234,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildUserRow();
     buildMobileNav();
     renderSettings();
-    setTimeout(() => { loadTimezoneUI(); loadTimeFormatUI(); }, 100);
+    loadTimezoneUI();
+    loadTimeFormatUI();
+    // Also after short delay for safety
+    setTimeout(() => { loadTimezoneUI(); loadTimeFormatUI(); }, 500);
 });
 </script>
 </body>
