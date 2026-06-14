@@ -1076,6 +1076,24 @@ def get_bots(payload: dict = Depends(verify_token)):
                                'wallet_name': r[3],
                                'deployed': float(r[4] or 0)} for r in cur.fetchall()}
 
+
+        # Realized P&L per bot
+        cur.execute("""
+            SELECT bot_id, COALESCE(SUM(realized_pnl_usdt), 0)
+            FROM live_dca_positions
+            WHERE user_id=%s AND status='closed'
+            GROUP BY bot_id
+        """, (user_id,))
+        dca_realized = {int(r[0]): float(r[1]) for r in cur.fetchall()}
+
+        cur.execute("""
+            SELECT lp.bot_id, COALESCE(SUM(lp.pnl_usdt), 0)
+            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s AND lp.status='closed'
+            AND b.is_research=FALSE AND b.is_template=FALSE
+            GROUP BY lp.bot_id
+        """, (user_id,))
+        scalper_realized = {int(r[0]): float(r[1]) for r in cur.fetchall()}
     # Calculate current worth per bot
     bot_worth = {}
 
@@ -1143,6 +1161,7 @@ def get_bots(payload: dict = Depends(verify_token)):
             'wallet_name': wallet.get('wallet_name', '—'),
             'wallet_available': wallet.get('available', 0),
             'wallet_total': wallet.get('total', 0),
+            'realized_pnl': round(dca_realized.get(bot_id, 0) + scalper_realized.get(bot_id, 0), 2),
         })
     return result
 

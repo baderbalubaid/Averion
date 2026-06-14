@@ -155,7 +155,10 @@ async function renderBots() {
                 </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="font-size:11px;color:var(--text3)">Invested <strong>$${invested.toFixed(2)}</strong> · P&L% <strong style="color:${pnlColor}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</strong></div>
+                <div style="font-size:11px;color:var(--text3)">
+                    Invested <strong>$${invested.toFixed(2)}</strong> ·
+                    Realized <strong style="color:${(bot.realized_pnl||0)>=0?'var(--green)':'var(--red)'}">${(bot.realized_pnl||0)>=0?'+':''}$${Math.abs(bot.realized_pnl||0).toFixed(2)}</strong>
+                </div>
             </div>
             <div style="display:flex;gap:8px">
                 <button onclick="event.stopPropagation();openEditModal(${bot.id},'${bot.name}',${bot.base_order})"
