@@ -430,7 +430,7 @@ function currentIdx() {
 
 function showStep(id) {
   // Hide all
-  document.querySelectorAll('[id^="step-"],[id^="review-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#step-0,#step-1,#step-2,#step-3-scalper,#step-3-dca,#step-4-scalper,#step-4-dca,#step-5-scalper,#step-5-dca,#step-6-dca,#step-7-dca,#step-8-dca,#review-scalper,#review-dca').forEach(el => el.style.display = 'none');
   const el = document.getElementById(id);
   if (el) el.style.display = 'block';
   currentStepId = id;
@@ -1089,9 +1089,6 @@ function generateBotName(type) {
 }
 
 function buildReviewScalper() {
-  // Debug: show state
-  const debugEl = document.getElementById('review-scalper-content');
-  if (debugEl) debugEl.innerHTML = '<div style="font-size:10px;color:var(--text3);padding:6px">Loading... exc=' + (selectedExchange ? selectedExchange.name : 'null') + ' wallet=' + (selectedWallet ? selectedWallet.name : 'null') + ' size=' + selectedSize + '</div>';
   const scalperName = generateBotName('scalper');
   setTimeout(() => {
     const nameEl = document.getElementById('final-name-scalper');
