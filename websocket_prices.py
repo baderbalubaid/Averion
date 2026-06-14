@@ -98,6 +98,12 @@ class MexcWebSocketPrices:
                                 self.tp_callback(coin, float(t.price))
                             except Exception:
                                 pass
+                        # Live Long DCA TP check
+                        if _live_dca_tp:
+                            try:
+                                _live_dca_tp(coin, float(t.price))
+                            except Exception:
+                                pass
                 pipe.execute()
                 self.last_update = datetime.utcnow()
                 self.r.setex('ws:mexc:status', 60, 'connected')
