@@ -292,6 +292,14 @@ def get_status():
 # ═══════════════════════════════
 # POSITIONS
 # ═══════════════════════════════
+@app.get('/admin-features')
+def get_admin_features():
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT feature_key, enabled, visible, label FROM admin_features")
+        rows = cur.fetchall()
+    return {r[0]: {'enabled': r[1], 'visible': r[2], 'label': r[3]} for r in rows}
+
 @app.get('/scalper-variants')
 def get_scalper_variants(payload: dict = Depends(verify_token)):
     import json as _json
@@ -317,6 +325,76 @@ def get_scalper_variants(payload: dict = Depends(verify_token)):
             'stop_loss_pct': p.get('stop_loss_pct'),
         })
     return result
+
+@app.post('/bots/create-dca')
+def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
+    import json as _json
+    user_id = payload['user_id']
+    exchange_id = data.get('exchange_id')
+    wallet_id = data.get('wallet_id', 1)
+    direction = data.get('direction', 'long')
+    entry_method = data.get('entry_method', 'dca_asap')
+    coin_mode = data.get('coin_mode', 'all')
+    base_order = float(data.get('base_order', 10))
+    dca_percent = float(data.get('dca_percent', 7))
+    size_multiplier = float(data.get('size_multiplier', 1.5))
+    max_dca_levels = int(data.get('max_dca_levels', 0))
+    take_profit_percent = float(data.get('take_profit_percent', 5))
+    trailing_percent = float(data.get('trailing_percent', 2))
+
+    with db.get_db() as conn:
+        cur = conn.cursor()
+
+        # Generate bot name
+        cur.execute("""
+            SELECT COUNT(*) FROM bots
+            WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE
+            AND method LIKE 'DCA%'
+        """, (user_id,))
+        count = cur.fetchone()[0] + 1
+        bot_name = f'DCA-{count}'
+
+        # Determine method based on entry
+        method_map = {
+            'dca_smart': 'DCA_SMART',
+            'dca_asap': 'DCA_ASAP',
+            'dca_custom': 'DCA_CUSTOM',
+            'dca_templates': 'DCA_TEMPLATE',
+        }
+        method = method_map.get(entry_method, 'DCA_ASAP')
+
+        bot_params = _json.dumps({
+            'entry_method': entry_method,
+            'coin_mode': coin_mode,
+            'direction': direction,
+        })
+
+        cur.execute("""
+            INSERT INTO bots (
+                user_id, exchange_id, wallet_id, name, method,
+                direction, base_order, dca_percent, spacing_multiplier,
+                size_multiplier, take_profit_percent, trailing_percent,
+                base_coin, is_paper, trades_per_bot, trades_per_coin,
+                gate_dca_enabled, gate_timer_enabled, gate_timer_hours,
+                order_entry_type, order_dca_type, status,
+                trading_on, is_research, is_template, bot_params
+            ) VALUES (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, 1.4,
+                %s, %s, %s,
+                'USDT', TRUE, 999, 1,
+                TRUE, FALSE, 24,
+                'market', 'market', 'open',
+                TRUE, FALSE, FALSE, %s
+            ) RETURNING id
+        """, (user_id, exchange_id, wallet_id, bot_name, method,
+                direction, base_order, dca_percent,
+                size_multiplier, take_profit_percent, trailing_percent,
+                bot_params))
+        bot_id = cur.fetchone()[0]
+        conn.commit()
+
+    return {'bot_id': bot_id, 'name': bot_name, 'message': f'{bot_name} created successfully'}
 
 @app.post('/bots/create-scalper')
 def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
