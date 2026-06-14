@@ -317,13 +317,17 @@ def execute_tp_sell(pos, bot, current_price):
                   f'@ ${result.fill_price:.6f} '
                   f'pnl={pnl_pct:.2f}% (${pnl_usdt:.4f})')
 
-            # Deduct 20% performance fee on profit
+            # Deduct 20% performance fee on profit (skip research/admin accounts)
             if pnl_usdt > 0:
                 try:
-                    fee = pnl_usdt * 0.20
-                    db.deduct_performance_fee(
-                        bot['user_id'], pos['id'], fee, pnl_usdt
-                    )
+                    with db.get_db() as _fc:
+                        _cur = _fc.cursor()
+                        _cur.execute("SELECT is_research_account, is_admin FROM users WHERE id=%s", (bot['user_id'],))
+                        _urow = _cur.fetchone()
+                        _skip_fee = _urow and (_urow[0] or _urow[1])
+                    if not _skip_fee:
+                        fee = pnl_usdt * 0.20
+                        db.deduct_performance_fee(bot['user_id'], pos['id'], fee, pnl_usdt)
                 except Exception as e:
                     print(f'⚠️ Fee deduction error: {e}')
 

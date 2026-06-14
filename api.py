@@ -737,10 +737,16 @@ def home_stats(payload: dict = Depends(verify_token)):
         """, (user_id,))
         total_profit += float(cur.fetchone()[0])
 
-        # Fee debt
+        # Fee debt — only for non-research, non-admin users
         try:
-            cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f WHERE f.user_id=%s AND f.paid_at IS NULL", (user_id,))
-            fee_debt = float(cur.fetchone()[0])
+            cur.execute("SELECT is_research_account, is_admin FROM users WHERE id=%s", (user_id,))
+            urow = cur.fetchone()
+            is_research_user = urow and (urow[0] or urow[1])
+            if is_research_user:
+                fee_debt = 0.0
+            else:
+                cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f WHERE f.user_id=%s AND f.paid_at IS NULL", (user_id,))
+                fee_debt = float(cur.fetchone()[0])
         except Exception:
             fee_debt = 0.0
 
