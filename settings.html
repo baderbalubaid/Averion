@@ -77,7 +77,7 @@
               <div class="settings-desc" id="tz-current">Auto-detecting...</div>
             </div>
             <div class="settings-val">
-              <select id="tz-select" onchange="saveTimezone(this.value)"
+              <select id="tz-select" autocomplete="off" onchange="saveTimezone(this.value)"
                 style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;cursor:pointer">
                 <option value="auto">Auto-detect</option>
                 <option value="UTC">UTC</option>
@@ -101,7 +101,7 @@
               <div class="settings-desc" id="tf-current">24-hour</div>
             </div>
             <div class="settings-val">
-              <select id="tf-select" onchange="saveTimeFormat(this.value)"
+              <select id="tf-select" autocomplete="off" onchange="saveTimeFormat(this.value)"
                 style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;cursor:pointer">
                 <option value="24h">24-hour (14:30)</option>
                 <option value="12h">12-hour (2:30 PM)</option>
@@ -145,23 +145,25 @@ function saveTimezone(tz) {
 }
 
 function loadTimezoneUI() {
-    const saved = localStorage.getItem('averion_timezone');
+    const saved = (localStorage.getItem('averion_timezone') || '').trim();
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const sel = document.getElementById('tz-select');
     const desc = document.getElementById('tz-current');
     if (!sel) return;
     if (saved) {
-        sel.value = saved;
-        if (sel.value !== saved) {
+        let found = false;
+        Array.from(sel.options).forEach(o => {
+            if (o.value === saved) { o.selected = true; found = true; }
+            else o.selected = false;
+        });
+        if (!found) {
             const opt = document.createElement('option');
-            opt.value = saved;
-            opt.textContent = saved;
+            opt.value = saved; opt.textContent = saved; opt.selected = true;
             sel.appendChild(opt);
-            sel.value = saved;
         }
         desc.textContent = saved;
     } else {
-        sel.value = 'auto';
+        Array.from(sel.options).forEach(o => o.selected = (o.value === 'auto'));
         desc.textContent = `Auto (${detected})`;
     }
 }
@@ -230,6 +232,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadTimeFormatUI();
     // Also after short delay for safety
     setTimeout(() => { loadTimezoneUI(); loadTimeFormatUI(); }, 500);
+});
+
+// Fix iOS bfcache
+window.addEventListener('pageshow', function() {
+    loadTimezoneUI();
+    loadTimeFormatUI();
 });
 </script>
 </body>
