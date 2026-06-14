@@ -18,6 +18,15 @@ try:
     from live_scalper_engine import on_price_update as live_scalper_on_price
 except Exception:
     live_scalper_on_price = None
+
+try:
+    from live_long_dca_engine import get_live_tp_callback, start_engine as start_dca_engine
+    _live_dca_tp = get_live_tp_callback()
+    start_dca_engine()
+    print('✅ LiveLongDCA engine wired to WebSocket')
+except Exception as _e:
+    _live_dca_tp = None
+    print(f'⚠️ LiveLongDCA engine not loaded: {_e}')
 import websocket
 from datetime import datetime
 
