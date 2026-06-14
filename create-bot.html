@@ -193,11 +193,11 @@
           <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount (USDT)</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:18px;font-weight:700">$</span>
-            <input type="number" id="custom-size-scalper" min="1" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('scalper', this.value)">
+            <input type="number" id="custom-size-scalper" min="1" inputmode="decimal" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('scalper', this.value)">
           </div>
         </div>
         <div id="wallet-preview-scalper" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
-        <button onclick="goStep('review-scalper')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+        <button onclick="validateAndGoReview('scalper')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
       </div>
 
       <!-- ── STEP 6 DCA: DCA Settings ── -->
@@ -211,7 +211,7 @@
               <div style="font-size:10px;color:var(--text3);margin-top:1px">% drop from last buy to trigger DCA</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="dca-spacing" value="7" min="1" max="50" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <input type="number" id="dca-spacing" value="7" min="1" max="50" step="0.5" inputmode="decimal" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
               <span style="font-size:12px;color:var(--text3)">%</span>
             </div>
           </div>
@@ -221,7 +221,7 @@
               <div style="font-size:10px;color:var(--text3);margin-top:1px">Each DCA buys X× more than last</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="dca-size-mult" value="1.5" min="1" max="5" step="0.1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <input type="number" id="dca-size-mult" value="1.5" min="1" max="5" step="0.1" inputmode="decimal" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
               <span style="font-size:12px;color:var(--text3)">×</span>
             </div>
           </div>
@@ -231,7 +231,7 @@
               <div style="font-size:10px;color:var(--text3);margin-top:1px">0 = unlimited</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="dca-max-levels" value="0" min="0" max="20" step="1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <input type="number" id="dca-max-levels" value="0" min="0" max="20" step="1" inputmode="numeric" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
             </div>
           </div>
         </div>
@@ -249,7 +249,7 @@
               <div style="font-size:10px;color:var(--text3);margin-top:1px">% above avg cost to arm TP</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="dca-tp" value="5" min="0.5" max="100" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <input type="number" id="dca-tp" value="5" min="0.5" max="100" step="0.5" inputmode="decimal" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
               <span style="font-size:12px;color:var(--text3)">%</span>
             </div>
           </div>
@@ -259,7 +259,7 @@
               <div style="font-size:10px;color:var(--text3);margin-top:1px">% pullback from peak to trigger</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="dca-trail" value="2" min="0.1" max="20" step="0.1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <input type="number" id="dca-trail" value="2" min="0.1" max="20" step="0.1" inputmode="decimal" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
               <span style="font-size:12px;color:var(--text3)">%</span>
             </div>
           </div>
@@ -276,11 +276,11 @@
           <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount (USDT)</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:18px;font-weight:700">$</span>
-            <input type="number" id="custom-size-dca" min="1" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('dca', this.value)">
+            <input type="number" id="custom-size-dca" min="1" inputmode="decimal" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('dca', this.value)">
           </div>
         </div>
         <div id="wallet-preview-dca" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
-        <button onclick="goStep('review-dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+        <button onclick="validateAndGoReview('dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
       </div>
 
       <!-- ── REVIEW SCALPER ── -->
@@ -296,6 +296,10 @@
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px">
           <div id="review-scalper-content"></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Bot Name</div>
+          <input class="wizard-input" id="final-name-scalper" placeholder="Bot name" style="font-size:14px;font-weight:700">
         </div>
         <button onclick="createBot('scalper')" id="launch-btn-scalper" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">🚀 Launch Scalper Bot</button>
         <div id="success-scalper" style="display:none;text-align:center;padding:24px">
@@ -322,6 +326,10 @@
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px">
           <div id="review-dca-content"></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Bot Name</div>
+          <input class="wizard-input" id="final-name-dca" placeholder="Bot name" style="font-size:14px;font-weight:700">
         </div>
         <button onclick="createBot('dca')" id="launch-btn-dca" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">🚀 Launch DCA Bot</button>
         <div id="success-dca" style="display:none;text-align:center;padding:24px">
@@ -675,8 +683,11 @@ async function selectScalperEntry(key) {
     document.getElementById('step4s-sub').textContent = 'Configure your scalper parameters';
     renderCustomScalper();
   } else if (key === 'scalper_smart') {
-    // Smart skips variant selection — go straight to order size
+    // Smart skips step-4 entirely — don't push it to history
     selectedVariant = null;
+    // Remove step-3-scalper from history so back goes to wallet
+    const idx = history.lastIndexOf('step-3-scalper');
+    if (idx !== -1) history.splice(idx + 1);
     showStep('step-5-scalper');
     buildSizePresets('scalper');
   }
@@ -784,7 +795,9 @@ function selectDcaDirection(dir) {
 function selectDcaEntry(key) {
   selectedEntryMethod = key;
   if (key === 'dca_smart') {
-    // Smart skips coin/settings — use defaults, go to order size
+    // Smart skips coin, DCA settings, exit settings — straight to order size
+    const idx = history.lastIndexOf('step-4-dca');
+    if (idx !== -1) history.splice(idx + 1);
     showStep('step-8-dca');
     buildSizePresets('dca');
   } else {
@@ -838,6 +851,20 @@ function updateWalletPreview(type) {
 }
 
 // ── Review ─────────────────────────────────────────────────────────
+function validateAndGoReview(type) {
+  if (!selectedSize || selectedSize <= 0) {
+    alert('Please enter a valid order size'); return;
+  }
+  if (!selectedWallet) {
+    alert('Please select a wallet'); return;
+  }
+  if (type === 'scalper') {
+    goStep('review-scalper');
+  } else {
+    goStep('review-dca');
+  }
+}
+
 function generateBotName(type) {
   const excName = (selectedExchange?.name || 'Bot').split(' ')[0];
   if (type === 'scalper') {
@@ -858,6 +885,10 @@ function buildReviewScalper() {
     ? `${selectedVariant.name} · ${selectedVariant.trigger_pct}% trigger · ${selectedVariant.window_sec}s window · ${selectedVariant.hold_sec}s hold`
     : 'Smart (champion)';
   const scalperName = generateBotName('scalper');
+  setTimeout(() => {
+    const nameEl = document.getElementById('final-name-scalper');
+    if (nameEl && !nameEl.value) nameEl.value = scalperName;
+  }, 50);
   document.getElementById('review-scalper-content').innerHTML = `
     <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${scalperName}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">⚡ Scalper</span></div>
@@ -877,6 +908,10 @@ function buildReviewDca() {
     dca_templates: '📋 Template',
   }[selectedEntryMethod] || selectedEntryMethod;
   const dcaName = generateBotName('dca');
+  setTimeout(() => {
+    const nameEl = document.getElementById('final-name-dca');
+    if (nameEl && !nameEl.value) nameEl.value = dcaName;
+  }, 50);
   document.getElementById('review-dca-content').innerHTML = `
     <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${dcaName}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">📈 DCA Bot</span></div>
@@ -908,7 +943,9 @@ async function createBot(type) {
 
   try {
     if (type === 'scalper') {
+      const botName = document.getElementById('final-name-scalper')?.value?.trim() || generateBotName('scalper');
       const payload = {
+        bot_name: botName,
         exchange_id: selectedExchange.id,
         wallet_id: selectedWallet.id,
         entry_method: selectedEntryMethod,
@@ -932,7 +969,9 @@ async function createBot(type) {
       document.getElementById('success-scalper').style.display = 'block';
 
     } else {
+      const dcaBotName = document.getElementById('final-name-dca')?.value?.trim() || generateBotName('dca');
       const payload = {
+        bot_name: dcaBotName,
         exchange_id: selectedExchange.id,
         wallet_id: selectedWallet.id,
         direction: selectedDirection,
