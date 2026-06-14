@@ -370,6 +370,62 @@ def create_scalper_bot(data: dict, payload: dict = Depends(verify_token)):
 
     return {'bot_id': bot_id, 'name': bot_name, 'message': f'{bot_name} created successfully'}
 
+@app.get('/reset-summary')
+def reset_summary(payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM live_positions WHERE user_id=%s AND status='open'", (user_id,))
+        open_positions = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE", (user_id,))
+        live_bots = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM exchanges WHERE user_id=%s AND active=TRUE", (user_id,))
+        exchanges = cur.fetchone()[0]
+    return {'open_positions': int(open_positions), 'live_bots': int(live_bots), 'exchanges': int(exchanges)}
+
+@app.post('/reset/{reset_type}')
+def execute_reset(reset_type: str, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    redis_client = get_redis()
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        if reset_type in ('trades', 'bots', 'exchanges', 'all'):
+            cur.execute("SELECT id, coin, entry_price, base_order FROM live_positions WHERE user_id=%s AND status='open'", (user_id,))
+            open_pos = cur.fetchall()
+            for pos in open_pos:
+                pos_id, coin, entry_price, base_order = pos
+                try:
+                    keys = redis_client.keys(f'price:*:{coin}/USDT')
+                    exit_price = float(redis_client.get(keys[0])) if keys else float(entry_price)
+                except:
+                    exit_price = float(entry_price)
+                ep = float(entry_price or 0)
+                pnl_pct = (exit_price - ep) / ep * 100 if ep > 0 else 0
+                pnl_usdt = float(base_order or 2) * pnl_pct / 100
+                cur.execute("UPDATE live_positions SET status='closed', exit_price=%s, exit_time=NOW(), pnl_pct=%s, pnl_usdt=%s, exit_reason='manual_reset' WHERE id=%s",
+                    (exit_price, round(pnl_pct,4), round(pnl_usdt,6), pos_id))
+        if reset_type in ('bots', 'exchanges', 'all'):
+            cur.execute("SELECT id FROM bots WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE", (user_id,))
+            bot_ids = [row[0] for row in cur.fetchall()]
+            if bot_ids:
+                cur.execute("DELETE FROM fee_debt WHERE position_id IN (SELECT id FROM positions WHERE bot_id = ANY(%s))", (bot_ids,))
+                cur.execute("DELETE FROM trades WHERE bot_id = ANY(%s)", (bot_ids,))
+                cur.execute("DELETE FROM positions WHERE bot_id = ANY(%s)", (bot_ids,))
+                cur.execute("DELETE FROM live_positions WHERE bot_id = ANY(%s)", (bot_ids,))
+                cur.execute("DELETE FROM bots WHERE id = ANY(%s)", (bot_ids,))
+        if reset_type in ('exchanges', 'all'):
+            cur.execute("DELETE FROM exchanges WHERE user_id=%s", (user_id,))
+        if reset_type == 'all':
+            cur.execute("UPDATE virtual_wallets SET current_balance=10000, committed_usdt=0 WHERE user_id=%s", (user_id,))
+        conn.commit()
+    messages = {
+        'trades': 'All open positions closed',
+        'bots': 'All bots deleted and positions closed',
+        'exchanges': 'All exchanges, bots and positions deleted',
+        'all': 'Everything reset. Fresh start!'
+    }
+    return {'message': messages.get(reset_type, 'Reset complete')}
+
 @app.get('/home-stats')
 def home_stats(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
