@@ -84,8 +84,8 @@ def get_redis_price(coin: str) -> tuple:
             password=REDIS_PASSWORD, decode_responses=True
         )
         # Try MEXC format first
-        key = f'price:MEXC:{coin}/USDT'
-        val = r.get(key)
+        keys = r.keys(f'price:*:{coin}/USDT')
+        val = r.get(keys[0]) if keys else None
         ts_key = f'price_ts:MEXC:{coin}/USDT'
         ts_val = r.get(ts_key)
 

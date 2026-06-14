@@ -201,7 +201,7 @@ def get_tradeable_coins(r, bot_params):
     # All coins from Redis
     try:
         keys = r.keys('price:*:*/USDT')
-        coins = [k.split(':')[2].replace('/USDT', '') for k in keys]
+        coins = [k.split(":")[-1].replace("/USDT", "") for k in keys]
         return [c for c in coins if c not in ('BTC', 'ETH', 'USDT')]
     except Exception:
         return []
