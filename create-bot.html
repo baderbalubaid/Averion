@@ -425,7 +425,7 @@ async function loadExchanges() {
   const list = document.getElementById('exc-list');
   list.innerHTML = '<div style="color:var(--text3);font-size:12px">Loading...</div>';
   try {
-    const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+    const res = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
     const data = await res.json();
     if (!data.length) {
       list.innerHTML = '<div style="color:var(--text3);font-size:12px">No exchanges connected. <a href="/exchanges" style="color:var(--accent)">Add one</a></div>';
