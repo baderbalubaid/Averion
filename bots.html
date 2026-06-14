@@ -78,15 +78,6 @@
     </div>
 </div>
 <!-- Bot action menu -->
-<div id="botActionMenu" style="display:none;position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:8px;z-index:400;min-width:180px;box-shadow:0 8px 32px #00000090">
- <div id="botMenuTitle" style="font-size:10px;color:var(--text3);padding:4px 10px 8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);margin-bottom:6px"></div>
- <div id="botMenuStartStop" onclick="botMenuAction('toggle')" style="padding:10px 12px;font-size:13px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:10px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"></div>
- <div onclick="botMenuAction('edit')" style="padding:10px 12px;font-size:13px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:10px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">✏️ <span>Edit Bot</span></div>
- <div onclick="botMenuAction('panic')" style="padding:10px 12px;font-size:13px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:10px;color:var(--amber)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">💥 <span>Panic Close All</span></div>
- <div style="border-top:1px solid var(--border);margin:6px 0"></div>
- <div onclick="botMenuAction('delete')" style="padding:10px 12px;font-size:13px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:10px;color:var(--red)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">🗑️ <span>Delete Bot</span></div>
-</div>
-<div id="botMenuBackdrop" onclick="closeBotMenu()" style="display:none;position:fixed;inset:0;z-index:399"></div>
 
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=6"></script>
@@ -196,30 +187,6 @@ let _botMenuName = null;
 let _botMenuRunning = false;
 let _botMenuBaseOrder = 0;
 
-function openBotMenu(botId, botName, tradingOn, baseOrder, event) {
-   event.stopPropagation();
-   _botMenuId = botId;
-   _botMenuName = botName;
-   _botMenuRunning = tradingOn;
-   _botMenuBaseOrder = baseOrder;
-
-   const menu = document.getElementById('botActionMenu');
-   const backdrop = document.getElementById('botMenuBackdrop');
-   const title = document.getElementById('botMenuTitle');
-   const toggleEl = document.getElementById('botMenuStartStop');
-
-   title.textContent = botName;
-   toggleEl.innerHTML = _botMenuRunning
-       ? '<span>⬛</span> <span style="color:var(--red)">Stop Bot</span>'
-       : '<span>▶</span> <span style="color:var(--green)">Start Bot</span>';
-
-   // Position near button
-   const rect = event.target.getBoundingClientRect();
-   menu.style.top = (rect.bottom + 8) + 'px';
-   menu.style.left = Math.max(8, rect.right - 180) + 'px';
-   menu.style.display = 'block';
-   backdrop.style.display = 'block';
-}
 
 function closeBotMenu() {
    document.getElementById('botActionMenu').style.display = 'none';
@@ -263,6 +230,55 @@ async function deleteBot(botId) {
        if (!res.ok) { alert(d.detail || 'Error deleting bot'); return; }
        await loadBots();
    } catch(e) { alert('Error deleting bot'); }
+}
+
+let _openMenuId = null;
+
+function toggleInlineMenu(botId) {
+    if (_openMenuId && _openMenuId !== botId) {
+        const prev = document.getElementById('botmenu-' + _openMenuId);
+        if (prev) prev.style.display = 'none';
+    }
+    const menu = document.getElementById('botmenu-' + botId);
+    if (!menu) return;
+    const isOpen = menu.style.display !== 'none';
+    menu.style.display = isOpen ? 'none' : 'block';
+    _openMenuId = isOpen ? null : botId;
+}
+
+async function botAction(botId, botName, tradingOn, baseOrder, action) {
+    const menu = document.getElementById('botmenu-' + botId);
+    if (menu) menu.style.display = 'none';
+    _openMenuId = null;
+    if (action === 'edit') {
+        openEditModal(botId, botName, baseOrder);
+    } else if (action === 'panic') {
+        if (confirm('Close ALL open positions for ' + botName + ' at market price?')) {
+            await panicCloseBot(botId);
+        }
+    } else if (action === 'delete') {
+        if (confirm('Delete ' + botName + '?\n\nAll open positions will be closed at market price.')) {
+            await deleteBot(botId);
+        }
+    }
+}
+
+async function panicCloseBot(botId) {
+    try {
+        const res = await fetch(`${API}/bots/${botId}/panic-close`, {method:'POST', headers:authHeaders()});
+        const d = await res.json();
+        alert(d.message || 'Done');
+        await loadBots();
+    } catch(e) { alert('Error'); }
+}
+
+async function deleteBot(botId) {
+    try {
+        const res = await fetch(`${API}/bots/${botId}`, {method:'DELETE', headers:authHeaders()});
+        const d = await res.json();
+        if (!res.ok) { alert(d.detail || 'Error'); return; }
+        await loadBots();
+    } catch(e) { alert('Error deleting bot'); }
 }
 
 async function toggleBot(botId, newState) {

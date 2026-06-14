@@ -663,7 +663,7 @@ def home_stats(payload: dict = Depends(verify_token)):
         cur = conn.cursor()
 
         # Active bots
-        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE AND is_template=FALSE", (user_id,))
+        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE AND is_template=FALSE AND status!='deleted'", (user_id,))
         active_bots = cur.fetchone()[0]
 
         # Scalper open trades
@@ -1821,24 +1821,28 @@ def create_bot(req: BotCreate,
    return {'message': 'Bot created', 'bot_id': bot_id}
 
 @app.delete('/bots/{bot_id}')
-def delete_bot(bot_id: int,
-              payload: dict = Depends(verify_token)):
-   with db.get_db() as conn:
-       cur = conn.cursor()
-       # Check ownership
-       cur.execute("""
-           SELECT id FROM bots
-           WHERE id = %s AND user_id = %s
-       """, (bot_id, payload['user_id']))
-       if not cur.fetchone():
-           raise HTTPException(status_code=404,
-                               detail='Bot not found')
-       # Soft delete
-       cur.execute("""
-           UPDATE bots SET status = 'deleted'
-           WHERE id = %s
-       """, (bot_id,))
-   return {'message': f'Bot {bot_id} deleted'}
+def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE AND is_template=FALSE",
+                    (bot_id, user_id))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail='Bot not found')
+        # Close all open positions
+        cur.execute("UPDATE live_positions SET status='closed', exit_time=NOW(), exit_reason='bot_deleted' WHERE bot_id=%s AND status='open'", (bot_id,))
+        cur.execute("UPDATE live_dca_positions SET status='closed', closed_at=NOW(), close_reason='bot_deleted' WHERE bot_id=%s AND status='open'", (bot_id,))
+        # Return wallet funds
+        cur.execute("""
+            UPDATE virtual_wallets vw
+            SET current_balance=vw.current_balance+vw.committed_usdt,
+                committed_usdt=0, updated_at=NOW()
+            FROM bots b WHERE b.id=%s AND b.wallet_id=vw.id
+        """, (bot_id,))
+        # Hard delete
+        cur.execute("DELETE FROM bots WHERE id=%s AND user_id=%s", (bot_id, user_id))
+        conn.commit()
+    return {'message': 'Bot deleted successfully'}
 
 # ═══════════════════════════════
 # VIRTUAL WALLETS
