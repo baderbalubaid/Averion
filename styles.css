@@ -1,4 +1,6 @@
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{scroll-behavior:smooth}
+*{-webkit-overflow-scrolling:touch}
 :root{
   --bg:#070711;--bg2:#0E0E1C;--bg3:#141428;
   --border:#1E1E35;--border2:#252540;
@@ -7,7 +9,7 @@
   --text:#F0F0FF;--text2:#8888AA;--text3:#55556A;
 }
 
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;-webkit-overflow-scrolling:touch}
 
 /* ── SIDEBAR (desktop only) ── */
 .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh}
