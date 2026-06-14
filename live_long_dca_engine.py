@@ -67,6 +67,7 @@ def load_live_long_bots():
             AND b.direction = 'long'
             AND b.trading_on = TRUE
             AND b.status = 'open'
+            AND b.status != 'deleted'
             ORDER BY b.user_id, b.id
         """)
         rows = cur.fetchall()

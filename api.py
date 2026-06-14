@@ -402,7 +402,7 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
         try:
             cur.execute("""
                 SELECT COUNT(*) FROM bots
-                WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE
+                WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE AND status!='deleted'
                 AND method LIKE 'DCA%'
             """, (user_id,))
             row = cur.fetchone()
@@ -672,6 +672,7 @@ def home_stats(payload: dict = Depends(verify_token)):
             FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
             WHERE lp.user_id=%s AND lp.status='open'
             AND b.is_research=FALSE AND b.is_template=FALSE
+            AND b.status!='deleted'
         """, (user_id,))
         row = cur.fetchone()
         scalper_open, scalper_invested = int(row[0]), float(row[1])
@@ -680,7 +681,9 @@ def home_stats(payload: dict = Depends(verify_token)):
         cur.execute("""
             SELECT COUNT(*), COALESCE(SUM(p.total_invested),0)
             FROM live_dca_positions p
+            JOIN bots b ON p.bot_id=b.id
             WHERE p.user_id=%s AND p.status='open'
+            AND b.status!='deleted'
         """, (user_id,))
         row = cur.fetchone()
         dca_open, dca_invested = int(row[0]), float(row[1])
@@ -923,7 +926,7 @@ def get_live_positions(payload: dict = Depends(verify_token)):
                    b.name as bot_name
             FROM live_positions lp
             JOIN bots b ON lp.bot_id=b.id
-            WHERE lp.user_id=%s
+            WHERE lp.user_id=%s AND b.status!='deleted'
             ORDER BY lp.id DESC
         """, (user_id,))
         rows = cur.fetchall()
@@ -983,7 +986,7 @@ def get_live_positions(payload: dict = Depends(verify_token)):
                    b.name as bot_name
             FROM live_dca_positions p
             JOIN bots b ON p.bot_id = b.id
-            WHERE p.user_id=%s
+            WHERE p.user_id=%s AND b.status!='deleted'
             ORDER BY p.id DESC
         """, (user_id,))
         dca_rows = cur.fetchall()
@@ -1864,12 +1867,11 @@ def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
                 committed_usdt=0, updated_at=NOW()
             FROM bots b WHERE b.id=%s AND b.wallet_id=vw.id
         """, (bot_id,))
-        # Delete all position data then bot
-        cur.execute("DELETE FROM wallet_transactions WHERE position_id IN (SELECT id FROM live_dca_positions WHERE bot_id=%s)", (bot_id,))
-        cur.execute("DELETE FROM live_dca_positions WHERE bot_id=%s", (bot_id,))
-        cur.execute("UPDATE positions SET bot_id=NULL WHERE bot_id=%s", (bot_id,))
-        cur.execute("DELETE FROM live_positions WHERE bot_id=%s", (bot_id,))
-        cur.execute("DELETE FROM bots WHERE id=%s AND user_id=%s", (bot_id, user_id))
+        # Soft delete — hides from all UI, frees bot slot
+        cur.execute("""
+            UPDATE bots SET status='deleted', trading_on=FALSE, dca_on=FALSE
+            WHERE id=%s AND user_id=%s
+        """, (bot_id, user_id))
         conn.commit()
     return {'message': 'Bot deleted successfully'}
 
