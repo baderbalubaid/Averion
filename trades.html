@@ -179,7 +179,7 @@ function renderTable(data) {
             ? '<span style="font-size:9px;background:#6366F120;color:var(--accent);padding:2px 6px;border-radius:4px">⚡ Scalper</span>'
             : '<span style="font-size:9px;background:#10D98A20;color:var(--green);padding:2px 6px;border-radius:4px">📈 DCA</span>';
 
-        return `<tr style="border-bottom:1px solid var(--border)">
+        return `<tr data-id="${p.id}" data-entry="${p.entry_time||''}" data-hold="${p.hold_seconds||0}" data-type="${isScalper?'scalper':'dca'}" style="border-bottom:1px solid var(--border)">
             <td style="padding:8px 10px">${typeBadge}</td>
             <td style="padding:8px 10px;font-size:11px;color:var(--text3)">${p.bot_name||'—'}</td>
             <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
@@ -190,7 +190,7 @@ function renderTable(data) {
             <td style="padding:8px 10px;text-align:right;font-size:11px">$${size.toFixed(0)}</td>
             <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPnl(pnl)}</td>
             <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPct(pnlPct)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">${holdingStr(p.entry_time, isScalper ? p.hold_seconds : null)}</td>
+            <td class="holding-cell" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">${holdingStr(p.entry_time, isScalper ? p.hold_seconds : null)}</td>
             <td style="padding:8px 10px;text-align:center">
                 <button onclick="openAction(${p.id}, this)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;color:var(--text2)">⋯</button>
             </td>
@@ -220,6 +220,41 @@ async function loadTrades() {
     } catch(e) { console.error(e); }
 }
 
+let refreshInterval = null;
+let countdownInterval = null;
+
+function startRefresh() {
+    if (refreshInterval) return;
+    refreshInterval = setInterval(loadTrades, 3000);
+    countdownInterval = setInterval(updateCountdowns, 1000);
+}
+
+function stopRefresh() {
+    clearInterval(refreshInterval);
+    clearInterval(countdownInterval);
+    refreshInterval = null;
+    countdownInterval = null;
+}
+
+function updateCountdowns() {
+    // Update only countdown cells without re-rendering table
+    const rows = document.querySelectorAll('#tradesTable tr[data-id]');
+    rows.forEach(row => {
+        const entryTime = row.dataset.entry;
+        const holdSec = parseInt(row.dataset.hold || '0');
+        const isScalper = row.dataset.type === 'scalper';
+        if (!isScalper || !entryTime) return;
+        const cell = row.querySelector('.holding-cell');
+        if (cell) cell.textContent = holdingStr(entryTime, holdSec);
+    });
+}
+
+// Pause when tab hidden
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopRefresh();
+    else startRefresh();
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (!requireAuth()) return;
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
@@ -228,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildUserRow();
     buildMobileNav();
     await loadTrades();
+    startRefresh();
 });
 </script>
 </body>
