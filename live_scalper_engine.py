@@ -40,19 +40,21 @@ class LiveScalperEngine:
                 cur = conn.cursor()
                 cur.execute("""
                     SELECT b.id, b.name, b.user_id, b.base_order,
-                           b.bot_params::text
+                           b.bot_params::text, b.wallet_id,
+                           b.trades_per_bot
                     FROM bots b
                     WHERE b.method='S58'
                     AND b.is_template=FALSE
                     AND b.is_research=FALSE
                     AND b.trading_on=TRUE
                     AND b.status='open'
+                    AND b.status!='deleted'
                 """)
                 rows = cur.fetchall()
 
             import json
             bots = []
-            for bot_id, name, user_id, base_order, params_raw in rows:
+            for bot_id, name, user_id, base_order, params_raw, wallet_id, trades_per_bot in rows:
                 try:
                     p = json.loads(params_raw) if params_raw else {}
                 except:
@@ -66,6 +68,8 @@ class LiveScalperEngine:
                     'window_sec': float(p.get('window_sec', 5)),
                     'hold_sec': int(p.get('hold_sec', 30)),
                     'stop_loss_pct': p.get('stop_loss_pct'),
+                    'wallet_id': wallet_id,
+                    'trades_per_bot': int(trades_per_bot or 999),
                 })
             self.live_bots = bots
             print(f'🔄 LiveScalper: loaded {len(bots)} bots')
