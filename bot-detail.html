@@ -65,7 +65,7 @@
             <!-- Positions table -->
             <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y">
                 <table style="width:100%;border-collapse:collapse;min-width:500px">
-                    <thead>
+                    <thead id="posTableHead">
                         <tr style="border-bottom:1px solid var(--border)">
                             <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3)">Coin</th>
                             <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">Avg Cost</th>
@@ -117,31 +117,77 @@ function applyFilter() {
     renderTable(data);
 }
 
+function isBotDca() {
+    return botData && (botData.method || '').startsWith('DCA');
+}
+
+function updateTableHeaders() {
+    const thead = document.getElementById('posTableHead');
+    if (!thead) return;
+    if (isBotDca()) {
+        thead.innerHTML = `<tr>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:left">Coin</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Avg Cost</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Current</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Invested</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">DCA#</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L%</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L$</th>
+        </tr>`;
+    } else {
+        thead.innerHTML = `<tr>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:left">Coin</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Entry</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Current</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Hold</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L%</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L$</th>
+            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:left">Status</th>
+        </tr>`;
+    }
+}
+
 function renderTable(data) {
     const tbody = document.getElementById('posTable');
     if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No positions</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No open positions</td></tr>';
         return;
     }
+    const dca = isBotDca();
     tbody.innerHTML = data.map(p => {
         const pnl = parseFloat(p.pnl_usdt || p.pnl || 0);
         const pnlPct = parseFloat(p.pnl_pct || 0);
         const color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const st = statusInfo(p);
-        return `<tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.entry_price)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||p.entry_price)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.hold_seconds||0}s</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
-            <td style="padding:8px 10px;font-size:10px;color:${st.color}">${st.label}</td>
-        </tr>`;
+        if (dca) {
+            const avgCost = p.avg_cost || p.entry_price || 0;
+            const invested = p.total_invested || p.base_order || 0;
+            const dcaCount = p.dca_count || 0;
+            return `<tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(avgCost)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||avgCost)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--accent)">$${invested.toFixed(2)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--purple)">${dcaCount}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
+            </tr>`;
+        } else {
+            return `<tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.entry_price)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||p.entry_price)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.hold_seconds||0}s</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
+                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
+                <td style="padding:8px 10px;font-size:10px;color:${st.color}">${st.label}</td>
+            </tr>`;
+        }
     }).join('');
 }
 
 function updateStats() {
-    const total = allPositions.reduce((s,p) => s+(p.base_order||0), 0);
+    const total = allPositions.reduce((s,p) => s+(p.total_invested||p.base_order||0), 0);
     const pnl = allPositions.reduce((s,p) => s+(p.pnl_usdt||p.pnl||0), 0);
     const pnlPct = total > 0 ? (pnl/total*100) : 0;
     document.getElementById('stat-open').textContent = allPositions.length;
@@ -191,6 +237,7 @@ async function loadBot() {
         }
         document.getElementById('bot-name').textContent = botData.name;
         updateToggleBtn();
+        updateTableHeaders();
     } catch(e) { console.error(e); }
 }
 
