@@ -1820,6 +1820,31 @@ def create_bot(req: BotCreate,
    )
    return {'message': 'Bot created', 'bot_id': bot_id}
 
+@app.post('/bots/{bot_id}/panic-close')
+def panic_close_bot(bot_id: int, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE",
+            (bot_id, user_id))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail='Bot not found')
+        cur.execute(
+            "UPDATE live_positions SET status='closed', exit_time=NOW(), exit_reason='panic_close' WHERE bot_id=%s AND status='open'",
+            (bot_id,))
+        s = cur.rowcount
+        cur.execute(
+            "UPDATE live_dca_positions SET status='closed', closed_at=NOW(), close_reason='panic_close', realized_pnl_usdt=0 WHERE bot_id=%s AND status='open'",
+            (bot_id,))
+        d = cur.rowcount
+        cur.execute(
+            "UPDATE virtual_wallets SET current_balance=current_balance+committed_usdt, committed_usdt=0, updated_at=NOW() WHERE id=(SELECT wallet_id FROM bots WHERE id=%s)",
+            (bot_id,))
+        cur.execute("UPDATE bots SET trading_on=FALSE WHERE id=%s", (bot_id,))
+        conn.commit()
+    return {'message': f'Closed {s+d} positions · Bot stopped', 'closed': s+d}
+
 @app.delete('/bots/{bot_id}')
 def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
