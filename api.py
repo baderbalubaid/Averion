@@ -292,6 +292,20 @@ def get_status():
 # ═══════════════════════════════
 # POSITIONS
 # ═══════════════════════════════
+@app.get('/api/coins')
+def get_available_coins(payload: dict = Depends(verify_token)):
+    """Returns all coins available on the connected exchange from Redis price cache"""
+    try:
+        import redis as _redis
+        r = _redis.Redis(host='localhost', port=6379, decode_responses=True)
+        keys = r.keys('price:*:*/USDT')
+        coins = sorted(set(k.split(':')[2].replace('/USDT','') for k in keys if '/USDT' in k))
+        if coins:
+            return coins
+    except Exception:
+        pass
+    return []
+
 @app.get('/admin-features')
 def get_admin_features():
     with db.get_db() as conn:

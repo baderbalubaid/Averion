@@ -315,15 +315,17 @@
       <div id="step-8-dca" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">Order Size</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Base order per trade (USDT)</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="size-presets-dca"></div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount (USDT)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="size-presets-dca"></div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:18px;font-weight:700">$</span>
-            <input type="number" id="custom-size-dca" min="1" inputmode="decimal" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('dca', this.value)">
+            <input type="number" id="custom-size-dca" min="1" inputmode="decimal"
+              style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none"
+              oninput="setCustomSize('dca', this.value)">
           </div>
         </div>
-        <div id="wallet-preview-dca" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
+        <div id="wallet-preview-dca" style="font-size:11px;color:var(--text3);margin-bottom:16px;padding:0 2px"></div>
         <button onclick="validateAndGoReview('dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
       </div>
 
@@ -599,7 +601,7 @@ function selectWallet(id) {
     } else {
       showStep('step-3-dca');
     }
-  }, 200);
+  }, 250);
 }
 
 function toggleNewWallet() {
@@ -974,19 +976,34 @@ function doneCoinSelection() {
       ? selectedCoins.slice(0,3).join(', ') + (selectedCoins.length > 3 ? ` +${selectedCoins.length-3} more` : '')
       : 'Choose which coins to trade';
   }
+  // Hide picker after done
+  const picker = document.getElementById('coin-picker');
+  if (picker) picker.style.display = 'none';
+  // Show specific card as selected with checkmark
+  const specCheck = document.getElementById('coin-specific-check');
+  if (specCheck) specCheck.style.display = selectedCoins.length > 0 ? 'block' : 'none';
 }
 
 function goNextFromCoin() {
+  if (selectedCoinMode === 'specific' && selectedCoins.length === 0) {
+    alert('Please select at least one coin, or choose All Coins');
+    return;
+  }
   showStep('step-6-dca');
 }
 
 // ── Size presets ───────────────────────────────────────────────────
 function buildSizePresets(type) {
   const presets = type === 'scalper' ? [2, 5, 10, 20, 50] : [5, 10, 25, 50, 100];
+  const defaultSize = type === 'scalper' ? 2 : 10;
+  if (!selectedSize) selectedSize = defaultSize;
   const container = document.getElementById(`size-presets-${type}`);
   container.innerHTML = presets.map(v => `
     <button class="size-btn ${v === selectedSize ? 'selected' : ''}"
             onclick="setSize('${type}', ${v})">$${v}</button>`).join('');
+  // Set custom input value
+  const customEl = document.getElementById(`custom-size-${type}`);
+  if (customEl) customEl.value = selectedSize;
   updateWalletPreview(type);
 }
 
