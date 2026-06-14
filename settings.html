@@ -149,18 +149,10 @@ function loadTimezoneUI() {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const sel = document.getElementById('tz-select');
     const desc = document.getElementById('tz-current');
+    if (!sel) return;
     if (saved) {
-        // Try to set select value
-        let found = false;
-        for (let opt of sel.options) {
-            if (opt.value === saved) {
-                sel.value = saved;
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            // Add option if not in list
+        sel.value = saved;
+        if (sel.value !== saved) {
             const opt = document.createElement('option');
             opt.value = saved;
             opt.textContent = saved;
