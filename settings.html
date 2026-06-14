@@ -121,16 +121,14 @@ function saveTimeFormat(fmt) {
 }
 
 function loadTimeFormatUI() {
-    const saved = localStorage.getItem('averion_time_format') || '24h';
+    const saved = (localStorage.getItem('averion_time_format') || '24h').trim();
     const sel = document.getElementById('tf-select');
-    document.getElementById('tf-current').textContent = 'Loading saved: ' + saved;
-    for (let i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === saved) {
-            sel.selectedIndex = i;
-            document.getElementById('tf-current').textContent = (saved === '24h' ? '24-hour' : '12-hour') + ' (loaded)';
-            break;
-        }
-    }
+    if (!sel) return;
+    Array.from(sel.options).forEach(o => {
+        o.selected = (o.value === saved);
+    });
+    const desc = document.getElementById('tf-current');
+    if (desc) desc.textContent = saved === '24h' ? '24-hour' : '12-hour';
 }
 
 function saveTimezone(tz) {
