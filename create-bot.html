@@ -1043,24 +1043,32 @@ function generateBotName(type) {
 }
 
 function buildReviewScalper() {
-  const variantLabel = selectedVariant
-    ? `${selectedVariant.name} · ${selectedVariant.trigger_pct}% trigger · ${selectedVariant.window_sec}s window · ${selectedVariant.hold_sec}s hold`
-    : 'Smart (champion)';
   const scalperName = generateBotName('scalper');
   setTimeout(() => {
     const nameEl = document.getElementById('final-name-scalper');
     if (nameEl && !nameEl.value) nameEl.value = scalperName;
   }, 50);
-  document.getElementById('review-scalper-content').innerHTML = `
-    <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${scalperName}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">⚡ Scalper</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${selectedEntryMethod?.replace('scalper_','')}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Variant</span><span style="font-weight:700;font-size:11px">${variantLabel}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize}</span></div>
-    <div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
+  const entryLabel = {
+    scalper_smart: '🧠 Smart',
+    scalper_templates: '📋 Templates',
+    scalper_custom: '⚙ Custom',
+  }[selectedEntryMethod] || '—';
+  const hasVariant = selectedVariant && selectedEntryMethod !== 'scalper_smart';
+  const variantRows = hasVariant
+    ? `<div class="review-row"><span style="color:var(--text3)">Variant</span><span style="font-weight:700">${selectedVariant.name}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Trigger</span><span style="font-weight:700">${selectedVariant.trigger_pct}% in ${selectedVariant.window_sec}s</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Hold</span><span style="font-weight:700">${selectedVariant.hold_sec}s</span></div>`
+    : `<div class="review-row"><span style="color:var(--text3)">Variant</span><span style="font-weight:700;color:var(--text3)">Champion (auto)</span></div>`;
+  document.getElementById('review-scalper-content').innerHTML =
+    `<div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">⚡ Scalper Bot</span></div>` +
+    `<div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange ? selectedExchange.name : '—'}</span></div>` +
+    `<div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet ? selectedWallet.name : '—'} <span style="color:var(--text3);font-size:11px;font-weight:400">($${selectedWallet ? (selectedWallet.available||0).toFixed(2) : '0.00'} free)</span></span></div>` +
+    `<div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${entryLabel}</span></div>` +
+    variantRows +
+    `<div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize} per trade</span></div>` +
+    `<div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
 }
+
 
 function buildReviewDca() {
   const entryLabel = {
