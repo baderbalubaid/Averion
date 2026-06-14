@@ -661,43 +661,112 @@ def home_stats(payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
     with db.get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE", (user_id,))
+
+        # Active bots
+        cur.execute("SELECT COUNT(*) FROM bots WHERE user_id=%s AND trading_on=TRUE AND is_research=FALSE AND is_template=FALSE", (user_id,))
         active_bots = cur.fetchone()[0]
+
+        # Scalper open trades
         cur.execute("""
-            SELECT COUNT(*), COALESCE(SUM(lp.base_order),0) 
-            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id 
-            WHERE lp.user_id=%s AND lp.status='open' AND b.is_research=FALSE AND b.is_template=FALSE
+            SELECT COUNT(*), COALESCE(SUM(lp.base_order),0)
+            FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
+            WHERE lp.user_id=%s AND lp.status='open'
+            AND b.is_research=FALSE AND b.is_template=FALSE
         """, (user_id,))
         row = cur.fetchone()
-        open_trades, total_invested = row[0], float(row[1])
-        dca_queue = 0  # Scalper has no DCA queue
+        scalper_open, scalper_invested = int(row[0]), float(row[1])
+
+        # DCA open trades
         cur.execute("""
-            SELECT COALESCE(SUM(lp.pnl_usdt),0), COUNT(*) 
+            SELECT COUNT(*), COALESCE(SUM(p.total_invested),0)
+            FROM live_dca_positions p
+            WHERE p.user_id=%s AND p.status='open'
+        """, (user_id,))
+        row = cur.fetchone()
+        dca_open, dca_invested = int(row[0]), float(row[1])
+
+        open_trades = scalper_open + dca_open
+        total_invested = scalper_invested + dca_invested
+
+        # DCA queue count (positions waiting for DCA)
+        cur.execute("""
+            SELECT COUNT(*) FROM live_dca_positions
+            WHERE user_id=%s AND status='open' AND queued=TRUE
+        """, (user_id,))
+        dca_queue = int(cur.fetchone()[0])
+
+        # Today P&L (scalper)
+        cur.execute("""
+            SELECT COALESCE(SUM(lp.pnl_usdt),0), COUNT(*)
             FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
-            WHERE lp.user_id=%s AND lp.status='closed' 
+            WHERE lp.user_id=%s AND lp.status='closed'
             AND lp.exit_time >= CURRENT_DATE
             AND b.is_research=FALSE AND b.is_template=FALSE
         """, (user_id,))
         row2 = cur.fetchone()
         today_pnl, today_closed = float(row2[0]), int(row2[1])
+
+        # Today P&L (DCA)
         cur.execute("""
-            SELECT COALESCE(SUM(lp.pnl_usdt),0) 
+            SELECT COALESCE(SUM(realized_pnl_usdt),0), COUNT(*)
+            FROM live_dca_positions
+            WHERE user_id=%s AND status='closed'
+            AND closed_at >= CURRENT_DATE
+        """, (user_id,))
+        row3 = cur.fetchone()
+        today_pnl += float(row3[0])
+        today_closed += int(row3[1])
+
+        # Total profit (scalper)
+        cur.execute("""
+            SELECT COALESCE(SUM(lp.pnl_usdt),0)
             FROM live_positions lp JOIN bots b ON lp.bot_id=b.id
             WHERE lp.user_id=%s AND lp.status='closed'
             AND b.is_research=FALSE AND b.is_template=FALSE
         """, (user_id,))
         total_profit = float(cur.fetchone()[0])
-        cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f JOIN positions p ON f.position_id=p.id JOIN bots b ON p.bot_id=b.id WHERE f.user_id=%s AND f.paid_at IS NULL AND b.is_research=FALSE", (user_id,))
-        fee_debt = float(cur.fetchone()[0])
+
+        # Total profit (DCA)
+        cur.execute("""
+            SELECT COALESCE(SUM(realized_pnl_usdt),0)
+            FROM live_dca_positions
+            WHERE user_id=%s AND status='closed'
+        """, (user_id,))
+        total_profit += float(cur.fetchone()[0])
+
+        # Fee debt
+        try:
+            cur.execute("SELECT COALESCE(SUM(f.amount_usdt),0) FROM fee_debt f WHERE f.user_id=%s AND f.paid_at IS NULL", (user_id,))
+            fee_debt = float(cur.fetchone()[0])
+        except Exception:
+            fee_debt = 0.0
+
+        # Wallet summary
+        cur.execute("""
+            SELECT COALESCE(SUM(current_balance),0),
+                   COALESCE(SUM(committed_usdt),0),
+                   COALESCE(SUM(allocation_amount),0)
+            FROM virtual_wallets WHERE user_id=%s AND is_paper=TRUE
+        """, (user_id,))
+        wrow = cur.fetchone()
+        wallet_available = float(wrow[0])
+        wallet_deployed  = float(wrow[1])
+        wallet_total     = float(wrow[2])
+
     return {
-        'active_bots': int(active_bots),
-        'open_trades': int(open_trades),
-        'total_invested': total_invested,
-        'dca_queue': int(dca_queue),
-        'today_pnl': today_pnl,
-        'today_closed': today_closed,
-        'total_profit': total_profit,
-        'fee_debt': fee_debt,
+        'active_bots':    int(active_bots),
+        'open_trades':    int(open_trades),
+        'total_invested': round(total_invested, 2),
+        'dca_queue':      int(dca_queue),
+        'today_pnl':      round(today_pnl, 4),
+        'today_closed':   today_closed,
+        'total_profit':   round(total_profit, 4),
+        'fee_debt':       round(fee_debt, 4),
+        'wallet_available': round(wallet_available, 2),
+        'wallet_deployed':  round(wallet_deployed, 2),
+        'wallet_total':     round(wallet_total, 2),
+        'scalper_open':   scalper_open,
+        'dca_open':       dca_open,
     }
 
 # ═══════════════════════════════
