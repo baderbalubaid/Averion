@@ -154,8 +154,33 @@ class LiveScalperEngine:
         key = (bot['id'], coin)
         try:
             btc_price, btc_sma50, btc_24h, btc_regime, btc_dom = get_btc_regime(self.r)
+            base_order = float(bot['base_order'])
             with db.get_db() as conn:
                 cur = conn.cursor()
+
+                # Check wallet balance — bot stays ON but skips if insufficient funds
+                wallet_id = bot.get('wallet_id')
+                if wallet_id:
+                    cur.execute("""
+                        SELECT current_balance FROM virtual_wallets
+                        WHERE id=%s FOR UPDATE
+                    """, (wallet_id,))
+                    row = cur.fetchone()
+                    if not row or float(row[0]) < base_order:
+                        return  # No funds — skip trade silently
+
+                    available = float(row[0])
+                    new_balance = available - base_order
+
+                    # Deduct from wallet
+                    cur.execute("""
+                        UPDATE virtual_wallets
+                        SET current_balance=%s,
+                            committed_usdt=committed_usdt + %s,
+                            updated_at=NOW()
+                        WHERE id=%s
+                    """, (new_balance, base_order, wallet_id))
+
                 cur.execute("""
                     INSERT INTO live_positions
                         (bot_id, user_id, coin, entry_price, hold_seconds,
@@ -168,9 +193,19 @@ class LiveScalperEngine:
                     RETURNING id
                 """, (bot['id'], bot['user_id'], coin, price,
                       bot['hold_sec'], trigger_jump, bot['window_sec'],
-                      bot.get('stop_loss_pct'), bot['base_order'],
+                      bot.get('stop_loss_pct'), base_order,
                       btc_price, btc_sma50, btc_24h, btc_regime, btc_dom))
                 pos_id = cur.fetchone()[0]
+
+                # Log wallet transaction
+                if wallet_id:
+                    cur.execute("""
+                        INSERT INTO wallet_transactions
+                            (wallet_id, position_id, type, amount,
+                             balance_before, balance_after, reference_type, note)
+                        VALUES (%s, %s, 'debit', %s, %s, %s, 'scalper', %s)
+                    """, (wallet_id, pos_id, base_order,
+                            available, new_balance, f'Open {coin}'))
 
             with self._lock:
                 self.active[key] = {
@@ -178,6 +213,8 @@ class LiveScalperEngine:
                     'entry_price': price,
                     'entry_time': now,
                     'hold_sec': bot['hold_sec'],
+                    'wallet_id': bot.get('wallet_id'),
+                    'base_order': base_order,
                     'stop_loss_pct': bot.get('stop_loss_pct'),
                     'base_order': bot['base_order'],
                     'max_profit': 0.0,
@@ -239,6 +276,34 @@ class LiveScalperEngine:
                     WHERE id=%s
                 """, (exit_price, pos['max_profit'], pos['max_loss'],
                       pnl_pct, pnl_usdt, reason, pos['pos_id']))
+
+                # Return funds to wallet
+                wallet_id = pos.get('wallet_id')
+                base_order = float(pos.get('base_order', 2))
+                if wallet_id:
+                    cur.execute("""
+                        SELECT current_balance FROM virtual_wallets WHERE id=%s
+                    """, (wallet_id,))
+                    row = cur.fetchone()
+                    if row:
+                        available = float(row[0])
+                        returned = base_order + float(pnl_usdt)
+                        new_balance = available + returned
+                        cur.execute("""
+                            UPDATE virtual_wallets
+                            SET current_balance=%s,
+                                committed_usdt=GREATEST(0, committed_usdt - %s),
+                                updated_at=NOW()
+                            WHERE id=%s
+                        """, (new_balance, base_order, wallet_id))
+                        cur.execute("""
+                            INSERT INTO wallet_transactions
+                                (wallet_id, position_id, type, amount,
+                                 balance_before, balance_after, reference_type, note)
+                            VALUES (%s, %s, 'credit', %s, %s, %s, 'scalper', %s)
+                        """, (wallet_id, pos['pos_id'], returned,
+                                available, new_balance,
+                                f'Close {key[1]} {reason} pnl={pnl_pct:.2f}%'))
 
             # Set cooldown 5 min
             self.cooldowns[key] = time.time() + 300
