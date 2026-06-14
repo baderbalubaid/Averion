@@ -286,7 +286,7 @@
       <!-- ── REVIEW SCALPER ── -->
       <div id="review-scalper" style="display:none">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">Review & Launch</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Confirm your scalper settings</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Confirm your bot settings</div>
         <div style="background:#6366F112;border:1px solid #6366F130;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
           <span style="font-size:18px">📄</span>
           <div>
@@ -431,16 +431,23 @@ async function loadExchanges() {
       list.innerHTML = '<div style="color:var(--text3);font-size:12px">No exchanges connected. <a href="/exchanges" style="color:var(--accent)">Add one</a></div>';
       return;
     }
-    list.innerHTML = data.map(exc => `
-      <div class="exc-card" id="exc-card-${exc.id}" onclick="selectExchange(${exc.id}, '${exc.custom_name || exc.exchange || 'Exchange'}', ${exc.is_paper || false})">
+    list.innerHTML = data.map(exc => {
+      const name = exc.custom_name || exc.exchange || 'Exchange';
+      const isPaper = exc.is_paper || false;
+      return `
+      <div class="exc-card" id="exc-card-${exc.id}" onclick="selectExchange(${exc.id}, '${name}', ${isPaper})">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-size:22px">🔗</div>
+          <div style="width:36px;height:36px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent);flex-shrink:0">${name.charAt(0).toUpperCase()}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700">${exc.custom_name || exc.exchange || 'Exchange'}</div>
-            <div style="font-size:11px;color:var(--text3)">${exc.is_paper ? '📄 Paper' : '🔴 Live'}</div>
+            <div style="font-size:13px;font-weight:700">${name}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>
+              <span style="font-size:11px;color:var(--text3)">Connected · ${isPaper ? 'Paper' : 'Live'}</span>
+            </div>
           </div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e) {
     list.innerHTML = '<div style="color:var(--red);font-size:12px">Error loading exchanges</div>';
   }
@@ -642,15 +649,10 @@ async function selectScalperEntry(key) {
     document.getElementById('step4s-sub').textContent = 'Configure your scalper parameters';
     renderCustomScalper();
   } else if (key === 'scalper_smart') {
-    document.getElementById('step4s-title').textContent = 'Smart Mode';
-    document.getElementById('step4s-sub').textContent = 'Using current champion variant';
-    document.getElementById('step4s-content').innerHTML = `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:28px;margin-bottom:8px">🧠</div>
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Smart Entry Active</div>
-        <div style="font-size:11px;color:var(--text3)">Bot will use the current champion variant. Champion updates automatically as research data improves.</div>
-      </div>
-      <button onclick="goStep('step-5-scalper');buildSizePresets('scalper')" style="width:100%;margin-top:14px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>`;
+    // Smart skips variant selection — go straight to order size
+    selectedVariant = null;
+    showStep('step-5-scalper');
+    buildSizePresets('scalper');
   }
 }
 
@@ -664,7 +666,11 @@ async function loadVariants() {
       <select id="variant-select" onchange="onVariantChange()"
         style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;margin-bottom:14px">
         <option value="">-- Select variant --</option>
-        ${variants.map(v => `<option value="${v.name}">${v.name} · Trigger ${v.trigger_pct}% · Window ${v.window_sec}s · Hold ${v.hold_sec}s</option>`).join('')}
+        ${variants.slice().sort((a,b) => {
+        const na = parseInt(a.name.replace(/\D/g,'')) || 0;
+        const nb = parseInt(b.name.replace(/\D/g,'')) || 0;
+        return na - nb;
+      }).map(v => `<option value="${v.name}">${v.name} · Trigger ${v.trigger_pct}% · Window ${v.window_sec}s · Hold ${v.hold_sec}s</option>`).join('')}
       </select>
       <div id="variant-preview" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:10px">PARAMETERS</div>
@@ -751,7 +757,13 @@ function selectDcaDirection(dir) {
 // ── Step 4 DCA: Entry ─────────────────────────────────────────────
 function selectDcaEntry(key) {
   selectedEntryMethod = key;
-  showStep('step-5-dca');
+  if (key === 'dca_smart') {
+    // Smart skips coin/settings — use defaults, go to order size
+    showStep('step-8-dca');
+    buildSizePresets('dca');
+  } else {
+    showStep('step-5-dca');
+  }
 }
 
 // ── Step 5 DCA: Coin ──────────────────────────────────────────────
@@ -798,11 +810,28 @@ function updateWalletPreview(type) {
 }
 
 // ── Review ─────────────────────────────────────────────────────────
+function generateBotName(type) {
+  const excName = (selectedExchange?.name || 'Bot').split(' ')[0];
+  if (type === 'scalper') {
+    const method = selectedEntryMethod === 'scalper_smart' ? 'Smart' :
+                   selectedEntryMethod === 'scalper_custom' ? 'Custom' :
+                   selectedVariant?.name || 'S';
+    return `${excName} Scalper ${method}`;
+  } else {
+    const entry = selectedEntryMethod === 'dca_smart' ? 'Smart' :
+                  selectedEntryMethod === 'dca_asap' ? 'ASAP' :
+                  selectedEntryMethod === 'dca_custom' ? 'Custom' : 'DCA';
+    return `${excName} DCA ${entry}`;
+  }
+}
+
 function buildReviewScalper() {
   const variantLabel = selectedVariant
     ? `${selectedVariant.name} · ${selectedVariant.trigger_pct}% trigger · ${selectedVariant.window_sec}s window · ${selectedVariant.hold_sec}s hold`
     : 'Smart (champion)';
+  const scalperName = generateBotName('scalper');
   document.getElementById('review-scalper-content').innerHTML = `
+    <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${scalperName}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">⚡ Scalper</span></div>
     <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
@@ -819,7 +848,9 @@ function buildReviewDca() {
     dca_custom: '⚙️ Custom',
     dca_templates: '📋 Template',
   }[selectedEntryMethod] || selectedEntryMethod;
+  const dcaName = generateBotName('dca');
   document.getElementById('review-dca-content').innerHTML = `
+    <div class="review-row"><span style="color:var(--text3)">Name</span><span style="font-weight:700;color:var(--accent)">${dcaName}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">📈 DCA Bot</span></div>
     <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
     <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
