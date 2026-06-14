@@ -464,10 +464,20 @@ function showStep(id) {
 
   // Build reviews when shown
   if (id === 'review-scalper') {
-    try { buildReviewScalper(); } catch(e) { console.error('buildReviewScalper error:', e); }
+    try {
+      buildReviewScalper();
+    } catch(e) {
+      document.getElementById('review-scalper-content').innerHTML =
+        '<div style="color:red;font-size:12px;padding:10px">Error: ' + e.message + '</div>';
+    }
   }
   if (id === 'review-dca') {
-    try { buildReviewDca(); } catch(e) { console.error('buildReviewDca error:', e); }
+    try {
+      buildReviewDca();
+    } catch(e) {
+      document.getElementById('review-dca-content').innerHTML =
+        '<div style="color:red;font-size:12px;padding:10px">Error: ' + e.message + '</div>';
+    }
   }
 
   // Back button
@@ -1079,6 +1089,9 @@ function generateBotName(type) {
 }
 
 function buildReviewScalper() {
+  // Debug: show state
+  const debugEl = document.getElementById('review-scalper-content');
+  if (debugEl) debugEl.innerHTML = '<div style="font-size:10px;color:var(--text3);padding:6px">Loading... exc=' + (selectedExchange ? selectedExchange.name : 'null') + ' wallet=' + (selectedWallet ? selectedWallet.name : 'null') + ' size=' + selectedSize + '</div>';
   const scalperName = generateBotName('scalper');
   setTimeout(() => {
     const nameEl = document.getElementById('final-name-scalper');
