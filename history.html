@@ -134,16 +134,18 @@ async function fetchHistory() {
     allHistory = all.filter(p => p.status === 'closed').map(p => ({
         id: p.id,
         coin: p.coin,
+        type: p.type || 'scalper',
         exchange: 'MEXC',
         entry_price: p.entry_price,
-        exit_price: p.exit_price,
-        avg_cost: p.entry_price,
+        exit_price: p.exit_price || 0,
+        avg_cost: p.avg_cost || p.entry_price,
+        total_invested: p.total_invested || p.base_order,
         entry_date: p.entry_time,
         exit_date: p.exit_time,
         closed_at: p.exit_time,
         realized_pnl: p.pnl_usdt,
         pnl_pct: p.pnl_pct,
-        dca_count: 0,
+        dca_count: p.dca_count || 0,
         days_held: 0,
         hold_seconds: p.hold_seconds,
         exit_reason: p.exit_reason,
@@ -260,6 +262,10 @@ function renderHistory(data) {
     return `<tr>${visibleCols.map(c=>{
       if(c.key==='coin')        return `<td><div class="td-coin"><strong>${(h.coin||'—').replace('/USDT','')}</strong></div></td>`;
       if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
+      if(c.key==='coin') {
+        const typeEmoji = h.type === 'dca' ? '📈' : '⚡';
+        return `<td><span style="font-size:10px">${typeEmoji}</span> <strong>${h.coin}</strong></td>`;
+      }
       if(c.key==='entry_date')  return `<td><span class="td-muted">${fmtDate(h.entry_date || h.opened_at)}</span></td>`;
       if(c.key==='exit_date')   return `<td><span class="td-muted">${fmtDate(h.exit_date || h.closed_at)}</span></td>`;
       if(c.key==='entry_price') return `<td>${fmtPrice(ep)}</td>`;
@@ -268,8 +274,15 @@ function renderHistory(data) {
       if(c.key==='dca_count')   return `<td style="color:var(--purple)">${h.dca_count||0}</td>`;
       if(c.key==='pnl_pct')     return `<td style="color:${pc};font-weight:600">${sign}${pct}%</td>`;
       if(c.key==='hold_time') {
+        if (h.type === 'dca' && h.entry_date && h.exit_date) {
+          const ms = new Date(h.exit_date) - new Date(h.entry_date);
+          const hrs = Math.floor(ms / 3600000);
+          const mins = Math.floor((ms % 3600000) / 60000);
+          const timeStr = hrs >= 24 ? Math.floor(hrs/24)+'d '+hrs%24+'h' : hrs+'h '+mins+'m';
+          return `<td><span class="td-muted">${timeStr}</span></td>`;
+        }
         const secs = h.hold_seconds || 0;
-        const timeStr = secs >= 60 ? Math.floor(secs/60)+'m '+( secs%60)+'s' : secs+'s';
+        const timeStr = secs >= 60 ? Math.floor(secs/60)+'m '+(secs%60)+'s' : secs+'s';
         return `<td><span class="td-muted">${timeStr}</span></td>`;
       }
       if(c.key==='pnl_usd')     return `<td style="color:${pc};font-weight:700">${fmtPnl(pnl)}</td>`;
