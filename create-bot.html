@@ -462,6 +462,14 @@ function showStep(id) {
     setTimeout(() => buildSizePresets('dca'), 50);
   }
 
+  // Build reviews when shown
+  if (id === 'review-scalper') {
+    try { buildReviewScalper(); } catch(e) { console.error('buildReviewScalper error:', e); }
+  }
+  if (id === 'review-dca') {
+    try { buildReviewDca(); } catch(e) { console.error('buildReviewDca error:', e); }
+  }
+
   // Back button
   document.getElementById('back-btn').style.display = history.length > 1 ? 'block' : 'none';
 
@@ -1043,21 +1051,16 @@ function updateWalletPreview(type) {
 
 // ── Review ─────────────────────────────────────────────────────────
 function validateAndGoReview(type) {
-  const size = parseFloat(document.getElementById('custom-size-' + type)?.value || selectedSize);
-  if (!size || size <= 0) {
+  // Read current value from input
+  const inputEl = document.getElementById('custom-size-' + type);
+  if (inputEl && inputEl.value) selectedSize = parseFloat(inputEl.value);
+  if (!selectedSize || selectedSize <= 0) {
     alert('Please enter a valid order size'); return;
   }
-  selectedSize = size;
   if (!selectedWallet) {
     alert('Please select a wallet'); return;
   }
-  if (type === 'scalper') {
-    buildReviewScalper();
-    showStep('review-scalper');
-  } else {
-    buildReviewDca();
-    showStep('review-dca');
-  }
+  showStep(type === 'scalper' ? 'review-scalper' : 'review-dca');
 }
 
 function generateBotName(type) {
