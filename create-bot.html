@@ -6,414 +6,931 @@
 <title>Averion — Create Bot</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=6">
+<style>
+.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background 0.2s}
+.step-dot.active{background:var(--accent)}
+.step-dot.done{background:var(--green)}
+.step-line{flex:1;height:2px;background:var(--border)}
+.choice-card{background:var(--bg2);border:2px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:border-color 0.2s}
+.choice-card:hover{border-color:var(--accent)}
+.choice-card.selected{border-color:var(--accent);background:#6366F108}
+.choice-card.disabled{opacity:0.45;cursor:not-allowed}
+.choice-card.coming-soon{position:relative}
+.coming-badge{position:absolute;top:12px;right:12px;background:var(--bg3);color:var(--text3);font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
+.avail-badge{background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px}
+.wallet-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color 0.2s}
+.wallet-card:hover{border-color:var(--accent)}
+.wallet-card.selected{border-color:var(--accent)}
+.wallet-bar{height:4px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden}
+.wallet-fill{height:100%;border-radius:2px;background:var(--accent)}
+.exc-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color 0.2s}
+.exc-card:hover{border-color:var(--accent)}
+.exc-card.selected{border-color:var(--accent)}
+.review-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.review-row:last-child{border-bottom:none}
+.inline-form{background:var(--bg3);border-radius:12px;padding:14px;margin-top:10px;display:none}
+.inline-form.open{display:block}
+.wizard-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:10px 13px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none}
+.wizard-input:focus{border-color:var(--accent)}
+.size-btn{flex:1;padding:10px;border:2px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;text-align:center}
+.size-btn:hover{border-color:var(--accent)}
+.size-btn.selected{border-color:var(--accent);background:#6366F115;color:var(--accent)}
+</style>
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh">
-    <div id="sidebar-placeholder"></div>
-    <div class="main">
-        <div id="topbar-placeholder"></div>
-        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
+  <div id="sidebar-placeholder"></div>
+  <div class="main">
+    <div id="topbar-placeholder"></div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
 
-            <!-- Step indicator -->
-            <div id="step-indicator" style="display:flex;gap:8px;margin-bottom:20px;align-items:center">
-                <div class="step-dot active" id="dot-0"></div>
-                <div class="step-line"></div>
-                <div class="step-dot" id="dot-1"></div>
-                <div class="step-line"></div>
-                <div class="step-dot" id="dot-2"></div>
-                <div class="step-line"></div>
-                <div class="step-dot" id="dot-3"></div>
-                <div class="step-line"></div>
-                <div class="step-dot" id="dot-4"></div>
+      <!-- Step indicator -->
+      <div id="step-indicator" style="display:flex;gap:6px;margin-bottom:20px;align-items:center"></div>
+
+      <!-- ── STEP 0: Bot Type ── -->
+      <div id="step-0">
+        <div style="font-size:18px;font-weight:800;margin-bottom:4px">Create Bot</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Choose your bot type</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="choice-card" onclick="selectBotType('scalper')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:26px">⚡</div>
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:700">Scalper Bot</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">WebSocket momentum · seconds-based exits</div>
+              </div>
+              <span class="avail-badge">AVAILABLE</span>
             </div>
-
-            <!-- STEP 0: Bot Type -->
-            <div id="step-0">
-                <div style="font-size:18px;font-weight:800;margin-bottom:4px">Create Bot</div>
-                <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Choose your bot type</div>
-                <div style="display:flex;flex-direction:column;gap:12px">
-                    <!-- Scalper -->
-                    <div onclick="selectType('scalper')" style="background:var(--bg2);border:2px solid var(--accent);border-radius:16px;padding:20px;cursor:pointer">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                            <div style="font-size:28px">⚡</div>
-                            <div>
-                                <div style="font-size:15px;font-weight:700">Scalper Bot</div>
-                                <div style="font-size:11px;color:var(--text3)">WebSocket momentum · seconds-based exits</div>
-                            </div>
-                            <div style="margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700">AVAILABLE</div>
-                        </div>
-                        <div style="font-size:11px;color:var(--text3)">Catches price pumps in real-time · paper mode · $2+ per trade</div>
-                    </div>
-                    <!-- DCA -->
-                    <div style="background:var(--bg2);border:2px solid var(--border);border-radius:16px;padding:20px;opacity:0.5">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                            <div style="font-size:28px">📈</div>
-                            <div>
-                                <div style="font-size:15px;font-weight:700">DCA Bot</div>
-                                <div style="font-size:11px;color:var(--text3)">Dollar cost averaging · smart entry signals</div>
-                            </div>
-                            <div style="margin-left:auto;background:var(--bg3);color:var(--text3);font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700">COMING SOON</div>
-                        </div>
-                        <div style="font-size:11px;color:var(--text3)">Champions system · regime-aware · full DCA management</div>
-                    </div>
-                </div>
+          </div>
+          <div class="choice-card" onclick="selectBotType('dca')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:26px">📈</div>
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:700">DCA Bot</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Dollar cost averaging · smart entries · trailing TP</div>
+              </div>
+              <span class="avail-badge">AVAILABLE</span>
             </div>
-
-            <!-- STEP 1: Exchange -->
-            <div id="step-1" style="display:none">
-                <div style="font-size:18px;font-weight:800;margin-bottom:4px">Select Exchange</div>
-                <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Which exchange to trade on</div>
-                <div id="exc-list" style="display:flex;flex-direction:column;gap:10px"></div>
-                <div style="margin-top:12px">
-                    <a href="/exchanges" style="font-size:12px;color:var(--accent);text-decoration:none">+ Connect new exchange</a>
-                </div>
-            </div>
-
-            <!-- STEP 2: Variant -->
-            <div id="step-2" style="display:none">
-                <div style="font-size:18px;font-weight:800;margin-bottom:4px">Select Variant</div>
-                <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Pick a scalper configuration</div>
-                <select id="variant-select" onchange="onVariantChange()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;margin-bottom:16px">
-                    <option value="">-- Select variant --</option>
-                </select>
-                <!-- Params preview -->
-                <div id="variant-preview" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px">
-                    <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text3)">PARAMETERS</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
-                        <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-trigger">—</div>
-                            <div style="font-size:10px;color:var(--text3)">Trigger %</div>
-                        </div>
-                        <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-window">—</div>
-                            <div style="font-size:10px;color:var(--text3)">Window (sec)</div>
-                        </div>
-                        <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-hold">—</div>
-                            <div style="font-size:10px;color:var(--text3)">Hold (sec)</div>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="goStep(3)" id="variant-next" style="display:none;width:100%;margin-top:16px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
-            </div>
-
-            <!-- STEP 3: Bot Setup -->
-            <div id="step-3" style="display:none">
-                <div style="font-size:18px;font-weight:800;margin-bottom:4px">Bot Setup</div>
-                <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Name your bot and set capital</div>
-                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">BOT NAME</div>
-                    <input type="text" id="bot-name-input" placeholder="e.g. MEXC S1 Bot"
-                        style="width:100%;background:transparent;border:none;font-size:18px;font-weight:700;color:var(--text);outline:none">
-                </div>
-                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">BASE ORDER (per trade)</div>
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:18px;font-weight:700">$</span>
-                        <input type="number" id="base-order" placeholder="0.00"
-                            inputmode="decimal" step="0.01" min="0"
-                            style="flex:1;background:transparent;border:none;font-size:24px;font-weight:800;color:var(--text);outline:none">
-                    </div>
-                </div>
-                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px">
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">MAX CAPITAL (total for this bot)</div>
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:18px;font-weight:700">$</span>
-                        <input type="number" id="max-capital" placeholder="0.00"
-                            inputmode="decimal" step="0.01" min="0"
-                            style="flex:1;background:transparent;border:none;font-size:24px;font-weight:800;color:var(--text);outline:none">
-                    </div>
-                </div>
-                <button onclick="validateStep3()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
-            </div>
-
-            <!-- STEP 4: Review & Launch -->
-            <div id="step-4" style="display:none">
-                <div style="font-size:18px;font-weight:800;margin-bottom:4px">Review & Launch</div>
-                <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Confirm your bot settings</div>
-
-                <!-- Paper mode banner -->
-                <div style="background:#6366F115;border:1px solid #6366F140;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-                    <div style="font-size:20px">📄</div>
-                    <div>
-                        <div style="font-size:12px;font-weight:700">PAPER MODE</div>
-                        <div style="font-size:11px;color:var(--text3)">No real money · safe to test</div>
-                    </div>
-                </div>
-
-                <!-- Summary -->
-                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
-                    <div id="review-content"></div>
-                </div>
-
-                <!-- Launch button -->
-                <button onclick="createBot()" id="launch-btn" style="width:100%;padding:16px;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
-                    🚀 Launch Bot
-                </button>
-
-                <!-- Success message -->
-                <div id="success-msg" style="display:none;text-align:center;padding:20px">
-                    <div style="font-size:40px;margin-bottom:8px">✅</div>
-                    <div style="font-size:16px;font-weight:700;margin-bottom:4px">Bot Created!</div>
-                    <div style="font-size:12px;color:var(--text3);margin-bottom:20px" id="success-detail"></div>
-                    <div style="display:flex;gap:10px">
-                        <button onclick="resetWizard()" style="flex:1;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer">+ Create Another</button>
-                        <button onclick="window.location='/bots'" style="flex:1;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">View Bots →</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Back button -->
-            <button id="back-btn" onclick="goBack()" style="display:none;margin-top:16px;width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text3);font-size:13px;cursor:pointer">← Back</button>
-
+          </div>
         </div>
+      </div>
+
+      <!-- ── STEP 1: Exchange ── -->
+      <div id="step-1" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Select Exchange</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Which exchange to trade on</div>
+        <div id="exc-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div style="margin-top:12px">
+          <a href="/exchanges" style="font-size:12px;color:var(--accent);text-decoration:none">+ Connect new exchange</a>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Wallet ── -->
+      <div id="step-2" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Select Wallet</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Which wallet funds this bot</div>
+        <div id="wallet-list" style="display:flex;flex-direction:column;gap:10px"></div>
+
+        <!-- Create wallet inline -->
+        <div style="margin-top:12px">
+          <button onclick="toggleNewWallet()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">+ Create new wallet</button>
+        </div>
+        <div class="inline-form" id="new-wallet-form">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">New Paper Wallet</div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Name</div>
+            <input class="wizard-input" id="nw-name" placeholder="e.g. Scalper Wallet">
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Starting Capital (USDT)</div>
+            <input class="wizard-input" id="nw-balance" type="number" placeholder="1000" min="1">
+          </div>
+          <button onclick="createWalletInline()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">Create Wallet</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3 SCALPER: Entry Method ── -->
+      <div id="step-3-scalper" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Entry Method</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">How should the bot enter trades</div>
+        <div id="scalper-entry-methods" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- ── STEP 3 DCA: Direction ── -->
+      <div id="step-3-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Direction</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Long buys low, sells high. Short sells high, buys back lower.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="choice-card" onclick="selectDcaDirection('long')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:24px">📈</div>
+              <div>
+                <div style="font-size:14px;font-weight:700">Long</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Buy low · DCA down · sell at profit</div>
+              </div>
+            </div>
+          </div>
+          <div class="choice-card coming-soon disabled">
+            <span class="coming-badge">COMING SOON</span>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:24px">📉</div>
+              <div>
+                <div style="font-size:14px;font-weight:700">Short</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Sell high · DCA up · buy back cheaper</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 4 SCALPER: Variant/Custom ── -->
+      <div id="step-4-scalper" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px" id="step4s-title">Select Variant</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="step4s-sub">Pick a scalper configuration</div>
+        <div id="step4s-content"></div>
+      </div>
+
+      <!-- ── STEP 4 DCA: Entry Method ── -->
+      <div id="step-4-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Entry Method</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">When should the bot enter a trade</div>
+        <div id="dca-entry-methods" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- ── STEP 5 DCA: Coin Selection ── -->
+      <div id="step-5-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Coin Selection</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Which coins should this bot trade</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="choice-card selected" id="coin-all-card" onclick="selectCoinMode('all')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:24px">🌐</div>
+              <div>
+                <div style="font-size:14px;font-weight:700">All Coins</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Bot trades any qualifying coin · recommended</div>
+              </div>
+            </div>
+          </div>
+          <div class="choice-card" id="coin-specific-card" onclick="selectCoinMode('specific')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:24px">🎯</div>
+              <div>
+                <div style="font-size:14px;font-weight:700">Specific Coins</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Choose which coins to trade</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button onclick="goNextFromCoin()" style="width:100%;margin-top:16px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+      </div>
+
+      <!-- ── STEP 5 SCALPER: Order Size ── -->
+      <div id="step-5-scalper" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Order Size</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">How much per trade</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="size-presets-scalper"></div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount (USDT)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;font-weight:700">$</span>
+            <input type="number" id="custom-size-scalper" min="1" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('scalper', this.value)">
+          </div>
+        </div>
+        <div id="wallet-preview-scalper" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
+        <button onclick="goStep('review-scalper')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+      </div>
+
+      <!-- ── STEP 6 DCA: DCA Settings ── -->
+      <div id="step-6-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">DCA Settings</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">How aggressively to average down</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">DCA Spacing</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">% drop from last buy to trigger DCA</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-spacing" value="7" min="1" max="50" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <span style="font-size:12px;color:var(--text3)">%</span>
+            </div>
+          </div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Size Multiplier</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">Each DCA buys X× more than last</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-size-mult" value="1.5" min="1" max="5" step="0.1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <span style="font-size:12px;color:var(--text3)">×</span>
+            </div>
+          </div>
+          <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Max DCA Levels</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">0 = unlimited</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-max-levels" value="0" min="0" max="20" step="1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+            </div>
+          </div>
+        </div>
+        <button onclick="goStep('step-7-dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+      </div>
+
+      <!-- ── STEP 7 DCA: Exit Settings ── -->
+      <div id="step-7-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Exit Settings</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">When to take profit</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Take Profit</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">% above avg cost to arm TP</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-tp" value="5" min="0.5" max="100" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <span style="font-size:12px;color:var(--text3)">%</span>
+            </div>
+          </div>
+          <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">Trailing</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">% pullback from peak to trigger</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="dca-trail" value="2" min="0.1" max="20" step="0.1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+              <span style="font-size:12px;color:var(--text3)">%</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="goStep('step-8-dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+      </div>
+
+      <!-- ── STEP 8 DCA: Order Size ── -->
+      <div id="step-8-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Order Size</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Base order per trade (USDT)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="size-presets-dca"></div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Custom amount (USDT)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;font-weight:700">$</span>
+            <input type="number" id="custom-size-dca" min="1" style="flex:1;background:transparent;border:none;font-size:22px;font-weight:800;color:var(--text);outline:none" oninput="setCustomSize('dca', this.value)">
+          </div>
+        </div>
+        <div id="wallet-preview-dca" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
+        <button onclick="goStep('review-dca')" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>
+      </div>
+
+      <!-- ── REVIEW SCALPER ── -->
+      <div id="review-scalper" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Review & Launch</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Confirm your scalper settings</div>
+        <div style="background:#6366F112;border:1px solid #6366F130;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">📄</span>
+          <div>
+            <div style="font-size:11px;font-weight:700">PAPER MODE</div>
+            <div style="font-size:10px;color:var(--text3)">No real money · safe to test</div>
+          </div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px">
+          <div id="review-scalper-content"></div>
+        </div>
+        <button onclick="createBot('scalper')" id="launch-btn-scalper" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">🚀 Launch Scalper Bot</button>
+        <div id="success-scalper" style="display:none;text-align:center;padding:24px">
+          <div style="font-size:40px;margin-bottom:8px">✅</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:4px">Bot Created!</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:20px" id="success-scalper-detail"></div>
+          <div style="display:flex;gap:10px">
+            <button onclick="resetWizard()" style="flex:1;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer">+ Create Another</button>
+            <button onclick="window.location='/bots'" style="flex:1;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">View Bots →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── REVIEW DCA ── -->
+      <div id="review-dca" style="display:none">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">Review & Launch</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Confirm your DCA bot settings</div>
+        <div style="background:#6366F112;border:1px solid #6366F130;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">📄</span>
+          <div>
+            <div style="font-size:11px;font-weight:700">PAPER MODE</div>
+            <div style="font-size:10px;color:var(--text3)">No real money · safe to test</div>
+          </div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px">
+          <div id="review-dca-content"></div>
+        </div>
+        <button onclick="createBot('dca')" id="launch-btn-dca" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">🚀 Launch DCA Bot</button>
+        <div id="success-dca" style="display:none;text-align:center;padding:24px">
+          <div style="font-size:40px;margin-bottom:8px">✅</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:4px">Bot Created!</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:20px" id="success-dca-detail"></div>
+          <div style="display:flex;gap:10px">
+            <button onclick="resetWizard()" style="flex:1;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer">+ Create Another</button>
+            <button onclick="window.location='/bots'" style="flex:1;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">View Bots →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back button -->
+      <button id="back-btn" onclick="goBack()" style="display:none;margin-top:16px;width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text3);font-size:13px;cursor:pointer">← Back</button>
+
     </div>
+  </div>
 </div>
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=6"></script>
 <script>
-let currentStep = 0;
-let selectedType = null;
+// ── State ──────────────────────────────────────────────────────────
+let botType = null;
 let selectedExchange = null;
+let selectedWallet = null;
+let selectedEntryMethod = null;
 let selectedVariant = null;
+let selectedDirection = 'long';
+let selectedCoinMode = 'all';
+let selectedSize = 2;
 let variants = [];
+let wallets = [];
+let features = {};
+let history = [];
 
-// Step dot styles
-const dotStyles = {
-    active: 'width:10px;height:10px;border-radius:50%;background:var(--accent)',
-    done: 'width:10px;height:10px;border-radius:50%;background:var(--green)',
-    pending: 'width:10px;height:10px;border-radius:50%;background:var(--border2)'
-};
+// Step sequences per bot type
+const SCALPER_STEPS = ['step-0','step-1','step-2','step-3-scalper','step-4-scalper','step-5-scalper','review-scalper'];
+const DCA_STEPS     = ['step-0','step-1','step-2','step-3-dca','step-4-dca','step-5-dca','step-6-dca','step-7-dca','step-8-dca','review-dca'];
 
-function updateDots() {
-    for (let i = 0; i <= 4; i++) {
-        const dot = document.getElementById('dot-' + i);
-        if (!dot) continue;
-        if (i < currentStep) dot.style.cssText = dotStyles.done;
-        else if (i === currentStep) dot.style.cssText = dotStyles.active;
-        else dot.style.cssText = dotStyles.pending;
-    }
+let currentStepId = 'step-0';
+
+// ── Navigation ─────────────────────────────────────────────────────
+function getSteps() {
+  if (!botType) return SCALPER_STEPS;
+  return botType === 'scalper' ? SCALPER_STEPS : DCA_STEPS;
 }
 
-function showStep(n) {
-    for (let i = 0; i <= 4; i++) {
-        const el = document.getElementById('step-' + i);
-        if (el) el.style.display = i === n ? 'block' : 'none';
-    }
-    document.getElementById('back-btn').style.display = n > 0 ? 'block' : 'none';
-    currentStep = n;
-    updateDots();
+function currentIdx() {
+  return getSteps().indexOf(currentStepId);
 }
 
-function goStep(n) { showStep(n); }
+function showStep(id) {
+  // Hide all
+  document.querySelectorAll('[id^="step-"],[id^="review-"]').forEach(el => el.style.display = 'none');
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'block';
+  currentStepId = id;
+  history.push(id);
+
+  // Back button
+  document.getElementById('back-btn').style.display = history.length > 1 ? 'block' : 'none';
+
+  // Update dots
+  updateDots();
+}
+
+function goStep(id) { showStep(id); }
 
 function goBack() {
-    if (currentStep > 0) showStep(currentStep - 1);
+  history.pop(); // remove current
+  if (history.length === 0) { showStep('step-0'); return; }
+  const prev = history.pop(); // remove prev to re-show it
+  showStep(prev);
 }
 
-function selectType(type) {
-    selectedType = type;
-    showStep(1);
-    loadExchanges();
+function updateDots() {
+  const steps = getSteps();
+  const idx = steps.indexOf(currentStepId);
+  const indicator = document.getElementById('step-indicator');
+  const total = steps.length;
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    if (i > 0) html += '<div class="step-line"></div>';
+    let cls = i < idx ? 'done' : i === idx ? 'active' : '';
+    html += `<div class="step-dot ${cls}"></div>`;
+  }
+  indicator.innerHTML = html;
 }
 
+// ── Step 0: Bot Type ───────────────────────────────────────────────
+function selectBotType(type) {
+  botType = type;
+  history = ['step-0'];
+  showStep('step-1');
+  loadExchanges();
+}
+
+// ── Step 1: Exchange ───────────────────────────────────────────────
 async function loadExchanges() {
-    const list = document.getElementById('exc-list');
-    list.innerHTML = '<div style="color:var(--text3);font-size:12px">Loading...</div>';
-    try {
-        const res = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
-        const data = await res.json();
-        if (!data.length) {
-            list.innerHTML = '<div style="color:var(--text3);font-size:12px">No exchanges connected. <a href="/exchanges" style="color:var(--accent)">Add one</a></div>';
-            return;
-        }
-        list.innerHTML = data.map(exc => `
-            <div onclick="selectExchange(${exc.id}, '${exc.custom_name || exc.exchange_name}')"
-                 style="background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px"
-                 id="exc-card-${exc.id}">
-                <div style="font-size:24px">🔗</div>
-                <div>
-                    <div style="font-size:13px;font-weight:600">${exc.custom_name || exc.exchange_name}</div>
-                    <div style="font-size:11px;color:var(--text3)">${exc.is_paper ? '📄 Paper' : '🔴 Live'}</div>
-                </div>
-            </div>
-        `).join('');
-    } catch(e) {
-        list.innerHTML = '<div style="color:red;font-size:12px">Error loading exchanges</div>';
+  const list = document.getElementById('exc-list');
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px">Loading...</div>';
+  try {
+    const res = await fetch(`${API}/exchanges`, {headers: authHeaders()});
+    const data = await res.json();
+    if (!data.length) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:12px">No exchanges connected. <a href="/exchanges" style="color:var(--accent)">Add one</a></div>';
+      return;
     }
+    list.innerHTML = data.map(exc => `
+      <div class="exc-card" id="exc-card-${exc.id}" onclick="selectExchange(${exc.id}, '${exc.custom_name || exc.exchange || 'Exchange'}', ${exc.is_paper || false})">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px">🔗</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${exc.custom_name || exc.exchange || 'Exchange'}</div>
+            <div style="font-size:11px;color:var(--text3)">${exc.is_paper ? '📄 Paper' : '🔴 Live'}</div>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:12px">Error loading exchanges</div>';
+  }
 }
 
-function selectExchange(id, name) {
-    selectedExchange = {id, name};
-    // Highlight selected
-    document.querySelectorAll('[id^="exc-card-"]').forEach(el => {
-        el.style.borderColor = 'var(--border)';
+function selectExchange(id, name, isPaper) {
+  selectedExchange = {id, name, isPaper};
+  document.querySelectorAll('.exc-card').forEach(el => el.classList.remove('selected'));
+  const card = document.getElementById('exc-card-' + id);
+  if (card) card.classList.add('selected');
+  setTimeout(() => { showStep('step-2'); loadWallets(); }, 200);
+}
+
+// ── Step 2: Wallet ─────────────────────────────────────────────────
+async function loadWallets() {
+  const list = document.getElementById('wallet-list');
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px">Loading...</div>';
+  try {
+    const res = await fetch(`${API}/wallets`, {headers: authHeaders()});
+    wallets = await res.json();
+    if (!wallets.length) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">No wallets yet. Create one below.</div>';
+      document.getElementById('new-wallet-form').classList.add('open');
+      return;
+    }
+    renderWallets();
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:12px">Error loading wallets</div>';
+  }
+}
+
+function renderWallets() {
+  const list = document.getElementById('wallet-list');
+  list.innerHTML = wallets.map(w => {
+    const available = w.available || 0;
+    const total = w.allocation_amount || 0;
+    const deployed = w.deployed || 0;
+    const pct = total > 0 ? Math.min(100, (deployed / total) * 100) : 0;
+    return `
+    <div class="wallet-card" id="wallet-card-${w.id}" onclick="selectWallet(${w.id})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700">${w.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${w.is_paper ? '📄 Paper' : '💰 Real'} · ${w.currency}</div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:11px">
+        <div><span style="color:var(--text3)">Available</span> <span style="font-weight:700;color:var(--green)">$${available.toFixed(2)}</span></div>
+        <div><span style="color:var(--text3)">Deployed</span> <span style="font-weight:700">$${deployed.toFixed(2)}</span></div>
+        <div><span style="color:var(--text3)">Total</span> <span style="font-weight:700">$${total.toFixed(2)}</span></div>
+      </div>
+      <div class="wallet-bar"><div class="wallet-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function selectWallet(id) {
+  selectedWallet = wallets.find(w => w.id === id);
+  document.querySelectorAll('.wallet-card').forEach(el => el.classList.remove('selected'));
+  const card = document.getElementById('wallet-card-' + id);
+  if (card) card.classList.add('selected');
+  setTimeout(() => {
+    if (botType === 'scalper') {
+      showStep('step-3-scalper');
+      loadEntryMethods('scalper');
+    } else {
+      showStep('step-3-dca');
+    }
+  }, 200);
+}
+
+function toggleNewWallet() {
+  document.getElementById('new-wallet-form').classList.toggle('open');
+}
+
+async function createWalletInline() {
+  const name = document.getElementById('nw-name').value.trim();
+  const balance = parseFloat(document.getElementById('nw-balance').value) || 1000;
+  if (!name) { alert('Please enter a wallet name'); return; }
+  try {
+    const res = await fetch(`${API}/wallets`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({name, balance, exchange_id: selectedExchange.id, is_paper: true, cap_type: 'fixed'})
     });
-    document.getElementById('exc-card-' + id).style.borderColor = 'var(--accent)';
-    setTimeout(() => showStep(2), 300);
-    loadVariants();
+    const data = await res.json();
+    document.getElementById('nw-name').value = '';
+    document.getElementById('nw-balance').value = '';
+    document.getElementById('new-wallet-form').classList.remove('open');
+    await loadWallets();
+    // Auto-select new wallet
+    if (data.id) selectWallet(data.id);
+  } catch(e) { alert('Error creating wallet'); }
+}
+
+// ── Entry Methods ──────────────────────────────────────────────────
+async function loadEntryMethods(type) {
+  // Load feature flags
+  try {
+    const res = await fetch(`${API}/admin-features`, {headers: authHeaders()});
+    features = await res.json();
+  } catch(e) { features = {}; }
+
+  if (type === 'scalper') renderScalperEntryMethods();
+  else renderDcaEntryMethods();
+}
+
+function renderScalperEntryMethods() {
+  const container = document.getElementById('scalper-entry-methods');
+  const methods = [
+    {
+      key: 'scalper_smart', icon: '🧠', title: 'Smart',
+      desc: 'Uses current champion variant automatically',
+      flag: features['scalper_smart']
+    },
+    {
+      key: 'scalper_templates', icon: '📋', title: 'Templates',
+      desc: 'Pick from S1–S120 research variants',
+      flag: features['scalper_templates']
+    },
+    {
+      key: 'scalper_custom', icon: '⚙️', title: 'Custom',
+      desc: 'Set trigger%, window, and hold time manually',
+      flag: features['scalper_custom']
+    },
+  ];
+
+  container.innerHTML = methods
+    .filter(m => m.flag?.visible !== false)
+    .map(m => {
+      const enabled = m.flag?.enabled !== false;
+      return `
+      <div class="choice-card ${!enabled ? 'coming-soon' : ''}"
+           onclick="${enabled ? `selectScalperEntry('${m.key}')` : ''}">
+        ${!enabled ? '<span class="coming-badge">COMING SOON</span>' : ''}
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px">${m.icon}</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">${m.title}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.desc}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function renderDcaEntryMethods() {
+  const container = document.getElementById('dca-entry-methods');
+  const methods = [
+    {
+      key: 'dca_smart', icon: '🧠', title: 'Smart',
+      desc: 'Uses current champion entry method automatically',
+      flag: features['dca_smart']
+    },
+    {
+      key: 'dca_asap', icon: '⚡', title: 'ASAP',
+      desc: 'Enter immediately · no signal required',
+      flag: features['dca_asap']
+    },
+    {
+      key: 'dca_custom', icon: '⚙️', title: 'Custom',
+      desc: 'Build your own entry with indicators',
+      flag: features['dca_custom']
+    },
+    {
+      key: 'dca_templates', icon: '📋', title: 'Templates',
+      desc: 'Pick from your research bot methods (E1–E47)',
+      flag: features['dca_templates']
+    },
+  ];
+
+  container.innerHTML = methods
+    .filter(m => m.flag?.visible !== false)
+    .map(m => {
+      const enabled = m.flag?.enabled !== false;
+      return `
+      <div class="choice-card ${!enabled ? 'coming-soon' : ''}"
+           onclick="${enabled ? `selectDcaEntry('${m.key}')` : ''}">
+        ${!enabled ? '<span class="coming-badge">COMING SOON</span>' : ''}
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px">${m.icon}</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">${m.title}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.desc}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// ── Step 3 Scalper: Entry selected ────────────────────────────────
+async function selectScalperEntry(key) {
+  selectedEntryMethod = key;
+  showStep('step-4-scalper');
+
+  if (key === 'scalper_templates') {
+    document.getElementById('step4s-title').textContent = 'Select Template';
+    document.getElementById('step4s-sub').textContent = 'Pick a research variant (S1–S120)';
+    await loadVariants();
+  } else if (key === 'scalper_custom') {
+    document.getElementById('step4s-title').textContent = 'Custom Settings';
+    document.getElementById('step4s-sub').textContent = 'Configure your scalper parameters';
+    renderCustomScalper();
+  } else if (key === 'scalper_smart') {
+    document.getElementById('step4s-title').textContent = 'Smart Mode';
+    document.getElementById('step4s-sub').textContent = 'Using current champion variant';
+    document.getElementById('step4s-content').innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;margin-bottom:8px">🧠</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Smart Entry Active</div>
+        <div style="font-size:11px;color:var(--text3)">Bot will use the current champion variant. Champion updates automatically as research data improves.</div>
+      </div>
+      <button onclick="goStep('step-5-scalper');buildSizePresets('scalper')" style="width:100%;margin-top:14px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>`;
+  }
 }
 
 async function loadVariants() {
-    const sel = document.getElementById('variant-select');
-    sel.innerHTML = '<option value="">Loading...</option>';
-    try {
-        const res = await fetch(`${API}/scalper-variants`, {headers: authHeaders()});
-        variants = await res.json();
-        sel.innerHTML = '<option value="">-- Select variant --</option>' +
-            variants.map(v => `<option value="${v.name}">${v.name} · Trigger ${v.trigger_pct}% · Window ${v.window_sec}s · Hold ${v.hold_sec}s</option>`).join('');
-    } catch(e) {
-        sel.innerHTML = '<option value="">Error loading variants</option>';
-    }
+  const container = document.getElementById('step4s-content');
+  container.innerHTML = '<div style="color:var(--text3);font-size:12px">Loading variants...</div>';
+  try {
+    const res = await fetch(`${API}/scalper-variants`, {headers: authHeaders()});
+    variants = await res.json();
+    container.innerHTML = `
+      <select id="variant-select" onchange="onVariantChange()"
+        style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;margin-bottom:14px">
+        <option value="">-- Select variant --</option>
+        ${variants.map(v => `<option value="${v.name}">${v.name} · Trigger ${v.trigger_pct}% · Window ${v.window_sec}s · Hold ${v.hold_sec}s</option>`).join('')}
+      </select>
+      <div id="variant-preview" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:10px">PARAMETERS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
+          <div><div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-trigger">—</div><div style="font-size:10px;color:var(--text3)">Trigger %</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-window">—</div><div style="font-size:10px;color:var(--text3)">Window (s)</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--accent)" id="prev-hold">—</div><div style="font-size:10px;color:var(--text3)">Hold (s)</div></div>
+        </div>
+      </div>
+      <button onclick="confirmVariant()" id="variant-next" style="display:none;width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>`;
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--red);font-size:12px">Error loading variants</div>';
+  }
 }
 
 function onVariantChange() {
-    const sel = document.getElementById('variant-select');
-    const name = sel.value;
-    if (!name) {
-        document.getElementById('variant-preview').style.display = 'none';
-        document.getElementById('variant-next').style.display = 'none';
-        return;
-    }
-    selectedVariant = variants.find(v => v.name === name);
-    if (selectedVariant) {
-        document.getElementById('prev-trigger').textContent = selectedVariant.trigger_pct + '%';
-        document.getElementById('prev-window').textContent = selectedVariant.window_sec + 's';
-        document.getElementById('prev-hold').textContent = selectedVariant.hold_sec + 's';
-        document.getElementById('variant-preview').style.display = 'block';
-        document.getElementById('variant-next').style.display = 'block';
-    }
-}
-
-function buildReview() {
-    const baseOrder = parseFloat(document.getElementById('base-order').value) || 2;
-    const maxCapital = parseFloat(document.getElementById('max-capital').value) || 10;
-    document.getElementById('review-content').innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Bot Name</span>
-                <span style="font-weight:600">${document.getElementById('bot-name-input').value}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Type</span>
-                <span style="font-weight:600">⚡ Scalper Bot</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Exchange</span>
-                <span style="font-weight:600">${selectedExchange.name}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Variant</span>
-                <span style="font-weight:600">${selectedVariant.name}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Trigger</span>
-                <span style="font-weight:600">${selectedVariant.trigger_pct}% in ${selectedVariant.window_sec}s</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Hold Time</span>
-                <span style="font-weight:600">${selectedVariant.hold_sec}s</span>
-            </div>
-            <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Base Order</span>
-                <span style="font-weight:600;color:var(--accent)">$${baseOrder}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-                <span style="color:var(--text3)">Max Capital</span>
-                <span style="font-weight:600;color:var(--accent)">$${maxCapital}</span>
-            </div>
-        </div>
-    `;
-}
-
-// Override goStep for step 4 to build review
-const _goStep = goStep;
-function goStep(n) {
-    if (n === 4) buildReview();
-    showStep(n);
-}
-
-async function createBot() {
-    const btn = document.getElementById('launch-btn');
-    btn.textContent = 'Creating...';
-    btn.disabled = true;
-
-    const baseOrder = parseFloat(document.getElementById('base-order').value) || 2;
-    const maxCapital = parseFloat(document.getElementById('max-capital').value) || 10;
-
-    try {
-        const res = await fetch(`${API}/bots/create-scalper`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({
-                exchange_id: selectedExchange.id,
-                variant_name: selectedVariant.name,
-                bot_name: document.getElementById('bot-name-input').value.trim(),
-                base_order: baseOrder,
-                max_capital: maxCapital,
-            })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            alert('Error: ' + (data.detail || 'Failed to create bot'));
-            btn.textContent = '🚀 Launch Bot';
-            btn.disabled = false;
-            return;
-        }
-        // Success
-        btn.style.display = 'none';
-        document.getElementById('success-detail').textContent = 
-            `${selectedVariant.name} · $${baseOrder} base order · Paper Mode`;
-        document.getElementById('success-msg').style.display = 'block';
-    } catch(e) {
-        alert('Error: ' + e.message);
-        btn.textContent = '🚀 Launch Bot';
-        btn.disabled = false;
-    }
-}
-
-function validateStep3() {
-    const name = document.getElementById('bot-name-input').value.trim();
-    const base = parseFloat(document.getElementById('base-order').value);
-    const max = parseFloat(document.getElementById('max-capital').value);
-    if (!name) { alert('Please enter a bot name'); return; }
-    if (!base || base <= 0) { alert('Please enter a base order amount'); return; }
-    if (!max || max <= 0) { alert('Please enter a max capital amount'); return; }
-    if (max < base) { alert('Max capital must be greater than base order'); return; }
-    goStep(4);
-}
-
-function resetWizard() {
-    selectedType = null;
-    selectedExchange = null;
-    selectedVariant = null;
-    document.getElementById('variant-select').value = '';
+  const name = document.getElementById('variant-select').value;
+  if (!name) {
     document.getElementById('variant-preview').style.display = 'none';
     document.getElementById('variant-next').style.display = 'none';
-    document.getElementById('bot-name-input').value = '';
-    document.getElementById('base-order').value = '';
-    document.getElementById('max-capital').value = '';
-    document.getElementById('launch-btn').style.display = 'block';
-    document.getElementById('launch-btn').disabled = false;
-    document.getElementById('launch-btn').textContent = '🚀 Launch Bot';
-    document.getElementById('success-msg').style.display = 'none';
-    showStep(0);
+    return;
+  }
+  selectedVariant = variants.find(v => v.name === name);
+  if (selectedVariant) {
+    document.getElementById('prev-trigger').textContent = selectedVariant.trigger_pct + '%';
+    document.getElementById('prev-window').textContent = selectedVariant.window_sec + 's';
+    document.getElementById('prev-hold').textContent = selectedVariant.hold_sec + 's';
+    document.getElementById('variant-preview').style.display = 'block';
+    document.getElementById('variant-next').style.display = 'block';
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (!requireAuth()) return;
-    document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
-    document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Create Bot');
-    buildNav();
-    buildUserRow();
-    buildMobileNav();
-    showStep(0);
-    updateDots();
+function confirmVariant() {
+  showStep('step-5-scalper');
+  buildSizePresets('scalper');
+}
 
-    // Add step dot CSS
-    const style = document.createElement('style');
-    style.textContent = '.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border2);flex-shrink:0}.step-line{flex:1;height:2px;background:var(--border)}';
-    document.head.appendChild(style);
+function renderCustomScalper() {
+  document.getElementById('step4s-content').innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:600">Trigger %</div><div style="font-size:10px;color:var(--text3)">% jump in window to trigger entry</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="custom-trigger" value="15" min="1" max="50" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+          <span style="font-size:12px;color:var(--text3)">%</span>
+        </div>
+      </div>
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:600">Window</div><div style="font-size:10px;color:var(--text3)">Time window to measure jump</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="custom-window" value="5" min="1" max="60" step="1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+          <span style="font-size:12px;color:var(--text3)">sec</span>
+        </div>
+      </div>
+      <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:600">Hold Time</div><div style="font-size:10px;color:var(--text3)">Seconds to hold before exit</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="custom-hold" value="30" min="1" max="300" step="1" style="width:60px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;color:var(--text);font-size:13px;text-align:right;outline:none">
+          <span style="font-size:12px;color:var(--text3)">sec</span>
+        </div>
+      </div>
+    </div>
+    <button onclick="confirmCustomScalper()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Continue →</button>`;
+}
+
+function confirmCustomScalper() {
+  selectedVariant = {
+    name: 'Custom',
+    trigger_pct: parseFloat(document.getElementById('custom-trigger').value),
+    window_sec: parseFloat(document.getElementById('custom-window').value),
+    hold_sec: parseInt(document.getElementById('custom-hold').value),
+  };
+  showStep('step-5-scalper');
+  buildSizePresets('scalper');
+}
+
+// ── Step 3 DCA: Direction ─────────────────────────────────────────
+function selectDcaDirection(dir) {
+  selectedDirection = dir;
+  showStep('step-4-dca');
+  loadEntryMethods('dca');
+}
+
+// ── Step 4 DCA: Entry ─────────────────────────────────────────────
+function selectDcaEntry(key) {
+  selectedEntryMethod = key;
+  showStep('step-5-dca');
+}
+
+// ── Step 5 DCA: Coin ──────────────────────────────────────────────
+function selectCoinMode(mode) {
+  selectedCoinMode = mode;
+  document.getElementById('coin-all-card').classList.toggle('selected', mode === 'all');
+  document.getElementById('coin-specific-card').classList.toggle('selected', mode === 'specific');
+}
+
+function goNextFromCoin() {
+  showStep('step-6-dca');
+}
+
+// ── Size presets ───────────────────────────────────────────────────
+function buildSizePresets(type) {
+  const presets = type === 'scalper' ? [2, 5, 10, 20, 50] : [5, 10, 25, 50, 100];
+  const container = document.getElementById(`size-presets-${type}`);
+  container.innerHTML = presets.map(v => `
+    <button class="size-btn ${v === selectedSize ? 'selected' : ''}"
+            onclick="setSize('${type}', ${v})">$${v}</button>`).join('');
+  updateWalletPreview(type);
+}
+
+function setSize(type, val) {
+  selectedSize = val;
+  document.querySelectorAll(`#size-presets-${type} .size-btn`).forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  document.getElementById(`custom-size-${type}`).value = val;
+  updateWalletPreview(type);
+}
+
+function setCustomSize(type, val) {
+  selectedSize = parseFloat(val) || 0;
+  document.querySelectorAll(`#size-presets-${type} .size-btn`).forEach(b => b.classList.remove('selected'));
+  updateWalletPreview(type);
+}
+
+function updateWalletPreview(type) {
+  const el = document.getElementById(`wallet-preview-${type}`);
+  if (!el || !selectedWallet) return;
+  const available = selectedWallet.available || 0;
+  const pct = available > 0 ? ((selectedSize / available) * 100).toFixed(1) : 0;
+  el.innerHTML = `Using <strong>$${selectedSize}</strong> per trade · Wallet has <strong style="color:var(--green)">$${available.toFixed(2)}</strong> available (${pct}% per trade)`;
+}
+
+// ── Review ─────────────────────────────────────────────────────────
+function buildReviewScalper() {
+  const variantLabel = selectedVariant
+    ? `${selectedVariant.name} · ${selectedVariant.trigger_pct}% trigger · ${selectedVariant.window_sec}s window · ${selectedVariant.hold_sec}s hold`
+    : 'Smart (champion)';
+  document.getElementById('review-scalper-content').innerHTML = `
+    <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">⚡ Scalper</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${selectedEntryMethod?.replace('scalper_','')}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Variant</span><span style="font-weight:700;font-size:11px">${variantLabel}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
+}
+
+function buildReviewDca() {
+  const entryLabel = {
+    dca_smart: '🧠 Smart (champion)',
+    dca_asap: '⚡ ASAP',
+    dca_custom: '⚙️ Custom',
+    dca_templates: '📋 Template',
+  }[selectedEntryMethod] || selectedEntryMethod;
+  document.getElementById('review-dca-content').innerHTML = `
+    <div class="review-row"><span style="color:var(--text3)">Type</span><span style="font-weight:700">📈 DCA Bot</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Exchange</span><span style="font-weight:700">${selectedExchange?.name}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Wallet</span><span style="font-weight:700">${selectedWallet?.name}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Direction</span><span style="font-weight:700">📈 Long</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Entry</span><span style="font-weight:700">${entryLabel}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Coins</span><span style="font-weight:700">${selectedCoinMode === 'all' ? '🌐 All Coins' : '🎯 Specific'}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">DCA Spacing</span><span style="font-weight:700">${document.getElementById('dca-spacing')?.value || 7}%</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Take Profit</span><span style="font-weight:700">${document.getElementById('dca-tp')?.value || 5}%</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Trailing</span><span style="font-weight:700">${document.getElementById('dca-trail')?.value || 2}%</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$${selectedSize}</span></div>
+    <div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>`;
+}
+
+// Override showStep to build reviews when needed
+const _origShowStep = showStep;
+window.goStep = function(id) {
+  if (id === 'review-scalper') buildReviewScalper();
+  if (id === 'review-dca') buildReviewDca();
+  _origShowStep(id);
+};
+
+// ── Create Bot API calls ───────────────────────────────────────────
+async function createBot(type) {
+  const btn = document.getElementById(`launch-btn-${type}`);
+  btn.textContent = 'Creating...';
+  btn.disabled = true;
+
+  try {
+    if (type === 'scalper') {
+      const payload = {
+        exchange_id: selectedExchange.id,
+        wallet_id: selectedWallet.id,
+        entry_method: selectedEntryMethod,
+        variant_name: selectedVariant?.name !== 'Custom' ? selectedVariant?.name : null,
+        custom_params: selectedVariant?.name === 'Custom' ? {
+          trigger_pct: selectedVariant.trigger_pct,
+          window_sec: selectedVariant.window_sec,
+          hold_sec: selectedVariant.hold_sec,
+        } : null,
+        base_order: selectedSize,
+      };
+      const res = await fetch(`${API}/bots/create-scalper`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      btn.style.display = 'none';
+      document.getElementById('success-scalper-detail').textContent =
+        `${data.name} · $${selectedSize} per trade · Paper Mode`;
+      document.getElementById('success-scalper').style.display = 'block';
+
+    } else {
+      const payload = {
+        exchange_id: selectedExchange.id,
+        wallet_id: selectedWallet.id,
+        direction: selectedDirection,
+        entry_method: selectedEntryMethod,
+        coin_mode: selectedCoinMode,
+        dca_percent: parseFloat(document.getElementById('dca-spacing').value),
+        size_multiplier: parseFloat(document.getElementById('dca-size-mult').value),
+        max_dca_levels: parseInt(document.getElementById('dca-max-levels').value),
+        take_profit_percent: parseFloat(document.getElementById('dca-tp').value),
+        trailing_percent: parseFloat(document.getElementById('dca-trail').value),
+        base_order: selectedSize,
+      };
+      const res = await fetch(`${API}/bots/create-dca`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      btn.style.display = 'none';
+      document.getElementById('success-dca-detail').textContent =
+        `${data.name} · $${selectedSize} base order · Paper Mode`;
+      document.getElementById('success-dca').style.display = 'block';
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+    btn.textContent = type === 'scalper' ? '🚀 Launch Scalper Bot' : '🚀 Launch DCA Bot';
+    btn.disabled = false;
+  }
+}
+
+// ── Reset ──────────────────────────────────────────────────────────
+function resetWizard() {
+  botType = null; selectedExchange = null; selectedWallet = null;
+  selectedEntryMethod = null; selectedVariant = null;
+  selectedDirection = 'long'; selectedCoinMode = 'all'; selectedSize = 2;
+  history = [];
+  document.getElementById('launch-btn-scalper').style.display = 'block';
+  document.getElementById('launch-btn-dca').style.display = 'block';
+  document.getElementById('launch-btn-scalper').disabled = false;
+  document.getElementById('launch-btn-dca').disabled = false;
+  document.getElementById('success-scalper').style.display = 'none';
+  document.getElementById('success-dca').style.display = 'none';
+  showStep('step-0');
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (!requireAuth()) return;
+  document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
+  document.getElementById('topbar-placeholder').outerHTML = getTopbarHTML('Create Bot');
+  buildNav();
+  buildUserRow();
+  buildMobileNav();
+
+  // Init dots for step 0
+  updateDots();
+  document.getElementById('back-btn').style.display = 'none';
 });
 </script>
 </body>
