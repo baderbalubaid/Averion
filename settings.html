@@ -267,8 +267,7 @@ async function showReset(type) {
         
         document.getElementById('reset-title').textContent = titles[type];
         document.getElementById('reset-desc').textContent = descs[type];
-        document.getElementById('reset-summary').innerHTML = summary.split('
-').filter(Boolean).map(l => `<div>${l}</div>`).join('');
+        document.getElementById('reset-summary').innerHTML = summary.split('|').filter(Boolean).map(function(l){ return '<div>'+l+'</div>'; }).join('');
         document.getElementById('resetModal').style.display = 'flex';
     } catch(e) {
         alert('Error loading reset summary');
