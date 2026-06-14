@@ -454,6 +454,13 @@ function showStep(id) {
   if (id === 'step-7-dca') {
     setTimeout(() => setDcaExitMode(dcaExitMode), 50);
   }
+  // Build size presets when reaching order size step
+  if (id === 'step-5-scalper') {
+    setTimeout(() => buildSizePresets('scalper'), 50);
+  }
+  if (id === 'step-8-dca') {
+    setTimeout(() => buildSizePresets('dca'), 50);
+  }
 
   // Back button
   document.getElementById('back-btn').style.display = history.length > 1 ? 'block' : 'none';
@@ -502,6 +509,12 @@ function updateDots() {
 // ── Step 0: Bot Type ───────────────────────────────────────────────
 function selectBotType(type) {
   botType = type;
+  selectedCoins = [];
+  allAvailableCoins = [];
+  selectedCoinMode = 'all';
+  selectedSize = 0;
+  dcaSettingsMode = 'smart';
+  dcaExitMode = 'smart';
   history = ['step-0'];
   showStep('step-1');
   loadExchanges();
@@ -1007,9 +1020,10 @@ function buildSizePresets(type) {
 
 function setSize(type, val) {
   selectedSize = val;
-  document.querySelectorAll(`#size-presets-${type} .size-btn`).forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#size-presets-' + type + ' .size-btn').forEach(b => b.classList.remove('selected'));
   event.target.classList.add('selected');
-  document.getElementById(`custom-size-${type}`).value = val;
+  const customEl = document.getElementById('custom-size-' + type);
+  if (customEl) customEl.value = val;
   updateWalletPreview(type);
 }
 
@@ -1029,16 +1043,20 @@ function updateWalletPreview(type) {
 
 // ── Review ─────────────────────────────────────────────────────────
 function validateAndGoReview(type) {
-  if (!selectedSize || selectedSize <= 0) {
+  const size = parseFloat(document.getElementById('custom-size-' + type)?.value || selectedSize);
+  if (!size || size <= 0) {
     alert('Please enter a valid order size'); return;
   }
+  selectedSize = size;
   if (!selectedWallet) {
     alert('Please select a wallet'); return;
   }
   if (type === 'scalper') {
-    goStep('review-scalper');
+    buildReviewScalper();
+    showStep('review-scalper');
   } else {
-    goStep('review-dca');
+    buildReviewDca();
+    showStep('review-dca');
   }
 }
 
@@ -1120,13 +1138,8 @@ function buildReviewDca() {
     '<div class="review-row"><span style="color:var(--text3)">Order Size</span><span style="font-weight:700;color:var(--accent)">$' + selectedSize + ' per trade</span></div>' +
     '<div class="review-row"><span style="color:var(--text3)">Mode</span><span style="font-weight:700">📄 Paper</span></div>';
 }
-// Override showStep to build reviews when needed
-const _origShowStep = showStep;
-window.goStep = function(id) {
-  if (id === 'review-scalper') buildReviewScalper();
-  if (id === 'review-dca') buildReviewDca();
-  _origShowStep(id);
-};
+// goStep is just showStep — reviews built directly in validateAndGoReview
+window.goStep = showStep;
 
 // ── Create Bot API calls ───────────────────────────────────────────
 async function createBot(type) {
@@ -1201,7 +1214,9 @@ async function createBot(type) {
 function resetWizard() {
   botType = null; selectedExchange = null; selectedWallet = null;
   selectedEntryMethod = null; selectedVariant = null;
-  selectedDirection = 'long'; selectedCoinMode = 'all'; selectedSize = 2;
+  selectedDirection = 'long'; selectedCoinMode = 'all'; selectedSize = 0;
+  selectedCoins = []; allAvailableCoins = [];
+  dcaSettingsMode = 'smart'; dcaExitMode = 'smart';
   history = [];
   document.getElementById('launch-btn-scalper').style.display = 'block';
   document.getElementById('launch-btn-dca').style.display = 'block';
