@@ -1081,21 +1081,15 @@ def get_bots(payload: dict = Depends(verify_token)):
 
     # Scalper: base_order is invested amount
     for pos in scalper_pos:
-        bot_id, coin, base_order = pos
+        bid, coin, base_order = int(pos[0]), pos[1], pos[2]
         invested = float(base_order or 0)
-        try:
-            keys = r.keys(f'price:*:{coin}/USDT')
-            if keys:
-                # For scalper, worth ≈ invested (no quantity stored)
-                bot_worth.setdefault(bot_id, {'invested': 0, 'worth': 0})
-                bot_worth[bot_id]['invested'] += invested
-                bot_worth[bot_id]['worth'] += invested  # approximation
-        except Exception:
-            pass
+        bot_worth.setdefault(bid, {'invested': 0, 'worth': 0})
+        bot_worth[bid]['invested'] += invested
+        bot_worth[bid]['worth'] += invested  # scalper: worth ≈ invested
 
     # DCA: quantity × current_price
     for pos in dca_pos:
-        bot_id, coin, quantity, total_invested = pos
+        bid, coin, quantity, total_invested = int(pos[0]), pos[1], pos[2], pos[3]
         qty = float(quantity or 0)
         invested = float(total_invested or 0)
         try:
@@ -1104,9 +1098,9 @@ def get_bots(payload: dict = Depends(verify_token)):
             worth = qty * current_price if current_price > 0 else invested
         except Exception:
             worth = invested
-        bot_worth.setdefault(bot_id, {'invested': 0, 'worth': 0})
-        bot_worth[bot_id]['invested'] += invested
-        bot_worth[bot_id]['worth'] += worth
+        bot_worth.setdefault(bid, {'invested': 0, 'worth': 0})
+        bot_worth[bid]['invested'] += invested
+        bot_worth[bid]['worth'] += worth
 
     result = []
     for b in bots:
