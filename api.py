@@ -883,6 +883,7 @@ def get_live_positions(payload: dict = Depends(verify_token)):
             'id': p[0],
             'bot_id': p[1],
             'coin': coin,
+            'type': 'scalper',
             'entry_price': entry_price,
             'current_price': current_price,
             'exit_price': float(p[5] or 0),
@@ -896,7 +897,74 @@ def get_live_positions(payload: dict = Depends(verify_token)):
             'exit_reason': p[13],
             'trigger_jump_pct': float(p[14] or 0),
             'bot_name': p[15],
+            'dca_count': 0,
+            'avg_cost': entry_price,
+            'total_invested': float(p[6] or 2),
         })
+
+    # ── Add Live DCA positions ──
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, p.bot_id, p.coin, p.avg_cost, p.quantity,
+                   p.total_invested, p.dca_count, p.status,
+                   p.opened_at, p.closed_at, p.close_reason,
+                   p.realized_pnl_usdt, p.realized_pnl_pct,
+                   p.execution_type, p.fill_price,
+                   b.name as bot_name
+            FROM live_dca_positions p
+            JOIN bots b ON p.bot_id = b.id
+            WHERE p.user_id=%s
+            ORDER BY p.id DESC
+        """, (user_id,))
+        dca_rows = cur.fetchall()
+
+    for p in dca_rows:
+        coin = p[2]
+        avg_cost = float(p[3] or 0)
+        quantity = float(p[4] or 0)
+        total_invested = float(p[5] or 0)
+        current_price = avg_cost
+
+        if p[7] == 'open' and avg_cost > 0:
+            try:
+                keys = r.keys(f'price:*:{coin}/USDT')
+                if keys:
+                    current_price = float(r.get(keys[0]) or avg_cost)
+            except:
+                pass
+
+        pnl_usdt = float(p[11] or 0)
+        pnl_pct = float(p[12] or 0)
+
+        if p[7] == 'open' and avg_cost > 0 and quantity > 0:
+            current_value = current_price * quantity
+            pnl_usdt = current_value - total_invested
+            pnl_pct = (pnl_usdt / total_invested * 100) if total_invested > 0 else 0
+
+        result.append({
+            'id': f'dca_{p[0]}',
+            'bot_id': p[1],
+            'coin': coin,
+            'type': 'dca',
+            'entry_price': float(p[14] or avg_cost),
+            'current_price': current_price,
+            'exit_price': 0,
+            'base_order': total_invested,
+            'hold_seconds': None,
+            'pnl_pct': round(pnl_pct, 4),
+            'pnl_usdt': round(pnl_usdt, 6),
+            'status': p[7],
+            'entry_time': str(p[8]),
+            'exit_time': str(p[9]) if p[9] else None,
+            'exit_reason': p[10],
+            'trigger_jump_pct': 0,
+            'bot_name': p[15],
+            'dca_count': int(p[6] or 0),
+            'avg_cost': avg_cost,
+            'total_invested': total_invested,
+        })
+
     return result
 
 @app.get('/api/bots')
