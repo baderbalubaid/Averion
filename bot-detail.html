@@ -94,10 +94,8 @@ let allPositions = [];
 let currentFilter = 'all';
 
 function statusInfo(pos) {
-    const d = pos.days_open || 0;
-    if (pos.tp_armed) return {label:'🚀 TP Armed', color:'var(--accent)'};
-    if (d > 60) return {label:'🔴 Critical', color:'var(--red)'};
-    if (d > 30) return {label:'🟡 Stuck', color:'var(--amber)'};
+    if (pos.status === 'closed') return {label:'✅ Closed', color:'var(--text3)'};
+    if (pos.exit_reason === 'stop_loss') return {label:'🛑 Stop Loss', color:'var(--red)'};
     return {label:'🟢 Active', color:'var(--green)'};
 }
 
@@ -126,25 +124,25 @@ function renderTable(data) {
         return;
     }
     tbody.innerHTML = data.map(p => {
-        const pnl = parseFloat(p.pnl || 0);
+        const pnl = parseFloat(p.pnl_usdt || p.pnl || 0);
         const pnlPct = parseFloat(p.pnl_pct || 0);
         const color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const st = statusInfo(p);
         return `<tr style="border-bottom:1px solid var(--border)">
             <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.avg_cost)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price)}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.dca_count||0}</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
-            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.entry_price)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||p.entry_price)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.hold_seconds||0}s</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
+            <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
             <td style="padding:8px 10px;font-size:10px;color:${st.color}">${st.label}</td>
         </tr>`;
     }).join('');
 }
 
 function updateStats() {
-    const total = allPositions.reduce((s,p) => s+(p.total_invested||0), 0);
-    const pnl = allPositions.reduce((s,p) => s+(p.pnl||0), 0);
+    const total = allPositions.reduce((s,p) => s+(p.base_order||0), 0);
+    const pnl = allPositions.reduce((s,p) => s+(p.pnl_usdt||p.pnl||0), 0);
     const pnlPct = total > 0 ? (pnl/total*100) : 0;
     document.getElementById('stat-open').textContent = allPositions.length;
     document.getElementById('stat-invested').textContent = '$'+total.toFixed(0);
@@ -200,7 +198,7 @@ async function loadPositions() {
     try {
         const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
         const all = await res.json();
-        allPositions = all.filter(p => p.bot_id === botId);
+        allPositions = all.filter(p => p.bot_id === botId && p.status === 'open');
         updateStats();
         applyFilter();
     } catch(e) { console.error(e); }
