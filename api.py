@@ -394,16 +394,21 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
     take_profit_percent = float(data.get('take_profit_percent', 5))
     trailing_percent = float(data.get('trailing_percent', 2))
 
+    user_id = int(user_id)
     with db.get_db() as conn:
         cur = conn.cursor()
 
         # Generate bot name
-        cur.execute("""
-            SELECT COUNT(*) FROM bots
-            WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE
-            AND method LIKE 'DCA%'
-        """, (user_id,))
-        count = cur.fetchone()[0] + 1
+        try:
+            cur.execute("""
+                SELECT COUNT(*) FROM bots
+                WHERE user_id=%s AND is_research=FALSE AND is_template=FALSE
+                AND method LIKE 'DCA%'
+            """, (user_id,))
+            row = cur.fetchone()
+            count = (row[0] if row else 0) + 1
+        except Exception:
+            count = 1
         bot_name = data.get('bot_name', '').strip() or f'DCA-{count}'
 
         # Determine method based on entry
