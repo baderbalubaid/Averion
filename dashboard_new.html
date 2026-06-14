@@ -120,6 +120,8 @@ async function loadHomeStats() {
         // Operational
         document.getElementById('h-bots').textContent = d.active_bots || 0;
         document.getElementById('h-trades').textContent = d.open_trades || 0;
+        // Update capital to show deployed
+        document.getElementById('h-capital').textContent = '$' + (d.wallet_deployed||d.total_invested||0).toFixed(2);
         document.getElementById('h-dca').textContent = d.dca_queue || 0;
         const todayPnl = d.today_pnl || 0;
         document.getElementById('h-today').textContent = (todayPnl>=0?'+':'') + '$' + Math.abs(todayPnl).toFixed(2);
@@ -128,6 +130,29 @@ async function loadHomeStats() {
         // 24h P&L (use today_pnl as proxy)
         document.getElementById('h-24h').textContent = (todayPnl>=0?'+':'') + '$' + Math.abs(todayPnl).toFixed(2);
         document.getElementById('h-24h').style.color = todayPnl>=0?'var(--green)':'var(--red)';
+
+        // Wallet summary
+        if (d.wallet_total > 0) {
+            const walletEl = document.getElementById('h-wallet');
+            if (walletEl) {
+                const pct = d.wallet_total > 0 ? (d.wallet_deployed / d.wallet_total * 100) : 0;
+                walletEl.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
+                        <span style="color:var(--text3)">Available <strong style="color:var(--green)">$${d.wallet_available.toFixed(0)}</strong></span>
+                        <span style="color:var(--text3)">Deployed <strong>$${d.wallet_deployed.toFixed(0)}</strong></span>
+                        <span style="color:var(--text3)">Total <strong>$${d.wallet_total.toFixed(0)}</strong></span>
+                    </div>
+                    <div style="height:4px;background:var(--border);border-radius:2px">
+                        <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px"></div>
+                    </div>`;
+            }
+        }
+
+        // Trade breakdown
+        const tradesEl = document.getElementById('h-trades-detail');
+        if (tradesEl && (d.scalper_open !== undefined)) {
+            tradesEl.textContent = `⚡${d.scalper_open} · 📈${d.dca_open}`;
+        }
 
         // Warnings
         const warnings = [];
