@@ -176,10 +176,16 @@ async function renderBots() {
                     style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:${running ? '#F4645F20' : '#10D98A20'};color:${running ? 'var(--red)' : 'var(--green)'}">
                     ${running ? '⬛ Stop' : '▶ Start'}
                 </button>
-                <button onclick="event.stopPropagation();openBotMenu(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},event)"
+                <button onclick="event.stopPropagation();toggleInlineMenu(${bot.id})"
                     style="padding:8px 16px;border-radius:8px;font-size:16px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text)">
                     ···
                 </button>
+            </div>
+            <!-- Inline dropdown -->
+            <div id="botmenu-${bot.id}" style="display:none;margin-top:8px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+                <div onclick="event.stopPropagation();botAction(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},'edit')" style="padding:11px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">✏️ Edit Bot</div>
+                <div onclick="event.stopPropagation();botAction(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},'panic')" style="padding:11px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);color:var(--amber)">💥 Panic Close All</div>
+                <div onclick="event.stopPropagation();botAction(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},'delete')" style="padding:11px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--red)">🗑️ Delete Bot</div>
             </div>
         </div>`;
     }).join('');
