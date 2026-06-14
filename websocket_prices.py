@@ -19,14 +19,16 @@ try:
 except Exception:
     live_scalper_on_price = None
 
-try:
-    from live_long_dca_engine import get_live_tp_callback, start_engine as start_dca_engine
-    _live_dca_tp = get_live_tp_callback()
-    start_dca_engine()
-    print('✅ LiveLongDCA engine wired to WebSocket')
-except Exception as _e:
-    _live_dca_tp = None
-    print(f'⚠️ LiveLongDCA engine not loaded: {_e}')
+_live_dca_tp = None
+def _init_live_dca():
+    global _live_dca_tp
+    try:
+        from live_long_dca_engine import get_live_tp_callback, start_engine as start_dca_engine
+        _live_dca_tp = get_live_tp_callback()
+        start_dca_engine()
+        print('✅ LiveLongDCA engine wired to WebSocket')
+    except Exception as _e:
+        print(f'⚠️ LiveLongDCA engine not loaded: {_e}')
 import websocket
 from datetime import datetime
 
@@ -48,6 +50,10 @@ def get_redis():
 
 class MexcWebSocketPrices:
     def __init__(self, tp_callback=None):
+        # Init live DCA engine after DB pool is ready
+        global _live_dca_tp
+        if _live_dca_tp is None:
+            _init_live_dca()
         self.r = get_redis()
         self.ws = None
         self.running = False
