@@ -411,32 +411,54 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
             count = 1
         bot_name = data.get('bot_name', '').strip() or f'DCA-{count}'
 
-        # Determine method based on entry
-        method_map = {
-            'dca_smart': 'DCA_SMART',
-            'dca_asap': 'DCA_ASAP',
-            'dca_custom': 'DCA_CUSTOM',
-            'dca_templates': 'DCA_TEMPLATE',
-        }
-        method = method_map.get(entry_method, 'DCA_ASAP')
-
         trades_per_bot = int(data.get('trades_per_bot', 5))
         trades_per_coin = int(data.get('trades_per_coin', 1))
         template_id = data.get('template_id')
+
+        # Default values
+        method = 'DCA_ASAP'
+        tp = float(data.get('take_profit_percent') or 5)
+        trail = float(data.get('trailing_percent') or 2)
+        dca_pct = float(data.get('dca_percent') or 7)
+        size_mult = float(data.get('size_multiplier') or 1.5)
+        research_params = {}
+
+        if entry_method == 'dca_templates' and template_id:
+            # READ ONLY from research bot — copy all parameters
+            cur.execute("""
+                SELECT method, dca_percent, take_profit_percent,
+                       trailing_percent, size_multiplier, bot_params,
+                       spacing_multiplier
+                FROM bots
+                WHERE id=%s AND is_research=TRUE
+            """, (int(template_id),))
+            res_bot = cur.fetchone()
+            if res_bot:
+                method    = res_bot[0]  # e.g. 'E31'
+                dca_pct   = float(res_bot[1] or 7)
+                tp        = float(res_bot[2] or 5)
+                trail     = float(res_bot[3] or 2)
+                size_mult = float(res_bot[4] or 1.5)
+                research_params = res_bot[5] or {}
+            else:
+                method = 'DCA_TEMPLATE'
+        elif entry_method == 'dca_asap':
+            method = 'DCA_ASAP'
+        elif entry_method == 'dca_smart':
+            method = 'DCA_SMART'
+        elif entry_method == 'dca_custom':
+            method = 'DCA_CUSTOM'
 
         bot_params = _json.dumps({
             'entry_method': entry_method,
             'coin_mode': coin_mode,
             'direction': direction,
             'template_id': template_id,
-            'dca_settings_mode': data.get('dca_settings_mode', 'smart'),
-            'exit_mode': data.get('exit_mode', 'smart'),
+            'source_method': method,
+            'dca_settings_mode': data.get('dca_settings_mode', 'custom'),
+            'exit_mode': data.get('exit_mode', 'custom'),
+            'research_params': research_params,
         })
-
-        tp = float(data.get('take_profit_percent') or 5)
-        trail = float(data.get('trailing_percent') or 2)
-        dca_pct = float(data.get('dca_percent') or 7)
-        size_mult = float(data.get('size_multiplier') or 1.5)
 
         cur.execute("""
             INSERT INTO bots (

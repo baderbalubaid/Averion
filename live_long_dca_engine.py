@@ -172,8 +172,14 @@ def check_entry_signal(bot, coin, r):
         try:
             import entry_signals as es
             import indicators
-            method = bot['method']
-            params = bot.get('bot_params', {})
+            # For templates: use the source research method (e.g. 'E31')
+            # For smart: use champion method
+            bot_params = bot.get('bot_params', {})
+            if isinstance(bot_params, str):
+                import json as _j
+                bot_params = _j.loads(bot_params)
+            method = bot_params.get('source_method') or bot['method']
+            params = bot_params.get('research_params') or bot_params
             ohlcv = db.get_ohlcv(coin, 'mexc', limit=200)
             if not ohlcv:
                 return False
