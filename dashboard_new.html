@@ -249,6 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildMobileNav();
     await Promise.all([loadHomeStats(), loadExchanges()]);
     loadCapitalChart('7d');
+    setInterval(loadHomeStats, 10000);
 });
 </script>
 </body>
