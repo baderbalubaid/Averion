@@ -261,11 +261,10 @@ function renderHistory(data) {
     const xp   = h.exit_price||ep;
     const pct  = ep>0?((xp-ep)/ep*100).toFixed(2):'0.00';
     return `<tr>${visibleCols.map(c=>{
-      if(c.key==='coin')        return `<td><div class="td-coin"><strong>${(h.coin||'—').replace('/USDT','')}</strong></div></td>`;
       if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
       if(c.key==='coin') {
         const typeEmoji = h.type === 'dca' ? '📈' : '⚡';
-        return `<td><span style="font-size:10px">${typeEmoji}</span> <strong>${h.coin}</strong></td>`;
+        return `<td><span style="font-size:10px">${typeEmoji}</span> <strong>${(h.coin||'—').replace('/USDT','')}</strong></td>`;
       }
       if(c.key==='bot_name') return `<td style="font-size:11px;color:var(--text3)">${h.bot_name||'—'}</td>`;
       if(c.key==='entry_date')  return `<td><span class="td-muted">${fmtDate(h.entry_date || h.opened_at)}</span></td>`;
