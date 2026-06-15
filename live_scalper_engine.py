@@ -139,6 +139,10 @@ class LiveScalperEngine:
 
     def _check_entry(self, bot, coin, price, now):
         key = (bot['id'], coin)
+        # Skip if already have open position for this bot+coin
+        with self._lock:
+            if key in self.active:
+                return
         # Use shared signal logic
         bot_signal = {
             'name': str(bot['id']),
