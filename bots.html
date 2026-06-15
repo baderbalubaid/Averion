@@ -342,7 +342,7 @@ let editBotId = null;
 function openEditModal(id, name, baseOrder) {
     const bot = allBots.find(b => b.id === id);
     if (!bot) return;
-    const isScalper = (bot.method || '').includes('S58');
+    const isScalper = (bot.method || '') === 'S58' || (bot.method || '').includes('S58');
     const isDca = (bot.method || '').startsWith('DCA');
 
     document.getElementById('edit-bot-subtitle').textContent = bot.method + ' · ' + (bot.exchange_name || '');
@@ -350,7 +350,7 @@ function openEditModal(id, name, baseOrder) {
     document.getElementById('edit-base-order').value = baseOrder;
 
     // Show/hide fields based on bot type
-    document.getElementById('edit-dca-fields').style.display = isDca ? 'block' : 'none';
+    document.getElementById('edit-dca-fields').style.display = (isDca && !isScalper) ? 'block' : 'none';
     document.getElementById('edit-scalper-fields').style.display = isScalper ? 'block' : 'none';
 
     // Pre-fill TP/Trail for DCA
@@ -359,8 +359,13 @@ function openEditModal(id, name, baseOrder) {
         document.getElementById('edit-trail').value = bot.trailing_percent || 2;
     }
     // Pre-fill scalper params
-    if (isScalper && bot.bot_params) {
-        const p = typeof bot.bot_params === 'string' ? JSON.parse(bot.bot_params) : bot.bot_params;
+    if (isScalper) {
+        let p = {};
+        try {
+            p = bot.bot_params
+                ? (typeof bot.bot_params === 'string' ? JSON.parse(bot.bot_params) : bot.bot_params)
+                : {};
+        } catch(e) { p = {}; }
         document.getElementById('edit-trigger').value = p.trigger_pct || 10;
         document.getElementById('edit-window').value = p.window_sec || 5;
         document.getElementById('edit-hold').value = p.hold_sec || 30;
