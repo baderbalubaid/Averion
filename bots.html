@@ -218,6 +218,7 @@ async function panicCloseBot(botId) {
        const d = await res.json();
        alert(d.message || 'All positions closed');
        await loadBots();
+    setInterval(loadBots, 10000);
    } catch(e) { alert('Error closing positions'); }
 }
 
@@ -229,6 +230,7 @@ async function deleteBot(botId) {
        const d = await res.json();
        if (!res.ok) { alert(d.detail || 'Error deleting bot'); return; }
        await loadBots();
+    setInterval(loadBots, 10000);
    } catch(e) { alert('Error deleting bot'); }
 }
 
@@ -269,6 +271,7 @@ async function panicCloseBot(botId) {
         const d = await res.json();
         alert(d.message || 'Done');
         await loadBots();
+    setInterval(loadBots, 10000);
     } catch(e) { alert('Error'); }
 }
 
@@ -278,6 +281,7 @@ async function deleteBot(botId) {
         const d = await res.json();
         if (!res.ok) { alert(d.detail || 'Error'); return; }
         await loadBots();
+    setInterval(loadBots, 10000);
     } catch(e) { alert('Error deleting bot'); }
 }
 
@@ -289,6 +293,7 @@ async function toggleBot(botId, newState) {
             body: JSON.stringify({trading_on: newState})
         });
         await loadBots();
+    setInterval(loadBots, 10000);
     } catch(e) { console.error(e); }
 }
 
@@ -334,6 +339,7 @@ async function saveEdit() {
         });
         closeEditModal();
         await loadBots();
+    setInterval(loadBots, 10000);
     } catch(e) { alert('Error saving'); }
 }
 
@@ -363,6 +369,7 @@ async function saveEdit() {
         });
         closeEditModal();
         await loadBots();
+    setInterval(loadBots, 10000);
     } catch(e) { alert('Error saving'); }
 }
 
@@ -374,6 +381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildUserRow();
     buildMobileNav();
     await loadBots();
+    setInterval(loadBots, 10000);
 });
 </script>
 </body>

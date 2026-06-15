@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildMobileNav();
     await loadBot();
     await loadPositions();
+    setInterval(loadPositions, 5000);
 });
 </script>
 </body>
