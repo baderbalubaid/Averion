@@ -1913,13 +1913,22 @@ def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
         # Close all open positions
         cur.execute("UPDATE live_positions SET status='closed', exit_time=NOW(), exit_reason='bot_deleted' WHERE bot_id=%s AND status='open'", (bot_id,))
         cur.execute("UPDATE live_dca_positions SET status='closed', closed_at=NOW(), close_reason='bot_deleted' WHERE bot_id=%s AND status='open'", (bot_id,))
-        # Return wallet funds
+        # Return wallet funds — recalculate from actual remaining open positions
         cur.execute("""
-            UPDATE virtual_wallets vw
-            SET current_balance=vw.current_balance+vw.committed_usdt,
-                committed_usdt=0, updated_at=NOW()
+            UPDATE virtual_wallets vw SET
+                committed_usdt = COALESCE((
+                    SELECT SUM(p.total_invested)
+                    FROM live_dca_positions p
+                    WHERE p.wallet_id=vw.id AND p.status='open' AND p.bot_id != %s
+                ), 0),
+                current_balance = vw.allocation_amount - COALESCE((
+                    SELECT SUM(p.total_invested)
+                    FROM live_dca_positions p
+                    WHERE p.wallet_id=vw.id AND p.status='open' AND p.bot_id != %s
+                ), 0),
+                updated_at=NOW()
             FROM bots b WHERE b.id=%s AND b.wallet_id=vw.id
-        """, (bot_id,))
+        """, (bot_id, bot_id, bot_id))
         # Soft delete — hides from all UI, frees bot slot
         cur.execute("""
             UPDATE bots SET status='deleted', trading_on=FALSE, dca_on=FALSE
