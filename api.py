@@ -460,6 +460,10 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
             'research_params': research_params,
         })
 
+        # For templates: use research method name directly so engine recognizes it
+        # For others: use mapped method name
+        insert_method = method  # Already set correctly above
+
         cur.execute("""
             INSERT INTO bots (
                 user_id, exchange_id, wallet_id, name, method,
@@ -479,7 +483,7 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
                 'market', 'market', 'open',
                 TRUE, FALSE, FALSE, %s, %s
             ) RETURNING id
-        """, (user_id, exchange_id, wallet_id, bot_name, method,
+        """, (user_id, exchange_id, wallet_id, bot_name, insert_method,
                 direction, base_order, dca_pct,
                 size_mult, tp, trail,
                 trades_per_bot, trades_per_coin,

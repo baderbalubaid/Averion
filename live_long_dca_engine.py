@@ -68,7 +68,7 @@ def load_live_long_bots():
             AND b.trading_on = TRUE
             AND b.status = 'open'
             AND b.status != 'deleted'
-            AND b.method LIKE 'DCA%'
+            AND (b.method LIKE 'DCA%' OR b.method LIKE 'E%')
             ORDER BY b.user_id, b.id
         """)
         rows = cur.fetchall()
