@@ -196,55 +196,6 @@ async function renderBots() {
     }).join('');
 }
 
-let _botMenuId = null;
-let _botMenuName = null;
-let _botMenuRunning = false;
-let _botMenuBaseOrder = 0;
-
-
-function closeBotMenu() {
-   // inline menus handled by toggleInlineMenu
-}
-
-async function botMenuAction(action) {
-   closeBotMenu();
-   if (action === 'toggle') {
-       await toggleBot(_botMenuId, !_botMenuRunning);
-   } else if (action === 'edit') {
-       openEditModal(_botMenuId, _botMenuName, _botMenuBaseOrder);
-   } else if (action === 'panic') {
-       if (confirm(`Close ALL open positions for ${_botMenuName} at market price?`)) {
-           await panicCloseBot(_botMenuId);
-       }
-   } else if (action === 'delete') {
-       if (confirm(`Delete ${_botMenuName}?\n\nAll open positions will be closed at market price. This cannot be undone.`)) {
-           await deleteBot(_botMenuId);
-       }
-   }
-}
-
-async function panicCloseBot(botId) {
-   try {
-       const res = await fetch(`${API}/bots/${botId}/panic-close`, {
-           method: 'POST', headers: authHeaders()
-       });
-       const d = await res.json();
-       alert(d.message || 'All positions closed');
-       await loadBots();
-   } catch(e) { alert('Error closing positions'); }
-}
-
-async function deleteBot(botId) {
-   try {
-       const res = await fetch(`${API}/bots/${botId}/delete`, {
-           method: 'DELETE', headers: authHeaders()
-       });
-       const d = await res.json();
-       if (!res.ok) { alert(d.detail || 'Error deleting bot'); return; }
-       await loadBots();
-   } catch(e) { alert('Error deleting bot'); }
-}
-
 let _openMenuId = null;
 
 function toggleInlineMenu(botId) {
