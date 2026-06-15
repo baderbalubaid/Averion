@@ -109,6 +109,7 @@ const HISTORY_COLS = [
   {key:'entry_price', label:'Entry Price', show:true},
   {key:'avg_cost',    label:'Avg Cost',    show:false},
   {key:'exit_price',  label:'Exit Price',  show:true},
+  {key:'bot_name',    label:'Bot',         show:true},
   {key:'dca_count',   label:'DCA#',        show:true},
   {key:'pnl_pct',     label:'P&L%',        show:true},
   {key:'hold_time',   label:'Hold Time',   show:true},
@@ -266,6 +267,7 @@ function renderHistory(data) {
         const typeEmoji = h.type === 'dca' ? '📈' : '⚡';
         return `<td><span style="font-size:10px">${typeEmoji}</span> <strong>${h.coin}</strong></td>`;
       }
+      if(c.key==='bot_name') return `<td style="font-size:11px;color:var(--text3)">${h.bot_name||'—'}</td>`;
       if(c.key==='entry_date')  return `<td><span class="td-muted">${fmtDate(h.entry_date || h.opened_at)}</span></td>`;
       if(c.key==='exit_date')   return `<td><span class="td-muted">${fmtDate(h.exit_date || h.closed_at)}</span></td>`;
       if(c.key==='entry_price') return `<td>${fmtPrice(ep)}</td>`;
