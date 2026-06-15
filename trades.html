@@ -118,7 +118,9 @@ function applyFilter() {
 
 function holdingStr(entryTime, holdSeconds) {
     if (!entryTime) return '—';
-    const elapsed = Math.floor((Date.now() - new Date(entryTime+'Z').getTime()) / 1000);
+    // Handle both 'YYYY-MM-DD HH:MM:SS' and ISO formats
+    const cleaned = entryTime.toString().replace(' ', 'T').replace(/(\.\d+)?$/, 'Z').replace('ZZ','Z');
+    const elapsed = Math.floor((Date.now() - new Date(cleaned).getTime()) / 1000);
     if (holdSeconds) {
         // Scalper - show countdown
         const remaining = holdSeconds - elapsed;
