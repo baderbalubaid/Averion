@@ -1161,6 +1161,9 @@ def get_bots(payload: dict = Depends(verify_token)):
             'exchange': b[18],
             'exchange_name': b[19],
             'base_order': float(b[20]) if b[20] else 0,
+            'take_profit_percent': float(b[21]) if b[21] else 5,
+            'trailing_percent': float(b[22]) if b[22] else 2,
+            'bot_params': b[23],
             'current_worth': round(worth, 2),
             'total_invested': round(invested, 2),
             'pnl_usdt': round(pnl, 2),
@@ -1179,37 +1182,55 @@ class BotToggle(BaseModel):
     dca_on: Optional[bool] = None
     trades_per_bot: Optional[int] = None
 
-@app.post('/bots/{bot_id}/update')
-def update_bot(bot_id: int, data: dict, payload: dict = Depends(verify_token)):
-    user_id = payload['user_id']
-    with db.get_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE AND is_template=FALSE",
-                    (bot_id, user_id))
-        if not cur.fetchone():
-            raise HTTPException(status_code=404, detail='Bot not found')
-        if 'name' in data:
-            cur.execute("UPDATE bots SET name=%s WHERE id=%s", (data['name'], bot_id))
-        if 'base_order' in data:
-            cur.execute("UPDATE bots SET base_order=%s WHERE id=%s", (data['base_order'], bot_id))
-        conn.commit()
-    return {'message': 'Updated'}
 
 @app.post('/bots/{bot_id}/update')
 def update_bot(bot_id: int, data: dict, payload: dict = Depends(verify_token)):
+    import json as _json
     user_id = payload['user_id']
     with db.get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE AND is_template=FALSE",
+        cur.execute("SELECT id, method, bot_params FROM bots WHERE id=%s AND user_id=%s AND is_research=FALSE AND is_template=FALSE",
                     (bot_id, user_id))
-        if not cur.fetchone():
+        row = cur.fetchone()
+        if not row:
             raise HTTPException(status_code=404, detail='Bot not found')
-        if 'name' in data:
+        method = row[1] or ''
+        bot_params = row[2] or {}
+
+        # Update name
+        if 'name' in data and data['name']:
             cur.execute("UPDATE bots SET name=%s WHERE id=%s", (data['name'], bot_id))
+
+        # Update base order (future trades)
         if 'base_order' in data:
             cur.execute("UPDATE bots SET base_order=%s WHERE id=%s", (data['base_order'], bot_id))
+
+        # Update DCA exit params — applies to bot + all open positions
+        if 'take_profit_percent' in data:
+            tp = float(data['take_profit_percent'])
+            cur.execute("UPDATE bots SET take_profit_percent=%s WHERE id=%s", (tp, bot_id))
+            cur.execute("UPDATE live_dca_positions SET pos_tp_pct=%s WHERE bot_id=%s AND status='open'", (tp, bot_id))
+
+        if 'trailing_percent' in data:
+            trail = float(data['trailing_percent'])
+            cur.execute("UPDATE bots SET trailing_percent=%s WHERE id=%s", (trail, bot_id))
+            cur.execute("UPDATE live_dca_positions SET pos_trail_pct=%s WHERE bot_id=%s AND status='open'", (trail, bot_id))
+
+        # Update scalper params (future trades only — stored in bot_params)
+        if any(k in data for k in ('trigger_pct', 'window_sec', 'hold_sec')):
+            if isinstance(bot_params, str):
+                bot_params = _json.loads(bot_params)
+            if 'trigger_pct' in data:
+                bot_params['trigger_pct'] = float(data['trigger_pct'])
+            if 'window_sec' in data:
+                bot_params['window_sec'] = float(data['window_sec'])
+            if 'hold_sec' in data:
+                bot_params['hold_sec'] = int(data['hold_sec'])
+            cur.execute("UPDATE bots SET bot_params=%s WHERE id=%s", (_json.dumps(bot_params), bot_id))
+
+        cur.execute("UPDATE bots SET updated_at=NOW() WHERE id=%s", (bot_id,))
         conn.commit()
-    return {'message': 'Updated'}
+    return {'message': 'Updated successfully'}
 
 @app.post('/bots/{bot_id}/toggle')
 def toggle_bot(bot_id: int, toggle: BotToggle,
