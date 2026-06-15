@@ -13,8 +13,6 @@
     <div class="main">
         <div id="topbar-placeholder"></div>
         <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
-
-            <!-- Header -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <div>
                     <div style="font-size:15px;font-weight:800">Bots</div>
@@ -22,24 +20,76 @@
                 </div>
                 <button class="btn btn-accent btn-sm" onclick="window.location='/create-bot'">+ New Bot</button>
             </div>
-
-            <!-- Filters -->
             <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">
                 <button class="f-btn active" onclick="setFilter('all',this)">All</button>
                 <button class="f-btn" onclick="setFilter('running',this)">🟢 Running</button>
                 <button class="f-btn" onclick="setFilter('stopped',this)">⬛ Stopped</button>
                 <button class="f-btn" onclick="setFilter('paper',this)">📄 Paper</button>
             </div>
-
-            <!-- Bots list -->
             <div id="botsList" style="display:flex;flex-direction:column;gap:10px">
                 <div style="text-align:center;padding:40px;color:var(--text3)">Loading...</div>
             </div>
-
         </div>
     </div>
 </div>
+
 <!-- Edit Modal -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:#000000CC;z-index:200;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">Edit Bot</div>
+        <div id="edit-bot-subtitle" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">BOT NAME</div>
+            <input type="text" id="edit-name" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+        </div>
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">BASE ORDER ($) <span style="color:var(--text3);font-weight:400">· future trades only</span></div>
+            <input type="number" id="edit-base-order" inputmode="decimal" step="0.01" min="0"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+        </div>
+        <div id="edit-dca-fields">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px">Exit Settings · applies to all open trades</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Take Profit %</div>
+                    <input type="number" id="edit-tp" inputmode="decimal" step="0.5" min="0.1"
+                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                </div>
+                <div>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Trailing %</div>
+                    <input type="number" id="edit-trail" inputmode="decimal" step="0.1" min="0.1"
+                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                </div>
+            </div>
+        </div>
+        <div id="edit-scalper-fields" style="display:none">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px">Scalper Settings · future trades only</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Trigger %</div>
+                    <input type="number" id="edit-trigger" inputmode="decimal" step="0.5" min="0.1"
+                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                </div>
+                <div>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Window (s)</div>
+                    <input type="number" id="edit-window" inputmode="decimal" step="1" min="1"
+                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                </div>
+                <div>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Hold (s)</div>
+                    <input type="number" id="edit-hold" inputmode="numeric" step="1" min="1"
+                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+            <button onclick="closeEditModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer">Cancel</button>
+            <button onclick="saveEdit()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=6"></script>
 <script>
 let allBots = [];
@@ -55,7 +105,6 @@ async function setFilter(type, el) {
 async function renderBots() {
     const list = document.getElementById('botsList');
     let data = allBots;
-
     if (currentFilter === 'running') data = data.filter(b => b.trading_on && b.status === 'open');
     else if (currentFilter === 'stopped') data = data.filter(b => !b.trading_on || b.status !== 'open');
     else if (currentFilter === 'paper') data = data.filter(b => b.is_paper);
@@ -77,13 +126,11 @@ async function renderBots() {
         const worth = bot.current_worth || 0;
         const invested = bot.total_invested || 0;
         const pnl = bot.pnl_usdt || 0;
-        const pnlPct = bot.pnl_pct || 0;
         const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const exchange = bot.exchange_name || bot.exchange || '—';
         const walletName = bot.wallet_name || '—';
-        const strategy = bot.method || '—';
         const baseOrder = bot.base_order || 0;
-        const isDca = strategy.startsWith('DCA');
+        const isDca = (bot.method || '').startsWith('DCA');
         const typeEmoji = isDca ? '📈' : '⚡';
         return `
         <div onclick="window.location='/bots/${bot.id}'" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer">
@@ -122,7 +169,6 @@ async function renderBots() {
                     ···
                 </button>
             </div>
-            <!-- Inline dropdown -->
             <div id="botmenu-${bot.id}" style="display:none;margin-top:8px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden">
                 <div onclick="event.stopPropagation();botAction(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},'edit')" style="padding:11px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">✏️ Edit Bot</div>
                 <div onclick="event.stopPropagation();botAction(${bot.id},'${bot.name}',${bot.trading_on},${bot.base_order},'panic')" style="padding:11px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);color:var(--amber)">💥 Panic Close All</div>
@@ -184,59 +230,34 @@ async function deleteBot(botId) {
 async function toggleBot(botId, newState) {
     try {
         await fetch(`${API}/bots/${botId}/toggle`, {
-            method: 'POST',
-            headers: authHeaders(),
+            method: 'POST', headers: authHeaders(),
             body: JSON.stringify({trading_on: newState})
         });
         await loadBots();
     } catch(e) { console.error(e); }
 }
 
-async function loadBots() {
-    try {
-        const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
-        if (res.ok) {
-            allBots = await res.json();
-            document.getElementById('botsSubtitle').textContent = 
-                `${allBots.length} bot${allBots.length !== 1 ? 's' : ''}`;
-            await renderBots();
-        }
-    } catch(e) {
-        document.getElementById('botsList').innerHTML = 
-            '<div style="text-align:center;padding:20px;color:var(--red)">Error loading bots</div>';
-    }
-}
-
 // ── EDIT MODAL ──
-let editBotId = null;
-
 function openEditModal(id, name, baseOrder) {
     const bot = allBots.find(b => b.id === id);
     if (!bot) return;
     const isScalper = (bot.method || '') === 'S58' || (bot.method || '').includes('S58');
     const isDca = (bot.method || '').startsWith('DCA');
 
-    document.getElementById('edit-bot-subtitle').textContent = bot.method + ' · ' + (bot.exchange_name || '');
+    document.getElementById('edit-bot-subtitle').textContent = (bot.method || '') + ' · ' + (bot.exchange_name || '');
     document.getElementById('edit-name').value = name;
     document.getElementById('edit-base-order').value = baseOrder;
 
-    // Show/hide fields based on bot type
     document.getElementById('edit-dca-fields').style.display = (isDca && !isScalper) ? 'block' : 'none';
     document.getElementById('edit-scalper-fields').style.display = isScalper ? 'block' : 'none';
 
-    // Pre-fill TP/Trail for DCA
-    if (isDca) {
+    if (isDca && !isScalper) {
         document.getElementById('edit-tp').value = bot.take_profit_percent || 5;
         document.getElementById('edit-trail').value = bot.trailing_percent || 2;
     }
-    // Pre-fill scalper params
     if (isScalper) {
         let p = {};
-        try {
-            p = bot.bot_params
-                ? (typeof bot.bot_params === 'string' ? JSON.parse(bot.bot_params) : bot.bot_params)
-                : {};
-        } catch(e) { p = {}; }
+        try { p = bot.bot_params ? (typeof bot.bot_params === 'string' ? JSON.parse(bot.bot_params) : bot.bot_params) : {}; } catch(e) {}
         document.getElementById('edit-trigger').value = p.trigger_pct || 10;
         document.getElementById('edit-window').value = p.window_sec || 5;
         document.getElementById('edit-hold').value = p.hold_sec || 30;
@@ -279,113 +300,21 @@ async function saveEdit() {
     } catch(e) { alert('Error saving bot'); }
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Averion — Bots</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=6">
-</head>
-<body>
-<div id="app" style="display:flex;width:100%;height:100vh">
-    <div id="sidebar-placeholder"></div>
-    <div class="main">
-        <div id="topbar-placeholder"></div>
-        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
+async function loadBots() {
+    try {
+        const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
+        if (res.ok) {
+            allBots = await res.json();
+            document.getElementById('botsSubtitle').textContent =
+                `${allBots.length} bot${allBots.length !== 1 ? 's' : ''}`;
+            await renderBots();
+        }
+    } catch(e) {
+        document.getElementById('botsList').innerHTML =
+            '<div style="text-align:center;padding:20px;color:var(--red)">Error loading bots</div>';
+    }
+}
 
-            <!-- Header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <div>
-                    <div style="font-size:15px;font-weight:800">Bots</div>
-                    <div style="font-size:11px;color:var(--text3)" id="botsSubtitle">Loading...</div>
-                </div>
-                <button class="btn btn-accent btn-sm" onclick="window.location='/create-bot'">+ New Bot</button>
-            </div>
-
-            <!-- Filters -->
-            <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">
-                <button class="f-btn active" onclick="setFilter('all',this)">All</button>
-                <button class="f-btn" onclick="setFilter('running',this)">🟢 Running</button>
-                <button class="f-btn" onclick="setFilter('stopped',this)">⬛ Stopped</button>
-                <button class="f-btn" onclick="setFilter('paper',this)">📄 Paper</button>
-            </div>
-
-            <!-- Bots list -->
-            <div id="botsList" style="display:flex;flex-direction:column;gap:10px">
-                <div style="text-align:center;padding:40px;color:var(--text3)">Loading...</div>
-            </div>
-
-        </div>
-    </div>
-</div>
-</script>
-<div id="editModal" style="display:none;position:fixed;inset:0;background:#000000CC;z-index:200;align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px">Edit Bot</div>
-        <div id="edit-bot-subtitle" style="font-size:11px;color:var(--text3);margin-bottom:16px"></div>
-
-        <div style="margin-bottom:12px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">BOT NAME</div>
-            <input type="text" id="edit-name" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-        </div>
-
-        <div style="margin-bottom:12px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">BASE ORDER ($) <span style="color:var(--text3);font-weight:400">· future trades only</span></div>
-            <input type="number" id="edit-base-order" inputmode="decimal" step="0.01" min="0"
-                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-        </div>
-
-        <!-- DCA params -->
-        <div id="edit-dca-fields">
-            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px">Exit Settings · applies to all open trades</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-                <div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Take Profit %</div>
-                    <input type="number" id="edit-tp" inputmode="decimal" step="0.5" min="0.1"
-                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-                </div>
-                <div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Trailing %</div>
-                    <input type="number" id="edit-trail" inputmode="decimal" step="0.1" min="0.1"
-                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-                </div>
-            </div>
-        </div>
-
-        <!-- Scalper params -->
-        <div id="edit-scalper-fields" style="display:none">
-            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px">Scalper Settings · future trades only</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-                <div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Trigger %</div>
-                    <input type="number" id="edit-trigger" inputmode="decimal" step="0.5" min="0.1"
-                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-                </div>
-                <div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Window (s)</div>
-                    <input type="number" id="edit-window" inputmode="decimal" step="1" min="1"
-                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-                </div>
-                <div>
-                    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Hold (s)</div>
-                    <input type="number" id="edit-hold" inputmode="numeric" step="1" min="1"
-                        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
-                </div>
-            </div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-top:4px">
-            <button onclick="closeEditModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer">Cancel</button>
-            <button onclick="saveEdit()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Save</button>
-        </div>
-    </div>
-</div>
-<!-- Bot action menu -->
-<div class="bottom-nav" id="bottom-nav"></div>
-<script src="/base.js?v=6"></script>
-<script>
 document.addEventListener('DOMContentLoaded', async () => {
     if (!requireAuth()) return;
     document.getElementById('sidebar-placeholder').outerHTML = getSidebarHTML();
