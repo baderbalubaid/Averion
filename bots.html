@@ -133,16 +133,6 @@ async function renderBots() {
         return;
     }
 
-    // Get positions per bot
-    let positions = [];
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const pr = await fetch(`${API}/positions`, {headers: authHeaders(), signal: controller.signal});
-        clearTimeout(timeout);
-        if (pr.ok) positions = await pr.json();
-    } catch(e) { positions = []; }
-
     list.innerHTML = data.map(bot => {
         const running = bot.trading_on && bot.status === 'open';
         const statusColor = running ? 'var(--green)' : 'var(--text3)';
