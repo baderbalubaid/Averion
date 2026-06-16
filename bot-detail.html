@@ -154,7 +154,7 @@ let detailSortCount = 1;
 function sortDetail(col) {
    if (detailSortCol === col) {
        detailSortCount = (detailSortCount + 1) % 3;
-       if (detailSortCount === 0) { detailSortCol = 'pnl_pct'; detailSortDir = 'desc'; detailSortCount = 2; }
+       if (detailSortCount === 0) { detailSortCol = 'entry_time'; detailSortDir = 'desc'; }
        else if (detailSortCount === 1) detailSortDir = 'asc';
        else detailSortDir = 'desc';
    } else {
@@ -174,8 +174,14 @@ function sortDetail(col) {
 
 function applyDetailSort(data) {
    return [...data].sort((a,b) => {
-       const va = parseFloat(a[detailSortCol] || 0);
-       const vb = parseFloat(b[detailSortCol] || 0);
+       let va, vb;
+       if (detailSortCol === 'entry_time') {
+           va = new Date(a.entry_time || 0).getTime();
+           vb = new Date(b.entry_time || 0).getTime();
+       } else {
+           va = parseFloat(a[detailSortCol] || 0);
+           vb = parseFloat(b[detailSortCol] || 0);
+       }
        return detailSortDir === 'asc' ? va - vb : vb - va;
    });
 }
