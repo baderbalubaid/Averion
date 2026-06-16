@@ -1902,6 +1902,41 @@ def create_bot(req: BotCreate,
    )
    return {'message': 'Bot created', 'bot_id': bot_id}
 
+@app.put('/api/exchanges/{exc_id}')
+def update_exchange(exc_id: int, data: dict, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM exchanges WHERE id=%s AND user_id=%s", (exc_id, user_id))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail='Exchange not found')
+        if 'custom_name' in data:
+            cur.execute("UPDATE exchanges SET custom_name=%s WHERE id=%s", (data['custom_name'], exc_id))
+        if 'api_key' in data and data['api_key']:
+            from exchanges import encrypt
+            cur.execute("UPDATE exchanges SET api_key=%s WHERE id=%s", (encrypt(data['api_key']), exc_id))
+        if 'secret' in data and data['secret']:
+            from exchanges import encrypt
+            cur.execute("UPDATE exchanges SET secret=%s WHERE id=%s", (encrypt(data['secret']), exc_id))
+        conn.commit()
+    return {'message': 'Exchange updated'}
+
+@app.put('/wallets/{wallet_id}')
+def update_wallet(wallet_id: int, data: dict, payload: dict = Depends(verify_token)):
+    user_id = payload['user_id']
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM virtual_wallets WHERE id=%s AND user_id=%s", (wallet_id, user_id))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail='Wallet not found')
+        if 'name' in data:
+            cur.execute("UPDATE virtual_wallets SET name=%s WHERE id=%s", (data['name'], wallet_id))
+        if 'allocation_amount' in data:
+            cur.execute("UPDATE virtual_wallets SET allocation_amount=%s WHERE id=%s",
+                       (data['allocation_amount'], wallet_id))
+        conn.commit()
+    return {'message': 'Wallet updated'}
+
 @app.post('/bots/{bot_id}/panic-close')
 def panic_close_bot(bot_id: int, payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
