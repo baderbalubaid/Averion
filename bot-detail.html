@@ -93,6 +93,22 @@ let botData = null;
 let allPositions = [];
 let currentFilter = 'all';
 
+function holdingStr(entryTime, holdSeconds) {
+    if (!entryTime) return '—';
+    const cleaned = entryTime.toString().replace(' ', 'T').replace(/(\.\d+)?$/, 'Z').replace('ZZ','Z');
+    const elapsed = Math.floor((Date.now() - new Date(cleaned).getTime()) / 1000);
+    if (holdSeconds) {
+        const remaining = holdSeconds - elapsed;
+        if (remaining <= 0) return 'Closing...';
+        return remaining + 's left';
+    }
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    if (h > 24) return Math.floor(h/24) + 'd';
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+}
+
 function statusInfo(pos) {
     if (pos.status === 'closed') return {label:'✅ Closed', color:'var(--text3)'};
     if (pos.exit_reason === 'stop_loss') return {label:'🛑 Stop Loss', color:'var(--red)'};
