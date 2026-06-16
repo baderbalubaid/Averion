@@ -153,6 +153,8 @@ async function fetchHistory() {
         bot_name: p.bot_name,
     }));
   } catch(e) { console.error('fetchHistory error:', e); allHistory=[]; }
+ // Sort by exit time descending (newest first)
+ allHistory.sort((a,b) => new Date(b.closed_at||0) - new Date(a.closed_at||0));
 
   buildCoinFilter();
   applyHistoryFilter();
