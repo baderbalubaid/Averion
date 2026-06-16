@@ -1543,8 +1543,6 @@ def research_scalper_score(payload: dict = Depends(require_admin)):
     result.sort(key=lambda x: -x['score'])
     return result
 
-@app.get('/admin/research/scalper')
-
 @app.get('/admin/research/scalper-v2')
 def get_scalper_v2_rankings(payload: dict = Depends(require_admin)):
     with db.get_db() as conn:
