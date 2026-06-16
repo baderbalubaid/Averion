@@ -1544,6 +1544,126 @@ def research_scalper_score(payload: dict = Depends(require_admin)):
     return result
 
 @app.get('/admin/research/scalper')
+
+@app.get('/admin/research/scalper-v2')
+def get_scalper_v2_rankings(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                b.name,
+                (b.bot_params->>'vel_3s')::float as vel_3s,
+                (b.bot_params->>'vel_10s')::float as vel_10s,
+                (b.bot_params->>'accel_ratio')::float as accel_ratio,
+                b.bot_params->>'exit_profile' as exit_profile,
+                (b.bot_params->>'max_hold_sec')::int as max_hold_sec,
+                COUNT(CASE WHEN s.status='open' THEN 1 END) as open_now,
+                COUNT(CASE WHEN s.status='closed' THEN 1 END) as closed,
+                ROUND(AVG(CASE WHEN s.status='closed' THEN s.pnl_pct END)::numeric, 3) as avg_pnl,
+                ROUND(SUM(CASE WHEN s.status='closed' THEN s.pnl_usdt ELSE 0 END)::numeric, 4) as total_pnl,
+                ROUND(MAX(CASE WHEN s.status='closed' THEN s.pnl_pct ELSE NULL END)::numeric, 2) as best,
+                ROUND(MIN(CASE WHEN s.status='closed' THEN s.pnl_pct ELSE NULL END)::numeric, 2) as worst,
+                ROUND((COUNT(CASE WHEN s.status='closed' AND s.pnl_pct > 0 THEN 1 END) * 100.0 /
+                    NULLIF(COUNT(CASE WHEN s.status='closed' THEN 1 END), 0))::numeric, 1) as win_rate
+            FROM bots b
+            LEFT JOIN scalper_positions s ON s.bot_id = b.id
+            WHERE b.method='E58v2' AND b.is_research=TRUE
+            GROUP BY b.id, b.name, b.bot_params
+            ORDER BY total_pnl DESC NULLS LAST
+        """)
+        rows = cur.fetchall()
+    result = []
+    for r in rows:
+        closed = int(r[7] or 0)
+        win_rate = float(r[12] or 0)
+        avg_pnl = float(r[8] or 0)
+        speed = 1.0 / max(float(r[5] or 60), 1)
+        score = round(win_rate * avg_pnl * speed, 4) if closed > 0 else 0
+        result.append({
+            'name': r[0], 'vel_3s': r[1], 'vel_10s': r[2],
+            'accel_ratio': r[3], 'exit_profile': r[4], 'max_hold_sec': r[5],
+            'open_now': int(r[6] or 0), 'closed': closed,
+            'avg_pnl': avg_pnl, 'total_pnl': float(r[9] or 0),
+            'best': float(r[10] or 0), 'worst': float(r[11] or 0),
+            'win_rate': win_rate, 'score': score
+        })
+    result.sort(key=lambda x: x['total_pnl'], reverse=True)
+    return result
+
+@app.get('/admin/research/scalper-v2-score')
+def get_scalper_v2_score(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                b.name,
+                (b.bot_params->>'vel_3s')::float as vel_3s,
+                (b.bot_params->>'vel_10s')::float as vel_10s,
+                b.bot_params->>'exit_profile' as exit_profile,
+                ROUND(SUM(CASE WHEN s.status='closed' THEN s.pnl_usdt ELSE 0 END)::numeric, 4) as total_pnl,
+                COUNT(CASE WHEN s.status='closed' THEN 1 END) as trade_count,
+                ROUND(SUM(CASE WHEN s.status='closed' AND s.pnl_usdt > 0 THEN s.pnl_usdt ELSE 0 END)::numeric, 4) as gross_profit,
+                ROUND(ABS(SUM(CASE WHEN s.status='closed' AND s.pnl_usdt < 0 THEN s.pnl_usdt ELSE 0 END))::numeric, 4) as gross_loss
+            FROM bots b
+            LEFT JOIN scalper_positions s ON s.bot_id = b.id
+            WHERE b.method='E58v2' AND b.is_research=TRUE
+            GROUP BY b.id, b.name, b.bot_params
+            HAVING COUNT(CASE WHEN s.status='closed' THEN 1 END) > 0
+            ORDER BY total_pnl DESC NULLS LAST
+        """)
+        rows = cur.fetchall()
+
+    result = []
+    for r in rows:
+        total_pnl    = float(r[4] or 0)
+        trade_count  = int(r[5] or 0)
+        gross_profit = float(r[6] or 0)
+        gross_loss   = float(r[7] or 0.001)
+        profit_factor = round(gross_profit / max(gross_loss, 0.001), 2)
+
+        # Excl top 5
+        with db.get_db() as conn2:
+            cur2 = conn2.cursor()
+            cur2.execute("""
+                SELECT COALESCE(SUM(pnl_usdt),0) FROM (
+                    SELECT pnl_usdt FROM scalper_positions sp
+                    JOIN bots b2 ON b2.id = sp.bot_id
+                    WHERE b2.name=%s AND b2.method='E58v2'
+                    AND sp.status='closed'
+                    ORDER BY pnl_usdt DESC OFFSET 5
+                ) sub
+            """, (r[0],))
+            excl_top5 = float(cur2.fetchone()[0] or 0)
+
+        wins = 0
+        with db.get_db() as conn3:
+            cur3 = conn3.cursor()
+            cur3.execute("""
+                SELECT COUNT(*) FROM scalper_positions sp
+                JOIN bots b3 ON b3.id = sp.bot_id
+                WHERE b3.name=%s AND b3.method='E58v2'
+                AND sp.status='closed' AND sp.pnl_usdt > 0
+            """, (r[0],))
+            wins = int(cur3.fetchone()[0] or 0)
+
+        robustness = round(wins / max(trade_count, 1) * 100, 1)
+        score = round(
+            0.40 * total_pnl +
+            0.30 * excl_top5 +
+            0.20 * profit_factor +
+            0.10 * (trade_count / 10),
+            4
+        )
+        result.append({
+            'name': r[0], 'vel_3s': r[1], 'vel_10s': r[2],
+            'exit_profile': r[3],
+            'total_pnl': total_pnl, 'excl_top5': round(excl_top5, 4),
+            'profit_factor': profit_factor, 'trade_count': trade_count,
+            'robustness': robustness, 'score': score
+        })
+    result.sort(key=lambda x: x['score'], reverse=True)
+    return result
+
 def research_scalper(payload: dict = Depends(require_admin)):
     with db.get_db() as conn:
         cur = conn.cursor()

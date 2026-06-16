@@ -769,6 +769,10 @@
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper RARS</div>
             <div class="sub-tab" id="st-r-scalper-score" onclick="switchSubTab('r-scalper-score')"
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper Score</div>
+            <div class="sub-tab" id="st-r-scalper-v2" onclick="switchSubTab('r-scalper-v2')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper V2 RARS</div>
+            <div class="sub-tab" id="st-r-scalper-v2-score" onclick="switchSubTab('r-scalper-v2-score')"
+                 style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Scalper V2 Score</div>
             <div class="sub-tab" id="st-r-categories" onclick="switchSubTab('r-categories')" 
                  style="padding:8px 16px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)">Coin Categories</div>
         </div>
@@ -911,6 +915,50 @@
                         </tr></thead>
                         <tbody id="scalper-score-tbody">
                             <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+       <div id="sub-r-scalper-v2" style="display:none">
+           <div class="card">
+               <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                   <span>⚡ Scalper V2 Rankings — E58v2 Velocity Momentum</span>
+                   <button onclick="loadScalperV2(true)" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+               </div>
+               <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Velocity signal · Pump-chase guard · Trailing stop · Score = Win Rate × Avg P&L × Speed</p>
+               <div class="table-wrap">
+                   <table>
+                       <thead><tr>
+                           <th>Rank</th><th>Bot</th><th>Vel3s</th><th>Vel10s</th><th>Accel</th><th>Exit</th><th>Hold</th>
+                           <th>Open</th><th>Closed</th><th>Win%</th><th>Avg P&L%</th>
+                           <th>Total P&L</th><th>Best</th><th>Worst</th><th>Score</th>
+                       </tr></thead>
+                       <tbody id="scalper-v2-tbody">
+                           <tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
+       </div>
+
+       <div id="sub-r-scalper-v2-score" style="display:none">
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>⚡ Scalper V2 Score — Reliability Ranking</span>
+                    <button onclick="loadScalperV2Score()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer">↻ Refresh</button>
+                </div>
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Score = 40% Total P&L + 30% Excl Top 5 + 20% Profit Factor + 10% Trade Count</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Rank</th><th>Bot</th><th>Vel3s</th><th>Vel10s</th><th>Exit</th>
+                            <th>Total P&L</th><th>Excl Top 5</th>
+                            <th>Profit Factor</th><th>Trades</th><th>Robustness%</th><th>Score</th>
+                        </tr></thead>
+                        <tbody id="scalper-v2-score-tbody">
+                            <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px">Click Refresh to load</td></tr>
                         </tbody>
                     </table>
                 </div>
