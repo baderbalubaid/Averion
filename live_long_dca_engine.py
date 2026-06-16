@@ -527,7 +527,7 @@ def open_position(bot, coin, r):
         return False
 
 # ── DCA queue logic ────────────────────────────────────────────────
-def needs_dca(pos, current_price):
+def needs_dca(pos, current_price, base_order=10.0, size_mult=1.5):
     """Returns (True, dca_amount) if position needs DCA."""
     if pos['avg_cost'] <= 0 or pos['last_buy_price'] <= 0:
         return False, 0
@@ -537,20 +537,20 @@ def needs_dca(pos, current_price):
     drop_pct = (last_buy - current_price) / last_buy * 100
 
     if drop_pct >= dca_pct:
-        # Calculate next DCA amount
-        size_mult = 1.5  # default, could be per-position later
-        dca_amount = pos['total_invested'] * (size_mult - 1)
-        dca_amount = max(dca_amount, 5.0)  # minimum $5
-        return True, dca_amount
+        # DCA amount = base_order × size_multiplier^(dca_count+1)
+        next_dca_num = pos['dca_count'] + 1
+        dca_amount = base_order * (size_mult ** next_dca_num)
+        dca_amount = max(dca_amount, 5.0)
+        return True, round(dca_amount, 2)
 
     return False, 0
 
-def score_position(pos, current_price):
-    """Score position for DCA queue priority (higher = more urgent)."""
-    if pos['avg_cost'] <= 0:
+def score_position(pos, current_price, dca_amount=10.0):
+    """Score: loss% / required_usdt — higher loss per dollar = higher priority."""
+    if pos['avg_cost'] <= 0 or dca_amount <= 0:
         return 0
     loss_pct = (pos['avg_cost'] - current_price) / pos['avg_cost'] * 100
-    return loss_pct  # Higher loss = higher priority
+    return loss_pct / dca_amount
 
 # ── Per-user DCA cycle ─────────────────────────────────────────────
 def run_user_cycle(user_id, user_bots, r):
@@ -576,9 +576,9 @@ def run_bot_cycle(bot, r):
             current_price = get_redis_price(r, pos['coin'])
             if not current_price:
                 continue
-            needs, amount = needs_dca(pos, current_price)
+            needs, amount = needs_dca(pos, current_price, bot['base_order'], bot['size_multiplier'])
             if needs:
-                score = score_position(pos, current_price)
+                score = score_position(pos, current_price, amount)
                 candidates.append((score, pos, amount, current_price))
 
         # Sort by priority (highest loss first)
