@@ -234,7 +234,7 @@ def check_tp(pos, current_price):
             cur = conn.cursor()
             cur.execute("""
                 UPDATE live_dca_positions
-                SET tp_armed=TRUE, peak_price=%s, updated_at=NOW()
+                SET tp_armed=TRUE, peak_price=%s
                 WHERE id=%s
             """, (current_price, pos['id']))
         pos['tp_armed'] = True
@@ -247,10 +247,9 @@ def check_tp(pos, current_price):
     if pos['tp_armed'] and current_price > pos['peak_price']:
         with db.get_db() as conn:
             cur = conn.cursor()
-            cur.execute("""
-                UPDATE live_dca_positions
-                SET peak_price=%s WHERE id=%s
-            """, (current_price, pos['id']))
+            cur.execute(
+                "UPDATE live_dca_positions SET peak_price=%s WHERE id=%s",
+                (current_price, pos['id']))
         pos['peak_price'] = current_price
 
     # Fire trailing
