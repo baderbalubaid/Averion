@@ -272,6 +272,13 @@ async function loadBot() {
         document.getElementById('bot-name').textContent = botData.name;
         updateToggleBtn();
         updateTableHeaders();
+        // Reapply sort arrows after header rebuild
+        ['avg_cost','total_invested','dca_count','pnl_pct','pnl_usdt'].forEach(c => {
+            const el = document.getElementById('dth-' + c);
+            if (!el) return;
+            el.style.color = c === detailSortCol ? 'var(--accent)' : 'var(--text3)';
+            if (c === detailSortCol) el.textContent = el.textContent.replace(/ [↑↓]$/,'') + (detailSortDir==='asc'?' ↑':' ↓');
+        });
     } catch(e) { console.error(e); }
 }
 
