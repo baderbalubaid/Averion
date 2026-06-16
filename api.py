@@ -717,10 +717,10 @@ def home_stats(payload: dict = Depends(verify_token)):
         open_trades = scalper_open + dca_open
         total_invested = scalper_invested + dca_invested
 
-        # DCA queue count (positions waiting for DCA)
+        # DCA queue count — positions that have received at least 1 DCA
         cur.execute("""
             SELECT COUNT(*) FROM live_dca_positions
-            WHERE user_id=%s AND status='open' AND queued=TRUE
+            WHERE user_id=%s AND status='open' AND dca_count > 0
         """, (user_id,))
         dca_queue = int(cur.fetchone()[0])
 
