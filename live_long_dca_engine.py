@@ -453,10 +453,21 @@ def open_position(bot, coin, r):
             # Get BTC context
             btc_price = None
             btc_regime = None
+            btc_24h = None
+            btc_dominance = None
+            btc_sma50 = None
             try:
-                btc_price = get_redis_price(r, 'BTC')
-                regime_val = r.get('btc:regime')
-                btc_regime = regime_val if regime_val else 'unknown'
+                import json as _j
+                btc_cached = r.get('btc:regime_data')
+                if btc_cached:
+                    btc_data = _j.loads(btc_cached)
+                    btc_price     = btc_data.get('btc_price')
+                    btc_regime    = btc_data.get('btc_regime', 'unknown')
+                    btc_24h       = btc_data.get('btc_24h_change')
+                    btc_dominance = btc_data.get('btc_dominance')
+                    btc_sma50     = btc_data.get('btc_sma50')
+                else:
+                    btc_price = get_redis_price(r, 'BTC')
             except Exception:
                 pass
 
@@ -480,6 +491,7 @@ def open_position(bot, coin, r):
                     price_age_ms,
                     entry_method, entry_method_at_open,
                     btc_price_at_entry, btc_regime,
+                    btc_24h_change_pct, btc_dominance, btc_sma50_at_entry,
                     pos_tp_pct, pos_trail_pct, pos_dca_pct,
                     coin_trade_number, opened_at
                 ) VALUES (
@@ -506,6 +518,7 @@ def open_position(bot, coin, r):
                 result.price_age_ms,
                 bot['entry_method'], bot['entry_method'],
                 btc_price, btc_regime,
+                btc_24h, btc_dominance, btc_sma50,
                 bot['tp_percent'], bot['trailing_percent'], bot['dca_percent'],
                 coin_trade_num
             ))
