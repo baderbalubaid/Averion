@@ -288,20 +288,23 @@ class ScalperEngine:
                 except:
                     pass
 
+                market_age = db.get_market_age_days(coin)
                 cur.execute("""
                     INSERT INTO scalper_positions
                         (bot_id, coin, entry_price, hold_seconds,
                          trigger_jump_pct, trigger_window_sec,
                          stop_loss_pct, base_order, status,
                          btc_price_at_entry, btc_sma50_at_entry,
-                         btc_24h_change_pct, btc_regime, btc_dominance)
+                         btc_24h_change_pct, btc_regime, btc_dominance,
+                         market_age_days)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'open',
-                            %s, %s, %s, %s, %s)
+                            %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (bot_id, coin, price, bot['hold_sec'],
                       trigger_jump, bot['window_sec'],
                       bot.get('stop_loss_pct'), BASE_ORDER,
-                      btc_price, btc_sma50, btc_24h, btc_regime, btc_dom))
+                      btc_price, btc_sma50, btc_24h, btc_regime, btc_dom,
+                      market_age))
                 pos_id = cur.fetchone()[0]
 
             with self._lock:

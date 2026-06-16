@@ -337,15 +337,21 @@ class ScalperV2Engine:
 
         try:
             btc_price = btc_regime = None
+            btc_24h = btc_dominance = btc_sma50 = None
             try:
                 import json as _j
                 btc_cached = self.r.get('btc:regime_data')
                 if btc_cached:
                     btc_data = _j.loads(btc_cached)
-                    btc_price  = btc_data.get('btc_price')
-                    btc_regime = btc_data.get('btc_regime')
+                    btc_price     = btc_data.get('btc_price')
+                    btc_regime    = btc_data.get('btc_regime')
+                    btc_24h       = btc_data.get('btc_24h_change')
+                    btc_dominance = btc_data.get('btc_dominance')
+                    btc_sma50     = btc_data.get('btc_sma50')
             except:
                 pass
+
+            market_age = db.get_market_age_days(coin)
 
             with db.get_db() as conn:
                 cur = conn.cursor()
@@ -354,14 +360,19 @@ class ScalperV2Engine:
                         (bot_id, coin, entry_price, hold_seconds,
                          trigger_jump_pct, trigger_window_sec,
                          stop_loss_pct, base_order, status,
-                         btc_price_at_entry, btc_regime)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'open',%s,%s)
+                         btc_price_at_entry, btc_regime,
+                         btc_24h_change_pct, btc_dominance,
+                         btc_sma50_at_entry, market_age_days)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'open',
+                            %s,%s,%s,%s,%s,%s)
                     RETURNING id
                 """, (bot_id, coin, price,
                       bot['max_hold_sec'],
                       bot['vel_3s'], 3.0,
                       bot['stop_loss_pct'], BASE_ORDER,
-                      btc_price, btc_regime))
+                      btc_price, btc_regime,
+                      btc_24h, btc_dominance,
+                      btc_sma50, market_age))
                 pos_id = cur.fetchone()[0]
 
             with self._lock:

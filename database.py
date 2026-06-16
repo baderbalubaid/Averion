@@ -1247,6 +1247,22 @@ def get_btc_24h_change():
         row = cur.fetchone()
         return float(row[0] or 0) if row else 0.0
 
+def get_market_age_days(coin: str, exchange: str = 'mexc') -> int:
+    """Returns days since coin was first seen by Averion. 0 if unknown."""
+    try:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT EXTRACT(DAY FROM NOW() - MIN(recorded_at))::int
+                FROM coin_history
+                WHERE coin=%s AND exchange=%s
+            """, (coin, exchange))
+            row = cur.fetchone()
+            return int(row[0]) if row and row[0] else 0
+    except Exception:
+        return 0
+
+
 def get_market_volatility():
     """Get market volatility from BTC ATR as percentage"""
     with get_db() as conn:

@@ -456,6 +456,7 @@ def open_position(bot, coin, r):
             btc_24h = None
             btc_dominance = None
             btc_sma50 = None
+            market_age = db.get_market_age_days(coin)
             try:
                 import json as _j
                 btc_cached = r.get('btc:regime_data')
@@ -492,6 +493,7 @@ def open_position(bot, coin, r):
                     entry_method, entry_method_at_open,
                     btc_price_at_entry, btc_regime,
                     btc_24h_change_pct, btc_dominance, btc_sma50_at_entry,
+                    market_age_days,
                     pos_tp_pct, pos_trail_pct, pos_dca_pct,
                     coin_trade_number, opened_at
                 ) VALUES (
@@ -519,6 +521,7 @@ def open_position(bot, coin, r):
                 bot['entry_method'], bot['entry_method'],
                 btc_price, btc_regime,
                 btc_24h, btc_dominance, btc_sma50,
+                market_age,
                 bot['tp_percent'], bot['trailing_percent'], bot['dca_percent'],
                 coin_trade_num
             ))
