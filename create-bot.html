@@ -1324,6 +1324,7 @@ async function createBot(type) {
         direction: selectedDirection,
         entry_method: selectedEntryMethod,
         coin_mode: selectedCoinMode,
+        specific_coins: selectedCoinMode === 'specific' ? selectedCoins : [],
         dca_settings_mode: dcaSettingsMode,
         exit_mode: dcaExitMode,
         template_id: selectedTemplateId,

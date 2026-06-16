@@ -449,9 +449,11 @@ def create_dca_bot(data: dict, payload: dict = Depends(verify_token)):
         elif entry_method == 'dca_custom':
             method = 'DCA_CUSTOM'
 
+        specific_coins = data.get('specific_coins', [])
         bot_params = _json.dumps({
             'entry_method': entry_method,
             'coin_mode': coin_mode,
+            'specific_coins': specific_coins,
             'direction': direction,
             'template_id': template_id,
             'source_method': method,
