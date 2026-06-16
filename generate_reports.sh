@@ -4,41 +4,42 @@
 
 cd /home/averion/Averion
 
-# Load token from .env
 GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d'=' -f2)
 
 echo "================================================"
 echo " Averion Research Reports — $(date '+%Y-%m-%d %H:%M')"
 echo "================================================"
 
-echo "1️⃣  DCA Research Report..."
-python3 generate_research_report.py
+echo "1️⃣  DCA Research Report + CSVs..."
+python3 generate_dca_report.py
 
-echo "2️⃣  Scalper Research Report..."
+echo "2️⃣  Scalper E58 Research Report + CSVs..."
 python3 generate_scalper_report.py
 
-echo "3️⃣  Top 25 Trade CSVs..."
+echo "3️⃣  Scalper V2 E58v2 Research Report + CSVs..."
+python3 generate_scalper_v2_report.py
 
-echo "4️⃣  Scalper Monthly Results..."
-python3 generate_scalper_results.py
-python3 generate_top25_csv.py
-
-echo "5  Pushing to GitHub..."
-git add reports/RESEARCH_REPORT_FULL.md \
-        reports/RESEARCH_REPORT_SCALPER.md \
-        reports/TOP20_DCA_RARS_TRADES.csv \
-        reports/TOP20_DCA_SCORE_TRADES.csv \
-        reports/TOP20_SCALPER_RARS_TRADES.csv \
-        reports/TOP20_SCALPER_SCORE_TRADES.csv \
-        reports/SCALPER_RESULTS.md
-git commit -m "docs: reports $(date '+%Y-%m-%d %H:%M')" --allow-empty
+echo "4️⃣  Pushing to GitHub..."
+git add reports/
+git commit -m "docs: research reports $(date '+%Y-%m-%d %H:%M')" --allow-empty
 git push https://baderbalubaid:${GITHUB_TOKEN}@github.com/baderbalubaid/Averion.git main
 
 echo ""
-echo "✅ Done! Download from GitHub:"
-echo "DCA:     https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_REPORT_FULL.md"
-echo "Scalper: https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_REPORT_SCALPER.md"
-echo "DCA RARS CSV:    https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_DCA_RARS_TRADES.csv"
-echo "DCA Score CSV:   https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_DCA_SCORE_TRADES.csv"
-echo "Scalper RARS:    https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_SCALPER_RARS_TRADES.csv"
-echo "Scalper Score:   https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/TOP20_SCALPER_SCORE_TRADES.csv"
+echo "✅ Done! Reports available at:"
+echo ""
+echo "📊 DCA Report:"
+echo "  https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_DCA.md"
+echo ""
+echo "⚡ Scalper E58 Report:"
+echo "  https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_SCALPER.md"
+echo ""
+echo "⚡ Scalper V2 Report:"
+echo "  https://raw.githubusercontent.com/baderbalubaid/Averion/main/reports/RESEARCH_SCALPER_V2.md"
+echo ""
+echo "📁 CSVs (top 5 bots + all trades):"
+echo "  DCA RARS:       reports/TOP5_DCA_RARS_BOTS.csv + TRADES.csv"
+echo "  DCA Score:      reports/TOP5_DCA_SCORE_BOTS.csv + TRADES.csv"
+echo "  Scalper RARS:   reports/TOP5_SCALPER_RARS_BOTS.csv + TRADES.csv"
+echo "  Scalper Score:  reports/TOP5_SCALPER_SCORE_BOTS.csv + TRADES.csv"
+echo "  ScalperV2 RARS: reports/TOP5_SCALPERV2_RARS_BOTS.csv + TRADES.csv"
+echo "  ScalperV2 Score:reports/TOP5_SCALPERV2_SCORE_BOTS.csv + TRADES.csv"

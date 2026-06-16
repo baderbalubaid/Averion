@@ -1,210 +1,264 @@
 """
 generate_scalper_report.py
-Scalper-specific research report for E58 bots
+E58 Legacy Scalper Research Report — all 120 bots ranked
 """
-import sys, json
+import sys, csv
 sys.path.insert(0, '/home/averion/Averion')
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import load_dotenv; load_dotenv()
 import database as db
 from datetime import datetime
 db.init_pool()
 
 def run():
-    now = datetime.now().strftime('%Y-%m-%d %H:%M')
-
+    now = datetime.now().strftime('%Y-%m-%d %H:%M UTC')
     with db.get_db() as conn:
         cur = conn.cursor()
 
-        # Overview
-        cur.execute("SELECT COUNT(DISTINCT b.name) FROM scalper_positions s JOIN bots b ON b.id=s.bot_id")
-        total_bots = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM scalper_positions WHERE status='closed'")
+        cur.execute("""
+            SELECT COUNT(*) FROM scalper_positions sp
+            JOIN bots b ON b.id=sp.bot_id WHERE b.method='E58' AND sp.status='closed'
+        """)
         total_closed = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM scalper_positions WHERE status='open'")
+        cur.execute("""
+            SELECT COUNT(*) FROM scalper_positions sp
+            JOIN bots b ON b.id=sp.bot_id WHERE b.method='E58' AND sp.status='open'
+        """)
         total_open = cur.fetchone()[0]
-        cur.execute("SELECT COALESCE(ROUND(SUM(pnl_usdt)::numeric,2),0) FROM scalper_positions WHERE status='closed'")
+        cur.execute("""
+            SELECT COALESCE(ROUND(SUM(sp.pnl_usdt)::numeric,2),0)
+            FROM scalper_positions sp JOIN bots b ON b.id=sp.bot_id
+            WHERE b.method='E58' AND sp.status='closed'
+        """)
         total_pnl = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FILTER (WHERE pnl_pct>0), COUNT(*) FILTER (WHERE pnl_pct<=0) FROM scalper_positions WHERE status='closed'")
+        cur.execute("""
+            SELECT COUNT(*) FILTER (WHERE sp.pnl_pct>0),
+                   COUNT(*) FILTER (WHERE sp.pnl_pct<=0)
+            FROM scalper_positions sp JOIN bots b ON b.id=sp.bot_id
+            WHERE b.method='E58' AND sp.status='closed'
+        """)
         wins, losses = cur.fetchone()
 
-        md = f'# Averion E58 Scalper Research Report\n\n'
-        md += f'> Generated: {now} · Paper trading · MEXC · WebSocket Momentum Scalper\n\n'
-        md += '> ⚠️ **DATA WARNING:** Early stage paper trading. Use for directional guidance only.\n\n'
-        md += '---\n\n'
-
-        md += '## Overview\n\n'
-        md += '| Metric | Value |\n|--------|-------|\n'
-        md += f'| Active Scalper Bots | {total_bots} |\n'
-        md += f'| Closed Trades | {total_closed:,} |\n'
-        md += f'| Open Positions | {total_open:,} |\n'
-        md += f'| Total P&L | ${total_pnl} |\n'
-        md += f'| Win Rate | {round(wins/(wins+losses)*100,1) if wins+losses else 0}% |\n'
-        md += f'| Wins | {wins:,} |\n'
-        md += f'| Losses | {losses:,} |\n\n'
-
-        md += '## Architecture\n\n'
-        md += '- **Entry:** WebSocket price jump detection (real-time, <1s latency)\n'
-        md += '- **Exit:** Fixed timer (hold_sec) OR stop loss\n'
-        md += '- **Base order:** $100 per trade\n'
-        md += '- **No DCA, no trailing, no TP**\n'
-        md += '- **Cleanup:** Stuck positions closed every 30s on restart\n\n'
-
-        # Full rankings
+        # Regime coverage
         cur.execute("""
-            SELECT b.name, b.bot_params::text,
-                   COUNT(*) FILTER (WHERE s.status='closed') as closed,
-                   COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0) as wins,
-                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 3) as avg_pnl,
-                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric, 2) as total_pnl,
-                   ROUND(MAX(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 2) as best,
-                   ROUND(MIN(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric, 2) as worst,
-                   COUNT(*) FILTER (WHERE s.status='open') as open_now,
-                   COUNT(*) FILTER (WHERE s.exit_reason='stop_loss') as sl_exits,
-                   COUNT(*) FILTER (WHERE s.exit_reason='timer') as timer_exits,
-                   COUNT(*) FILTER (WHERE s.exit_reason='timer_recovery') as recovered,
-                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0)::numeric,3) as avg_win_pct,
-                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed' AND s.pnl_pct <= 0)::numeric,3) as avg_loss_pct,
-                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed' AND s.pnl_usdt > 0)::numeric,2) as gross_win,
-                   ROUND(SUM(ABS(s.pnl_usdt)) FILTER (WHERE s.status='closed' AND s.pnl_usdt <= 0)::numeric,2) as gross_loss,
-                   array_agg(s.pnl_usdt ORDER BY s.pnl_usdt DESC) FILTER (WHERE s.status='closed') as all_pnls
-            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
-            GROUP BY b.name, b.bot_params
-            HAVING COUNT(*) FILTER (WHERE s.status='closed') > 0
+            SELECT btc_regime, COUNT(*) FROM scalper_positions sp
+            JOIN bots b ON b.id=sp.bot_id
+            WHERE b.method='E58' AND sp.status='closed'
+            GROUP BY btc_regime
+        """)
+        regimes = {r[0] or 'unknown': r[1] for r in cur.fetchall()}
+
+        # All 120 bots ranked
+        cur.execute("""
+            SELECT b.name, b.bot_params,
+                (b.bot_params->>'trigger_pct')::float as trigger_pct,
+                (b.bot_params->>'window_sec')::float as window_sec,
+                (b.bot_params->>'hold_sec')::float as hold_sec,
+                COUNT(sp.id) FILTER (WHERE sp.status='open') as open_now,
+                COUNT(sp.id) FILTER (WHERE sp.status='closed') as closed,
+                ROUND(AVG(sp.pnl_pct) FILTER (WHERE sp.status='closed')::numeric,3) as avg_pnl,
+                ROUND(SUM(sp.pnl_usdt) FILTER (WHERE sp.status='closed')::numeric,4) as total_pnl,
+                ROUND(MAX(sp.pnl_pct) FILTER (WHERE sp.status='closed')::numeric,2) as best,
+                ROUND(MIN(sp.pnl_pct) FILTER (WHERE sp.status='closed')::numeric,2) as worst,
+                ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sp.pnl_pct)
+                    FILTER (WHERE sp.status='closed')::numeric,3) as median_pnl,
+                ROUND(STDDEV(sp.pnl_pct) FILTER (WHERE sp.status='closed')::numeric,3) as std_dev,
+                COUNT(sp.id) FILTER (WHERE sp.status='closed' AND sp.pnl_pct>0) as wins,
+                COUNT(sp.id) FILTER (WHERE sp.status='closed' AND sp.pnl_pct<=0) as losses,
+                ROUND(AVG(sp.hold_seconds) FILTER (WHERE sp.status='closed')::numeric,1) as avg_hold
+            FROM bots b
+            LEFT JOIN scalper_positions sp ON sp.bot_id=b.id
+            WHERE b.method='E58' AND b.is_research=TRUE
+            GROUP BY b.id, b.name, b.bot_params
             ORDER BY total_pnl DESC NULLS LAST
         """)
-        rows = cur.fetchall()
+        bots = cur.fetchall()
 
-        md += '## Full Rankings\n\n'
-        md += '| Rank | Bot | Trigger% | Window | Hold | SL% | Open | Closed | Win% | Avg Win% | Avg Loss% | PF | Total P&L | Excl Top5 | Robustness% | Timer | SL | Recovered |\n'
-        md += '|------|-----|----------|--------|------|-----|------|--------|------|----------|-----------|------|-------|-------|----|-----------|\n'
-
-        for i, r in enumerate(rows, 1):
-            name, params_raw, closed, wins_b, avg_pnl, total_pnl_b, best, worst, open_now, sl_exits, timer_exits, recovered, avg_win_pct, avg_loss_pct, gross_win, gross_loss, all_pnls = r
-            try:
-                p = json.loads(params_raw) if params_raw else {}
-            except:
-                p = {}
-            wr = round(wins_b/closed*100, 1) if closed else 0
-            hold = p.get('hold_sec','?')
-            trigger = p.get('trigger_pct','?')
-            window = p.get('window_sec','?')
-            sl = p.get('stop_loss_pct','off')
-            pf = round(float(gross_win or 0)/float(gross_loss or 1),2)
-            pnls = [float(x) for x in (all_pnls or [])]
-            total_f = float(total_pnl_b or 0)
-            excl5 = round(sum(pnls[5:]),2) if len(pnls)>5 else total_f
-            rob = round(excl5/total_f*100,1) if total_f > 0 else 0
-            md += f'| {i} | {name} | {trigger}% | {window}s | {hold}s | {sl} | {open_now} | {closed} | {wr}% | {avg_win_pct}% | {avg_loss_pct}% | {pf} | ${total_f} | ${excl5} | {rob}% | {timer_exits} | {sl_exits} | {recovered} |\n'
-
-        md += '\n'
-
-        # Analysis by trigger%
-        md += '## Analysis by Trigger %\n\n'
-        md += '> How does trigger sensitivity affect performance?\n\n'
+        # Regime per bot (top 20 only for markdown)
         cur.execute("""
-            SELECT (b.bot_params->>'trigger_pct')::numeric as trigger,
-                   COUNT(*) FILTER (WHERE s.status='closed') as closed,
-                   COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct>0) as wins,
-                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric,3) as avg_pnl,
-                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl
-            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
-            WHERE s.status='closed'
-            GROUP BY trigger ORDER BY trigger
+            SELECT b.name, sp.btc_regime,
+                COUNT(*) as trades,
+                ROUND(AVG(sp.pnl_pct)::numeric,3) as avg_pnl,
+                COUNT(*) FILTER (WHERE sp.pnl_pct>0)*100/COUNT(*) as win_rate
+            FROM scalper_positions sp JOIN bots b ON b.id=sp.bot_id
+            WHERE b.method='E58' AND sp.status='closed' AND sp.btc_regime IS NOT NULL
+            GROUP BY b.name, sp.btc_regime
         """)
-        md += '| Trigger% | Trades | Win% | Avg P&L% | Total P&L |\n'
-        md += '|----------|--------|------|----------|----------|\n'
+        regime_data = {}
         for r in cur.fetchall():
-            trigger, closed, wins_b, avg_pnl, total_pnl_b = r
-            wr = round(wins_b/closed*100,1) if closed else 0
-            md += f'| {trigger}% | {closed} | {wr}% | {avg_pnl}% | ${total_pnl_b} |\n'
-        md += '\n'
+            if r[0] not in regime_data:
+                regime_data[r[0]] = {}
+            regime_data[r[0]][r[1] or 'unknown'] = {
+                'trades':r[2], 'avg_pnl':float(r[3] or 0), 'win_rate':r[4]
+            }
 
-        # Analysis by hold time
-        md += '## Analysis by Hold Time\n\n'
-        md += '> Does longer holding = better results?\n\n'
-        cur.execute("""
-            SELECT (b.bot_params->>'hold_sec')::numeric as hold,
-                   COUNT(*) FILTER (WHERE s.status='closed') as closed,
-                   COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct>0) as wins,
-                   ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric,3) as avg_pnl,
-                   ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl
-            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
-            WHERE s.status='closed'
-            GROUP BY hold ORDER BY hold
-        """)
-        md += '| Hold (sec) | Trades | Win% | Avg P&L% | Total P&L |\n'
-        md += '|------------|--------|------|----------|----------|\n'
-        for r in cur.fetchall():
-            hold, closed, wins_b, avg_pnl, total_pnl_b = r
-            wr = round(wins_b/closed*100,1) if closed else 0
-            md += f'| {hold}s | {closed} | {wr}% | {avg_pnl}% | ${total_pnl_b} |\n'
-        md += '\n'
+    md = f'# Averion E58 Scalper Research Report\n\n'
+    md += f'> Generated: {now} · Paper trading · MEXC · WebSocket Momentum Scalper\n\n'
+    md += '> ⚠️ All trades are paper (simulated). Signal: price jump detection.\n\n'
+    md += '---\n\n'
 
-        # Top coins
-        md += '## Top 20 Coins for Scalping\n\n'
-        cur.execute("""
-            SELECT s.coin,
-                   COUNT(*) as trades,
-                   COUNT(*) FILTER (WHERE s.pnl_pct>0) as wins,
-                   ROUND(AVG(s.pnl_pct)::numeric,3) as avg_pnl,
-                   ROUND(SUM(s.pnl_usdt)::numeric,2) as total_pnl
-            FROM scalper_positions s
-            WHERE s.status='closed'
-            GROUP BY s.coin HAVING COUNT(*) >= 5
-            ORDER BY avg_pnl DESC LIMIT 20
-        """)
-        md += '| Coin | Trades | Win% | Avg P&L% | Total P&L |\n'
-        md += '|------|--------|------|----------|----------|\n'
-        for r in cur.fetchall():
-            coin, trades, wins_b, avg_pnl, total_pnl_b = r
-            wr = round(wins_b/trades*100,1) if trades else 0
-            md += f'| {coin} | {trades} | {wr}% | {avg_pnl}% | ${total_pnl_b} |\n'
-        md += '\n'
+    md += '## Overview\n\n'
+    md += '| Metric | Value |\n|--------|-------|\n'
+    md += f'| Total Bots | 120 |\n'
+    md += f'| Closed Trades | {total_closed:,} |\n'
+    md += f'| Open Positions | {total_open:,} |\n'
+    md += f'| Total P&L | ${total_pnl} |\n'
+    md += f'| Win Rate | {round(wins/(wins+losses)*100,1) if wins+losses else 0}% |\n\n'
 
-        # ── BTC REGIME BREAKDOWN ──
-        md += '## Scalper Performance by BTC Regime\n\n'
-        md += '> bull = BTC >2% above SMA50 · bear = <2% below · sideways = between\n\n'
-        cur.execute("""
-            SELECT b.name, s.btc_regime,
-                COUNT(*) FILTER (WHERE s.status='closed') as trades,
-                COUNT(*) FILTER (WHERE s.status='closed' AND s.pnl_pct > 0) as wins,
-                ROUND(AVG(s.pnl_pct) FILTER (WHERE s.status='closed')::numeric,3) as avg_pnl,
-                ROUND(SUM(s.pnl_usdt) FILTER (WHERE s.status='closed')::numeric,2) as total_pnl
-            FROM scalper_positions s JOIN bots b ON b.id=s.bot_id
-            WHERE s.btc_regime IS NOT NULL
-            GROUP BY b.name, s.btc_regime
-            HAVING COUNT(*) FILTER (WHERE s.status='closed') >= 3
-            ORDER BY b.name, s.btc_regime
-            LIMIT 50
-        """)
-        regime_rows = cur.fetchall()
-        if regime_rows:
-            md += '| Bot | Regime | Trades | Win% | Avg P&L% | Total P&L |\n'
-            md += '|-----|--------|--------|------|----------|-----------|\n'
-            for r2 in regime_rows:
-                bot_name, regime, trades, wins, avg_pnl, total_pnl = r2
-                wr = round(wins/trades*100,1) if trades else 0
-                md += f'| {bot_name} | {regime} | {trades} | {wr}% | {avg_pnl}% | ${total_pnl} |\n'
+    md += '## Architecture\n\n'
+    md += '- **Signal:** Price jump >= trigger_pct% in window_sec seconds\n'
+    md += '- **Exit:** Fixed timer (hold_sec) OR stop loss\n'
+    md += '- **Base order:** $100 per trade\n\n'
+
+    md += '## Market Regime Coverage\n\n'
+    md += '> ⚠️ Regime analysis preliminary — currently only bear market data.\n\n'
+    md += '| Regime | Trades |\n|--------|--------|\n'
+    for regime, count in sorted(regimes.items()):
+        note = '✅' if count >= 30 else '⚠️'
+        md += f'| {regime} | {count:,} {note} |\n'
+    md += '\n---\n\n'
+
+    md += '## All 120 Bots Ranked\n\n'
+    md += '| Rank | Bot | Trigger% | Window | Hold | Closed | Win% | Avg P&L% | Median% | Std | Total P&L | Score |\n'
+    md += '|------|-----|----------|--------|------|--------|------|----------|---------|-----|-----------|-------|\n'
+
+    for i, b in enumerate(bots):
+        name = b[0]
+        trigger = float(b[2] or 0)
+        window = float(b[3] or 0)
+        hold = float(b[4] or 0)
+        closed = int(b[6] or 0)
+        avg_pnl = float(b[7] or 0)
+        total_pnl_b = float(b[8] or 0)
+        median = float(b[11] or 0)
+        std = float(b[12] or 0)
+        wins_b = int(b[13] or 0)
+        win_rate = round(wins_b/closed*100,1) if closed else 0
+        speed = 1.0/max(hold, 1)
+        score = round(win_rate * avg_pnl * speed, 4) if closed > 0 else 0
+        md += f'| {i+1} | **{name}** | {trigger}% | {window}s | {hold}s | {closed:,} | {win_rate}% | {avg_pnl:+.3f}% | {median:+.3f}% | {std:.3f} | ${total_pnl_b:+.2f} | {score} |\n'
+
+    md += '\n---\n\n'
+    md += '## Top 10 Bot Details\n\n'
+
+    for b in bots[:10]:
+        name = b[0]
+        trigger = float(b[2] or 0)
+        window = float(b[3] or 0)
+        hold = float(b[4] or 0)
+        closed = int(b[6] or 0)
+        avg_pnl = float(b[7] or 0)
+        total_pnl_b = float(b[8] or 0)
+        best = float(b[9] or 0)
+        worst = float(b[10] or 0)
+        median = float(b[11] or 0)
+        std = float(b[12] or 0)
+        wins_b = int(b[13] or 0)
+        losses_b = int(b[14] or 0)
+        avg_hold = float(b[15] or 0)
+        win_rate = round(wins_b/closed*100,1) if closed else 0
+
+        md += f'### {name}\n\n'
+        md += f'| Metric | Value |\n|--------|-------|\n'
+        md += f'| Trigger | {trigger}% in {window}s |\n'
+        md += f'| Hold | {hold}s |\n'
+        md += f'| Closed Trades | {closed:,} |\n'
+        md += f'| Win Rate | {win_rate}% |\n'
+        md += f'| Avg P&L | {avg_pnl:+.3f}% |\n'
+        md += f'| Median P&L | {median:+.3f}% |\n'
+        md += f'| Std Deviation | {std:.3f} |\n'
+        md += f'| Best | {best:+.2f}% |\n'
+        md += f'| Worst | {worst:+.2f}% |\n'
+        md += f'| Total P&L | ${total_pnl_b:+.2f} |\n'
+        md += f'| Avg Hold | {avg_hold:.1f}s |\n\n'
+
+        if name in regime_data:
+            md += f'**Regime Breakdown:**\n\n'
+            md += '| Regime | Trades | Win% | Avg P&L% |\n|--------|--------|------|----------|\n'
+            for regime, stats in sorted(regime_data[name].items()):
+                note = '' if stats['trades'] >= 30 else ' ⚠️'
+                md += f'| {regime} | {stats["trades"]}{note} | {stats["win_rate"]}% | {stats["avg_pnl"]:+.3f}% |\n'
             md += '\n'
-        else:
-            md += '_Not enough regime data yet — collecting now_\n\n'
+        md += '---\n\n'
 
-        # Questions for AI
-        md += '## Questions for AI Analysis\n\n'
-        md += '1. Which trigger% shows best risk/reward? Is higher trigger better?\n'
-        md += '2. What is the optimal hold time? Does longer = better?\n'
-        md += '3. Which bots should we expand with more variants?\n'
-        md += '4. Are there patterns in which coins scalp best?\n'
-        md += '5. Should we add stop loss to all bots or keep some without?\n'
-        md += '6. Any signs the strategy is fundamentally flawed?\n'
-        md += '7. What new parameter combinations should we test?\n'
-
-    path = '/home/averion/Averion/reports/RESEARCH_REPORT_SCALPER.md'
-    with open(path, 'w') as f:
+    with open('reports/RESEARCH_SCALPER.md', 'w') as f:
         f.write(md)
-    print(f'✅ Scalper report generated: {path}')
-    print(f'   {total_bots} bots · {total_closed:,} closed trades · ${total_pnl} total P&L')
+    print(f'✅ RESEARCH_SCALPER.md written ({len(bots)} bots)')
+
+    _generate_scalper_csvs(bots, 'E58', 'SCALPER')
+
+def _generate_scalper_csvs(bots, method, prefix):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+
+        for rank_type in ['rars', 'score']:
+            if rank_type == 'rars':
+                ranked = sorted(bots, key=lambda x: float(x[8] or 0), reverse=True)[:5]
+            else:
+                scored = []
+                for b in bots:
+                    closed = int(b[6] or 0)
+                    if closed == 0: continue
+                    total = float(b[8] or 0)
+                    wins_b = int(b[13] or 0)
+                    wr = wins_b/closed*100 if closed else 0
+                    gp = gl = 0
+                    cur.execute("""
+                        SELECT COALESCE(SUM(sp.pnl_usdt) FILTER (WHERE sp.pnl_usdt>0),0),
+                               COALESCE(ABS(SUM(sp.pnl_usdt) FILTER (WHERE sp.pnl_usdt<0)),0.001)
+                        FROM scalper_positions sp JOIN bots b2 ON b2.id=sp.bot_id
+                        WHERE b2.name=%s AND b2.method=%s AND sp.status='closed'
+                    """, (b[0], method))
+                    gp, gl = cur.fetchone()
+                    pf = float(gp)/float(gl)
+                    score = 0.40*total + 0.30*wr + 0.20*pf + 0.10*(closed/10)
+                    scored.append((score, b))
+                ranked = [x[1] for x in sorted(scored, key=lambda x: x[0], reverse=True)[:5]]
+
+            top_names = [b[0] for b in ranked]
+            if not top_names:
+                print(f'⚠️ No bots for {prefix} {rank_type.upper()}')
+                continue
+
+            # Bots summary
+            bots_file = f'reports/TOP5_{prefix}_{rank_type.upper()}_BOTS.csv'
+            with open(bots_file, 'w', newline='') as f:
+                w = csv.writer(f)
+                w.writerow(['name','trigger_pct','window_sec','hold_sec','closed','win_rate','avg_pnl','total_pnl','median_pnl','std_dev'])
+                for b in ranked:
+                    closed = int(b[6] or 0)
+                    wins_b = int(b[13] or 0)
+                    wr = round(wins_b/closed*100,1) if closed else 0
+                    w.writerow([b[0], b[2], b[3], b[4], closed, wr,
+                               round(float(b[7] or 0),3), round(float(b[8] or 0),4),
+                               round(float(b[11] or 0),3), round(float(b[12] or 0),3)])
+            print(f'✅ {bots_file}')
+
+            # All trades for top 5
+            cur.execute("""
+                SELECT b.name, sp.coin,
+                    sp.entry_price, sp.exit_price, sp.pnl_pct, sp.pnl_usdt,
+                    sp.hold_seconds, sp.exit_reason,
+                    sp.trigger_jump_pct, sp.trigger_window_sec,
+                    sp.btc_regime, sp.btc_24h_change_pct, sp.btc_dominance,
+                    sp.market_age_days, sp.entry_time, sp.exit_time,
+                    sp.max_profit_seen, sp.max_loss_seen
+                FROM scalper_positions sp JOIN bots b ON b.id=sp.bot_id
+                WHERE b.name=ANY(%s) AND b.method=%s AND sp.status='closed'
+                ORDER BY b.name, sp.pnl_usdt DESC
+            """, (top_names, method))
+
+            trade_rows = cur.fetchall()
+            trades_file = f'reports/TOP5_{prefix}_{rank_type.upper()}_TRADES.csv'
+            with open(trades_file, 'w', newline='') as f:
+                w = csv.writer(f)
+                w.writerow(['bot','coin','entry_price','exit_price','pnl_pct','pnl_usdt',
+                           'hold_sec','exit_reason','trigger_jump','trigger_window',
+                           'btc_regime','btc_24h_change','btc_dominance',
+                           'market_age_days','entry_time','exit_time',
+                           'max_profit_seen','max_loss_seen'])
+                for r in trade_rows:
+                    w.writerow([round(float(x),6) if isinstance(x,(int,float)) and x is not None else x for x in r])
+            print(f'✅ {trades_file} ({len(trade_rows)} trades)')
 
 if __name__ == '__main__':
     run()
