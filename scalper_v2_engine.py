@@ -445,7 +445,7 @@ class ScalperV2Engine:
                 cur = conn.cursor()
                 cur.execute("""
                     UPDATE scalper_positions SET
-                        exit_price=%, exit_time=NOW(),
+                        exit_price=%s, exit_time=NOW(),
                         max_profit_seen=%s, max_loss_seen=%s,
                         pnl_pct=%s, pnl_usdt=%s,
                         exit_reason=%s, status='closed'
