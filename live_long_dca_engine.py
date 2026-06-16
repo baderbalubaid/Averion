@@ -113,7 +113,7 @@ def load_open_positions(bot_id):
             SELECT id, coin, avg_cost, quantity, total_invested,
                    dca_count, tp_armed, peak_price, tp_price,
                    pos_tp_pct, pos_trail_pct, pos_dca_pct,
-                   status, opened_at, wallet_id
+                   status, opened_at, wallet_id, last_buy_price
             FROM live_dca_positions
             WHERE bot_id=%s AND status='open'
             ORDER BY opened_at ASC
@@ -133,6 +133,7 @@ def load_open_positions(bot_id):
         'pos_trail_pct':  float(r[10] or 0),
         'pos_dca_pct':    float(r[11] or 0),
         'status':         r[12],
+        'last_buy_price': float(r[15] or r[2] or 0),
         'wallet_id':      r[14],
     } for r in rows]
 
