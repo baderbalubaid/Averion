@@ -118,7 +118,7 @@ function applyFilter() {
 }
 
 function isBotDca() {
-    return botData && ((botData.method || '').startsWith('DCA') || (botData.method || '').match(/^Ed+/));
+    return botData && ((botData.method || '').startsWith('DCA') || /^E\d+/.test(botData.method || ''));
 }
 
 function updateTableHeaders() {
