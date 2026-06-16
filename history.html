@@ -153,7 +153,9 @@ async function fetchHistory() {
         bot_name: p.bot_name,
     }));
   } catch(e) { console.error('fetchHistory error:', e); allHistory=[]; }
-  console.log('allHistory total:', allHistory.length, 'dca:', allHistory.filter(h=>h.type==='dca').length, 'scalper:', allHistory.filter(h=>h.type==='scalper').length);
+  // Debug display
+  const dbg = document.getElementById('history-debug');
+  if (dbg) dbg.textContent = `Total: ${allHistory.length} | DCA: ${allHistory.filter(h=>h.type==='dca').length} | Scalper: ${allHistory.filter(h=>h.type==='scalper').length}`;
   buildCoinFilter();
   applyHistoryFilter();
 }
