@@ -43,6 +43,13 @@ def get_redis_price(r, coin):
     return None
 
 # ── Load active live long bots ─────────────────────────────────────
+def is_st_coin(coin, exchange_name, r):
+    # Check if coin is ST/suspended via Redis cache
+    cached = r.get(f'st:{exchange_name}:{coin}')
+    if cached:
+        return cached == 'true'
+    return False
+
 def load_live_long_bots():
     """Load all active live long DCA bots with wallet info."""
     with db.get_db() as conn:
@@ -607,6 +614,9 @@ def run_bot_cycle(bot, r):
         for coin in coins:
             # Check per-coin limit
             if open_coins.get(coin, 0) >= bot['trades_per_coin']:
+                continue
+            # Check ST flag - skip suspended coins
+            if is_st_coin(coin, bot.get('exchange_name', 'mexc'), r):
                 continue
             # Check entry signal
             if not check_entry_signal(bot, coin, r):
