@@ -164,6 +164,7 @@ async function manualClose() {
 }
 
 function renderTable(data) {
+    data = applySortToPositions(data);
     const tbody = document.getElementById('tradesTable');
     if (!data.length) {
         tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text3)">No open trades</td></tr>';
