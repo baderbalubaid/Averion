@@ -307,7 +307,7 @@ async function loadBot() {
     try {
         const res = await fetch(`${API}/api/bots`, {headers: authHeaders()});
         const bots = await res.json();
-        botData = bots.find(b => b.id === botId);
+        botData = bots.find(b => parseInt(b.id) === parseInt(botId));
         if (!botData) {
             document.getElementById('bot-name').textContent = 'Bot not found';
             return;
