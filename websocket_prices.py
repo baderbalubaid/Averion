@@ -92,6 +92,13 @@ class MexcWebSocketPrices:
                                 scalper_on_price(coin, float(t.price))
                             except Exception:
                                 pass
+                        # Feed scalper v2 engine
+                        if scalper_v2_on_price:
+                            try:
+                                scalper_v2_on_price(coin, float(t.price))
+                            except Exception:
+                                pass
+
                         # Feed live scalper engine
                         if live_scalper_on_price:
                             try:
