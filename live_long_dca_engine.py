@@ -189,7 +189,8 @@ def check_entry_signal(bot, coin, r):
             signal = es.check_entry_signal(
                 method, params, coin, 'mexc', btc_data, ohlcv_arrays
             )
-            return signal is not None
+            # signal returns True/False or a value — treat False/None as no signal
+            return bool(signal)
         except Exception as e:
             print(f'⚠️ Entry signal error {coin}: {e}')
             return False
