@@ -230,7 +230,10 @@ async function loadTrades() {
         document.getElementById('t-dca').textContent = dcaQueue;
 
         applyFilter();
-    } catch(e) { console.error(e); }
+    } catch(e) { 
+        console.error(e);
+        document.getElementById('t-open').textContent = 'ERR';
+    }
 }
 
 let refreshInterval = null;
