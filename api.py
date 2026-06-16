@@ -717,12 +717,38 @@ def home_stats(payload: dict = Depends(verify_token)):
         open_trades = scalper_open + dca_open
         total_invested = scalper_invested + dca_invested
 
-        # DCA queue count — positions that have received at least 1 DCA
-        cur.execute("""
-            SELECT COUNT(*) FROM live_dca_positions
-            WHERE user_id=%s AND status='open' AND dca_count > 0
-        """, (user_id,))
-        dca_queue = int(cur.fetchone()[0])
+        # DCA queue — positions where price has dropped enough to need DCA
+        try:
+            import redis as _r
+            _rc = _r.Redis(host='localhost', port=6379,
+                password=os.getenv('REDIS_PASSWORD'), decode_responses=True)
+            cur.execute("""
+                SELECT p.coin, p.last_buy_price, p.avg_cost,
+                       p.dca_count, p.pos_dca_pct
+                FROM live_dca_positions p
+                WHERE p.user_id=%s AND p.status='open'
+                AND p.avg_cost > 0
+            """, (user_id,))
+            pos_rows = cur.fetchall()
+            dca_queue = 0
+            for pr in pos_rows:
+                coin, last_buy, avg_cost, dca_count, dca_pct = pr
+                last_buy = float(last_buy or avg_cost or 0)
+                dca_pct = float(dca_pct or 7)
+                if last_buy <= 0:
+                    continue
+                keys = _rc.keys(f'price:*:{coin}/USDT')
+                if not keys:
+                    continue
+                current = float(_rc.get(keys[0]) or 0)
+                if current <= 0:
+                    continue
+                ref = last_buy if dca_count > 0 else float(avg_cost or last_buy)
+                drop = (ref - current) / ref * 100
+                if drop >= dca_pct:
+                    dca_queue += 1
+        except Exception:
+            dca_queue = 0
 
         # Today P&L (scalper)
         cur.execute("""
