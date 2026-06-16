@@ -125,8 +125,8 @@ function setFilter(type, el) {
 function applyFilter() {
     const search = (document.getElementById('searchInput').value || '').toLowerCase();
     let data = allPositions;
-    if (currentFilter === 'profit') data = data.filter(p => p.pnl > 0);
-    else if (currentFilter === 'loss') data = data.filter(p => p.pnl < 0);
+    if (currentFilter === 'profit') data = data.filter(p => (p.pnl_usdt||p.pnl||0) > 0);
+    else if (currentFilter === 'loss') data = data.filter(p => (p.pnl_usdt||p.pnl||0) < 0);
     else if (currentFilter === 'tp') data = data.filter(p => p.tp_armed);
     else if (currentFilter === 'stuck') data = data.filter(p => (p.days_open||0) > 30);
     if (search) data = data.filter(p => p.coin.toLowerCase().includes(search));
