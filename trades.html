@@ -59,13 +59,13 @@
                             <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3)">Type</th>
                             <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3)">Bot</th>
                             <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3)">Coin</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">Entry Time</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">Entry/Avg</th>
+                            <th onclick="sortBy('entry_time')" id="th-entry_time" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--accent);cursor:pointer">Entry Time ↓</th>
+                            <th onclick="sortBy('entry_price')" id="th-entry_price" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);cursor:pointer">Entry/Avg</th>
                             <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">Current</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">DCA#</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">Size</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">P&L$</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">P&L%</th>
+                            <th onclick="sortBy('dca_count')" id="th-dca_count" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);cursor:pointer">DCA#</th>
+                            <th onclick="sortBy('base_order')" id="th-base_order" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);cursor:pointer">Size</th>
+                            <th onclick="sortBy('pnl_usdt')" id="th-pnl_usdt" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);cursor:pointer">P&L$</th>
+                            <th onclick="sortBy('pnl_pct')" id="th-pnl_pct" style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);cursor:pointer">P&L%</th>
                             <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3)">Holding</th>
                             <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3)">Action</th>
                         </tr>
@@ -233,6 +233,59 @@ async function loadTrades() {
 }
 
 let refreshInterval = null;
+let sortCol = 'entry_time';
+let sortDir = 'desc'; // default: newest first
+let sortCount = 0; // 0=default 1=asc 2=desc
+
+function sortBy(col) {
+    if (sortCol === col) {
+        sortCount = (sortCount + 1) % 3;
+        if (sortCount === 0) { sortCol = 'entry_time'; sortDir = 'desc'; }
+        else if (sortCount === 1) sortDir = 'asc';
+        else sortDir = 'desc';
+    } else {
+        sortCol = col;
+        sortDir = 'asc';
+        sortCount = 1;
+    }
+    updateSortHeaders();
+    renderTrades(allPositions);
+}
+
+function updateSortHeaders() {
+    ['entry_time','entry_price','dca_count','base_order','pnl_usdt','pnl_pct'].forEach(c => {
+        const el = document.getElementById('th-' + c);
+        if (!el) return;
+        if (c === sortCol && sortCount > 0) {
+            el.style.color = 'var(--accent)';
+            el.textContent = el.textContent.replace(/ [↑↓]$/,'') + (sortDir === 'asc' ? ' ↑' : ' ↓');
+        } else {
+            el.style.color = 'var(--text3)';
+            el.textContent = el.textContent.replace(/ [↑↓]$/,'');
+        }
+    });
+    // Default header
+    const defEl = document.getElementById('th-entry_time');
+    if (defEl && sortCount === 0) {
+        defEl.style.color = 'var(--accent)';
+        defEl.textContent = 'Entry Time ↓';
+    }
+}
+
+function applySortToPositions(positions) {
+    return [...positions].sort((a, b) => {
+        let va, vb;
+        if (sortCol === 'entry_time') {
+            va = new Date(a.entry_time || 0).getTime();
+            vb = new Date(b.entry_time || 0).getTime();
+        } else {
+            va = parseFloat(a[sortCol] || 0);
+            vb = parseFloat(b[sortCol] || 0);
+        }
+        if (sortDir === 'asc') return va - vb;
+        return vb - va;
+    });
+}
 let countdownInterval = null;
 
 function startRefresh() {
