@@ -153,9 +153,7 @@ async function fetchHistory() {
         bot_name: p.bot_name,
     }));
   } catch(e) { console.error('fetchHistory error:', e); allHistory=[]; }
-  // Debug display
-  const dbg = document.getElementById('history-debug');
-  if (dbg) dbg.textContent = `Total: ${allHistory.length} | DCA: ${allHistory.filter(h=>h.type==='dca').length} | Scalper: ${allHistory.filter(h=>h.type==='scalper').length}`;
+
   buildCoinFilter();
   applyHistoryFilter();
 }
@@ -262,7 +260,10 @@ function renderHistory(data) {
     const sign = pnl>=0?'+':'';
     const ep   = h.entry_price||0;
     const xp   = h.exit_price||ep;
-    const pct  = ep>0?((xp-ep)/ep*100).toFixed(2):'0.00';
+    // For DCA use pnl_pct directly, for scalper calculate from prices
+    const pct  = h.type==='dca'
+        ? (h.pnl_pct||0).toFixed(2)
+        : (ep>0?((xp-ep)/ep*100).toFixed(2):'0.00');
     return `<tr>${visibleCols.map(c=>{
       if(c.key==='exchange')    return `<td><span class="td-muted">${h.exchange||'MEXC'}</span></td>`;
       if(c.key==='coin') {
