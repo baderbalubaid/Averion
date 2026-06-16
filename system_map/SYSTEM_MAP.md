@@ -443,3 +443,225 @@ Change entry signal E1-E66:
 - 05:00 UTC: check_paper_timer.py
 - After 05:00: generate_reports.sh (all reports to GitHub)
 - 17:00 UTC: save_scalper_snapshot.py
+
+---
+
+## USER-FACING FEATURES
+
+### BOT CREATION WIZARD
+WHAT: Step-by-step flow for creating a new bot.
+WHY: Users need guided setup to configure exchange, wallet, method, and parameters correctly.
+FILE: create-bot.html (1399 lines)
+
+SCALPER PATH (7 steps):
+- step-0: Bot type selection (DCA or Scalper)
+- step-1: Exchange selection
+- step-2: Wallet selection or create new wallet
+- step-3-scalper: Scalper method selection (S10/S25/etc)
+- step-4-scalper: Select variant from research winners
+- step-5-scalper: Review + launch
+- review-scalper: Confirmation
+
+DCA PATH (10 steps):
+- step-0: Bot type selection
+- step-1: Exchange selection
+- step-2: Wallet selection or create new
+- step-3-dca: Direction (Long / Short)
+- step-4-dca: Method selection (Smart DCA / ASAP / Mean-Reversion / TradingView)
+- step-4b-dca: Coin selection (All / Top X by volume / Custom list)
+- step-5-dca: Order settings (base order, entry type, DCA type)
+- step-6-dca: DCA settings (spacing, size multiplier, trades per bot, trades per coin)
+- step-7-dca: TP settings (TP%, trailing%, profit coin)
+- step-8-dca: Reserve floor + auto-resume settings
+- review-dca: Summary + launch
+
+WHAT IS CODED: Basic flow exists. Exchange + wallet selection working.
+WHAT IS MISSING:
+- Short DCA direction not coded in any engine
+- Limit order type selection UI exists but not wired to engine
+- Profit coin selection (USDT vs base coin) UI exists but not coded in live engine
+- Reserve floor settings UI exists but not wired to live engine
+- TradingView webhook method not coded
+- Bot type validation against exchange minimum order size
+STATUS: PARTIAL - basic DCA bot creation works, many settings not wired to engines
+
+---
+
+### BOT STATE MACHINE
+WHAT: Each bot has two toggles (Trading ON/OFF · DCA ON/OFF) plus reserve floor protection.
+WHY: User needs control over bot behavior without deleting it. Reserve floor prevents overspending.
+DESIGNED BEHAVIOR:
+- STATE 1 Normal: Trading ON, DCA ON, TP always ON
+- STATE 2 Floor Hit (reserve <= floor): Trading OFF, DCA ON, snapshot saved
+- STATE 3 Zero Capital: DCA fires when capital available, TP always ON
+- STATE 4 Resumed (reserve > threshold): Trading back ON, snapshot restored
+- Each bot has independent floor and threshold
+- Auto-resume: ON by default
+FILES: create-bot.html (step-8-dca UI) | live_long_dca_engine.py (missing)
+TABLES: bots.reserve_floor | bots.resume_threshold | bots.auto_resume (need to verify exist)
+STATUS: MISSING - UI step exists but engine has no floor/state logic coded
+CHANGE IMPACT: live_long_dca_engine.py + virtual_wallets + bots table + Telegram notifications
+
+---
+
+### SHORT DCA
+WHAT: User holds a coin, bot sells portions as price rises, buys all back cheaper when price drops.
+WHY: Profit from coins user already holds without selling everything at once.
+DESIGNED BEHAVIOR:
+- User must already hold coin on exchange before creating bot
+- Bot sells portions as price rises (widening spacing)
+- Avg sell price = weighted average of all sells
+- TP triggers when price drops below avg_sell_price - TP%
+- Buyback uses limit orders only (reserves USDT on exchange)
+- No trailing for Short DCA (fixed limit buyback)
+- Profit coin: USDT (keep difference) or base coin (buy more)
+FILES: create-bot.html (step-3-dca direction selection)
+STATUS: MISSING - UI direction selection exists, NO engine code for short DCA
+CHANGE IMPACT: needs new short_dca_engine.py or major live_long_dca_engine.py additions
+
+---
+
+### PROFIT COIN
+WHAT: User chooses whether profit is received in USDT or base coin.
+WHY: Some users want to accumulate the coin, others want USDT back.
+DESIGNED BEHAVIOR:
+- Long + USDT: sell all coin, receive USDT
+- Long + base coin: sell enough to recover invested USDT, keep profit as coin
+- Short + USDT: buy back less coin than sold, difference stays as USDT
+- Short + base coin: buy back same USDT value at lower price = more coin
+FILES: create-bot.html (step-7-dca) | live_long_dca_engine.py (missing)
+TABLE: bots.profit_coin | positions.profit_coin
+STATUS: MISSING - UI exists, engine does not implement it
+CHANGE IMPACT: live_long_dca_engine.py TP execution + executor.py sell logic
+
+---
+
+### RESERVE WALLET + FEE SYSTEM
+WHAT: User pre-funds a reserve wallet. 20% of each winning trade is auto-deducted.
+WHY: Averion earns only when user earns. Reserve prevents monthly invoicing.
+DESIGNED BEHAVIOR:
+- User deposits USDT to reserve via NOWPayments (TRC20/BEP20)
+- Minimum top-up $10. New users get $5 free trial credit
+- After winning trade: fee = profit x 20% deducted from reserve
+- 0% fee accounts: relatives/admin selected only
+- Referral: 2.5% of 20% fee goes to referrer reserve forever
+- Reserve alerts: <$5 warning | <$2 critical | $0 new positions pause
+- Fee transfer to owner wallet: TRC20 when threshold reached (default $10)
+FILES: database.py (deduct_performance_fee) | live_long_dca_engine.py (line 345)
+TABLES: reserve_wallets | wallet_transactions
+STATUS:
+- Fee deduction on close: PARTIAL (coded in live_long_dca_engine.py but not verified live)
+- NOWPayments top-up: MISSING
+- Reserve balance UI for user: MISSING
+- Fee transfer to owner TRC20: MISSING
+- Referral distribution: MISSING
+- Free trial credit: MISSING
+CHANGE IMPACT: database.py + live engines + reserve_wallets + legal docs + Telegram alerts
+
+---
+
+### TELEGRAM NOTIFICATIONS
+WHAT: User receives real-time alerts about trades, DCAs, reserve balance, and daily reports.
+WHY: Users cannot watch dashboard 24/7.
+CONNECTION FLOW (designed):
+1. Settings → Notifications → Connect Telegram
+2. Dashboard shows unique code
+3. User sends /connect CODE to @AverionBot
+4. All notifications go to one direct chat
+
+NOTIFICATION TYPES CODED IN telegram.py:
+- notify_trade_open(): trade opened alert
+- notify_trade_closed(): trade closed with PnL
+- notify_dca(): DCA level fired
+- send_daily_report(): daily summary
+- send_weekly_report(): weekly summary
+- send_monthly_report(): monthly summary
+- send_verification_code(): login verification
+
+WHERE NOTIFICATIONS ARE CALLED:
+- research_engine.py: calls notify_trade_open, notify_trade_closed, notify_dca (WORKING)
+- live_long_dca_engine.py: NO telegram calls (MISSING)
+- live_scalper_engine.py: NO telegram calls (MISSING)
+
+MISSING:
+- User Telegram connection UI in settings
+- Reserve low/critical/zero alerts
+- Bot paused/resumed alerts (state machine)
+- ST flag alerts
+- Live engine notification calls
+FILES: telegram.py | research_engine.py | settings.html
+TABLES: users.telegram_chat_id
+STATUS: PARTIAL - functions coded, live engines not wired, connection UI missing
+
+---
+
+### DASHBOARD PAGES STATUS
+
+| Page | File | Status | Missing |
+|------|------|--------|---------|
+| Login | login.html | WORKING | - |
+| Register | register.html | WORKING | Public flow not tested |
+| Dashboard/Home | dashboard.html | WORKING | Real exchange balance |
+| Bots list | bots.html | WORKING | - |
+| Bot detail | bot-detail.html | PARTIAL | Action buttons, add funds |
+| Trades | trades.html | PARTIAL | Action button not clickable |
+| History | history.html | WORKING | - |
+| Exchanges | exchanges.html | WORKING | - |
+| Create Bot | create-bot.html | PARTIAL | Many settings not wired |
+| Settings | settings.html | PARTIAL | Telegram connect missing |
+| Admin | admin.html | WORKING | All tabs working |
+
+---
+
+### EXCHANGES SUPPORTED
+DESIGNED: 7 exchanges via CCXT
+1. MEXC - LIVE NOW (WebSocket + paper trading)
+2. Binance - coded in CCXT wrapper, not tested live
+3. KuCoin - coded, not tested
+4. OKX - coded, not tested
+5. Gate.io - coded, not tested
+6. Bybit - coded, not tested
+7. Bitget - coded, not tested
+
+FILES: exchanges.py (CCXT wrapper) | executor.py
+STATUS: MEXC=WORKING | Others=CODED NOT TESTED
+
+---
+
+### USER REGISTRATION + ONBOARDING
+DESIGNED FLOW:
+1. Register: email + password + referral code (optional, locked at registration)
+2. Email verification code sent
+3. Dashboard access after verification
+4. Connect exchange API keys
+5. Create first bot via wizard
+6. Top up reserve wallet ($5 free trial credit auto-added)
+
+STATUS:
+- Registration form: WORKING
+- Email verification: WORKING
+- Exchange connection: WORKING
+- Bot creation wizard: PARTIAL
+- Reserve wallet top-up: MISSING
+- Free trial credit: MISSING
+- Referral code at registration: CODED (locked, cannot change after)
+FILES: auth.py | register.html | login.html | api.py
+
+---
+
+### ADMIN SYSTEM
+WHAT: Full admin control panel for platform management.
+FILE: admin.html
+TABS AND STATUS:
+- Health & Control: WORKING (server health, PM2 status)
+- Research & Trades: WORKING (all sub-tabs including Scalper V2)
+  Sub-tabs: Bots | Trades | DCA Queue | History | Champ RARS | Champ Score | Scalper RARS | Scalper Score | Scalper V2 RARS | Scalper V2 Score | Coin Categories
+- Users: WORKING (list, suspend, fee type)
+- Platform Stats: WORKING
+- Controls: PARTIAL (emergency halt UI exists but not wired to engine)
+MISSING:
+- Emergency halt wired to bot engines
+- Fee collection oversight
+- NOWPayments webhook management
+FILES: admin.html | api.py (admin endpoints)
+
