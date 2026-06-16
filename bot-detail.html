@@ -263,19 +263,6 @@ function renderTable(data) {
         
         const vis = BOT_COLS.filter(c => c.show);
         return `<tr style="border-bottom:1px solid var(--border)">${vis.map(c => cellMap[c.key] || '<td>—</td>').join('')}</tr>`;
-        if (false) {
-            return `<tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.entry_price)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||p.entry_price)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.hold_seconds||0}s</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
-                <td style="padding:8px 10px;font-size:10px;color:${st.color}">${st.label}</td>
-            </tr>`;
-        }
-    }).join('');
-}
 
 function updateStats() {
     const total = allPositions.reduce((s,p) => s+(p.total_invested||p.base_order||0), 0);
