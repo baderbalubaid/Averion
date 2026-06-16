@@ -6,400 +6,161 @@
 <title>Averion — Exchanges</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=6">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh">
     <div id="sidebar-placeholder"></div>
     <div class="main">
         <div id="topbar-placeholder"></div>
-        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px">
+        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;padding-bottom:80px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <div style="font-size:15px;font-weight:800">Exchanges</div>
-                <button class="btn btn-accent btn-sm" onclick="openModal()">+ Add Exchange</button>
+                <div style="font-size:15px;font-weight:800">Exchanges & Wallets</div>
+                <button class="btn btn-accent btn-sm" onclick="openAddModal()">+ Add Exchange</button>
             </div>
-            <div id="excGrid"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Exchanges</div>
+            <div id="excList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+                <div style="color:var(--text3);font-size:12px;padding:12px">Loading...</div>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Virtual Wallets</div>
+            <div id="walletList" style="display:flex;flex-direction:column;gap:8px">
+                <div style="color:var(--text3);font-size:12px;padding:12px">Loading...</div>
+            </div>
         </div>
     </div>
 </div>
-<!-- ── ADD EXCHANGE MODAL ── -->
-<div class="modal-overlay" id="addModal">
-  <div class="modal">
-    <div class="modal-hdr">
-      <span class="modal-title">Add Exchange</span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+
+<!-- Add Exchange Modal -->
+<div id="addModal" style="display:none;position:fixed;inset:0;background:#000000CC;z-index:200;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px">Add Exchange</div>
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">EXCHANGE</div>
+            <select id="add-exchange" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+                <option value="mexc">MEXC</option>
+                <option value="binance">Binance</option>
+                <option value="bybit">Bybit</option>
+                <option value="kucoin">KuCoin</option>
+                <option value="okx">OKX</option>
+            </select>
+        </div>
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">CUSTOM NAME</div>
+            <input type="text" id="add-name" placeholder="e.g. My MEXC Account"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+        </div>
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">API KEY</div>
+            <input type="text" id="add-apikey"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+        </div>
+        <div style="margin-bottom:20px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">SECRET</div>
+            <input type="password" id="add-secret"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+        </div>
+        <div style="display:flex;gap:10px">
+            <button onclick="closeAddModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer">Cancel</button>
+            <button onclick="saveExchange()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Connect</button>
+        </div>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Exchange</label>
-        <select class="form-select" id="m-exchange" onchange="onExchangeChange()">
-          <option value="mexc">MEXC</option>
-          <option value="binance">Binance</option>
-          <option value="kucoin">KuCoin</option>
-          <option value="gateio">Gate.io</option>
-          <option value="okx">OKX</option>
-          <option value="htx">HTX</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Custom Name</label>
-        <input class="form-input" id="m-name" placeholder="e.g. My MEXC Main Account">
-      </div>
-      <div class="form-group">
-        <label class="form-label">API Key</label>
-        <input class="form-input" id="m-apikey" placeholder="Paste your API key">
-      </div>
-      <div class="form-group">
-        <label class="form-label">API Secret</label>
-        <input class="form-input" id="m-secret" type="password" placeholder="Paste your API secret">
-      </div>
-      <div class="form-group" id="m-pass-group" style="display:none">
-        <label class="form-label">Passphrase</label>
-        <input class="form-input" id="m-passphrase" type="password" placeholder="Required for this exchange">
-      </div>
-      <div class="form-hint">ℹ️ Enable <strong>Read + Trade</strong> only. Never enable withdrawals.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-accent" style="flex:2;justify-content:center" onclick="saveExchange()">✓ Test & Save</button>
-    </div>
-  </div>
 </div>
 
 <div class="bottom-nav" id="bottom-nav"></div>
 <script src="/base.js?v=6"></script>
 <script>
-let _exchanges = [];
-let EXC = {};
-let currentExcId = null;
-let capitalChart = null;
-let chartRange = '7d';
-let allBalHistory = [];
-
-function getExchanges() {
-  return window._exchangesCache || [];
-}
-function setExchanges(list) {
-  window._exchangesCache = list;
-  try { localStorage.setItem('av_exchanges', JSON.stringify(list)); } catch(e) {}
-}
-
-function renderExchanges() {
-  const list  = getExchanges();
-  const grid  = document.getElementById('excGrid');
-  const count = list.length;
-
-  // Update settings exchange count
-  const setExc = document.getElementById('set-exc-count');
-  if (setExc) setExc.textContent = `${count} connected`;
-
-  if (count === 0) {
-    grid.innerHTML = `<div class="exc-add" onclick="openModal()">
-      <div class="exc-add-icon">🔌</div>
-      <div class="exc-add-text">Connect your first exchange</div>
-    </div>`;
-    return;
-  }
-
-  const posCount = allPositions.length;
-  const pnl = allPositions.reduce((s,p)=>s+p.pnl,0);
-  const inv = allPositions.reduce((s,p)=>s+p.total_invested,0);
-  const pnlSign  = pnl>=0?'+':'';
-  const pnlColor = pnl>=0?'var(--green)':'var(--red)';
-  const coins = allPositions.slice(0,5).map(p=>p.coin.replace('/USDT','')).filter(Boolean);
-  const more  = Math.max(0, posCount - 5);
-
-  grid.innerHTML = list.map(exc => {
-    const excKey = (exc.exchange || exc.id || '').toLowerCase();
-    const cfg = EXC[excKey] || EXC[exc.id] || {name:excKey,bg:'#1E1E35',text:'#E2E8F0',logo:'🔗'};
-    const displayName = exc.custom_name || exc.name || cfg.name || excKey;
-    return `
-    <div class="exc-card" onclick="openExcDetail(${exc.id})">
-      <div class="exc-top">
-        <div class="exc-logo" style="background:${cfg.bg};color:${cfg.text}">${cfg.logo}</div>
-        <div class="exc-info">
-          <div class="exc-name">${displayName}</div>
-          <div class="exc-sub"><div class="exc-dot"></div>Connected · ${posCount} positions</div>
-        </div>
-        <div class="exc-right">
-          <div class="exc-val-wrap">
-            <div class="exc-amount">$${inv.toFixed(2)}</div>
-            <div class="exc-pnl" style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)} today</div>
-          </div>
-          <div class="dropdown">
-            <div class="exc-menu-btn" onclick="toggleDropdown(event,'dd-${exc.id}')">⋯</div>
-            <div class="dropdown-menu" id="dd-${exc.id}">
-              <div class="dropdown-item" onclick="testExc(event,'${exc.id}')">✓ &nbsp;Test Connection</div>
-              <div class="dropdown-item" onclick="editExc(event,'${exc.id}')">✏️ &nbsp;Edit API Keys</div>
-              <div class="dropdown-item" onclick="renameExc(event,'${exc.id}')">🏷️ &nbsp;Rename</div>
-              <div class="dropdown-item danger" onclick="deleteExc(event,'${exc.id}')">✕ &nbsp;Delete Exchange</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="exc-stats">
-        <div class="exc-stat"><div class="exc-stat-lbl">Positions</div><div class="exc-stat-val" style="color:var(--blue)">${posCount}</div></div>
-        <div class="exc-stat"><div class="exc-stat-lbl">Bots Live</div><div class="exc-stat-val"><span style="color:var(--green)" id="activeBotCount">0</span>/<span id="totalBotCount">0</span></div></div>
-        <div class="exc-stat"><div class="exc-stat-lbl">24h P&L</div><div class="exc-stat-val" style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</div></div>
-      </div>
-      ${coins.length>0?`<div class="exc-footer">
-        ${coins.map(c=>`<span class="coin-tag">${c}</span>`).join('')}
-        ${more>0?`<span class="coin-more">+${more} more</span>`:''}
-      </div>`:''}
-    </div>`;
-  }).join('') + `
-  <div class="exc-add" onclick="openModal()">
-    <div class="exc-add-icon">🔌</div>
-    <div class="exc-add-text">Connect another exchange</div>
-  </div>`;
-}
-
-// Dropdown
-function toggleDropdown(e, id) {
-  e.stopPropagation();
-  const menu = document.getElementById(id);
-  const isOpen = menu.classList.contains('open');
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-  if (!isOpen) menu.classList.add('open');
-}
-document.addEventListener('click', () => {
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-});
-
-function testExc(e, id) {
-  e.stopPropagation();
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-  alert(`✅ ${EXC[id]?.name || id} API connection successful!`);
-}
-function editExc(e, id) {
-  e.stopPropagation();
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-  document.getElementById('m-exchange').value = id;
-  onExchangeChange();
-  openModal();
-}
-function renameExc(e, id) {
-  e.stopPropagation();
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-  const list = getExchanges();
-  const exc  = list.find(x => x.id === id);
-  if (!exc) return;
-  const name = prompt('New name:', exc.name || EXC[id]?.name || id);
-  if (name && name.trim()) {
-    exc.name = name.trim();
-    setExchanges(list);
-    renderExchanges();
-  }
-}
-function deleteExc(e, id) {
-  e.stopPropagation();
-  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
-  if (!confirm(`Remove ${EXC[id]?.name || id}?`)) return;
-  setExchanges(getExchanges().filter(x => x.id !== id));
-  renderExchanges();
-}
-
-// Modal
-function openModal() { document.getElementById('addModal').classList.add('open'); }
-function closeModal() { document.getElementById('addModal').classList.remove('open'); }
-function onExchangeChange() {
-  const id = document.getElementById('m-exchange').value;
-  document.getElementById('m-pass-group').style.display = EXC[id]?.pass ? 'block' : 'none';
-  document.getElementById('m-name').placeholder = `e.g. My ${EXC[id]?.name||''} Account`;
-}
-async function saveExchange() {
-  const id     = document.getElementById('m-exchange').value;
-  const name   = document.getElementById('m-name').value.trim() || EXC[id]?.name || id;
-  const key    = document.getElementById('m-apikey').value.trim();
-  const secret = document.getElementById('m-secret')?.value.trim() || '';
-  if (!key) { alert('Please enter your API key'); return; }
-  try {
-    const res = await fetch(`${API}/api/exchanges`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({exchange: id, custom_name: name, api_key: key, secret: secret})
-    });
-    const data = await res.json();
-    if (!res.ok) { alert('Error: ' + (data.detail || 'Failed to save')); return; }
-    closeModal();
-    alert(`✅ ${name} connected!`);
-    loadAll();
-  } catch(e) {
-    alert('Connection error · please try again');
-  }
-}
-
-// ── BOTS ──────────────────────────────────────────────────
-
-function openExcDetail(excId) {
-  currentExcId = excId;
-  const cfg  = EXC[excId] || {};
-  const exc  = getExchanges().find(e => e.id === excId) || {};
-  const name = exc.name || cfg.name || excId;
-
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-excdetail').classList.add('active');
-  document.getElementById('pageTitle').textContent = name;
-  document.getElementById('excDetailName').textContent = name;
-
-  const inv      = allPositions.reduce((s,p) => s + p.total_invested, 0);
-  const pnl      = allPositions.reduce((s,p) => s + p.pnl, 0);
-  const open     = allPositions.length;
-  const pnlSign  = pnl >= 0 ? '+' : '';
-  const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-
-  document.getElementById('exc-capital').textContent = '$' + inv.toFixed(2);
-  document.getElementById('exc-open').textContent    = open;
-
-  const profEl = document.getElementById('exc-profit');
-  profEl.textContent = pnlSign + '$' + Math.abs(pnl).toFixed(2);
-  profEl.style.color = pnlColor;
-
-  const pnlEl = document.getElementById('exc-pnl');
-  pnlEl.textContent = pnlSign + '$' + Math.abs(pnl).toFixed(2);
-  pnlEl.style.color = pnlColor;
-
-  const botRunning = document.getElementById('btcPrice').textContent !== 'Offline';
-  document.getElementById('excDetailBots').innerHTML = `
-    <div class="bot-section" style="margin-bottom:14px">
-      <div class="bot-cards-list">
-        <div class="bot-row" onclick="openBotDetail('DCA Long — All Coins',${botRunning})">
-          <div class="bot-row-left">
-            <div class="bot-indicator ${botRunning ? 'live' : 'off'}"></div>
-            <div class="bot-row-info">
-              <div class="bot-row-name">DCA Long — All Coins</div>
-              <div class="bot-row-meta">
-                <div class="bot-meta">Trades: <span>${open}</span></div>
-                <div class="bot-meta">P&L: <span style="color:${pnlColor}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</span></div>
-              </div>
-            </div>
-          </div>
-          <span class="bot-arrow">&#8250;</span>
-        </div>
-      </div>
-    </div>`;
-
-  fetchBalanceHistory(excId);
-}
-
-function closeExcDetail() {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-home').classList.add('active');
-  document.getElementById('pageTitle').textContent = 'Home';
-  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-  document.querySelector('.nav-link').classList.add('active');
-}
-
-async function fetchBalanceHistory(excId) {
-  try {
-    const res     = await fetch(`${API}/balance-history?exchange_id=${excId}&days=30`, {headers: authHeaders()});
-    allBalHistory = await res.json();
-  } catch(e) {
-    allBalHistory = [];
-  }
-  if (allBalHistory.length === 0) {
-    const base = allPositions.reduce((s,p) => s + p.total_invested, 0) || 100;
-    const now  = Date.now();
-    allBalHistory = Array.from({length:14}, (_,i) => ({
-      date:  new Date(now - (13-i)*86400000).toISOString().split('T')[0],
-      value: parseFloat((base * (0.95 + Math.random()*0.1)).toFixed(2)),
-    }));
-    allBalHistory[allBalHistory.length-1].value = parseFloat(base.toFixed(2));
-  }
-  renderChart(chartRange);
-}
-
-function setChartRange(range, el) {
-  chartRange = range;
-  document.querySelectorAll('#tab-excdetail .f-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderChart(range);
-}
-
-function renderChart(range) {
-  let data = [...allBalHistory];
-  if (range === '7d')  data = data.slice(-7);
-  if (range === '30d') data = data.slice(-30);
-
-  const labels = data.map(d => d.date || (d.recorded_at||'').split('T')[0] || '—');
-  const values = data.map(d => d.value || d.value_usdt || 0);
-  const first  = values[0] || 0;
-  const last   = values[values.length-1] || 0;
-  const color  = last >= first ? '#10D98A' : '#F4645F';
-
-  const ctx = document.getElementById('capitalChart').getContext('2d');
-  if (capitalChart) capitalChart.destroy();
-
-  capitalChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        borderColor: color,
-        borderWidth: 2,
-        backgroundColor: color + '18',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-        pointBackgroundColor: color,
-        pointBorderColor: '#07070F',
-        pointBorderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0E0E1C',
-          borderColor: '#252540',
-          borderWidth: 1,
-          titleColor: '#8888AA',
-          bodyColor: '#F0F0FF',
-          titleFont: { family: 'Inter', size: 10 },
-          bodyFont:  { family: 'Inter', size: 13, weight: '700' },
-          padding: 10,
-          callbacks: {
-            title: items => items[0]?.label || '',
-            label: item  => ' $' + parseFloat(item.raw).toFixed(2),
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid:   { color: '#1E1E3520' },
-          ticks:  { color: '#55556A', font: { family:'Inter', size:9 }, maxTicksLimit:7 },
-          border: { display: false }
-        },
-        y: {
-          grid:   { color: '#1E1E3530' },
-          ticks:  { color: '#55556A', font: { family:'Inter', size:9 },
-                    callback: v => '$' + v.toFixed(0) },
-          border: { display: false }
-        }
-      }
-    }
-  });
-}
-
-
-
-async function initExchanges() {
+async function loadExchanges() {
     try {
         const res = await fetch(`${API}/api/exchanges`, {headers: authHeaders()});
-        if (res.ok) {
-            const data = await res.json();
-            console.log('Exchanges from API:', data);
-            window._exchangesCache = data;
-            renderExchanges();
-        } else {
-            console.error('Exchanges API error:', res.status);
+        const data = await res.json();
+        const list = document.getElementById('excList');
+        if (!data.length) {
+            list.innerHTML = `<div style="background:var(--bg2);border:1px dashed var(--border2);border-radius:12px;padding:16px;text-align:center">
+                <div style="color:var(--text3);font-size:12px;margin-bottom:8px">No exchanges connected</div>
+                <button onclick="openAddModal()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer">+ Add Exchange</button>
+            </div>`;
+            return;
         }
-    } catch(e) { console.error('initExchanges error:', e); }
+        list.innerHTML = data.map(exc => `
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px">🔗</div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600">${exc.custom_name || exc.exchange}</div>
+                        <div style="font-size:11px;color:var(--text3);margin-top:2px">${exc.exchange.toUpperCase()}</div>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:${exc.active ? 'var(--green)' : 'var(--text3)'}">
+                    ${exc.active ? '● Active' : '○ Inactive'}
+                </div>
+            </div>`).join('');
+    } catch(e) {
+        document.getElementById('excList').innerHTML = '<div style="color:var(--red);font-size:12px;padding:12px">Error loading exchanges</div>';
+    }
+}
+
+async function loadWallets() {
+    try {
+        const res = await fetch(`${API}/wallets`, {headers: authHeaders()});
+        const data = await res.json();
+        const list = document.getElementById('walletList');
+        if (!data.length) {
+            list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:12px">No wallets found</div>';
+            return;
+        }
+        list.innerHTML = data.map(w => {
+            const total = parseFloat(w.allocation_amount || 0);
+            const available = parseFloat(w.available || w.current_balance || 0);
+            const deployed = parseFloat(w.deployed || w.committed_usdt || 0);
+            const pct = total > 0 ? Math.min(100, deployed / total * 100) : 0;
+            return `
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <div>
+                        <div style="font-size:13px;font-weight:600">${w.name}</div>
+                        <div style="font-size:11px;color:var(--text3);margin-top:2px">${w.is_paper ? '📄 Paper' : '💳 Live'}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:14px;font-weight:700">$${total.toFixed(2)}</div>
+                        <div style="font-size:11px;color:var(--text3)">Total</div>
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
+                    <span>Available <strong style="color:var(--green)">$${available.toFixed(2)}</strong></span>
+                    <span>Deployed <strong>$${deployed.toFixed(2)}</strong></span>
+                </div>
+                <div style="height:4px;background:var(--border);border-radius:2px">
+                    <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px;transition:width 0.3s"></div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        document.getElementById('walletList').innerHTML = '<div style="color:var(--red);font-size:12px;padding:12px">Error loading wallets</div>';
+    }
+}
+
+function openAddModal() {
+    document.getElementById('addModal').style.display = 'flex';
+}
+function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+async function saveExchange() {
+    const exchange = document.getElementById('add-exchange').value;
+    const name = document.getElementById('add-name').value.trim() || exchange.toUpperCase();
+    const apiKey = document.getElementById('add-apikey').value.trim();
+    const secret = document.getElementById('add-secret').value.trim();
+    if (!apiKey) { alert('Please enter API key'); return; }
+    try {
+        const res = await fetch(`${API}/api/exchanges`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({exchange, custom_name: name, api_key: apiKey, secret})
+        });
+        const d = await res.json();
+        if (!res.ok) { alert(d.detail || 'Error'); return; }
+        closeAddModal();
+        await loadExchanges();
+    } catch(e) { alert('Error connecting exchange'); }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -409,7 +170,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildNav();
     buildUserRow();
     buildMobileNav();
-    await initExchanges();
+    await Promise.all([loadExchanges(), loadWallets()]);
+    setInterval(() => Promise.all([loadExchanges(), loadWallets()]), 30000);
 });
 </script>
 </body>
