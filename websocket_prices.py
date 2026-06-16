@@ -19,6 +19,11 @@ try:
 except Exception:
     live_scalper_on_price = None
 
+try:
+    from scalper_v2_engine import on_price_update as scalper_v2_on_price
+except Exception:
+    scalper_v2_on_price = None
+
 _live_dca_tp = None
 def _init_live_dca():
     global _live_dca_tp
