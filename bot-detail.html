@@ -263,7 +263,8 @@ function renderTable(data) {
         
         const vis = BOT_COLS.filter(c => c.show);
         return `<tr style="border-bottom:1px solid var(--border)">${vis.map(c => cellMap[c.key] || '<td>—</td>').join('')}</tr>`;
-
+    }).join('');
+}
 function updateStats() {
     const total = allPositions.reduce((s,p) => s+(p.total_invested||p.base_order||0), 0);
     const pnl = allPositions.reduce((s,p) => s+(p.pnl_usdt||p.pnl||0), 0);
