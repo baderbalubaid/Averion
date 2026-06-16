@@ -216,7 +216,16 @@ async function loadTrades() {
         const pnlEl = document.getElementById('t-pnl');
         pnlEl.textContent = fmtPnl(pnl);
         pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-        document.getElementById('t-dca').textContent = allPositions.filter(p => p.trade_type==='dca').length;
+        // DCA queue = positions needing DCA (dropped enough %)
+        const dcaQueue = allPositions.filter(p => {
+            if (p.type !== 'dca' || p.status !== 'open') return false;
+            const ref = p.dca_count > 0 ? p.avg_cost : p.entry_price;
+            const dcaPct = 7; // default, could use p.dca_pct
+            if (!ref || !p.current_price) return false;
+            const drop = (ref - p.current_price) / ref * 100;
+            return drop >= dcaPct;
+        }).length;
+        document.getElementById('t-dca').textContent = dcaQueue;
 
         applyFilter();
     } catch(e) { console.error(e); }
