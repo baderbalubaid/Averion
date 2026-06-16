@@ -156,9 +156,15 @@ async function manualClose() {
     closeAction();
     if (!confirm('Close this position manually?')) return;
     try {
-        await fetch(`${API}/live-positions/${activeActionId}/close`, {
-            method: 'POST', headers: authHeaders()
-        });
+        // Handle both scalper (numeric) and DCA (dca_12233) IDs
+        const posId = String(activeActionId).replace('dca_', '');
+        const isDca = String(activeActionId).startsWith('dca_');
+        const endpoint = isDca
+            ? `${API}/live-dca-positions/${posId}/close`
+            : `${API}/positions/${posId}/close`;
+        const res = await fetch(endpoint, {method: 'POST', headers: authHeaders()});
+        const d = await res.json();
+        if (!res.ok) { alert(d.detail || 'Error'); return; }
         await loadTrades();
     } catch(e) { alert('Error closing position'); }
 }
