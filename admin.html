@@ -1416,6 +1416,67 @@
         }
     }
 
+   async function loadScalperV2(forceResort = true) {
+        const tbody = document.getElementById('scalper-v2-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/scalper-v2`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">No V2 data yet</td></tr>';
+                return;
+            }
+            const medals = ['🥇','🥈','🥉'];
+            tbody.innerHTML = data.map((s,i) => `<tr>
+                <td>${medals[i]||'#'+(i+1)}</td>
+                <td><b>${s.name}</b></td>
+                <td>${s.vel_3s}%</td>
+                <td>${s.vel_10s}%</td>
+                <td>${s.accel_ratio}</td>
+                <td style="font-size:10px;color:var(--muted)">${s.exit_profile||'—'}</td>
+                <td>${s.max_hold_sec}s</td>
+                <td style="color:var(--muted)">${s.open_now}</td>
+                <td>${s.closed}</td>
+                <td style="color:${s.win_rate>=50?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
+                <td style="color:${s.avg_pnl>=0?'#27ae60':'#e74c3c'}">${s.avg_pnl>=0?'+':''}${parseFloat(s.avg_pnl||0).toFixed(3)}%</td>
+                <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${Math.abs(parseFloat(s.total_pnl)||0).toFixed(2)}</td>
+                <td style="color:#27ae60">+${s.best}%</td>
+                <td style="color:#e74c3c">${s.worst}%</td>
+                <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${parseFloat(s.score||0).toFixed(4)}</td>
+            </tr>`).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="15" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadScalperV2Score() {
+        const tbody = document.getElementById('scalper-v2-score-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API}/admin/research/scalper-v2-score`, {headers: authHeaders()});
+            const data = await res.json();
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px">No data yet</td></tr>'; return; }
+            const medals = ['🥇','🥈','🥉'];
+            tbody.innerHTML = data.map((s,i) => `<tr>
+                <td>${medals[i]||'#'+(i+1)}</td>
+                <td><b>${s.name}</b></td>
+                <td>${s.vel_3s}%</td>
+                <td>${s.vel_10s}%</td>
+                <td style="font-size:10px;color:var(--muted)">${s.exit_profile||'—'}</td>
+                <td style="color:${s.total_pnl>=0?'#27ae60':'#e74c3c'}">${s.total_pnl>=0?'+':''}$${parseFloat(s.total_pnl||0).toFixed(2)}</td>
+                <td style="color:${s.excl_top5>=0?'#27ae60':'#e74c3c'}">${s.excl_top5>=0?'+':''}$${parseFloat(s.excl_top5||0).toFixed(2)}</td>
+                <td style="color:${s.profit_factor>=1?'#27ae60':'#e74c3c'}">${parseFloat(s.profit_factor||0).toFixed(2)}</td>
+                <td style="color:var(--muted)">${s.trade_count}</td>
+                <td style="color:${s.robustness>=70?'#27ae60':s.robustness>=40?'#f39c12':'#e74c3c'}">${s.robustness}%</td>
+                <td style="color:${s.score>0?'#27ae60':'#e74c3c'};font-weight:bold">${parseFloat(s.score||0).toFixed(4)}</td>
+            </tr>`).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="11" style="color:red;padding:20px">Error: ${e.message}</td></tr>`;
+        }
+    }
+
    async function loadDCAQueue() {
         const tbody = document.getElementById('dca-queue-tbody');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
