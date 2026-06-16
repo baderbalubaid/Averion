@@ -232,7 +232,7 @@ async function loadTrades() {
         applyFilter();
     } catch(e) { 
         console.error(e);
-        document.getElementById('t-open').textContent = 'ERR';
+
     }
 }
 
@@ -331,8 +331,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildNav();
     buildUserRow();
     buildMobileNav();
-    await loadTrades();
     startRefresh();
+    await loadTrades();
 });
 </script>
 </body>
