@@ -188,15 +188,13 @@ function buildPosTableHeader() {
     const thead = document.getElementById('posTableHead');
     if (!thead) return;
     const vis = BOT_COLS.filter(c => c.show);
-    thead.innerHTML = `<tr>${vis.map(c => {
+    thead.innerHTML = '<tr>' + vis.map(c => {
         const isSort = c.sortable;
         const arrow = isSort && c.key === detailSortCol ? (detailSortDir==='asc'?' ↑':' ↓') : '';
         const color = isSort && c.key === detailSortCol ? 'var(--accent)' : 'var(--text3)';
-        const click = isSort ? `onclick="sortDetail('${c.key}')"` : '';
-        return `<th ${click} style="padding:8px 10px;font-size:10px;color:${color};font-weight:600;text-align:${c.align};${isSort?'cursor:pointer':''}">
-            ${c.label}${arrow}
-        </th>`;
-    }).join('')}</tr>`;
+        const click = isSort ? 'onclick="sortDetail(\'' + c.key + '\')"' : '';
+        return '<th ' + click + ' style="padding:8px 10px;font-size:10px;color:' + color + ';font-weight:600;text-align:' + c.align + ';' + (isSort?'cursor:pointer':'') + '">' + c.label + arrow + '</th>';
+    }).join('') + '</tr>';
 }
 
 function sortDetail(col) {
