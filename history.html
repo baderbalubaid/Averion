@@ -152,7 +152,8 @@ async function fetchHistory() {
         exit_reason: p.exit_reason,
         bot_name: p.bot_name,
     }));
-  } catch(e) { allHistory=[]; }
+  } catch(e) { console.error('fetchHistory error:', e); allHistory=[]; }
+  console.log('allHistory total:', allHistory.length, 'dca:', allHistory.filter(h=>h.type==='dca').length, 'scalper:', allHistory.filter(h=>h.type==='scalper').length);
   buildCoinFilter();
   applyHistoryFilter();
 }
