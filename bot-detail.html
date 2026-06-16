@@ -127,12 +127,12 @@ function updateTableHeaders() {
     if (isBotDca()) {
         thead.innerHTML = `<tr>
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:left">Coin</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Avg Cost</th>
+            <th onclick="sortDetail('avg_cost')" id="dth-avg_cost" style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right;cursor:pointer">Avg Cost</th>
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Current</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Invested</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">DCA#</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L%</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L$</th>
+            <th onclick="sortDetail('total_invested')" id="dth-total_invested" style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right;cursor:pointer">Invested</th>
+            <th onclick="sortDetail('dca_count')" id="dth-dca_count" style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right;cursor:pointer">DCA#</th>
+            <th onclick="sortDetail('pnl_pct')" id="dth-pnl_pct" style="padding:8px 10px;font-size:11px;color:var(--accent);font-weight:600;text-align:right;cursor:pointer">P&L% ↓</th>
+            <th onclick="sortDetail('pnl_usdt')" id="dth-pnl_usdt" style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right;cursor:pointer">P&L$</th>
         </tr>`;
     } else {
         thead.innerHTML = `<tr>
@@ -140,8 +140,8 @@ function updateTableHeaders() {
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Entry</th>
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Current</th>
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">Hold</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L%</th>
-            <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right">P&L$</th>
+            <th onclick="sortDetail('pnl_pct')" id="dth-pnl_pct" style="padding:8px 10px;font-size:11px;color:var(--accent);font-weight:600;text-align:right;cursor:pointer">P&L% ↓</th>
+            <th onclick="sortDetail('pnl_usdt')" id="dth-pnl_usdt" style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:right;cursor:pointer">P&L$</th>
             <th style="padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;text-align:left">Status</th>
         </tr>`;
     }
