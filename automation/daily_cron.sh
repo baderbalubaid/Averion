@@ -87,9 +87,9 @@ fi
 # ═══════════════════════════════
 # RESEARCH REPORT GENERATION
 # ═══════════════════════════════
-echo "--- Research Report ---" | tee -a $LOG_DIR/daily.log
-python3 $AVERION_DIR/generate_research_report.py >> $LOG_DIR/daily.log 2>&1
-echo "✅ Research report generated" | tee -a $LOG_DIR/daily.log
+echo "--- Research Reports ---" | tee -a $LOG_DIR/daily.log
+bash $AVERION_DIR/generate_reports.sh >> $LOG_DIR/daily.log 2>&1
+echo "✅ Research reports generated" | tee -a $LOG_DIR/daily.log
 
 # ═══════════════════════════════
 # DAILY TELEGRAM REPORT
