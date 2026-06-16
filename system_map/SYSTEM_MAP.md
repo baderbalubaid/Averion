@@ -665,3 +665,87 @@ MISSING:
 - NOWPayments webhook management
 FILES: admin.html | api.py (admin endpoints)
 
+
+---
+
+## FEATURE CROSS-REFERENCE MATRIX
+> Every feature mapped to every system. Use this to check nothing is forgotten.
+> WORKING=done | PARTIAL=incomplete | MISSING=not built | NA=not applicable by design
+
+| Feature | Research DCA | Research Scalper E58 | Research Scalper E58v2 | Live Long DCA | Live Short DCA | Live Scalper |
+|---------|-------------|---------------------|----------------------|---------------|----------------|--------------|
+| Coin selected | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| ST flag check | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| trades_per_coin enforced | PARTIAL | PARTIAL | PARTIAL | PARTIAL | MISSING | PARTIAL |
+| trades_per_bot enforced | PARTIAL | PARTIAL | PARTIAL | PARTIAL | MISSING | PARTIAL |
+| Category assigned | WORKING | NA | NA | WORKING | WORKING | NA |
+| Params from coin_parameters | WORKING | NA | NA | WORKING | WORKING | NA |
+| Regime checked + recorded | WORKING | WORKING | WORKING | WORKING | MISSING | PARTIAL |
+| Entry signal fires | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| Pump-chase guard | NA | NA | WORKING | NA | NA | WORKING |
+| Wallet verified | NA paper | NA paper | NA paper | WORKING | MISSING | WORKING |
+| Reserve floor check | NA | NA | NA | MISSING | MISSING | MISSING |
+| Order executed (paper) | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| Order executed (live) | NA | NA | NA | PARTIAL | MISSING | PARTIAL |
+| Limit order support | NA | NA | NA | MISSING | MISSING | NA |
+| Position tracked in DB | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| DCA managed (queue) | WORKING | NA | NA | WORKING | NA | NA |
+| Short DCA sell portions | NA | NA | NA | NA | MISSING | NA |
+| Short DCA buyback limit | NA | NA | NA | NA | MISSING | NA |
+| TP fires (trailing) | WORKING | NA | NA | WORKING | MISSING | NA |
+| TP fires (timer) | NA | WORKING | WORKING | NA | NA | WORKING |
+| TP fires (trailing stop) | NA | NA | WORKING | NA | NA | WORKING |
+| Stop loss | NA | PARTIAL | WORKING | NA | MISSING | WORKING |
+| Profit coin (USDT or base) | NA | NA | NA | MISSING | MISSING | NA |
+| Fee collected (20%) | NA | NA | NA | PARTIAL | MISSING | MISSING |
+| Referral fee distributed | NA | NA | NA | MISSING | MISSING | MISSING |
+| Reserve wallet deducted | NA | NA | NA | PARTIAL | MISSING | MISSING |
+| Reserve alerts sent | NA | NA | NA | MISSING | MISSING | MISSING |
+| Bot state machine | NA | NA | NA | MISSING | MISSING | MISSING |
+| Auto-resume on top-up | NA | NA | NA | MISSING | MISSING | MISSING |
+| Telegram trade open | WORKING | NA | NA | MISSING | MISSING | MISSING |
+| Telegram DCA fired | WORKING | NA | NA | MISSING | MISSING | NA |
+| Telegram trade closed | WORKING | NA | NA | MISSING | MISSING | MISSING |
+| Telegram reserve alerts | NA | NA | NA | MISSING | MISSING | MISSING |
+| Email notifications | MISSING | MISSING | MISSING | MISSING | MISSING | MISSING |
+| Dashboard shows position | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+| Manual close from UI | WORKING | MISSING | MISSING | WORKING | MISSING | MISSING |
+| Add funds from UI | MISSING | NA | NA | MISSING | MISSING | NA |
+| Report generated | WORKING | WORKING | WORKING | MISSING | MISSING | MISSING |
+| Regime breakdown in report | PARTIAL | PARTIAL | PARTIAL | MISSING | MISSING | MISSING |
+| market_age_days captured | WORKING | WORKING | WORKING | WORKING | MISSING | WORKING |
+
+---
+
+## WHAT EACH SYSTEM STILL NEEDS BEFORE IT IS COMPLETE
+
+### Live Long DCA — needs before public launch:
+- Reserve floor check in engine
+- Bot state machine (Trading toggle + floor logic)
+- Telegram notifications on open/close/DCA
+- Reserve alerts when balance low
+- Profit coin execution (USDT vs base coin)
+- Limit order support
+- Auto-resume when reserve topped up
+- Live performance reports
+
+### Live Short DCA — needs before public launch:
+- Everything in Live Long DCA above PLUS:
+- Short sell portions logic in engine
+- Short buyback limit order logic
+- Short TP (fires when price drops below avg_sell - TP%)
+- User must hold coin validation
+- Entire engine does not exist yet
+
+### Live Scalper — needs before public launch:
+- Telegram notifications
+- Fee collection
+- Reserve wallet deduction
+- Stop loss verification
+
+### Research Systems — already complete for purpose:
+- E58 control group running untouched
+- E58v2 velocity racing from clean slate
+- Reports generated daily
+- Only add regime tabs when 30+ trades per regime
+
