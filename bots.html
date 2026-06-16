@@ -126,11 +126,18 @@ async function renderBots() {
         const worth = bot.current_worth || 0;
         const invested = bot.total_invested || 0;
         const pnl = bot.pnl_usdt || 0;
+        const realizedPnl = bot.realized_pnl || 0;
+        const walletAlloc = bot.wallet_total || 0;
+        // Capital = wallet allocation - invested + current worth + realized pnl
+        const capital = walletAlloc > 0 
+            ? walletAlloc - invested + worth + realizedPnl
+            : worth + realizedPnl;
+        const capitalColor = capital >= walletAlloc && walletAlloc > 0 ? 'var(--green)' : capital < walletAlloc && walletAlloc > 0 ? 'var(--red)' : 'var(--text)';
         const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const exchange = bot.exchange_name || bot.exchange || '—';
         const walletName = bot.wallet_name || '—';
         const baseOrder = bot.base_order || 0;
-        const isDca = (bot.method || '').startsWith('DCA');
+        const isDca = (bot.method || '').startsWith('DCA') || (bot.method||'').startsWith('E');
         const typeEmoji = isDca ? '📈' : '⚡';
         return `
         <div onclick="window.location='/bots/${bot.id}'" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer">
@@ -145,18 +152,18 @@ async function renderBots() {
                     <div style="font-size:13px;font-weight:700">${openTrades}</div>
                 </div>
                 <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                    <div style="font-size:10px;color:var(--text3)">Worth</div>
-                    <div style="font-size:13px;font-weight:700">$${worth.toFixed(2)}</div>
+                    <div style="font-size:10px;color:var(--text3)">P&L</div>
+                    <div style="font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':'-'}$${Math.abs(pnl).toFixed(2)}</div>
                 </div>
                 <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                    <div style="font-size:10px;color:var(--text3)">P&L</div>
-                    <div style="font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
+                    <div style="font-size:10px;color:var(--text3)">Capital</div>
+                    <div style="font-size:13px;font-weight:700;color:${capitalColor}">$${capital.toFixed(2)}</div>
                 </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                 <div style="font-size:11px;color:var(--text3)">
                     Invested <strong>$${invested.toFixed(2)}</strong> ·
-                    Realized <strong style="color:${(bot.realized_pnl||0)>=0?'var(--green)':'var(--red)'}">${(bot.realized_pnl||0)>=0?'+':''}$${Math.abs(bot.realized_pnl||0).toFixed(2)}</strong>
+                    Realized <strong style="color:${realizedPnl>=0?'var(--green)':'var(--red)'}">${realizedPnl>=0?'+':'-'}$${Math.abs(realizedPnl).toFixed(2)}</strong>
                 </div>
             </div>
             <div style="display:flex;gap:8px">
