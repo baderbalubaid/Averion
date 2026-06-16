@@ -81,6 +81,7 @@ function getExchanges() {
   catch(e) { return []; }
 }
 function setExchanges(list) {
+  window._exchangesCache = list;
   try { localStorage.setItem('av_exchanges', JSON.stringify(list)); } catch(e) {}
 }
 
@@ -110,10 +111,11 @@ function renderExchanges() {
   const more  = Math.max(0, posCount - 5);
 
   grid.innerHTML = list.map(exc => {
-    const cfg = EXC[exc.id] || {name:exc.id,bg:'#1E1E35',text:'#E2E8F0',logo:'?'};
-    const displayName = exc.name || cfg.name;
+    const excKey = (exc.exchange || exc.id || '').toLowerCase();
+    const cfg = EXC[excKey] || EXC[exc.id] || {name:excKey,bg:'#1E1E35',text:'#E2E8F0',logo:'🔗'};
+    const displayName = exc.custom_name || exc.name || cfg.name || excKey;
     return `
-    <div class="exc-card" onclick="openExcDetail('${exc.id}')">
+    <div class="exc-card" onclick="openExcDetail(${exc.id})">
       <div class="exc-top">
         <div class="exc-logo" style="background:${cfg.bg};color:${cfg.text}">${cfg.logo}</div>
         <div class="exc-info">
