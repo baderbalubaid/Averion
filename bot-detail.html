@@ -181,6 +181,7 @@ function applyDetailSort(data) {
 }
 
 function renderTable(data) {
+    data = applyDetailSort(data);
     const tbody = document.getElementById('posTable');
     if (!data.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No open positions</td></tr>';
