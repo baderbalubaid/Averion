@@ -315,8 +315,11 @@ async function loadBot() {
         document.getElementById('bot-name').textContent = botData.name;
         updateToggleBtn();
         updateTableHeaders();
+        document.getElementById('bot-name').textContent = botData.name + ' ✅';
 
-    } catch(e) { console.error(e); }
+    } catch(e) { 
+        document.getElementById('bot-name').textContent = 'ERR: ' + e.message;
+    }
 }
 
 async function loadPositions() {
