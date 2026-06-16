@@ -948,51 +948,6 @@ def close_live_dca_position(position_id: int, payload: dict = Depends(verify_tok
         conn.commit()
     return {'message': f'{pos[1]} closed manually', 'pnl': round(pnl, 4)}
 
-
-@app.post('/live-dca-positions/{position_id}/close')
-def close_live_dca_position(position_id: int, payload: dict = Depends(verify_token)):
-    user_id = payload['user_id']
-    with db.get_db() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, coin, quantity, avg_cost, wallet_id, total_invested, bot_id "
-            "FROM live_dca_positions WHERE id=%s AND user_id=%s AND status='open'",
-            (position_id, user_id)
-        )
-        pos = cur.fetchone()
-        if not pos:
-            raise HTTPException(status_code=404, detail='Position not found')
-        
-        current_price = float(pos[3])
-        try:
-            import redis as _r
-            rc = _r.Redis(host='localhost', port=6379,
-                password=os.getenv('REDIS_PASSWORD'), decode_responses=True)
-            keys = rc.keys(f'price:*:{pos[1]}/USDT')
-            if keys:
-                current_price = float(rc.get(keys[0]) or pos[3])
-        except:
-            pass
-        
-        pnl = (current_price - float(pos[3])) * float(pos[2])
-        pnl_pct = (current_price - float(pos[3])) / float(pos[3]) * 100 if pos[3] else 0
-        
-        cur.execute(
-            "UPDATE live_dca_positions SET status='closed', close_reason='manual', "
-            "realized_pnl_usdt=%s, realized_pnl_pct=%s, closed_at=NOW() WHERE id=%s",
-            (pnl, pnl_pct, position_id)
-        )
-        wallet_id = pos[4]
-        cur.execute("""
-            UPDATE virtual_wallets SET
-                committed_usdt = COALESCE((SELECT SUM(total_invested) FROM live_dca_positions WHERE wallet_id=%s AND status='open'), 0),
-                current_balance = allocation_amount - COALESCE((SELECT SUM(total_invested) FROM live_dca_positions WHERE wallet_id=%s AND status='open'), 0)
-            WHERE id=%s
-        """, (wallet_id, wallet_id, wallet_id))
-        conn.commit()
-    return {'message': f'{pos[1]} closed manually', 'pnl': round(pnl, 4)}
-
-@app.post('/positions/{position_id}/close')
 def close_position(position_id: int,
                     payload: dict = Depends(verify_token)):
     db.close_position(position_id, 'manual')
