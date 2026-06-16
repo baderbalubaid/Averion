@@ -331,11 +331,7 @@ async function loadBot() {
         document.getElementById('bot-name').textContent = botData.name;
         updateToggleBtn();
         updateTableHeaders();
-        document.getElementById('bot-name').textContent = botData.name + ' ✅';
-
-    } catch(e) { 
-        document.getElementById('bot-name').textContent = 'ERR: ' + e.message;
-    }
+    } catch(e) { console.error(e); }
 }
 
 async function loadPositions() {
@@ -343,12 +339,9 @@ async function loadPositions() {
         const res = await fetch(`${API}/live-positions`, {headers: authHeaders()});
         const all = await res.json();
         allPositions = all.filter(p => parseInt(p.bot_id) === parseInt(botId) && p.status === 'open');
-        document.getElementById('stat-open').textContent = allPositions.length + '✅';
         updateStats();
         applyFilter();
-    } catch(e) { 
-        document.getElementById('stat-open').textContent = 'ERR:' + e.message.slice(0,20);
-    }
+    } catch(e) { console.error(e); }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
