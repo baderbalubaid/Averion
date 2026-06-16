@@ -65,15 +65,15 @@
             <!-- Positions table -->
             <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y">
                 <table style="width:100%;border-collapse:collapse;min-width:500px">
+                    <!-- Column picker -->
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+                        <button onclick="toggleColPicker()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer">⊞ Columns</button>
+                    </div>
+                    <div id="colPicker" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;display:none">
+                        <div id="colToggles" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+                    </div>
                     <thead id="posTableHead">
                         <tr style="border-bottom:1px solid var(--border)">
-                            <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3)">Coin</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">Avg Cost</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">Current</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">DCA#</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">P&L%</th>
-                            <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">P&L$</th>
-                            <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3)">Status</th>
                         </tr>
                     </thead>
                     <tbody id="posTable">
@@ -151,6 +151,54 @@ let detailSortCol = 'entry_time';
 let detailSortDir = 'desc';
 let detailSortCount = 0;
 
+const BOT_COLS = [
+    {key:'coin',          label:'Coin',        show:true,  align:'left',  sortable:false},
+    {key:'entry_time',    label:'Entry Time',  show:true,  align:'right', sortable:true},
+    {key:'entry_price',   label:'Entry/Avg',   show:true,  align:'right', sortable:true},
+    {key:'current_price', label:'Current',     show:true,  align:'right', sortable:false},
+    {key:'dca_count',     label:'DCA#',        show:true,  align:'right', sortable:true},
+    {key:'total_invested',label:'Size',        show:true,  align:'right', sortable:true},
+    {key:'pnl_usdt',      label:'P&L$',        show:true,  align:'right', sortable:true},
+    {key:'pnl_pct',       label:'P&L%',        show:true,  align:'right', sortable:true},
+    {key:'hold',          label:'Holding',     show:true,  align:'right', sortable:false},
+];
+
+function buildColToggles() {
+    document.getElementById('colToggles').innerHTML = BOT_COLS.map((c,i) =>
+        `<label style="display:flex;align-items:center;gap:5px;padding:4px 8px;background:var(--bg2);border-radius:6px;cursor:pointer;font-size:11px">
+            <input type="checkbox" ${c.show?'checked':''} onchange="toggleBotCol(${i},this.checked)" style="accent-color:var(--accent)">
+            ${c.label}
+        </label>`
+    ).join('');
+}
+
+function toggleColPicker() {
+    const el = document.getElementById('colPicker');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    buildColToggles();
+}
+
+function toggleBotCol(i, show) {
+    BOT_COLS[i].show = show;
+    buildPosTableHeader();
+    applyFilter();
+}
+
+function buildPosTableHeader() {
+    const thead = document.getElementById('posTableHead');
+    if (!thead) return;
+    const vis = BOT_COLS.filter(c => c.show);
+    thead.innerHTML = `<tr>${vis.map(c => {
+        const isSort = c.sortable;
+        const arrow = isSort && c.key === detailSortCol ? (detailSortDir==='asc'?' ↑':' ↓') : '';
+        const color = isSort && c.key === detailSortCol ? 'var(--accent)' : 'var(--text3)';
+        const click = isSort ? `onclick="sortDetail('${c.key}')"` : '';
+        return `<th ${click} style="padding:8px 10px;font-size:10px;color:${color};font-weight:600;text-align:${c.align};${isSort?'cursor:pointer':''}">
+            ${c.label}${arrow}
+        </th>`;
+    }).join('')}</tr>`;
+}
+
 function sortDetail(col) {
    if (detailSortCol === col) {
        detailSortCount = (detailSortCount + 1) % 3;
@@ -162,13 +210,7 @@ function sortDetail(col) {
        detailSortDir = 'asc';
        detailSortCount = 1;
    }
-   // Update header colors
-   ['avg_cost','total_invested','dca_count','pnl_pct','pnl_usdt'].forEach(c => {
-       const el = document.getElementById('dth-' + c);
-       if (!el) return;
-       el.style.color = c === detailSortCol ? 'var(--accent)' : 'var(--text3)';
-       el.textContent = el.textContent.replace(/ [↑↓]$/,'') + (c === detailSortCol ? (detailSortDir==='asc'?' ↑':' ↓') : '');
-   });
+   buildPosTableHeader();
    applyFilter();
 }
 
@@ -189,8 +231,9 @@ function applyDetailSort(data) {
 function renderTable(data) {
     data = applyDetailSort(data);
     const tbody = document.getElementById('posTable');
+    const vis = BOT_COLS.filter(c => c.show);
     if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No open positions</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="${vis.length}" style="text-align:center;padding:20px;color:var(--text3)">No open positions</td></tr>`;
         return;
     }
     const dca = isBotDca();
@@ -198,21 +241,29 @@ function renderTable(data) {
         const pnl = parseFloat(p.pnl_usdt || p.pnl || 0);
         const pnlPct = parseFloat(p.pnl_pct || 0);
         const color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-        const st = statusInfo(p);
-        if (dca) {
-            const avgCost = p.avg_cost || p.entry_price || 0;
-            const invested = p.total_invested || p.base_order || 0;
-            const dcaCount = p.dca_count || 0;
-            return `<tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(avgCost)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.current_price||avgCost)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--accent)">$${invested.toFixed(2)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--purple)">${dcaCount}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>
-                <td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>
-            </tr>`;
-        } else {
+        const avgCost = parseFloat(p.avg_cost || p.entry_price || 0);
+        const entryPrice = parseFloat(p.entry_price || p.fill_price || avgCost);
+        const invested = parseFloat(p.total_invested || p.base_order || 0);
+        const dcaCount = parseInt(p.dca_count || 0);
+        const cur = parseFloat(p.current_price || avgCost);
+        const entryTime = (p.entry_time||'').replace(' ','T');
+        const holdSec = p.hold_seconds || 0;
+        
+        const cellMap = {
+            'coin':           `<td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>`,
+            'entry_time':     `<td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${entryTime ? new Date(entryTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</td>`,
+            'entry_price':    `<td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(isBotDca() ? avgCost : entryPrice)}</td>`,
+            'current_price':  `<td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(cur)}</td>`,
+            'dca_count':      `<td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--purple)">${dcaCount}</td>`,
+            'total_invested': `<td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--accent)">$${invested.toFixed(2)}</td>`,
+            'pnl_usdt':       `<td style="padding:8px 10px;text-align:right;font-size:11px;color:${color}">${fmtPnl(pnl)}</td>`,
+            'pnl_pct':        `<td style="padding:8px 10px;text-align:right;font-size:11px;color:${color};font-weight:600">${fmtPct(pnlPct)}</td>`,
+            'hold':           `<td style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3)">${holdingStr(p.entry_time, holdSec)}</td>`,
+        };
+        
+        const vis = BOT_COLS.filter(c => c.show);
+        return `<tr style="border-bottom:1px solid var(--border)">${vis.map(c => cellMap[c.key] || '<td>—</td>').join('')}</tr>`;
+        if (false) {
             return `<tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:8px 10px;font-weight:600;font-size:12px">${p.coin}</td>
                 <td style="padding:8px 10px;text-align:right;font-size:11px">${fmtPrice(p.entry_price)}</td>
@@ -278,13 +329,7 @@ async function loadBot() {
         document.getElementById('bot-name').textContent = botData.name;
         updateToggleBtn();
         updateTableHeaders();
-        // Reapply sort arrows after header rebuild
-        ['avg_cost','total_invested','dca_count','pnl_pct','pnl_usdt'].forEach(c => {
-            const el = document.getElementById('dth-' + c);
-            if (!el) return;
-            el.style.color = c === detailSortCol ? 'var(--accent)' : 'var(--text3)';
-            if (c === detailSortCol) el.textContent = el.textContent.replace(/ [↑↓]$/,'') + (detailSortDir==='asc'?' ↑':' ↓');
-        });
+
     } catch(e) { console.error(e); }
 }
 
