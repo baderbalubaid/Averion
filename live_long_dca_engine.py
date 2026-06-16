@@ -383,7 +383,6 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
                     last_buy_price=%s,
                     dca_count=dca_count + 1,
                     last_dca_at=NOW(),
-                    fill_price=%s,
                     fill_fee_usdt=%s,
                     exchange_order_id=%s,
                     price_age_ms=%s,
@@ -391,7 +390,7 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
                     peak_price=0
                 WHERE id=%s
             """, (new_avg, new_qty, amount_usdt, result.fee_usdt,
-                  result.fill_price, result.fill_price, result.fee_usdt,
+                  result.fill_price, result.fee_usdt,
                   result.order_id, result.price_age_ms, pos['id']))
 
             # Log wallet transaction
