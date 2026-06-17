@@ -167,6 +167,21 @@ COMPLETE, not just the calculation engine.
   category, affected-coin-count preview before saving, guardrails
   (min<max, absolute sane bounds), every change audited to
   coin_parameter_history using the table's real old/new value columns.
+⚠️ PENDING VERIFICATION (added June 17 2026, NOT YET CONFIRMED):
+20 random coins' spacing/TP/trail/size_mult snapshotted into
+coin_param_baseline_check.json on June 17 2026 (post-fix run). DO NOT
+mark "daily dynamic recalculation" as confirmed-working until this is
+checked again on June 18+ and shown to have genuinely moved/changed
+day to day (not just sit frozen at the same numbers). Most coins in
+this baseline were sitting at their category floor (mid=7%, large=5%,
+mega=2%) because real volatility is currently low — confirmed this is
+correct clamping behavior, not a bug, by manual calculation (AVAX
+example: real calc 1.645%, floor 7%, correctly clamped). But "clamping
+is correct" and "daily recalculation actually changes day to day" are
+two different claims — only the first is verified so far. Re-run the
+same 20-coin query tomorrow and compare against the saved JSON before
+calling this fully closed.
+
 IMPORTANT — what editing category limits actually does: it does NOT
 freeze or change the daily dynamic calculation. Per-coin spacing/TP/
 trail always recalculates fresh every day regardless. Editing a
