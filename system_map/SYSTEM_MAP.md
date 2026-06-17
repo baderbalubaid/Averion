@@ -79,21 +79,72 @@ CHANGE IMPACT: coin_parameters + research_engine.py + live_long_dca_engine.py + 
 
 ---
 
-### [3] PARAMS CALCULATED
-WHAT: Exact DCA spacing%, TP%, trailing% per coin based on volatility and category.
-WHY: One-size DCA% is too tight for volatile micro-caps and too loose for stable large-caps.
-HOW:
-- calculate_coin_params.py fetches 90 days hourly OHLCV from ohlcv_data table
-- Calculates ATR, median drop%, median recovery%, volatility
-- Applies category limits (micro: spacing 15-40%, TP 8-20%)
-- Writes to coin_parameters: dca_spacing, take_profit_pct, trailing_pct, size_multiplier
-- No data fallback: uses category defaults
-- Runs daily 04:00 UTC
-FILES: calculate_coin_params.py | fetch_ohlcv.py
-TABLES: ohlcv_data | coin_parameters
-SYSTEMS: Research DCA=WORKING | Live DCA=WORKING | Scalpers=NOT USED
-STATUS: WORKING
-CHANGE IMPACT: coin_parameters + all open position DCA/TP logic + report CSVs
+### [3] PARAMS CALCULATED — v2 LOCKED (June 17 2026)
+WHAT: Exact DCA spacing%, TP%, trailing%, size_mult per coin. Smart DCA
+method ONLY — other methods (ASAP/Mean-Reversion/TradingView) use
+manual wizard values and never touch this system.
+WHY: One-size DCA% is too tight for volatile micro-caps and too loose
+for stable large-caps. Research AND live use this identically so
+champion selection reflects real entry-signal quality, not favorable
+test conditions.
+FULL SPEC: docs/locked_specs/COIN_CLASSIFICATION_V2_LOCKED.md (locked
+after two-round multi-AI review, ChatGPT + Gemini)
+
+HOW (v2, replacing old MIN-formula v1):
+- calculate_coin_params.py fetches 30 days hourly OHLCV from
+  ohlcv_hourly table (corrected — was wrongly documented as 90
+  days/ohlcv_data previously, neither was true even in v1)
+- spacing = MAX(ATR*1.5, median_drop*0.85) — was MIN in v1, MIN was
+  confirmed a capital-risk bug, both AIs agreed MAX is correct
+- TP = median_recovery*0.8 (unchanged from v1, flat, not regime-aware)
+- trailing = TP*0.25 — was ATR*0.8 in v1, old formula could give back
+  nearly all profit before locking in, new formula ties trail directly
+  to the actual profit target
+- size_mult = scales with ATR, clamped to category range
+- Minimum sample size: 15 drop events AND 15 recovery events required,
+  else falls back to category default midpoint (data_quality =
+  'insufficient_sample')
+- Daily change cap: spacing/TP max ±20%/day, trailing ±15%/day,
+  size_mult ±10%/day vs yesterday's stored value — prevents one weird
+  day from instantly distorting params, genuine shifts still happen,
+  just gradually over several days
+- Circuit breaker: freezes a coin's params entirely (keeps yesterday's
+  values, alerts admin) if ATR jumps >3x, price gaps >50% in a day,
+  median_drop jumps >2x, or 24h volume = 0
+- Stablecoin/pegged-asset exclusion: hardcoded blacklist (USDC, USDT,
+  WBTC, stETH, etc.) never enters Smart DCA coin selection
+- New-coin hard gate: Mega/Large/Mid always eligible immediately.
+  Small/Micro under 30 days old (first_seen_at, tracked locally —
+  NOT CoinGecko genesis_date, tested and rejected as unreliable) are
+  excluded entirely from Smart DCA, no positions opened. 31-90 days:
+  70% category default / 30% coin-specific blend. 90+ days: 100%
+  coin-specific, but only if sample-size gate also passes.
+- Category limits moved from hardcoded Python into category_limits
+  DB table (admin-editable with guardrails: min<max validation, sane
+  absolute bounds, affected-coin-count preview, every edit audited)
+- Every daily run, whether value changed or not, logged to
+  coin_parameter_history audit table (old/new values, sample counts,
+  data_quality, frozen_reason, calculation_version)
+- Every position (positions + live_dca_positions tables) snapshots
+  category/spacing/tp/trail/size_mult/calculation_version AT OPEN TIME,
+  so future formula changes (v3+) never corrupt how old trades read
+
+FILES: calculate_coin_params.py | classify_coins.py | fetch_ohlcv.py
+TABLES: ohlcv_hourly | coin_parameters | coin_parameter_history |
+category_limits | coin_genesis (created, NOT actively used — see note)
+SYSTEMS: Research DCA=WORKING (v2) | Live DCA=WORKING (v2) | Scalpers=NOT USED
+STATUS: v2 WORKING — first run processed 1849 coins (1842 calculated,
+6 estimated, 1 frozen, 6 excluded as stablecoin/new, 0 errors)
+NOTE: coin_genesis table + genesis_backfill_test.py exist on server
+but are DEAD CODE — CoinGecko genesis_date was tested (20 coins) and
+rejected: 0/19 real coins returned a usable value, 42% got rate-limited
+even at conservative 3s delay. Replaced by category-override +
+first_seen_at approach above. Safe to ignore/remove these files later.
+RESEARCH DATA: wiped and restarted after this change per prior
+agreement — v1 trade data is not comparable to v2 formula results.
+CHANGE IMPACT: coin_parameters + category_limits + coin_parameter_history
++ all open position DCA/TP logic + report CSVs + classify_coins.py
+(needs first_seen_at tracking added — see pending work)
 
 ---
 
@@ -350,7 +401,7 @@ STATUS: WORKING
 | Referral fee distribution | Before public launch |
 | Email trade notifications | Before public launch |
 | User Telegram connection UI | Before public launch |
-| Short DCA system | Future |
+| Short DCA system (full engine - locked spec exists, 0% coded) | Phase 2 - Major Pillar |
 | Regime-aware champion selection | Phase 4 |
 | Bot creation wizard public | Before public launch |
 | User registration public flow | Before public launch |
