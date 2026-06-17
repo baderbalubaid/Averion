@@ -1,0 +1,205 @@
+{
+  "date": "2026-06-17",
+  "coins": [
+    {
+      "coin": "OKB",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "DOGE",
+      "category": "large",
+      "spacing": 5.0,
+      "tp": 2.0,
+      "trail": 1.0,
+      "size_mult": 1.2,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "HBAR",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "M",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "MORPHO",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "WLD",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "AVAX",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "GRAM",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "LINK",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "CRO",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "MNT",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "ICP",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "ATOM",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "SKY",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "HTX",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "SOL",
+      "category": "large",
+      "spacing": 5.0,
+      "tp": 2.0,
+      "trail": 1.0,
+      "size_mult": 1.2,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "ETC",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "WLFI",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "PI",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    },
+    {
+      "coin": "QNT",
+      "category": "mid",
+      "spacing": 7.0,
+      "tp": 4.0,
+      "trail": 1.5,
+      "size_mult": 1.3,
+      "tradeable": true,
+      "data_quality": "calculated"
+    }
+  ]
+}
