@@ -42,10 +42,38 @@ Admin can edit via dashboard, but every edit must pass:
 Daily cron alert: if >30% of coins in a category pinned at MIN or MAX
 for 3+ consecutive days, send admin alert. Informational only.
 
-## 3. New Coin Hard Gate (LOCKED)
-Uses existing market_age_days field.
-If market_age_days < 30: excluded entirely from Smart DCA coin selection.
-At day 30 enters normal flow using own real OHLCV history.
+## 3. New Coin Hard Gate (LOCKED — revised June 17 2026)
+market_age_days was found unreliable: it measures how long Averion's
+own tracking has watched a coin, not the coin's real-world age, and
+resets to zero on any system wipe. CoinGecko genesis_date was tested
+and rejected (0/19 real coins returned a usable value in live testing,
+plus 42% rate-limiting even at conservative request pacing). Replaced
+with a category-override + locally-tracked first_seen_at approach,
+requiring zero external API calls and surviving any future wipe.
+
+Final rule:
+- Mega / Large / Mid cap: always eligible for Smart DCA immediately,
+  regardless of age. A coin reaching $1B+ market cap is definitionally
+  not an unproven new listing.
+- Small / Micro cap, 0-30 days since first_seen_at: NOT eligible for
+  Smart DCA. No new positions opened at all. This is a hard exclusion,
+  not a "use safe defaults" fallback — the risk being protected against
+  is the unproven coin itself (delisting, liquidity collapse, extreme
+  pump/dump), not merely uncertain parameters. Conservative parameters
+  do not make an unproven coin safe to hold.
+- Small / Micro cap, 31-90 days: eligible. Parameters = 70% category
+  default blended with 30% coin-specific calculation.
+- Small / Micro cap, 90+ days: eligible for 100% coin-specific
+  calculation, BUT ONLY IF the sample-size gate also passes (15+ drop
+  events AND 15+ recovery events in the lookback window — same minimum
+  as section 5). If sample size fails even past 90 days, remain on
+  100% category default rather than trust a thin sample. Age alone is
+  not sufficient; a coin can be old but still data-thin if it rarely
+  trades.
+
+first_seen_at is tracked locally: set once, the first time
+classify_coins.py ever sees a given coin, and never overwritten again
+even across future system/research wipes.
 
 ## 4. Stablecoin / Pegged Asset Exclusion (NEW)
 Hardcoded exclusion list: USDC, USDT, FDUSD, TUSD, DAI, BUSD, USDP,
