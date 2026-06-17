@@ -1876,6 +1876,121 @@ def admin_users(payload: dict = Depends(require_admin)):
               'reserve': float(u[7] or 0),
               'fee_debt': float(u[8] or 0)} for u in users]
 
+@app.get('/admin/category-limits')
+def get_category_limits(payload: dict = Depends(require_admin)):
+    """Real category limits from DB, replacing the old hardcoded
+    static HTML table. These are admin-editable safety boundaries
+    for the Smart DCA coin classification v2 system."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT category, spacing_min, spacing_max, tp_min, tp_max,
+                   trail_min, trail_max, size_min, size_max,
+                   updated_at, updated_by
+            FROM category_limits
+            ORDER BY
+                CASE category
+                    WHEN 'mega' THEN 1 WHEN 'large' THEN 2
+                    WHEN 'mid' THEN 3 WHEN 'small' THEN 4
+                    WHEN 'micro' THEN 5 ELSE 6
+                END
+        """)
+        rows = cur.fetchall()
+    return [{
+        'category': r[0],
+        'spacing_min': float(r[1]), 'spacing_max': float(r[2]),
+        'tp_min': float(r[3]), 'tp_max': float(r[4]),
+        'trail_min': float(r[5]), 'trail_max': float(r[6]),
+        'size_min': float(r[7]), 'size_max': float(r[8]),
+        'updated_at': r[9].isoformat() if r[9] else None,
+        'updated_by': r[10],
+    } for r in rows]
+
+@app.get('/admin/category-limits/{category}/affected-count')
+def get_category_affected_count(category: str, payload: dict = Depends(require_admin)):
+    """How many coins are currently in this category - shown as a
+    preview before an admin confirms a limit change."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT COUNT(*) FROM coin_parameters WHERE category=%s
+        """, (category,))
+        count = cur.fetchone()[0]
+    return {'category': category, 'affected_coins': count}
+
+@app.post('/admin/category-limits/{category}')
+def update_category_limits(category: str, body: dict, payload: dict = Depends(require_admin)):
+    """Update one category's safety boundaries with guardrails:
+    min < max enforced, sane absolute bounds enforced, every change
+    logged to coin_parameter_history for audit."""
+    ABSOLUTE_MAX = {'spacing': 50.0, 'tp': 30.0, 'trail': 15.0, 'size': 10.0}
+
+    fields = [
+        ('spacing_min', 'spacing_max', 'spacing'),
+        ('tp_min', 'tp_max', 'tp'),
+        ('trail_min', 'trail_max', 'trail'),
+        ('size_min', 'size_max', 'size'),
+    ]
+    for min_key, max_key, label in fields:
+        if min_key not in body or max_key not in body:
+            raise HTTPException(400, f'Missing {min_key} or {max_key}')
+        min_v, max_v = float(body[min_key]), float(body[max_key])
+        if min_v >= max_v:
+            raise HTTPException(400, f'{label}: min ({min_v}) must be less than max ({max_v})')
+        if min_v < 0 or max_v > ABSOLUTE_MAX[label]:
+            raise HTTPException(400, f'{label}: must be between 0 and {ABSOLUTE_MAX[label]}')
+
+    admin_name = payload.get('username', 'admin')
+
+    with db.get_db() as conn:
+        cur = conn.cursor()
+
+        # Fetch old values first, so the audit row has real before/after data
+        cur.execute("""
+            SELECT spacing_min, spacing_max, tp_min, tp_max,
+                   trail_min, trail_max, size_min, size_max
+            FROM category_limits WHERE category=%s
+        """, (category,))
+        old_row = cur.fetchone()
+        if not old_row:
+            raise HTTPException(404, f'Category {category} not found')
+
+        cur.execute("""
+            UPDATE category_limits SET
+                spacing_min=%s, spacing_max=%s,
+                tp_min=%s, tp_max=%s,
+                trail_min=%s, trail_max=%s,
+                size_min=%s, size_max=%s,
+                updated_at=NOW(), updated_by=%s
+            WHERE category=%s
+        """, (body['spacing_min'], body['spacing_max'],
+              body['tp_min'], body['tp_max'],
+              body['trail_min'], body['trail_max'],
+              body['size_min'], body['size_max'],
+              admin_name, category))
+
+        # Audit row uses the table's actual old/new columns, built exactly
+        # for this purpose, instead of cramming everything into free text
+        # (coin=VARCHAR(20) and frozen_reason=VARCHAR(100) are both too
+        # short for a verbose description anyway)
+        cur.execute("""
+            INSERT INTO coin_parameter_history
+                (coin, exchange, category,
+                 old_spacing, new_spacing, old_tp, new_tp,
+                 old_trail, new_trail, old_size_mult, new_size_mult,
+                 data_quality, frozen_reason, calculation_version)
+            VALUES (%s, 'ALL', %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    'category_limit_change', %s, 'v2')
+        """, ('CATLIM', category,
+              old_row[0], body['spacing_max'],
+              old_row[2], body['tp_max'],
+              old_row[4], body['trail_max'],
+              old_row[6], body['size_max'],
+              f'Changed by {admin_name}'[:100]))
+        conn.commit()
+
+    return {'success': True, 'category': category, 'updated_by': admin_name}
+
 @app.post('/admin/bot/restart')
 def admin_restart_bot(payload: dict = Depends(require_admin)):
     import subprocess

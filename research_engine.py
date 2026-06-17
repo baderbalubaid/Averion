@@ -557,6 +557,7 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
 
 
             # Open position in DB
+            _cp_snapshot = (coin_params_cache or {}).get(coin, {})
             pos_id = db.open_position(
                 bot_id, user_id, exchange_id, None,
                 coin, direction, price, quantity,
@@ -571,7 +572,9 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
                 btc_sma50_at_entry=btc_regime_data.get('btc_sma50') if btc_regime_data else None,
                 btc_24h_change_pct=btc_regime_data.get('btc_24h_change') if btc_regime_data else None,
                 btc_regime=btc_regime_data.get('btc_regime') if btc_regime_data else None,
-                btc_dominance=btc_regime_data.get('btc_dominance') if btc_regime_data else None
+                btc_dominance=btc_regime_data.get('btc_dominance') if btc_regime_data else None,
+                size_mult_at_open=_cp_snapshot.get('size_mult'),
+                calculation_version=_cp_snapshot.get('calc_version')
             )
             print(f'✅ Position opened: {coin} #{pos_id}')
             is_research = bot[4].startswith('E') or bot[4].startswith('BM') if bot else False
@@ -646,13 +649,15 @@ def run_cycle(r):
     try:
         with db.get_db() as _conn:
             _cur = _conn.cursor()
-            _cur.execute("SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable FROM coin_parameters")
+            _cur.execute("SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable, size_mult, calculation_version FROM coin_parameters")
             for row in _cur.fetchall():
                 coin_params_cache[row[0]] = {
                     'dca_spacing': float(row[1]),
                     'take_profit': float(row[2]),
                     'trailing':    float(row[3]),
                     'tradeable':   row[4] if row[4] is not None else True,
+                    'size_mult':   float(row[5]) if row[5] is not None else None,
+                    'calc_version': row[6],
                 }
     except Exception as e:
         print(f'⚠️ coin_params load error: {e}')

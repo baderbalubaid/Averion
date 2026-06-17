@@ -215,7 +215,7 @@ def load_coin_params_cache():
         with db.get_db() as conn:
             cur = conn.cursor()
             cur.execute("""
-                SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable
+                SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable, size_mult, calculation_version
                 FROM coin_parameters
             """)
             for row in cur.fetchall():
@@ -224,6 +224,8 @@ def load_coin_params_cache():
                     'take_profit':   float(row[2]),
                     'trailing':      float(row[3]),
                     'tradeable':     row[4] if row[4] is not None else True,
+                    'size_mult':     float(row[5]) if row[5] is not None else None,
+                    'calc_version':  row[6],
                 }
     except Exception as e:
         print(f'⚠️ coin_params load error: {e}')
@@ -520,6 +522,7 @@ def open_position(bot, coin, r, coin_params_cache=None):
                     btc_24h_change_pct, btc_dominance, btc_sma50_at_entry,
                     market_age_days,
                     pos_tp_pct, pos_trail_pct, pos_dca_pct,
+                    size_mult_at_open, calculation_version,
                     coin_trade_number, opened_at
                 ) VALUES (
                     %s, %s, %s, %s,
@@ -532,6 +535,7 @@ def open_position(bot, coin, r, coin_params_cache=None):
                     %s, %s,
                     %s, %s,
                     %s, %s, %s,
+                    %s, %s,
                     %s, NOW()
                 ) RETURNING id
             """, (
@@ -550,6 +554,8 @@ def open_position(bot, coin, r, coin_params_cache=None):
                 cp_for_coin.get('take_profit', bot['tp_percent']),
                 cp_for_coin.get('trailing', bot['trailing_percent']),
                 cp_for_coin.get('dca_spacing', bot['dca_percent']),
+                cp_for_coin.get('size_mult'),
+                cp_for_coin.get('calc_version'),
                 coin_trade_num
             ))
             pos_id = cur.fetchone()[0]
