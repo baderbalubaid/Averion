@@ -143,8 +143,35 @@ first_seen_at approach above. Safe to ignore/remove these files later.
 RESEARCH DATA: wiped and restarted after this change per prior
 agreement — v1 trade data is not comparable to v2 formula results.
 CHANGE IMPACT: coin_parameters + category_limits + coin_parameter_history
-+ all open position DCA/TP logic + report CSVs + classify_coins.py
-(needs first_seen_at tracking added — see pending work)
++ all open position DCA/TP logic + report CSVs
+
+CLOSURE UPDATE (June 17 2026): coin classification v2 is now FULLY
+COMPLETE, not just the calculation engine.
+- first_seen_at tracking added to classify_coins.py (was pending,
+  now done — backfilled 1711 coins using real OHLCV history instead
+  of "today", so most small/micro coins started their 30-day wait
+  partway through, not from zero)
+- Position snapshots: size_mult_at_open + calculation_version now
+  actually populate on every new position (research confirmed live;
+  live DCA wired identically, awaiting its next natural trade to
+  confirm since it trades less frequently). 4 redundant duplicate
+  columns we'd accidentally created earlier (category_at_open,
+  spacing_at_open, tp_at_open, trail_at_open) were found unused
+  anywhere in the codebase and dropped — that information was already
+  being stored under different pre-existing column names (category,
+  pos_tp_pct, pos_dca_pct, pos_trail_pct).
+- Category limits are now genuinely admin-editable through the admin
+  dashboard's Coin Categories tab (Research section) — was previously
+  a static hardcoded HTML mockup with fake numbers that never matched
+  the real category_limits table. Now: live data, Edit button per
+  category, affected-coin-count preview before saving, guardrails
+  (min<max, absolute sane bounds), every change audited to
+  coin_parameter_history using the table's real old/new value columns.
+IMPORTANT — what editing category limits actually does: it does NOT
+freeze or change the daily dynamic calculation. Per-coin spacing/TP/
+trail always recalculates fresh every day regardless. Editing a
+category here only moves the min/max safety fence that calculation
+must stay inside, starting with the next 04:00 UTC run.
 
 ---
 
