@@ -205,6 +205,30 @@ def check_entry_signal(bot, coin, r):
 
     return True  # Default: allow entry
 
+# ── Coin classification params (Smart DCA v2 system) ──────────────
+def load_coin_params_cache():
+    """Load spacing/TP/trailing/tradeable per coin from coin_parameters.
+    Same single source of truth used by research_engine.py — one
+    calculation (calculate_coin_params.py), both systems read it."""
+    cache = {}
+    try:
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable
+                FROM coin_parameters
+            """)
+            for row in cur.fetchall():
+                cache[row[0]] = {
+                    'dca_spacing':   float(row[1]),
+                    'take_profit':   float(row[2]),
+                    'trailing':      float(row[3]),
+                    'tradeable':     row[4] if row[4] is not None else True,
+                }
+    except Exception as e:
+        print(f'⚠️ coin_params load error: {e}')
+    return cache
+
 # ── Get tradeable coins ────────────────────────────────────────────
 def get_tradeable_coins(r, bot_params):
     """Returns list of coins this bot should consider."""
@@ -422,8 +446,9 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
         return False
 
 # ── Open new position ──────────────────────────────────────────────
-def open_position(bot, coin, r):
+def open_position(bot, coin, r, coin_params_cache=None):
     """Open a new long DCA position."""
+    cp_for_coin = (coin_params_cache or {}).get(coin, {})
     wallet = load_wallet(bot['wallet_id'])
     if not wallet:
         return False
@@ -522,7 +547,9 @@ def open_position(bot, coin, r):
                 btc_price, btc_regime,
                 btc_24h, btc_dominance, btc_sma50,
                 market_age,
-                bot['tp_percent'], bot['trailing_percent'], bot['dca_percent'],
+                cp_for_coin.get('take_profit', bot['tp_percent']),
+                cp_for_coin.get('trailing', bot['trailing_percent']),
+                cp_for_coin.get('dca_spacing', bot['dca_percent']),
                 coin_trade_num
             ))
             pos_id = cur.fetchone()[0]
@@ -589,6 +616,8 @@ def run_bot_cycle(bot, r):
     for pos in open_positions:
         open_coins[pos['coin']] = open_coins.get(pos['coin'], 0) + 1
 
+    coin_params_cache = load_coin_params_cache()
+
     # ── Check DCA queue ──
     if bot['dca_on'] and open_positions:
         # Score all positions needing DCA
@@ -634,11 +663,16 @@ def run_bot_cycle(bot, r):
             # Check ST flag - skip suspended coins
             if is_st_coin(coin, bot.get('exchange_name', 'mexc'), r):
                 continue
+            # Check coin classification eligibility (stablecoins,
+            # new coins under 30 days, frozen-anomaly coins)
+            cp_check = coin_params_cache.get(coin, {})
+            if cp_check and cp_check.get('tradeable') is False:
+                continue
             # Check entry signal
             if not check_entry_signal(bot, coin, r):
                 continue
             # Open position
-            if open_position(bot, coin, r):
+            if open_position(bot, coin, r, coin_params_cache):
                 open_positions = load_open_positions(bot['id'])
                 open_coins[coin] = open_coins.get(coin, 0) + 1
                 if len(open_positions) >= bot['trades_per_bot']:
@@ -734,13 +768,23 @@ def make_live_tp_callback():
 _running = False
 _cycle_thread = None
 
+def is_engine_alive():
+    """Watchdog check: is the live DCA thread actually running right now?"""
+    global _cycle_thread
+    return _running and _cycle_thread is not None and _cycle_thread.is_alive()
+
 def start_engine():
-    """Start the live long DCA engine."""
+    """Start the live long DCA engine.
+    NOT a daemon thread: daemon threads die silently with zero warning
+    if the main process restarts/reloads internally — this caused a
+    16.5 hour silent outage on June 16 2026. Non-daemon means a crash
+    is visible, and the watchdog in research_engine.py can detect and
+    restart it automatically within ~60s instead."""
     global _running, _cycle_thread
-    if _running:
+    if is_engine_alive():
         return
     _running = True
-    _cycle_thread = threading.Thread(target=_engine_loop, daemon=True)
+    _cycle_thread = threading.Thread(target=_engine_loop, daemon=False)
     _cycle_thread.start()
     print('✅ LiveLongDCA engine started')
 

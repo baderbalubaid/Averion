@@ -105,6 +105,14 @@ def run():
             """, (coin, cap, recorded_cap, category, vol, source))
             inserted += 1
 
+            # first_seen_at: set once, permanent, survives coin_history wipes.
+            # This is the real-world age signal used by the new-coin hard gate.
+            cur.execute("""
+                INSERT INTO coin_first_seen (coin, first_seen_at)
+                VALUES (%s, NOW())
+                ON CONFLICT (coin) DO NOTHING
+            """, (coin,))
+
         conn.commit()
 
     print(f'✅ Classified {inserted} coins')

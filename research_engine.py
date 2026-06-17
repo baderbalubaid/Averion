@@ -502,6 +502,13 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
         if check_st_flag(coin, '', tickers, r):
             continue
 
+        # Check coin classification eligibility (Smart DCA only —
+        # E1-E66/BM methods only, other methods are unaffected)
+        if method and (method.startswith('E') or method.startswith('BM')):
+            cp_check = (coin_params_cache or {}).get(coin, {})
+            if cp_check and cp_check.get('tradeable') is False:
+                continue
+
         category = coin_category.get(coin, 'micro')
 
         # Check entry signal for research bots
@@ -639,12 +646,13 @@ def run_cycle(r):
     try:
         with db.get_db() as _conn:
             _cur = _conn.cursor()
-            _cur.execute("SELECT coin, dca_spacing, take_profit_pct, trailing_pct FROM coin_parameters")
+            _cur.execute("SELECT coin, dca_spacing, take_profit_pct, trailing_pct, tradeable FROM coin_parameters")
             for row in _cur.fetchall():
                 coin_params_cache[row[0]] = {
                     'dca_spacing': float(row[1]),
                     'take_profit': float(row[2]),
                     'trailing':    float(row[3]),
+                    'tradeable':   row[4] if row[4] is not None else True,
                 }
     except Exception as e:
         print(f'⚠️ coin_params load error: {e}')
@@ -977,6 +985,20 @@ def run_bot():
     while True:
         try:
             run_cycle(r)
+
+            # Watchdog: live DCA engine runs as a background thread inside
+            # websocket_prices.py. If it ever dies silently (was a daemon
+            # thread, fixed June 17 2026 — see live_long_dca_engine.py),
+            # this check restarts it within one cycle instead of leaving
+            # live positions unmonitored for hours.
+            try:
+                from live_long_dca_engine import is_engine_alive, start_engine as _restart_live_dca
+                if not is_engine_alive():
+                    print('⚠️ Watchdog: LiveLongDCA engine not running, restarting it')
+                    _restart_live_dca()
+            except Exception as _wd_e:
+                print(f'⚠️ Watchdog check failed: {_wd_e}')
+
             consecutive_errors = 0
             time.sleep(60)
 
