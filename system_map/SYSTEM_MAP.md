@@ -497,6 +497,42 @@ Change entry signal E1-E66:
 
 ---
 
+## KNOWN BUGS FIXED (running log — check before repeating a pattern)
+
+### Daemon thread silent death (fixed June 17 2026)
+WHAT HAPPENED: live_long_dca_engine.py's main loop ran as a daemon
+thread (threading.Thread(..., daemon=True)) started from inside
+websocket_prices.py. Daemon threads die SILENTLY with zero error/log
+when the main process restarts or reloads internally — no exception,
+no warning. This caused a 16.5 hour gap (June 16 18:14 to June 17
+11:21) where all live DCA positions went unmonitored (no TP/DCA
+checks). Confirmed via logs: "LiveLongDCA engine started" appeared
+dozens of times across June 14-17, proving this had been silently
+dying and restarting repeatedly the whole time, not just once.
+IMPACT AT TIME OF DISCOVERY: all 71 open live_dca_positions were
+execution_type='paper' (test money only) — zero real financial harm,
+but this pattern would be dangerous if it ever affected real-money
+positions.
+FIX: changed daemon=True to daemon=False in live_long_dca_engine.py
+start_engine(). Added is_engine_alive() watchdog helper function.
+Wired a watchdog check into research_engine.py's main loop (runs every
+~60-130s alongside run_cycle()) — if the live DCA thread is ever found
+dead, it's automatically restarted within one cycle instead of staying
+dead until a human notices.
+VERIFIED: restarted averion-research, watched 3+ cycles with zero
+Watchdog trigger messages (engine stayed alive on its own), confirmed
+positions count actively dropping (71→67) as TPs fired, proving the
+engine is doing real work, not just idling.
+OTHER DAEMON THREADS NOT YET AUDITED (same pattern may exist):
+live_scalper_engine.py (2 threads) | main.py (1 thread) |
+scalper_engine.py (1 thread) | scalper_v2_engine.py (1 thread) |
+websocket_prices.py itself (the websocket connection thread, line
+187 — if THIS dies silently, the entire price feed pipeline stops,
+which is more severe than the live DCA issue). None of these have
+a watchdog yet. Flagging for future audit, not yet fixed.
+
+---
+
 ## USER-FACING FEATURES
 
 ### BOT CREATION WIZARD
