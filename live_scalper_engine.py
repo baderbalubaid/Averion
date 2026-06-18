@@ -59,6 +59,7 @@ class LiveScalperEngine:
                     p = json.loads(params_raw) if params_raw else {}
                 except:
                     p = {}
+                entry_method = p.get('entry_method', 'fixed')
                 bots.append({
                     'id': bot_id,
                     'name': name,
@@ -70,8 +71,8 @@ class LiveScalperEngine:
                     'stop_loss_pct': p.get('stop_loss_pct'),
                     'wallet_id': wallet_id,
                     'trades_per_bot': int(trades_per_bot or 999),
-                    'entry_method': p.get('entry_method', 'smart'),
-                    'smart_mode': True,  # all S58 live bots use smart mode
+                    'entry_method': entry_method,
+                    'smart_mode': entry_method == 'smart',
                 })
             # Load current scalper champion for smart-mode bots
             scalper_champion = None
