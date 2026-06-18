@@ -70,7 +70,48 @@ class LiveScalperEngine:
                     'stop_loss_pct': p.get('stop_loss_pct'),
                     'wallet_id': wallet_id,
                     'trades_per_bot': int(trades_per_bot or 999),
+                    'entry_method': p.get('entry_method', 'smart'),
+                    'smart_mode': True,  # all S58 live bots use smart mode
                 })
+            # Load current scalper champion for smart-mode bots
+            scalper_champion = None
+            try:
+                import redis as _r
+                import json as _j2
+                _rc = _r.Redis(host='localhost', port=6379, decode_responses=True)
+                btc_raw = _rc.get('btc:regime_data')
+                regime = _j2.loads(btc_raw).get('btc_regime','bear') if btc_raw else 'bear'
+                with db.get_db() as _conn2:
+                    _cur2 = _conn2.cursor()
+                    _cur2.execute("""
+                        SELECT ch.method_id, b.bot_params, b.method
+                        FROM champion_history ch
+                        LEFT JOIN bots b ON b.name=ch.method_id
+                        WHERE ch.is_active_champion=TRUE
+                        AND ch.system_type='SCALPER'
+                        AND ch.regime=%s
+                    """, (regime,))
+                    row = _cur2.fetchone()
+                    if row:
+                        scalper_champion = {
+                            'bot_name': row[0],
+                            'bot_params': row[1] or {},
+                            'method_family': row[2] or row[0],
+                        }
+            except Exception as _ce:
+                print(f'⚠️ Scalper champion lookup failed: {_ce}')
+
+            # Inject champion params into smart-mode bots
+            for bot in bots:
+                if bot.get('smart_mode') and scalper_champion:
+                    cp = scalper_champion['bot_params']
+                    bot['trigger_pct'] = float(cp.get('trigger_pct', bot['trigger_pct']))
+                    bot['window_sec'] = float(cp.get('window_sec', bot['window_sec']))
+                    bot['hold_sec'] = int(cp.get('hold_sec', bot['hold_sec']))
+                    bot['stop_loss_pct'] = cp.get('stop_loss_pct', bot['stop_loss_pct'])
+                    bot['_champion'] = scalper_champion
+                    print(f'🧠 Scalper Smart: {bot["name"]} using champion {scalper_champion["bot_name"]}')
+
             self.live_bots = bots
             print(f'🔄 LiveScalper: loaded {len(bots)} bots')
         except Exception as e:

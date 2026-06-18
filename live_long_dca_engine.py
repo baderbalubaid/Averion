@@ -180,14 +180,24 @@ def check_entry_signal(bot, coin, r):
         try:
             import entry_signals as es
             import indicators
-            # For templates: use the source research method (e.g. 'E31')
-            # For smart: use champion method
+            # For smart mode: dynamically use current champion's params.
+            # Champion is loaded once per tick in _engine_loop() and
+            # passed through via bot['_champion'] if available.
+            # For templates: use the source research method from bot_params.
             bot_params = bot.get('bot_params', {})
             if isinstance(bot_params, str):
                 import json as _j
                 bot_params = _j.loads(bot_params)
-            method = bot_params.get('source_method') or bot['method']
-            params = bot_params.get('research_params') or bot_params
+
+            if entry_method == 'dca_smart' and bot.get('_champion'):
+                # Use live champion's exact params + method family
+                champ = bot['_champion']
+                method = champ['method_family']
+                params = champ['bot_params']
+                print(f'🧠 Smart Mode: using champion {champ["bot_name"]} ({method}) for {coin}')
+            else:
+                method = bot_params.get('source_method') or bot['method']
+                params = bot_params.get('research_params') or bot_params
             ohlcv = db.get_ohlcv(coin, 'mexc', limit=200)
             if not ohlcv:
                 return False
@@ -794,6 +804,40 @@ def start_engine():
     _cycle_thread.start()
     print('✅ LiveLongDCA engine started')
 
+def load_dca_champion():
+    """Fetch current DCA bear/bull/sideways champions from champion_history.
+    Returns {regime: {bot_name, bot_params, method_family}} or {}.
+    Called ONCE per engine tick, cached in memory for that cycle only —
+    never mid-cycle, to avoid fracturing batch-arming/TP state."""
+    try:
+        import redis as _redis_mod
+        r_cache = _redis_mod.Redis(host='localhost', port=6379, decode_responses=True)
+        btc_data = r_cache.get('btc:regime_data')
+        current_regime = 'bear'  # safe default
+        if btc_data:
+            import json as _j
+            current_regime = _j.loads(btc_data).get('btc_regime', 'bear')
+
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT ch.regime, ch.method_id, b.bot_params, b.method
+                FROM champion_history ch
+                LEFT JOIN bots b ON b.name = ch.method_id
+                WHERE ch.is_active_champion=TRUE AND ch.system_type='DCA'
+            """)
+            champions = {}
+            for regime, bot_name, bot_params, method in cur.fetchall():
+                champions[regime] = {
+                    'bot_name': bot_name,
+                    'bot_params': bot_params or {},
+                    'method_family': method or bot_name,
+                }
+        return champions, current_regime
+    except Exception as e:
+        print(f'⚠️ Champion lookup failed: {e}')
+        return {}, 'bear'
+
 def _engine_loop():
     """Main 60s DCA cycle loop."""
     r = get_redis()
@@ -802,11 +846,28 @@ def _engine_loop():
             cycle_start = time.time()
             print(f'\n--- LiveLongDCA Cycle {datetime.now(timezone.utc)} ---')
 
+            # Load champion ONCE per tick before any bot processing
+            # (never mid-cycle — all bots in this tick use same champion)
+            _champions, _current_regime = load_dca_champion()
+            if _champions:
+                champ = _champions.get(_current_regime)
+                if champ:
+                    print(f'👑 DCA Champion ({_current_regime}): {champ["bot_name"]}')
+
             # Load all active bots
             bots = load_live_long_bots()
             if not bots:
                 print('No active live long bots')
             else:
+                # Inject current champion into smart-mode bots
+                # Done here (once per tick, before grouping) so all
+                # bots in this cycle use the same champion consistently
+                for bot in bots:
+                    if bot.get('entry_method') == 'dca_smart':
+                        champ = _champions.get(_current_regime)
+                        bot['_champion'] = champ  # None if no champion yet
+                        bot['_regime'] = _current_regime
+
                 # Group by user
                 users = {}
                 for bot in bots:
