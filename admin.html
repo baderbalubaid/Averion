@@ -649,6 +649,9 @@
                     ↻ Refresh
                 </button>
             </div>
+            <div id="watchdog-status" style="margin-bottom:14px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+                Loading watchdog status...
+            </div>
             <div class="cron-grid" id="cron-grid">
                 <div class="empty">Loading cron status...</div>
             </div>
@@ -1936,6 +1939,25 @@
     }
 
     // ── CRON STATUS ───────────────────────────────
+    async function loadWatchdogStatus() {
+        const box = document.getElementById('watchdog-status');
+        if (!box) return;
+        try {
+            const res = await fetch(`${API}/admin/watchdog-status`, { headers: headers() });
+            const d = await res.json();
+            if (!d.last_triggered) {
+                box.innerHTML = '🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy';
+                box.style.borderColor = 'rgba(16,217,138,0.3)';
+            } else {
+                const when = new Date(d.last_triggered).toLocaleString();
+                box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days`;
+                box.style.borderColor = 'rgba(255,165,0,0.3)';
+            }
+        } catch(e) {
+            box.innerHTML = 'Watchdog status unavailable';
+        }
+    }
+
     async function loadCronStatus() {
         try {
             const res = await fetch(`${API}/admin/cron-status`,
@@ -1943,12 +1965,16 @@
             cronData = await res.json();
 
             const steps = [
-                { key: 'infrastructure', name: 'Infrastructure', time: '03:00' },
-                { key: 'coingecko', name: 'CoinGecko Fetch', time: '03:30' },
-                { key: 'cmc', name: 'CMC Fetch', time: '04:00' },
-                { key: 'classification', name: 'Classification', time: '04:30' },
-                { key: 'reporting', name: 'Reporting', time: '05:00' },
-                { key: 'cleanup', name: 'Sunday Cleanup', time: '05:30' },
+                { key: 'db_backup', name: 'DB Backup', time: '03:00' },
+                { key: 'system_health', name: 'System Health', time: '03:00' },
+                { key: 'classification', name: 'Classification', time: '~03:45' },
+                { key: 'params', name: 'Calculate Params', time: '~04:30' },
+                { key: 'rars', name: 'RARS Scoring', time: '~05:15' },
+                { key: 'paper_timer', name: 'Paper Timer', time: 'after RARS' },
+                { key: 'btc_daily', name: 'BTC Daily Fetch', time: 'after RARS' },
+                { key: 'cleanup', name: 'Sunday Cleanup', time: 'Sundays only' },
+                { key: 'reports', name: 'Research Reports', time: 'after RARS' },
+                { key: 'telegram', name: 'Telegram Report', time: 'after RARS' },
             ];
 
             const grid = document.getElementById('cron-grid');
@@ -2178,6 +2204,7 @@
         await loadHealth();
         await loadWSStatus();
         await loadCronStatus();
+        await loadWatchdogStatus();
         loadResearchBots();
     }
 
@@ -2186,6 +2213,7 @@
     setInterval(loadHealth, 60000);
     setInterval(loadWSStatus, 10000);
     setInterval(loadCronStatus, 60000);
+    setInterval(loadWatchdogStatus, 60000);
     setInterval(() => {
         const tradesTab = document.getElementById("sub-r-trades");
         if (tradesTab && tradesTab.style.display !== "none") {

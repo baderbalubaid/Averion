@@ -1000,6 +1000,16 @@ def run_bot():
                 from live_long_dca_engine import is_engine_alive, start_engine as _restart_live_dca
                 if not is_engine_alive():
                     print('⚠️ Watchdog: LiveLongDCA engine not running, restarting it')
+                    try:
+                        with db.get_db() as _wd_conn:
+                            _wd_cur = _wd_conn.cursor()
+                            _wd_cur.execute("""
+                                INSERT INTO watchdog_events (engine_name, note)
+                                VALUES ('live_long_dca', 'Auto-restarted by watchdog - thread was found dead')
+                            """)
+                            _wd_conn.commit()
+                    except Exception as _wd_log_e:
+                        print(f'⚠️ Watchdog event log failed: {_wd_log_e}')
                     _restart_live_dca()
             except Exception as _wd_e:
                 print(f'⚠️ Watchdog check failed: {_wd_e}')

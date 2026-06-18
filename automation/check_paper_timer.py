@@ -2,9 +2,13 @@
 """90-day paper trade auto-close if no live trades"""
 import sys
 sys.path.insert(0, '/home/averion/Averion')
+from dotenv import load_dotenv
+load_dotenv('/home/averion/Averion/.env')
 import database as db
 import telegram as tg
 from datetime import datetime, timezone
+
+db.init_pool()
 
 def check_paper_timer():
     with db.get_db() as conn:

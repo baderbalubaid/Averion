@@ -2000,23 +2000,50 @@ def admin_restart_bot(payload: dict = Depends(require_admin)):
 @app.post('/admin/cron/{step}/run')
 def admin_run_cron_step(step: str,
                          payload: dict = Depends(require_admin)):
+    """Manually re-run one cron step. Rebuilt June 17 2026 - the old
+    paths (automation/fetch_coingecko.py etc) never existed anywhere
+    on the server, so this button silently did nothing for every step
+    except 'infrastructure'. Now points at the real files."""
     import subprocess
+    AVERION_DIR = '/home/averion/Averion'
     scripts = {
-        'infrastructure': 'automation/daily_cron.sh',
-        'coingecko': 'automation/fetch_coingecko.py',
-        'cmc': 'automation/fetch_cmc.py',
-        'classification': 'automation/classify_coins.py',
-        'reporting': 'automation/daily_aggregation.py',
-        'diagnostics': 'automation/generate_diagnostics.py'
+        'db_backup': None,  # part of daily_cron.sh, not independently re-runnable
+        'system_health': None,
+        'classification': f'{AVERION_DIR}/classify_coins.py',
+        'params': f'{AVERION_DIR}/calculate_coin_params.py',
+        'rars': f'{AVERION_DIR}/rars_scoring.py',
+        'paper_timer': f'{AVERION_DIR}/automation/check_paper_timer.py',
+        'btc_daily': f'{AVERION_DIR}/fetch_btc_daily.py',
+        'reports': f'{AVERION_DIR}/generate_reports.sh',
+        'cleanup': None,  # Sunday-only, not manually re-runnable
+        'full_cron': f'{AVERION_DIR}/automation/daily_cron.sh',
     }
     if step not in scripts:
         raise HTTPException(status_code=404, detail='Unknown step')
 
     script = scripts[step]
-    if script.endswith('.py'):
-        subprocess.Popen(['python3', script])
-    else:
-        subprocess.Popen(['bash', script])
+    if script is None:
+        raise HTTPException(status_code=400, detail=f'{step} cannot be manually re-run')
+
+    # Wrap manually-triggered runs so performance_timing gets a row too -
+    # previously only the bash cron script recorded this, so manually
+    # clicking "Re-run" in the dashboard ran the real script correctly
+    # but left the dashboard showing "Pending" forever (found June 18 2026).
+    wrapper = f'''
+import subprocess, time
+import sys; sys.path.insert(0, "/home/averion/Averion")
+from dotenv import load_dotenv; load_dotenv()
+import database as db
+db.init_pool()
+start = time.time()
+cmd = ["python3", "{script}"] if "{script}".endswith(".py") else ["bash", "{script}"]
+result = subprocess.run(cmd, capture_output=True, text=True)
+duration = time.time() - start
+status = "success" if result.returncode == 0 else "failed"
+err = result.stderr[-500:] if result.returncode != 0 else None
+db.record_performance_timing("{step}", duration, 0, status, err)
+'''
+    subprocess.Popen(['python3', '-c', wrapper])
 
     return {'message': f'Step {step} started'}
 
@@ -2310,8 +2337,36 @@ def create_wallet(req: WalletCreate,
 # ═══════════════════════════════
 # ADMIN — CRON STATUS
 # ═══════════════════════════════
+@app.get('/admin/watchdog-status')
+def admin_watchdog_status(payload: dict = Depends(require_admin)):
+    """Last time the live DCA watchdog had to restart the engine.
+    A healthy system shows this rarely or never firing."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT engine_name, triggered_at, note
+            FROM watchdog_events
+            ORDER BY triggered_at DESC LIMIT 1
+        """)
+        row = cur.fetchone()
+        cur.execute("SELECT COUNT(*) FROM watchdog_events WHERE triggered_at > NOW() - INTERVAL '7 days'")
+        count_7d = cur.fetchone()[0]
+    if not row:
+        return {'last_triggered': None, 'engine_name': None, 'count_last_7_days': 0}
+    return {
+        'last_triggered': row[1].isoformat(),
+        'engine_name': row[0],
+        'note': row[2],
+        'count_last_7_days': count_7d,
+    }
+
 @app.get('/admin/cron-status')
 def admin_cron_status(payload: dict = Depends(require_admin)):
+   """Real cron step status, rebuilt June 17 2026. Previously showed
+   6 placeholder step names (coingecko/cmc/etc) that never matched
+   anything the actual cron script wrote - this table had ZERO rows
+   ever, dashboard was always empty. Now matches the real hardened
+   daily_cron.sh steps exactly."""
    with db.get_db() as conn:
        cur = conn.cursor()
        cur.execute("""
@@ -2326,12 +2381,16 @@ def admin_cron_status(payload: dict = Depends(require_admin)):
        rows = cur.fetchall()
 
    steps = {
-       'infrastructure': None,
-       'coingecko': None,
-       'cmc': None,
+       'db_backup': None,
+       'system_health': None,
        'classification': None,
-       'reporting': None,
-       'cleanup': None
+       'params': None,
+       'rars': None,
+       'paper_timer': None,
+       'btc_daily': None,
+       'cleanup': None,
+       'reports': None,
+       'telegram': None,
    }
 
    for r in rows:

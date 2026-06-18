@@ -636,7 +636,7 @@ def record_system_health(cpu, ram, disk, redis_mb=0,
         # Delete older than 30 days
         cur.execute("""
             DELETE FROM system_health
-            WHERE created_at < NOW() - INTERVAL '30 days'
+            WHERE checked_at < NOW() - INTERVAL '30 days'
         """)
 
 def record_performance_timing(step, duration,
