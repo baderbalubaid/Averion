@@ -89,6 +89,7 @@ sleep 2700
 # ~05:15 — RARS SCORING
 # ═══════════════════════════════
 run_step "RARS Scoring" "rars" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_scoring.py
+run_step "Champion Promotion" "champion" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_promotion.py
 
 # ═══════════════════════════════
 # TAIL STEPS — fast, run right after each other

@@ -2403,6 +2403,7 @@ def admin_cron_status(payload: dict = Depends(require_admin)):
        'classification': None,
        'params': None,
        'rars': None,
+       'champion': None,
        'paper_timer': None,
        'btc_daily': None,
        'cleanup': None,

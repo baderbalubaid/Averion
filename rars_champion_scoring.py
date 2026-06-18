@@ -37,8 +37,8 @@ def fetch_dca_trades(regime, win_start):
     with db.get_db() as conn:
         cur = conn.cursor()
         query = """
-            SELECT b.method, p.total_invested, p.total_sold_usdt,
-                   p.opened_at, p.closed_at, p.dca_count
+            SELECT b.name, p.total_invested, p.total_sold_usdt,
+                   p.opened_at, p.closed_at, p.dca_count, b.method
             FROM positions p JOIN bots b ON b.id = p.bot_id
             WHERE p.status='closed' AND b.is_research=TRUE
             AND p.btc_regime=%s
@@ -51,24 +51,26 @@ def fetch_dca_trades(regime, win_start):
         return cur.fetchall()
 
 def compute_dca_raw_metrics(rows):
-    """Group DCA trade rows by method, compute raw (unweighted) metrics."""
+    """Group DCA trade rows by bot_name, compute raw (unweighted) metrics."""
     methods = {}
-    for method, invested, sold, opened, closed, dca_count in rows:
-        if method not in methods:
-            methods[method] = []
+    for bot_name, invested, sold, opened, closed, dca_count, method in rows:
+        if bot_name not in methods:
+            methods[bot_name] = {'trades': [], 'method': method}
         invested = float(invested or 0)
         sold = float(sold or 0)
         pnl = sold - invested
         hold_hours = 0
         if opened and closed:
             hold_hours = (closed - opened).total_seconds() / 3600
-        methods[method].append({
+        methods[bot_name]['trades'].append({
             'pnl': pnl, 'invested': invested, 'dca_count': int(dca_count or 0),
             'hold_hours': max(hold_hours, 0.01), 'opened': opened, 'closed': closed,
         })
 
     raw = {}
-    for method, trades in methods.items():
+    for bot_name, data in methods.items():
+        trades = data['trades']
+        method = data['method']
         n = len(trades)
         pnls = sorted([t['pnl'] for t in trades], reverse=True)
         wins = [p for p in pnls if p > 0]
@@ -78,17 +80,17 @@ def compute_dca_raw_metrics(rows):
         avg_hold = sum(t['hold_hours'] for t in trades) / n if n else 0
         recovery_speed_raw = 1 / (avg_hold + 1)
         avg_dca = sum(t['dca_count'] for t in trades) / n if n else 0
-        # Stuck-position penalty: higher avg DCA count = more stuck capital
         stuck_penalty_raw = avg_dca
-        # excl_top5 - same anti-outlier logic as the existing Score formula
         excl_top5 = sum(pnls[5:]) if n > 5 else net_profit
         robustness = round(excl_top5 / net_profit * 100, 1) if net_profit > 0 else 0
         active_days = len(set(t['closed'].date() for t in trades if t['closed']))
 
-        raw[method] = {
-            'trade_count': n, 'net_profit': net_profit, 'win_rate': win_rate,
-            'avg_pnl': avg_pnl, 'recovery_speed_raw': recovery_speed_raw,
-            'stuck_penalty_raw': stuck_penalty_raw, 'excl_top5_pnl': round(excl_top5, 2),
+        raw[bot_name] = {
+            'method': method, 'trade_count': n, 'net_profit': net_profit,
+            'win_rate': win_rate, 'avg_pnl': avg_pnl,
+            'recovery_speed_raw': recovery_speed_raw,
+            'stuck_penalty_raw': stuck_penalty_raw,
+            'excl_top5_pnl': round(excl_top5, 2),
             'robustness_pct': robustness, 'active_days': active_days,
         }
     return raw
@@ -100,7 +102,7 @@ def fetch_open_dca_positions(regime, win_start):
     with db.get_db() as conn:
         cur = conn.cursor()
         query = """
-            SELECT b.method, p.coin, p.avg_cost, p.total_invested, p.opened_at
+            SELECT b.name, p.coin, p.avg_cost, p.total_invested, p.opened_at
             FROM positions p JOIN bots b ON b.id = p.bot_id
             WHERE p.status='open' AND b.is_research=TRUE AND p.btc_regime=%s
         """
@@ -228,7 +230,8 @@ def calculate_dca_scores(regime, window_key):
         rars_score = round(weighted_sum * 100, 2)
         c = raw_closed.get(m, {})
         results.append({
-            'method': m,
+            'bot_name': m,
+            'method_family': c.get('method', m.rsplit('-',1)[0]),
             'rars_score': rars_score,
             'trade_count': c.get('trade_count', 0),
             'active_days': c.get('active_days', 0),
@@ -246,10 +249,10 @@ def fetch_scalper_trades(regime, win_start):
     with db.get_db() as conn:
         cur = conn.cursor()
         query = """
-            SELECT b.method, sp.pnl_usdt, sp.pnl_pct,
+            SELECT b.name, sp.pnl_usdt, sp.pnl_pct,
                    sp.entry_time, sp.exit_time, sp.hold_seconds,
                    sp.max_loss_seen, sp.entry_price, sp.exit_price,
-                   sp.base_order
+                   sp.base_order, b.method
             FROM scalper_positions sp JOIN bots b ON b.id = sp.bot_id
             WHERE sp.status='closed' AND b.is_research=TRUE
             AND sp.btc_regime=%s
@@ -264,25 +267,28 @@ def fetch_scalper_trades(regime, win_start):
 def compute_scalper_raw_metrics(rows):
     methods = {}
     for row in rows:
-        method = row[0]
-        if method not in methods:
-            methods[method] = []
+        bot_name = row[0]
+        method = row[10]
+        if bot_name not in methods:
+            methods[bot_name] = {'trades': [], 'method': method}
         pnl_usdt = float(row[1] or 0)
         pnl_pct = float(row[2] or 0)
         hold_sec = int(row[5] or 0)
         max_loss = float(row[6] or 0)
         entry = float(row[7] or 0)
         exit_ = float(row[8] or 0)
-        # slippage: difference between expected (entry) and actual exit
         slippage = abs(exit_ - entry) / entry * 100 if entry > 0 else 0
-        methods[method].append({
+        exit_time = row[4]
+        methods[bot_name]['trades'].append({
             'pnl_usdt': pnl_usdt, 'pnl_pct': pnl_pct,
             'hold_sec': hold_sec, 'max_loss': max_loss,
-            'slippage': slippage,
+            'slippage': slippage, 'exit_time': exit_time,
         })
 
     raw = {}
-    for method, trades in methods.items():
+    for bot_name, data in methods.items():
+        trades = data['trades']
+        method = data['method']
         n = len(trades)
         pnls = sorted([t['pnl_usdt'] for t in trades], reverse=True)
         wins = [p for p in pnls if p > 0]
@@ -297,15 +303,17 @@ def compute_scalper_raw_metrics(rows):
         avg_slippage = sum(t['slippage'] for t in trades) / n if n else 0
         excl_top5 = sum(pnls[5:]) if n > 5 else net_profit
         robustness = round(excl_top5 / net_profit * 100, 1) if net_profit > 0 else 0
-        raw[method] = {
-            'trade_count': n, 'net_profit': net_profit, 'win_rate': win_rate,
-            'avg_pnl': avg_pnl, 'profit_factor': profit_factor,
-            'max_drawdown': max_drawdown,
+        active_days = len(set(
+            t['exit_time'].date()
+            for t in trades if t.get('exit_time')
+        ))
+        raw[bot_name] = {
+            'method': method, 'trade_count': n, 'net_profit': net_profit,
+            'win_rate': win_rate, 'avg_pnl': avg_pnl,
+            'profit_factor': profit_factor, 'max_drawdown': max_drawdown,
             'execution_slippage_penalty': avg_slippage,
-            'trade_count_confidence': n,
-            'excl_top5_pnl': round(excl_top5, 2),
-            'robustness_pct': robustness,
-            'active_days': 1,
+            'trade_count_confidence': n, 'excl_top5_pnl': round(excl_top5, 2),
+            'robustness_pct': robustness, 'active_days': active_days,
         }
     return raw
 
@@ -339,7 +347,8 @@ def calculate_scalper_scores(regime, window_key):
                             for metric, weight in weights.items())
         rars_score = round(weighted_sum * 100, 2)
         results.append({
-            'method': m,
+            'bot_name': m,
+            'method_family': raw[m].get('method', m.rsplit('-',1)[0]),
             'rars_score': rars_score,
             'trade_count': raw[m]['trade_count'],
             'active_days': raw[m]['active_days'],
@@ -350,7 +359,10 @@ def calculate_scalper_scores(regime, window_key):
     return results
 
 def write_scores_to_db(system_type, regime, window_key, results):
-    """Write scored results to rars_scores table."""
+    """Write scored results to rars_scores table.
+    method column stores bot_name (e.g. 'E31-4') not method family
+    (e.g. 'E31') — this is intentional, champion is a specific bot
+    configuration, not just a method family."""
     if not results:
         return 0
     with db.get_db() as conn:
@@ -362,7 +374,7 @@ def write_scores_to_db(system_type, regime, window_key, results):
                     rars_score, excl_top5_pnl, robustness_pct,
                     trade_count, active_days, calculated_at
                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
-            """, (system_type, r['method'], regime, window_key,
+            """, (system_type, r['bot_name'], regime, window_key,
                   r['rars_score'], r.get('excl_top5_pnl', 0),
                   r.get('robustness_pct', 0), r['trade_count'],
                   r.get('active_days', 0)))
