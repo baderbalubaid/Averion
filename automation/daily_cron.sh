@@ -28,22 +28,27 @@ run_step() {
     local logfile="$3"
     shift 3
     local start_ts=$(date +%s)
+    local step_output_file=$(mktemp)
     echo "--- $display_name ---" | tee -a "$logfile"
     local status="success"
-    if "$@" >> "$logfile" 2>&1; then
+    if "$@" > "$step_output_file" 2>&1; then
         echo "✅ $display_name complete $(date)" | tee -a "$logfile"
     else
         echo "❌ $display_name FAILED $(date) — see $logfile" | tee -a "$logfile"
         status="failed"
         FAILED_STEPS+=("$display_name")
     fi
+    cat "$step_output_file" >> "$logfile"
+    local records=$(grep -o 'RECORDS_PROCESSED:[0-9]*' "$step_output_file" | tail -1 | cut -d: -f2)
+    records=${records:-0}
+    rm -f "$step_output_file"
     local duration=$(( $(date +%s) - start_ts ))
     python3 -c "
 import sys; sys.path.insert(0, '$AVERION_DIR')
 from dotenv import load_dotenv; load_dotenv('/home/averion/Averion/.env')
 import database as db
 db.init_pool()
-db.record_performance_timing('$step_key', $duration, 0, '$status')
+db.record_performance_timing('$step_key', $duration, $records, '$status')
 " >> "$logfile" 2>&1
 }
 

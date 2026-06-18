@@ -116,6 +116,7 @@ def run():
         conn.commit()
 
     print(f'✅ Classified {inserted} coins')
+    print(f'RECORDS_PROCESSED:{inserted}')
 
     # Summary
     with db.get_db() as conn:

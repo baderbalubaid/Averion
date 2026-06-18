@@ -439,6 +439,7 @@ def run():
     print(f'  Frozen (circuit breaker): {frozen_count} coins')
     print(f'  Excluded (stablecoin/new): {excluded} coins')
     print(f'  Errors: {errors}')
+    print(f'RECORDS_PROCESSED:{len(coins)}')
 
     with db.get_db() as conn:
         cur = conn.cursor()

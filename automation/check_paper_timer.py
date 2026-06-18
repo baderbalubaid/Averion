@@ -47,5 +47,8 @@ def check_paper_timer():
             elif days_since_live >= 83:
                 tg.send_user(user_id, f'⚠️ Warning: No live trades for {days_since_live} days · Paper trades auto-close at Day 90')
 
+    return len(users)
+
 if __name__ == '__main__':
-    check_paper_timer()
+    count = check_paper_timer()
+    print(f'RECORDS_PROCESSED:{count or 0}')

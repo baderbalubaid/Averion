@@ -186,3 +186,4 @@ if __name__ == '__main__':
     print(f'{"-"*85}')
     for i, s in enumerate(scores, 1):
         print(f'{i:<5} {s["method"]:<10} {s["rars_score"]:<8} {s["status"]:<14} {s["trade_count"]:<8} {s["win_rate"]:<7} {s["avg_profit_per_trade"]:<8} {s["avg_dca"]:<8} {s["avg_hold_hours"]}h')
+    print(f'RECORDS_PROCESSED:{len(scores)}')

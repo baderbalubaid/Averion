@@ -40,3 +40,4 @@ with db.get_db() as conn2:
     price = float(rows[0][0])
     regime = 'bull' if price > sma50*1.02 else 'bear' if price < sma50*0.98 else 'sideways'
     print(f'✅ BTC daily updated · Price=${price:,.2f} · SMA50=${sma50:,.2f} · {regime.upper()}')
+    print(f'RECORDS_PROCESSED:{inserted}')

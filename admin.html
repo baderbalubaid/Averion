@@ -641,6 +641,15 @@
             </div>
         </div>
 
+        <!-- Market Regime -->
+        <div class="card">
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                Current Market Regime
+                <button class="btn-xs btn-rerun" onclick="loadMarketRegime()">↻ Refresh</button>
+            </div>
+            <div id="market-regime-box">Loading...</div>
+        </div>
+
         <!-- Cron Steps -->
         <div class="card">
             <div class="card-title">
@@ -1939,18 +1948,59 @@
     }
 
     // ── CRON STATUS ───────────────────────────────
+    async function loadMarketRegime() {
+        const box = document.getElementById('market-regime-box');
+        if (!box) return;
+        const refreshedAt = new Date().toLocaleTimeString();
+        try {
+            const res = await fetch(`${API}/admin/market-regime`, { headers: headers() });
+            const d = await res.json();
+            if (!d.available) {
+                box.innerHTML = `<span style="color:var(--muted)">No regime data cached yet (refreshes every research cycle, ~2 min TTL window)</span>
+                    <p style="color:var(--muted);font-size:10px;margin-top:6px">Checked at ${refreshedAt}</p>`;
+                return;
+            }
+            const regimeColor = d.btc_regime === 'bull' ? 'var(--green)' :
+                                 d.btc_regime === 'bear' ? '#e74c3c' : 'var(--amber)';
+            const regimeEmoji = d.btc_regime === 'bull' ? '🐂' : d.btc_regime === 'bear' ? '🐻' : '↔️';
+            const changeColor = d.btc_24h_change >= 0 ? 'var(--green)' : '#e74c3c';
+            box.innerHTML = `
+                <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+                    <div style="font-size:22px;font-weight:bold;color:${regimeColor}">
+                        ${regimeEmoji} ${d.btc_regime.toUpperCase()}
+                    </div>
+                    <div style="color:var(--muted);font-size:13px">
+                        BTC: <b style="color:var(--text)">$${d.btc_price?.toLocaleString()}</b>
+                        · SMA50: $${d.btc_sma50?.toLocaleString()}
+                        · 24h: <span style="color:${changeColor}">${d.btc_24h_change >= 0 ? '+' : ''}${d.btc_24h_change}%</span>
+                        · Dominance: ${d.btc_dominance}%
+                    </div>
+                </div>
+                <p style="color:var(--muted);font-size:11px;margin-top:8px">
+                    Bull: price &gt; SMA50×1.02 · Bear: price &lt; SMA50×0.98 · Sideways: in between.
+                    This is the exact value tagged onto every new trade right now.
+                </p>
+                <p style="color:var(--muted);font-size:10px;margin-top:4px">
+                    ↻ Checked at ${refreshedAt} (cache refreshes ~every 2 min from research cycle)
+                </p>`;
+        } catch(e) {
+            box.innerHTML = `<span style="color:#e74c3c">Error loading regime: ${e.message}</span>`;
+        }
+    }
+
     async function loadWatchdogStatus() {
         const box = document.getElementById('watchdog-status');
         if (!box) return;
+        const refreshedAt = new Date().toLocaleTimeString();
         try {
             const res = await fetch(`${API}/admin/watchdog-status`, { headers: headers() });
             const d = await res.json();
             if (!d.last_triggered) {
-                box.innerHTML = '🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy';
+                box.innerHTML = `🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
                 box.style.borderColor = 'rgba(16,217,138,0.3)';
             } else {
                 const when = new Date(d.last_triggered).toLocaleString();  // already has proper UTC offset from API, fmtLocal would double it up
-                box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days`;
+                box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
                 box.style.borderColor = 'rgba(255,165,0,0.3)';
             }
         } catch(e) {
@@ -2033,13 +2083,41 @@
         }
     }
 
+    let _rerunPollers = {};
+
     async function rerunStep(step) {
         try {
+            const beforeRes = await fetch(`${API}/admin/cron-status`, { headers: headers() });
+            const before = await beforeRes.json();
+            const beforeTime = before[step]?.completed_at || null;
+
             await fetch(`${API}/admin/cron/${step}/run`, {
                 method: 'POST',
                 headers: headers()
             });
-            setTimeout(loadCronStatus, 2000);
+
+            // Show immediate "Running" feedback on that specific step's card
+            const btn = document.querySelector(`button[onclick="rerunStep('${step}')"]`);
+            if (btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
+
+            // Poll every 2s for up to 2 minutes until completed_at actually changes
+            if (_rerunPollers[step]) clearInterval(_rerunPollers[step]);
+            let attempts = 0;
+            _rerunPollers[step] = setInterval(async () => {
+                attempts++;
+                const res = await fetch(`${API}/admin/cron-status`, { headers: headers() });
+                const data = await res.json();
+                const nowTime = data[step]?.completed_at || null;
+                if (nowTime && nowTime !== beforeTime) {
+                    clearInterval(_rerunPollers[step]);
+                    delete _rerunPollers[step];
+                    loadCronStatus();
+                } else if (attempts >= 60) {
+                    clearInterval(_rerunPollers[step]);
+                    delete _rerunPollers[step];
+                    loadCronStatus();
+                }
+            }, 2000);
         } catch(e) { alert('Failed to start step'); }
     }
 
@@ -2206,6 +2284,7 @@
         await loadWSStatus();
         await loadCronStatus();
         await loadWatchdogStatus();
+        await loadMarketRegime();
         loadResearchBots();
     }
 
@@ -2215,6 +2294,7 @@
     setInterval(loadWSStatus, 10000);
     setInterval(loadCronStatus, 60000);
     setInterval(loadWatchdogStatus, 60000);
+    setInterval(loadMarketRegime, 60000);
     setInterval(() => {
         const tradesTab = document.getElementById("sub-r-trades");
         if (tradesTab && tradesTab.style.display !== "none") {

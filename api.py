@@ -2030,9 +2030,9 @@ def admin_run_cron_step(step: str,
     # clicking "Re-run" in the dashboard ran the real script correctly
     # but left the dashboard showing "Pending" forever (found June 18 2026).
     wrapper = f'''
-import subprocess, time
+import subprocess, time, re
 import sys; sys.path.insert(0, "/home/averion/Averion")
-from dotenv import load_dotenv; load_dotenv()
+from dotenv import load_dotenv; load_dotenv("/home/averion/Averion/.env")
 import database as db
 db.init_pool()
 start = time.time()
@@ -2041,7 +2041,9 @@ result = subprocess.run(cmd, capture_output=True, text=True)
 duration = time.time() - start
 status = "success" if result.returncode == 0 else "failed"
 err = result.stderr[-500:] if result.returncode != 0 else None
-db.record_performance_timing("{step}", duration, 0, status, err)
+m = re.findall(r"RECORDS_PROCESSED:(\\d+)", result.stdout)
+records = int(m[-1]) if m else 0
+db.record_performance_timing("{step}", duration, records, status, err)
 '''
     subprocess.Popen(['python3', '-c', wrapper])
 
@@ -2337,6 +2339,21 @@ def create_wallet(req: WalletCreate,
 # ═══════════════════════════════
 # ADMIN — CRON STATUS
 # ═══════════════════════════════
+@app.get('/admin/market-regime')
+def admin_market_regime(payload: dict = Depends(require_admin)):
+    """Current BTC market regime (bull/bear/sideways), read from the
+    same Redis cache (btc:regime_data, 10 min TTL) all trading engines
+    already use. Shows the dashboard the exact same regime that's
+    actually being tagged on new trades right now."""
+    import redis, json
+    r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+    cached = r.get('btc:regime_data')
+    if not cached:
+        return {'available': False}
+    data = json.loads(cached)
+    data['available'] = True
+    return data
+
 @app.get('/admin/watchdog-status')
 def admin_watchdog_status(payload: dict = Depends(require_admin)):
     """Last time the live DCA watchdog had to restart the engine.
