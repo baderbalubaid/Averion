@@ -1949,7 +1949,7 @@
                 box.innerHTML = '🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy';
                 box.style.borderColor = 'rgba(16,217,138,0.3)';
             } else {
-                const when = new Date(d.last_triggered).toLocaleString();
+                const when = new Date(d.last_triggered).toLocaleString();  // already has proper UTC offset from API, fmtLocal would double it up
                 box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days`;
                 box.style.borderColor = 'rgba(255,165,0,0.3)';
             }
@@ -2000,6 +2000,7 @@
                     </div>
                     ${d ? `
                     <div class="cron-time">
+                        Last run: ${fmtLocal(d.completed_at)} ·
                         Duration: ${d.duration?.toFixed(1)}s ·
                         Records: ${d.records || 0}
                     </div>` : ''}

@@ -2402,7 +2402,13 @@ def admin_cron_status(payload: dict = Depends(require_admin)):
                'duration': float(r[2] or 0),
                'records': r[3],
                'error': r[4],
-               'completed_at': str(r[5])
+               # completed_at stored as naive UTC (no tz info).
+               # admin.html's existing fmtLocal() helper expects a plain
+               # string and appends 'Z' itself - don't double it up here
+               # (fixed June 18 2026: was showing 08:42 when local was
+               # 11:43, root cause was browser misreading naive UTC as
+               # already-local with no conversion happening at all)
+               'completed_at': str(r[5]) if r[5] else None
            }
 
    return steps
