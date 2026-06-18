@@ -650,6 +650,61 @@ not just in a manual test.
 
 ---
 
+## RARS CHAMPION SYSTEM (June 18 2026, IN PROGRESS)
+Core decision brain: research finds what works per regime, winning
+method auto-applies live. Locked via 3-way AI review (Claude+ChatGPT+Gemini).
+
+OLD PROBLEM: rars_scoring.py calculated rankings but saved nothing -
+printed to log and gone. No champion table existed. Admin "Champ RARS"
+tab worked only by calling calculate_rars() live on page load - no
+persistence, no regime split, no scalper coverage, no promotion logic.
+
+LOCKED DESIGN:
+- 2 systems (DCA, SCALPER) x 3 regimes = 6 champion slots. E58 legacy
+  + E58v2 compete in ONE shared Scalper pool, not two systems.
+- RARS selects champion. Old "Score" metric kept as sanity-check only
+  (it already has excl_top5_pnl + robustness_pct - useful outlier
+  detector neither AI initially knew existed in the real code).
+- Window: 70% rolling 30d + 30% rolling 90d RARS blend. Not lifetime
+  (one lucky month could make a method unbeatable forever). Not
+  exponential decay (cleaner math but real maintenance cost for a
+  solo-dev raw-SQL codebase with no ORM).
+- Eligibility: min 30 trades AND min 7 active days (30-trade rule
+  already existed dormant in rars_scoring.py docstring, now enforced).
+- Promotion: challenger must beat champion's blended RARS by 10%.
+- challenger_method_id/challenger_since columns make this ACTUALLY
+  enforceable ("ahead by 10% for 7 days"), not just "ahead right now."
+- anomaly_flag column flags >8-10% week-over-week RARS swings with
+  flat trade count = window-boundary artifact, not real behavior change.
+- Weights admin-editable (rars_weight_config), same pattern as
+  category_limits. DCA needs different factors than Scalper (stuck-
+  position penalty vs slippage penalty) so table uses flexible
+  metric_name+weight rows, not fixed columns.
+- DB-level UNIQUE INDEX guarantees only one active champion per
+  system_type+regime.
+
+SCHEMA (built + seeded June 18, NOT YET WIRED to a scoring writer):
+rars_scores - per method/regime/window scores (30d/90d/lifetime)
+champion_history - current champion + full audit trail in one table
+rars_weight_config - 42 rows seeded (7 metrics x 2 systems x 3 regimes)
+NOTE: column is score_window not window - window is a reserved
+Postgres keyword, caused a real syntax error, fixed immediately.
+
+STILL TO BUILD (nothing built yet beyond schema+seed):
+1. Daily scoring writer - real RARS calc, writes to rars_scores
+2. Champion promotion logic - applies gates, writes champion_history
+3. Live Smart Mode consumption - live_long_dca_engine.py +
+   live_scalper_engine.py query champion_history at START of each
+   cycle tick, not mid-cycle (bot_loop.py is DEAD CODE, not the
+   real file for this - an earlier AI draft wrongly referenced it)
+4. Admin dashboard rebuild - Champ RARS/Score tabs need to read from
+   real persisted tables with regime split. DO NOT FORGET.
+5. Formula itself needs coding - weights exist/seeded but no Python
+   function yet reads rars_weight_config and computes a real score.
+   DO NOT FORGET.
+
+---
+
 ## USER-FACING FEATURES
 
 ### BOT CREATION WIZARD
