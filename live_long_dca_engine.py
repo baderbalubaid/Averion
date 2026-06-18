@@ -650,24 +650,32 @@ def run_bot_cycle(bot, r):
         # Sort by priority (highest loss first)
         candidates.sort(key=lambda x: x[0], reverse=True)
 
-        # Execute top candidate
-        if candidates:
-            score, pos, amount, price = candidates[0]
+        # Try candidates in priority order, skip unaffordable ones,
+        # execute the first one that's actually fundable. Per LOCKED
+        # spec (13_LOCKED_DECISIONS.md "Smart Queue Insufficient Funds
+        # Behavior"): never idle when something can be funded.
+        # FIXED June 18 2026 - previously only tried candidates[0] and
+        # gave up entirely if unaffordable, even when a cheaper #2/#3
+        # candidate sat right there fully fundable. Real capital could
+        # sit idle for this reason.
+        funded = False
+        for score, pos, amount, price in candidates:
             wallet = load_wallet(pos['wallet_id'])
             if wallet and wallet['current_balance'] >= amount:
                 execute_dca_buy(pos, bot, amount, r)
+                funded = True
+                break
             else:
-                # Track consecutive insufficient cycles
                 try:
                     key = f'insuf:{bot["id"]}:{pos["id"]}'
                     count = int(r.get(key) or 0) + 1
                     r.setex(key, 3600, count)
-                    if count >= 3:
-                        print(f'⚠️ {bot["name"]} {pos["coin"]}: '
-                              f'{count} consecutive insufficient fund cycles')
-                        r.delete(key)
                 except Exception:
                     pass
+
+        if not funded and candidates:
+            print(f'⚠️ {bot["name"]}: no affordable DCA candidate this '
+                  f'cycle out of {len(candidates)} needing DCA')
 
     # ── Open new positions ──
     if bot['trading_on'] and len(open_positions) < bot['trades_per_bot']:
