@@ -41,7 +41,7 @@ class LiveScalperEngine:
                 cur.execute("""
                     SELECT b.id, b.name, b.user_id, b.base_order,
                            b.bot_params::text, b.wallet_id,
-                           b.trades_per_bot
+                           b.trades_per_bot, b.entry_method
                     FROM bots b
                     WHERE b.method='S58'
                     AND b.is_template=FALSE
@@ -54,12 +54,12 @@ class LiveScalperEngine:
 
             import json
             bots = []
-            for bot_id, name, user_id, base_order, params_raw, wallet_id, trades_per_bot in rows:
+            for bot_id, name, user_id, base_order, params_raw, wallet_id, trades_per_bot, db_entry_method in rows:
                 try:
                     p = json.loads(params_raw) if params_raw else {}
                 except:
                     p = {}
-                entry_method = p.get('entry_method', 'fixed')
+                entry_method = db_entry_method or p.get('entry_method', 'fixed')
                 bots.append({
                     'id': bot_id,
                     'name': name,
