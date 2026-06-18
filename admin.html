@@ -1294,42 +1294,77 @@
     async function loadChampions() {
         const el = document.getElementById('champion-content');
         if (!el) return;
-        el.innerHTML = '<p style="color:var(--muted)">Loading scores...</p>';
+        el.innerHTML = '<p style="color:var(--muted)">Loading...</p>';
         try {
-            const res = await fetch(`${API}/admin/research/champions`, {headers: authHeaders()});
-            const scores = await res.json();
-            if (!scores.length) {
-                el.innerHTML = '<p style="color:var(--muted)">No data yet · need 3+ closed trades per method</p>';
-                return;
-            }
+            const res = await fetch(`${API}/admin/research/champion-status`, {headers: authHeaders()});
+            const data = await res.json();
+            const {champions, leaderboard} = data;
+            const regimes = ['bear', 'bull', 'sideways'];
+            const systems = ['DCA', 'SCALPER'];
+            const regimeEmoji = {bear:'🐻', bull:'🐂', sideways:'↔️'};
             const medals = ['🥇','🥈','🥉'];
-            el.innerHTML = `
-            <table class="data-table" style="width:100%">
-                <thead><tr>
-                    <th>Rank</th><th>Method</th><th>Capital Locked</th>
-                    <th>Open</th><th>Closed</th><th>Win%</th>
-                    <th>Avg P&L</th><th>Total P&L</th><th>Avg DCA</th><th>Hold Hrs</th><th>Status</th><th>Score</th>
-                </tr></thead>
-                <tbody>
-                ${scores.map((s,i) => `<tr>
-                    <td>${medals[i]||'#'+(i+1)}</td>
-                    <td><b>${s.method}</b></td>
-                    <td style="color:var(--amber)">$${(s.capital_locked||0).toFixed(0)}</td>
-                    <td style="color:var(--muted)">${s.open_positions||0}</td>
-                    <td>${s.trade_count}</td>
-                    <td style="color:${s.win_rate>=80?'#27ae60':'#e74c3c'}">${s.win_rate}%</td>
-                    <td style="color:${s.avg_profit_per_trade>=0?'#27ae60':'#e74c3c'}">${s.avg_profit_per_trade>=0?'+':''}$${Math.abs(s.avg_profit_per_trade).toFixed(2)}</td>
-                    <td style="color:${s.total_profit>=0?'#27ae60':'#e74c3c'}">$${s.total_profit.toFixed(2)}</td>
-                    <td>${s.avg_dca}</td>
-                    <td>${s.avg_hold_hours}h</td>
-                    <td><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${s.status==='ELIGIBLE'?'rgba(39,174,96,0.2)':s.status==='PROVISIONAL'?'rgba(243,156,18,0.2)':'rgba(231,76,60,0.2)'};color:${s.status==='ELIGIBLE'?'#27ae60':s.status==='PROVISIONAL'?'#f39c12':'#e74c3c'}">${s.status}</span></td>
-                    <td style="color:${s.rars_score>70?'#27ae60':s.rars_score>50?'#f39c12':'#e74c3c'};font-weight:bold">${s.rars_score}</td>
-                </tr>`).join('')}
-                </tbody>
-            </table>
-            <p style="color:var(--muted);font-size:12px;margin-top:8px">
-                RARS = WR^0.30 × AP^0.20 × RS^0.15 × DD^0.35 · DD=35% WR=30% AP=20% RS=15%
+
+            let html = '';
+            for (const system of systems) {
+                html += `<div style="margin-bottom:24px">
+                    <div style="font-size:15px;font-weight:bold;margin-bottom:12px;color:var(--text)">
+                        ${system} System
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">`;
+
+                for (const regime of regimes) {
+                    const champ = champions.find(c => c.system_type===system && c.regime===regime);
+                    const key = `${system}:${regime}`;
+                    const board = leaderboard[key] || [];
+                    const promoted = champ ? fmtLocal(champ.promoted_at) : null;
+
+                    html += `<div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-size:13px;font-weight:bold;margin-bottom:8px">
+                            ${regimeEmoji[regime]} ${regime.toUpperCase()}
+                        </div>`;
+
+                    if (champ) {
+                        const color = champ.blended_rars > 70 ? '#27ae60' : champ.blended_rars > 50 ? '#f39c12' : '#e74c3c';
+                        html += `<div style="background:rgba(16,217,138,0.07);border:1px solid rgba(16,217,138,0.2);border-radius:8px;padding:8px;margin-bottom:8px">
+                            <div style="font-size:11px;color:var(--muted)">👑 CURRENT CHAMPION</div>
+                            <div style="font-size:16px;font-weight:bold;color:${color}">${champ.bot_name}</div>
+                            <div style="font-size:11px;color:var(--muted)">${champ.method_family} family · RARS ${champ.blended_rars}</div>
+                            <div style="font-size:10px;color:var(--muted);margin-top:4px">Since ${promoted}</div>
+                            ${champ.challenger ? `<div style="font-size:10px;color:var(--amber);margin-top:4px">⚠️ Challenged by ${champ.challenger}</div>` : ''}
+                            ${Object.keys(champ.bot_params||{}).length ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${JSON.stringify(champ.bot_params)}</div>` : ''}
+                        </div>`;
+                    } else {
+                        html += `<div style="background:rgba(136,136,136,0.07);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;color:var(--muted);font-size:12px">
+                            No champion yet — awaiting data
+                        </div>`;
+                    }
+
+                    if (board.length) {
+                        html += `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Top challengers (30d RARS)</div>
+                        <table style="width:100%;font-size:11px;border-collapse:collapse">`;
+                        board.forEach((b,i) => {
+                            const isChamp = champ && b.bot_name === champ.bot_name;
+                            html += `<tr style="background:${isChamp?'rgba(16,217,138,0.05)':'transparent'}">
+                                <td style="padding:2px 4px;color:var(--muted)">${medals[i]||i+1}</td>
+                                <td style="padding:2px 4px;font-weight:${isChamp?'bold':'normal'}">${b.bot_name}</td>
+                                <td style="padding:2px 4px;color:${b.rars_score>70?'#27ae60':b.rars_score>50?'#f39c12':'#e74c3c'};text-align:right">${b.rars_score}</td>
+                                <td style="padding:2px 4px;color:var(--muted);text-align:right">${b.trade_count}t</td>
+                            </tr>`;
+                        });
+                        html += `</table>`;
+                    } else {
+                        html += `<div style="font-size:11px;color:var(--muted)">No scores yet for this regime</div>`;
+                    }
+                    html += `</div>`;
+                }
+                html += `</div></div>`;
+            }
+            html += `<p style="color:var(--muted);font-size:11px;margin-top:8px">
+                RARS = weighted additive formula (70% 30d + 30% 90d blend) ·
+                Promotion requires 10% lead + ${7} active days ·
+                Updated daily at ~05:15 UTC
             </p>`;
+            el.innerHTML = html;
         } catch(e) {
             el.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
         }

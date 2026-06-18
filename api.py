@@ -1777,6 +1777,67 @@ def research_dca_queue(payload: dict = Depends(require_admin)):
     result.sort(key=lambda x: -x['score'])
     return result
 
+@app.get('/admin/research/champion-status')
+def get_champion_status(payload: dict = Depends(verify_token)):
+    """Returns current champions per system_type+regime from the
+    real persisted champion_history table, plus top 10 challengers
+    per slot from rars_scores. Rebuilt June 18 2026 — the old
+    /champions endpoint called calculate_rars() live on every page
+    load with no regime awareness or persistence."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        # Current active champions
+        cur.execute("""
+            SELECT system_type, regime, method_id, blended_rars_score,
+                   robustness_pct, promoted_at, challenger_method_id,
+                   challenger_since
+            FROM champion_history
+            WHERE is_active_champion=TRUE
+            ORDER BY system_type, regime
+        """)
+        champions = []
+        for r in cur.fetchall():
+            # Get champion bot params
+            cur.execute("SELECT bot_params, method FROM bots WHERE name=%s", (r[2],))
+            bot = cur.fetchone()
+            champions.append({
+                'system_type': r[0], 'regime': r[1], 'bot_name': r[2],
+                'blended_rars': float(r[3] or 0),
+                'robustness_pct': float(r[4] or 0),
+                'promoted_at': r[5].isoformat() if r[5] else None,
+                'challenger': r[6], 'challenger_since': r[7].isoformat() if r[7] else None,
+                'bot_params': bot[0] if bot else {},
+                'method_family': bot[1] if bot else r[2],
+            })
+
+        # Top 10 challengers per slot (from latest rars_scores)
+        cur.execute("""
+            SELECT DISTINCT ON (system_type, regime, method)
+                system_type, regime, method, rars_score,
+                trade_count, active_days, robustness_pct
+            FROM rars_scores
+            WHERE score_window='30d'
+            ORDER BY system_type, regime, method, calculated_at DESC
+        """)
+        all_scores = cur.fetchall()
+
+    # Group scores by system_type+regime
+    leaderboard = {}
+    for r in all_scores:
+        key = f"{r[0]}:{r[1]}"
+        if key not in leaderboard:
+            leaderboard[key] = []
+        leaderboard[key].append({
+            'bot_name': r[2], 'rars_score': float(r[3] or 0),
+            'trade_count': r[4], 'active_days': r[5],
+            'robustness_pct': float(r[6] or 0),
+        })
+    # Sort each slot by score, keep top 10
+    for key in leaderboard:
+        leaderboard[key] = sorted(leaderboard[key], key=lambda x: -x['rars_score'])[:10]
+
+    return {'champions': champions, 'leaderboard': leaderboard}
+
 @app.get('/admin/research/champions')
 def get_research_champions(payload: dict = Depends(verify_token)):
     import sys
