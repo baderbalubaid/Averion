@@ -575,6 +575,81 @@ a watchdog yet. Flagging for future audit, not yet fixed.
 
 ---
 
+## AUTOMATION & MONITORING — LIVING SECTION (do not close until project end)
+> This section stays open for the life of the project. Add anything
+> new here as it comes up. Only remove this note if there is genuinely
+> nothing left to track.
+
+### June 17-18 2026 — Daily cron overhaul
+ROOT CAUSE FOUND: pg_dump in daily_cron.sh had no PGPASSWORD set, so
+it silently prompted for a password with no TTY to answer it. Combined
+with `set -e`, this killed the ENTIRE rest of the script every single
+day for 7 days straight (June 11-17) — classification, params calc,
+RARS scoring, paper timer, BTC daily fetch, reports, and Telegram
+report all silently stopped running, completely undetected.
+
+FIXED:
+- PGPASSWORD sourced from .env at the top of daily_cron.sh
+- set -e removed entirely; every step now wrapped in run_step() which
+  logs success/failure and ALWAYS continues to the next step
+- Telegram alert fires same-day if any step fails
+- Gaps between heavy steps (classification/params/RARS) widened from
+  30min to 45min for more buffer, per explicit request to keep things
+  relaxed rather than tight
+- Every step (cron-triggered OR manually re-run from the dashboard)
+  now writes a real row to performance_timing
+- Admin dashboard's "Daily Cron Status" panel rebuilt: previously
+  showed 6 placeholder step names (coingecko/cmc/etc) that never
+  matched anything real — that data had ZERO rows, ever, since day
+  one. Now shows the 10 real steps with real last-run timestamps
+- Fixed a timezone display bug: timestamps were naive UTC (no tz
+  label) and the browser was silently misreading them as already
+  local time. Now uses the existing fmtLocal() helper consistently.
+- Added a Live DCA Watchdog status box (separate from cron grid) —
+  shows last time the daemon-thread watchdog (see KNOWN BUGS FIXED
+  above) had to step in and restart the engine, plus a 7-day trigger
+  count, stored in new watchdog_events table (not log-file based,
+  since logs rotate and would lose the count over time)
+
+OTHER BUGS FOUND DURING THIS AUDIT (same root-cause family — scripts
+that work fine when run manually but fail silently on a schedule):
+- check_paper_timer.py was missing `load_dotenv()` and `db.init_pool()`
+  entirely — had been failing every single day, invisible under the
+  old set -e design. Fixed.
+- record_system_health() in database.py referenced a column
+  `created_at` that doesn't exist (real column is `checked_at`) — same
+  invisible-failure pattern. Fixed.
+- Several scripts called bare `load_dotenv()` with no explicit path,
+  which depends on the current working directory at call time. Works
+  fine when a human runs it from /home/averion/Averion, unreliable
+  when cron's working directory isn't guaranteed. Made explicit
+  (`load_dotenv('/home/averion/Averion/.env')`) everywhere touched.
+
+VERIFIED LIVE: June 18 03:00-05:00 UTC real cron run completed fully
+for the first time since June 11, including hitting one real failure
+(Paper Timer, now fixed) and correctly continuing past it instead of
+dying — proving the resilience design works under real conditions,
+not just in a manual test.
+
+### Pending / not yet done in this area
+- Paper Timer step itself has now run successfully once post-fix;
+  worth watching the next few real cron-scheduled runs to confirm
+  it's reliable now, not just a one-off lucky pass.
+- 6 other daemon=True threads flagged in KNOWN BUGS FIXED above are
+  still un-audited (live_scalper_engine.py x2, main.py,
+  scalper_engine.py, scalper_v2_engine.py, websocket_prices.py itself).
+- No equivalent "last run" / failure-alert visibility yet exists for
+  PM2-managed long-running processes (averion-api, averion-research)
+  themselves — only the daily cron steps and the live DCA watchdog are
+  covered. If averion-research itself crashed and PM2 failed to
+  restart it, nothing here would catch that.
+- 20-coin baseline check (see PARAMS CALCULATED section above) is
+  still pending — re-check coin_param_baseline_check.json against
+  fresh values once a few real days of daily recalculation have
+  happened, to confirm the numbers genuinely move day to day.
+
+---
+
 ## USER-FACING FEATURES
 
 ### BOT CREATION WIZARD
