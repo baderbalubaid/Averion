@@ -690,18 +690,28 @@ rars_weight_config - 42 rows seeded (7 metrics x 2 systems x 3 regimes)
 NOTE: column is score_window not window - window is a reserved
 Postgres keyword, caused a real syntax error, fixed immediately.
 
-STILL TO BUILD (nothing built yet beyond schema+seed):
-1. Daily scoring writer - real RARS calc, writes to rars_scores
-2. Champion promotion logic - applies gates, writes champion_history
-3. Live Smart Mode consumption - live_long_dca_engine.py +
-   live_scalper_engine.py query champion_history at START of each
-   cycle tick, not mid-cycle (bot_loop.py is DEAD CODE, not the
-   real file for this - an earlier AI draft wrongly referenced it)
-4. Admin dashboard rebuild - Champ RARS/Score tabs need to read from
-   real persisted tables with regime split. DO NOT FORGET.
-5. Formula itself needs coding - weights exist/seeded but no Python
-   function yet reads rars_weight_config and computes a real score.
-   DO NOT FORGET.
+BUILT (June 18 2026 - all 5 steps completed same session):
+1. rars_champion_scoring.py - regime-aware weighted additive formula,
+   scores per bot_name (not method family). DCA: 6 metrics (no
+   win_rate - 100% by design, replaced with capital_recovery_health
+   using live Redis prices). Scalper: 7 metrics. 412 DCA bots +
+   240 Scalper bots scored on first run.
+2. rars_champion_promotion.py - 30-trade/7-day gates, 70/30 blended
+   score, 10% promotion threshold, challenger tracking.
+   Current: DCA/bear=E31-8, SCALPER/bear=E58-50.
+3. Smart Mode live - live_long_dca_engine.py queries champion once
+   per 60s tick (start only, never mid-cycle). live_scalper_engine.py
+   queries on bot refresh every 30s. All 4 live scalper bots confirmed
+   logging champion pickup on restart.
+4. Admin dashboard rebuilt - Champ RARS tab shows 3x2 regime grid
+   (bull/bear/sideways x DCA/Scalper), champion + top-10 challengers.
+5. Formula coded - rars_weight_config read live, scores 0-100.
+
+KNOWN GAPS:
+- robustness_pct showing 0 for scalper (needs investigation)
+- anomaly_flag not yet wired (window-boundary artifact detection)
+- bull/sideways champion slots empty (no data yet, fills when regime shifts)
+- DCA Smart Mode needs a live DCA bot set to entry_method=dca_smart to activate
 
 ---
 
