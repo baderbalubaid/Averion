@@ -715,6 +715,30 @@ KNOWN GAPS:
 
 ---
 
+## SHORT SYSTEM — NOT YET BUILT (design note captured June 18 2026)
+Short not built yet, but Bader described the mechanism so it's captured
+before it's forgotten:
+- Short = similar to Long, but user already holds the coin in their
+  wallet (not buying first like Long does)
+- Sell coin when it goes down, buy back when it rises, to adjust avg
+  (opposite direction logic from Long DCA)
+- When coin is sold, proceeds (RVN per spec doc - reserve/buyback flow)
+  convert to USDT to place a limit order below current price
+- CRITICAL: while that limit order is being placed, the Long DCA queue
+  for that SAME exchange must HOLD/pause — cannot grab those reserved
+  USDT funds for a Long DCA in the meantime
+- This connects to the existing locked spec language already found in
+  13_LOCKED_DECISIONS.md: "Prevents queue from using Short funds for
+  Long DCAs" and "Queue cannot touch reserved funds" — confirms this
+  isolation was already planned, just never implemented since Short
+  doesn't exist yet
+- TODO when Short is built: Long DCA queue (run_bot_cycle in
+  live_long_dca_engine.py) needs a check for "is there a pending Short
+  buyback limit-order placement in progress for this exchange right
+  now" before proceeding with any Long DCA that cycle
+
+---
+
 ## USER-FACING FEATURES
 
 ### BOT CREATION WIZARD
