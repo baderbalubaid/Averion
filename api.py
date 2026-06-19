@@ -1927,6 +1927,12 @@ def admin_stats(payload: dict = Depends(require_admin)):
 
 @app.get('/admin/users')
 def admin_users(payload: dict = Depends(require_admin)):
+    """Fixed June 19 2026: query was missing telegram column,
+    silently shifting every field after 'suspended' one index left -
+    this endpoint would IndexError the moment a real user existed.
+    Now correctly aligned, plus is_zero_fee/fee_override added for
+    per-user fee customization (existed as DB columns, never wired
+    to anything before today)."""
     users = db.get_all_users_admin()
     return [{'id': u[0], 'email': u[1],
               'created_at': str(u[2]),
@@ -1935,7 +1941,32 @@ def admin_users(payload: dict = Depends(require_admin)):
               'bots': u[5],
               'open_positions': u[6],
               'reserve': float(u[7] or 0),
-              'fee_debt': float(u[8] or 0)} for u in users]
+              'fee_debt': float(u[8] or 0),
+              'is_zero_fee': u[9],
+              'fee_override': float(u[10]) if u[10] is not None else None
+              } for u in users]
+
+class FeeUpdate(BaseModel):
+    is_zero_fee: bool = False
+    fee_override: float | None = None
+
+@app.post('/admin/users/{user_id}/fee')
+def admin_update_user_fee(user_id: int, body: FeeUpdate,
+                           payload: dict = Depends(require_admin)):
+    """Set per-user fee customization (e.g. family discount).
+    fee_override is a percentage (e.g. 10.0 for 10%), null = use
+    platform default (20%). is_zero_fee=True skips fees entirely
+    regardless of fee_override."""
+    if body.fee_override is not None and not (0 <= body.fee_override <= 100):
+        raise HTTPException(status_code=400, detail='fee_override must be between 0 and 100')
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE users SET is_zero_fee=%s, fee_override=%s
+            WHERE id=%s
+        """, (body.is_zero_fee, body.fee_override, user_id))
+        conn.commit()
+    return {'message': f'Fee settings updated for user {user_id}'}
 
 @app.get('/admin/category-limits')
 def get_category_limits(payload: dict = Depends(require_admin)):

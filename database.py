@@ -1090,16 +1090,27 @@ def get_platform_stats():
         return cur.fetchone()
 
 def get_all_users_admin():
+    """FIXED June 19 2026: query was missing a telegram column entirely
+    while api.py expected 9 columns (id/email/created/suspended/
+    TELEGRAM/bots/positions/reserve/fee_debt) but only 8 were
+    returned - every field after 'suspended' was silently shifted one
+    index to the left, and the final fee_debt access would IndexError
+    the moment a real (non-admin) user existed. Also adding
+    is_zero_fee + fee_override here since we're touching this query
+    anyway for the per-user fee customization feature.
+    """
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
             SELECT u.id, u.email, u.created_at,
                    u.is_suspended,
+                   t.verified as telegram_verified,
                    COUNT(DISTINCT b.id) as bot_count,
                    COUNT(DISTINCT p.id) as open_positions,
                    COALESCE(r.balance_usdt, 0) as reserve_balance,
                    COALESCE(SUM(fd.amount_usdt) FILTER
-                       (WHERE fd.paid_at IS NULL), 0) as fee_debt
+                       (WHERE fd.paid_at IS NULL), 0) as fee_debt,
+                   u.is_zero_fee, u.fee_override
             FROM users u
             LEFT JOIN bots b ON b.user_id = u.id
                 AND b.status = 'open'
@@ -1107,10 +1118,11 @@ def get_all_users_admin():
                 AND p.status = 'open'
             LEFT JOIN reserve_wallets r ON r.user_id = u.id
             LEFT JOIN fee_debt fd ON fd.user_id = u.id
+            LEFT JOIN user_telegram t ON t.user_id = u.id
             WHERE u.is_admin = FALSE
             GROUP BY u.id, u.email, u.created_at,
-                     u.is_suspended,
-                     r.balance_usdt
+                     u.is_suspended, t.verified,
+                     r.balance_usdt, u.is_zero_fee, u.fee_override
             ORDER BY open_positions DESC
         """)
         return cur.fetchall()

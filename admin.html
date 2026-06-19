@@ -691,6 +691,7 @@
                             <th>Fee Debt</th>
                             <th>Telegram</th>
                             <th>Status</th>
+                            <th>Fee Rate</th>
                             <th>Joined</th>
                         </tr>
                     </thead>
@@ -2192,6 +2193,13 @@
                 <td>${u.suspended ?
                     '<span class="badge badge-red">Suspended</span>' :
                     '<span class="badge badge-green">Active</span>'}</td>
+                <td style="font-size:11px">
+                    ${u.is_zero_fee ? '<span class="badge badge-green">0% fee</span>' :
+                      u.fee_override !== null ? `<span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8">${u.fee_override}%</span>` :
+                      '<span style="color:var(--muted)">20% (default)</span>'}
+                    <button class="btn-xs" style="margin-left:4px;padding:2px 6px"
+                            onclick="editUserFee(${u.id}, '${u.email}', ${u.is_zero_fee}, ${u.fee_override})">✎</button>
+                </td>
                 <td style="color:var(--muted)">
                     ${new Date(u.created_at).toLocaleDateString()}
                 </td>
@@ -2204,6 +2212,38 @@
         renderUsers(allUsers.filter(u =>
             u.email.toLowerCase().includes(q)
         ));
+    }
+
+    async function editUserFee(userId, email, currentZeroFee, currentOverride) {
+        const choice = confirm(
+            `Set fee for ${email}?\n\nOK = set a custom % rate\nCancel = then choose 0% fee or reset to default`
+        );
+        let body;
+        if (choice) {
+            const pct = prompt(`Custom fee % for ${email} (0-100, e.g. 10 for family discount):`,
+                currentOverride !== null && currentOverride !== 'null' ? currentOverride : '20');
+            if (pct === null) return;
+            const pctNum = parseFloat(pct);
+            if (isNaN(pctNum) || pctNum < 0 || pctNum > 100) {
+                alert('Invalid percentage - must be 0-100');
+                return;
+            }
+            body = { is_zero_fee: false, fee_override: pctNum };
+        } else {
+            const zeroFee = confirm(`Set ${email} to 0% fee (free)?\n\nOK = 0% fee\nCancel = reset to platform default (20%)`);
+            body = zeroFee ? { is_zero_fee: true, fee_override: null }
+                            : { is_zero_fee: false, fee_override: null };
+        }
+        try {
+            await fetch(`${API}/admin/users/${userId}/fee`, {
+                method: 'POST',
+                headers: { ...headers(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            loadUsers();
+        } catch(e) {
+            alert('Failed to update fee: ' + e.message);
+        }
     }
 
     // ── STATS ─────────────────────────────────────
