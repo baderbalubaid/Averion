@@ -551,6 +551,8 @@ def open_position(bot, coin, r, coin_params_cache=None):
                     %s, %s,
                     %s, %s,
                     %s, %s, %s,
+                    %s,
+                    %s, %s, %s,
                     %s, %s,
                     %s, NOW()
                 ) RETURNING id
