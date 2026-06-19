@@ -715,6 +715,55 @@ KNOWN GAPS:
 
 ---
 
+## LIVE DCA ENGINE OUTAGE — ROOT CAUSE FOUND & FIXED (June 19 2026)
+Live DCA bots stopped opening any new positions June 16 18:43 onward.
+Last position before this: HOOLI. Found via deep investigation after
+Bader reported "live bot not running" - this was NOT a daemon-thread
+death (engine was confirmed alive, cycling every 60s normally), it
+was TWO STACKED BUGS inside open_position()'s INSERT statement,
+both silently swallowed by the function's own try/except every cycle:
+
+BUG 1 - placeholder/value count mismatch: the INSERT INTO
+live_dca_positions query had 33 columns (29 needing %s placeholders,
+4 literal: 'long','open',0,NOW()) but the VALUES clause only had 25
+%s placeholders - 4 short. Every single open attempt threw "not all
+arguments converted during string formatting", caught silently,
+logged as "Open position error {coin}: ...", engine continued
+normally next cycle as if nothing happened. Found via psycopg2
+cur.mogrify() - the only fully reliable way to verify placeholder
+counts after multiple manual recounts gave contradictory results.
+
+BUG 2 - missing columns entirely: live_dca_positions was missing 4
+columns research's positions table already had: btc_24h_change_pct,
+btc_dominance, btc_sma50_at_entry, market_age_days. These exist on
+research's table (added in an earlier session for regime/snapshot
+tracking) but were never added to the live table - a real schema
+drift between the two parallel position tables. Fixed via ALTER
+TABLE (43 -> 47 columns), matching exact NUMERIC/INTEGER types from
+positions table.
+
+Both bugs had to be fixed together - fixing only #1 just exposed #2
+immediately (confirmed by testing). Verified end-to-end: bot 875 (new
+test ASAP bot) opened 3 real paper positions on its own within
+minutes of the fix (HTX, WLD, BTC), and bot 745 (E31, untouched since
+June 16) opened HGG on a completely natural cycle with zero manual
+intervention - proving the live engine is genuinely healthy again,
+not just patched for one test case.
+
+LESSON: this class of bug (SQL placeholder/column mismatches inside
+a broad try/except) is invisible in normal operation - the engine
+looks alive (cycling, logging, no crash) while silently failing 100%
+of its actual job. Worth periodically grep'ing live_long_dca_engine.py
+and research_engine.py for "except Exception" blocks that only log
+and continue, and spot-checking that the operation inside actually
+succeeds sometimes, not just that the loop keeps running.
+
+Also fixed same session: landing page (index.html) was completely
+unreachable - root '/' route was redirecting straight to /dashboard,
+bypassing it entirely. Restored to serve index.html directly.
+
+---
+
 ## SHORT SYSTEM — NOT YET BUILT (design note captured June 18 2026)
 Short not built yet, but Bader described the mechanism so it's captured
 before it's forgotten:
