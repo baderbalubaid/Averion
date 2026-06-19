@@ -172,8 +172,12 @@ def admin_dashboard():
 
 @app.get('/')
 def homepage():
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url='/dashboard')
+    """FIXED June 19 2026: this was redirecting straight to /dashboard,
+    completely bypassing the real landing page (index.html), which sat
+    unreachable on disk this whole time. Restored to serve the actual
+    landing page, matching the working behavior Bader described
+    before this regression."""
+    return FileResponse('index.html')
 
 @app.get('/login')
 def login_page():
