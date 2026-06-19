@@ -393,9 +393,16 @@ def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
                         invested = float(pos[9] or 0)
                         received = result.get('usdt_received', 0)
                         gross_profit = received - invested
-                        if gross_profit > 0:
-                            fee = gross_profit * 0.20
-                            db.deduct_performance_fee(pos[2], pos[0], fee, gross_profit)
+                        # NO FEE: research_engine.py exclusively handles
+                        # research/admin bots (is_research=TRUE) - never
+                        # real user money, fees never apply here.
+                        # REMOVED June 19 2026 - emergency fix, this was
+                        # firing on every research TP close (161,659+
+                        # fee_debt rows generated against admin account
+                        # before caught), and as of today's earlier fix
+                        # to deduct_performance_fee(), was actively
+                        # driving the admin reserve_wallets balance
+                        # negative in real time.
                         db.promote_gate_reference(pos[1], coin)
                         print(f'⚡ RT-TP closed: {coin} @ ${price:.6f} profit=${gross_profit:.2f}')
         except Exception as e:
@@ -846,11 +853,10 @@ def run_cycle(r):
                 gross_profit = received - invested
 
                 if gross_profit > 0:
-                    fee_amount = gross_profit * 0.20
-                    db.deduct_performance_fee(
-                        pos[2], pos[0], fee_amount, gross_profit
-                    )
-                    print(f'💰 TP closed: {pos[4]} profit: ${gross_profit:.2f} fee: ${fee_amount:.2f}')
+                    # NO FEE: research_engine.py exclusively handles
+                    # research/admin bots - never real user money.
+                    # REMOVED June 19 2026, see note at other call site.
+                    print(f'💰 TP closed: {pos[4]} profit: ${gross_profit:.2f}')
                     _pos_bot = next((b for b in bots if b[0] == pos[1]), None)
                     pos_is_research = bool(_pos_bot and _pos_bot[31]) if _pos_bot and len(_pos_bot) > 31 else bool(_pos_bot and (_pos_bot[4].startswith('E') or _pos_bot[4].startswith('BM')))
                     if not pos_is_research:

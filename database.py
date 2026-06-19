@@ -533,38 +533,108 @@ def get_reserve_wallet(user_id):
 
 def deduct_performance_fee(user_id, position_id,
                             fee_amount, trade_profit):
+    """Deduct 20% performance fee. FIXED June 18 2026: balance now
+    genuinely goes negative on insufficient funds, instead of silently
+    staying unchanged while debt sat hidden in a disconnected fee_debt
+    table (a real user could see '$0' on their dashboard while owing
+    money behind the scenes - confirmed wrong by Bader, locked rule is
+    debt must show as a real negative balance, not be hidden)."""
     with get_db() as conn:
         cur = conn.cursor()
-        # Check balance
         cur.execute("""
-            SELECT balance_usdt FROM reserve_wallets
+            UPDATE reserve_wallets SET
+                balance_usdt = balance_usdt - %s,
+                total_deducted = total_deducted + %s,
+                last_updated = NOW()
             WHERE user_id = %s
-        """, (user_id,))
+            RETURNING balance_usdt
+        """, (fee_amount, fee_amount, user_id))
         row = cur.fetchone()
-        balance = float(row[0]) if row else 0
+        new_balance = float(row[0]) if row else 0
+        paid = new_balance >= 0
 
-        if balance >= fee_amount:
-            # Deduct from reserve
-            cur.execute("""
-                UPDATE reserve_wallets SET
-                    balance_usdt = balance_usdt - %s,
-                    total_deducted = total_deducted + %s,
-                    last_updated = NOW()
-                WHERE user_id = %s
-            """, (fee_amount, fee_amount, user_id))
-            paid = True
-        else:
-            # Record as debt
-            paid = False
-
-        # Record in fee_debt
+        # fee_debt stays as an audit log of every fee event, not the
+        # live balance itself - paid_at gets set when a later deposit
+        # covers this specific debt row (see credit_reserve())
         cur.execute("""
             INSERT INTO fee_debt
-            (user_id, position_id, amount_usdt, trade_profit)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, position_id, fee_amount, trade_profit))
+            (user_id, position_id, amount_usdt, trade_profit,
+             paid_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, position_id, fee_amount, trade_profit,
+              None if not paid else None))
+        # NOTE: paid_at intentionally left NULL here even if balance
+        # covered it - "paid" in fee_debt means "covered by a specific
+        # deposit", tracked separately by credit_reserve() reconciling
+        # oldest unpaid debt rows when a deposit arrives.
 
+        conn.commit()
         return paid
+
+def credit_reserve(user_id, amount_usdt, gateway_fee_usdt=0,
+                    network=None, tx_hash=None, source='manual'):
+    """Credit a user's reserve wallet. This is the generic deposit
+    function - NOWPayments webhook will call this exact function later
+    with source='nowpayments', so building this now means zero rework
+    when that integration is wired up. Deducts existing debt first,
+    shows remaining as new balance (locked rule)."""
+    net_credited = amount_usdt - gateway_fee_usdt
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT balance_usdt FROM reserve_wallets WHERE user_id=%s
+        """, (user_id,))
+        row = cur.fetchone()
+        balance_before = float(row[0]) if row else 0
+        debt_paid = max(0, min(net_credited, -balance_before)) if balance_before < 0 else 0
+
+        cur.execute("""
+            UPDATE reserve_wallets SET
+                balance_usdt = balance_usdt + %s,
+                total_deposited = total_deposited + %s,
+                last_updated = NOW()
+            WHERE user_id = %s
+            RETURNING balance_usdt
+        """, (net_credited, amount_usdt, user_id))
+        row = cur.fetchone()
+        balance_after = float(row[0]) if row else 0
+
+        # Mark oldest unpaid fee_debt rows as paid, up to debt_paid amount
+        if debt_paid > 0:
+            cur.execute("""
+                SELECT id, amount_usdt FROM fee_debt
+                WHERE user_id=%s AND paid_at IS NULL
+                ORDER BY created_at ASC
+            """, (user_id,))
+            remaining = debt_paid
+            for debt_id, debt_amt in cur.fetchall():
+                if remaining <= 0:
+                    break
+                debt_amt = float(debt_amt)
+                if remaining >= debt_amt:
+                    cur.execute("""
+                        UPDATE fee_debt SET paid_at=NOW()
+                        WHERE id=%s
+                    """, (debt_id,))
+                    remaining -= debt_amt
+
+        cur.execute("""
+            INSERT INTO deposits
+            (user_id, amount_usdt, gateway_fee_usdt, net_credited_usdt,
+             network, tx_hash, source, debt_paid_usdt, balance_after_usdt)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (user_id, amount_usdt, gateway_fee_usdt, net_credited,
+              network, tx_hash, source, debt_paid, balance_after))
+        deposit_id = cur.fetchone()[0]
+        conn.commit()
+
+        return {
+            'deposit_id': deposit_id,
+            'net_credited': net_credited,
+            'debt_paid': debt_paid,
+            'balance_after': balance_after,
+        }
 
 # ═══════════════════════════════
 # COIN CLASSIFICATION
