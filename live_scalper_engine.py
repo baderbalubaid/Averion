@@ -41,8 +41,12 @@ class LiveScalperEngine:
                 cur.execute("""
                     SELECT b.id, b.name, b.user_id, b.base_order,
                            b.bot_params::text, b.wallet_id,
-                           b.trades_per_bot, b.entry_method
+                           b.trades_per_bot, b.entry_method,
+                           b.reserve_floor, b.resume_threshold,
+                           b.auto_resume, b.floor_paused,
+                           vw.current_balance
                     FROM bots b
+                    LEFT JOIN virtual_wallets vw ON b.wallet_id = vw.id
                     WHERE b.method='S58'
                     AND b.is_template=FALSE
                     AND b.is_research=FALSE
@@ -54,7 +58,7 @@ class LiveScalperEngine:
 
             import json
             bots = []
-            for bot_id, name, user_id, base_order, params_raw, wallet_id, trades_per_bot, db_entry_method in rows:
+            for bot_id, name, user_id, base_order, params_raw, wallet_id, trades_per_bot, db_entry_method, reserve_floor, resume_threshold, auto_resume, floor_paused, current_balance in rows:
                 try:
                     p = json.loads(params_raw) if params_raw else {}
                 except:
@@ -73,6 +77,16 @@ class LiveScalperEngine:
                     'trades_per_bot': int(trades_per_bot or 999),
                     'entry_method': entry_method,
                     'smart_mode': entry_method == 'smart',
+                    'reserve_floor': float(reserve_floor) if reserve_floor is not None else None,
+                    'resume_threshold': float(resume_threshold) if resume_threshold is not None else None,
+                    'auto_resume': auto_resume if auto_resume is not None else True,
+                    'floor_paused': db.check_and_update_floor_state(
+                        bot_id, name, float(current_balance or 0),
+                        float(reserve_floor) if reserve_floor is not None else None,
+                        float(resume_threshold) if resume_threshold is not None else None,
+                        auto_resume if auto_resume is not None else True,
+                        floor_paused or False
+                    ),
                 })
             # Load current scalper champion for smart-mode bots
             scalper_champion = None
@@ -180,6 +194,11 @@ class LiveScalperEngine:
         self._update_active(coin, price, now)
 
     def _check_entry(self, bot, coin, price, now):
+        # Reserve floor gate (ADDED June 20 2026) - never opens a new
+        # entry while floor_paused, which was already computed once
+        # per bot-refresh cycle in _load_bots, not on every tick.
+        if bot.get('floor_paused'):
+            return
         key = (bot['id'], coin)
         # Skip if already have open position for this bot+coin
         with self._lock:

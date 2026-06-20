@@ -1333,6 +1333,49 @@ def get_btc_24h_change():
         row = cur.fetchone()
         return float(row[0] or 0) if row else 0.0
 
+def check_and_update_floor_state(bot_id, bot_name, wallet_balance,
+                                  reserve_floor, resume_threshold,
+                                  auto_resume, floor_paused):
+    """Shared reserve-floor state machine, used identically by both
+    live_long_dca_engine.py and live_scalper_engine.py (ADDED June 20
+    2026, deliberately shared rather than duplicated in each engine,
+    per explicit request - one place to maintain the actual rules).
+
+    Per-bot floor/resume mechanism, separate from account-level
+    reserve_wallets debt pause. Only ever meant to gate NEW position
+    opens in the calling engine - DCA and TP must never be affected,
+    per locked spec. This function only decides/updates floor_paused
+    state; the caller is responsible for actually skipping new opens
+    when the returned floor_paused is True.
+
+    Returns the (possibly updated) floor_paused boolean.
+    """
+    if reserve_floor is None:
+        return floor_paused
+
+    if not floor_paused and wallet_balance < reserve_floor:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE bots SET floor_paused=TRUE, floor_paused_at=NOW() WHERE id=%s",
+                (bot_id,))
+        print(f'floor hit for {bot_name}: pausing new positions '
+              f'(${wallet_balance:.2f} < ${reserve_floor:.2f})')
+        return True
+
+    if floor_paused and resume_threshold is not None and auto_resume \
+            and wallet_balance >= resume_threshold:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE bots SET floor_paused=FALSE, floor_paused_at=NULL WHERE id=%s",
+                (bot_id,))
+        print(f'auto-resumed {bot_name} (${wallet_balance:.2f} >= '
+              f'${resume_threshold:.2f})')
+        return False
+
+    return floor_paused
+
 def get_market_age_days(coin: str, exchange: str = 'mexc') -> int:
     """Returns days since coin was first seen by Averion. 0 if unknown."""
     try:

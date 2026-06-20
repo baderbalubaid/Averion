@@ -65,7 +65,8 @@ def load_live_long_bots():
                 b.bot_params,
                 vw.is_paper, vw.current_balance, vw.committed_usdt,
                 vw.allocation_amount, vw.coin as wallet_coin,
-                e.exchange as exchange_name
+                e.exchange as exchange_name,
+                b.reserve_floor, b.resume_threshold, b.auto_resume, b.floor_paused
             FROM bots b
             JOIN virtual_wallets vw ON b.wallet_id = vw.id
             JOIN exchanges e ON b.exchange_id = e.id
@@ -108,7 +109,11 @@ def load_live_long_bots():
                 'allocation_amount': float(r[21] or 0),
                 'exchange_id':   r[2],
                 'exchange_name': r[23],
-            }
+            },
+            'reserve_floor':    float(r[24]) if r[24] is not None else None,
+            'resume_threshold': float(r[25]) if r[25] is not None else None,
+            'auto_resume':      r[26] if r[26] is not None else True,
+            'floor_paused':     r[27] or False,
         })
     return bots
 
@@ -685,8 +690,16 @@ def run_bot_cycle(bot, r):
             print(f'⚠️ {bot["name"]}: no affordable DCA candidate this '
                   f'cycle out of {len(candidates)} needing DCA')
 
+    # Reserve floor state machine (ADDED June 20 2026, shared logic
+    # in database.py - used identically by Scalper engine too)
+    floor_paused = db.check_and_update_floor_state(
+        bot['id'], bot['name'], bot['wallet']['current_balance'],
+        bot.get('reserve_floor'), bot.get('resume_threshold'),
+        bot.get('auto_resume', True), bot.get('floor_paused', False)
+    )
+
     # ── Open new positions ──
-    if bot['trading_on'] and len(open_positions) < bot['trades_per_bot']:
+    if bot['trading_on'] and not floor_paused and len(open_positions) < bot['trades_per_bot']:
         coins = get_tradeable_coins(r, bot.get('bot_params', {}))
         for coin in coins:
             # Check per-coin limit
