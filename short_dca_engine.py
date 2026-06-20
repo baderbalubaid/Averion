@@ -60,7 +60,7 @@ def load_short_bots():
                 b.take_profit_percent, b.profit_coin,
                 b.trades_per_coin, b.trading_on, b.dca_on,
                 vw.is_paper, vw.current_balance, vw.coin as wallet_coin,
-                e.exchange as exchange_name
+                e.custom_name as exchange_name
             FROM bots b
             JOIN virtual_wallets vw ON b.wallet_id = vw.id
             JOIN exchanges e ON b.exchange_id = e.id
@@ -394,3 +394,104 @@ def check_buyback_fills(bots_by_id):
             handle_buyback_fill(pos_id, coin, float(total_sold_usdt), fill_result, bot, wallet, executor)
 
 print("Chunk 4 loaded: buyback fill detection + handling ready")
+
+def open_short_position_record(bot, coin):
+    """Creates the initial position record for a new Short bot+coin
+    pairing. No trade happens here - the user already holds the coin.
+    This just establishes the reference price (current market price)
+    the first sell-trigger will be measured against. The very first
+    sell happens later through the SAME execute_short_sell() used for
+    every subsequent sell, once price rises enough."""
+    r = get_redis()
+    current_price = get_redis_price(r, coin, bot['wallet']['exchange_name'])
+    if not current_price:
+        print(f'No price available yet for {coin}, skipping open')
+        return None
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO positions (bot_id, user_id, exchange_id, wallet_id, coin,
+                                    direction, status, avg_sell_price, last_sell_price,
+                                    quantity, total_sold_usdt, dca_count, opened_at,
+                                    profit_coin, entry_method, entry_method_at_open,
+                                    is_paper)
+            VALUES (%s, %s, %s, %s, %s, 'short', 'open', %s, 0, 0, 0, 0, NOW(), %s, %s, %s, %s)
+            RETURNING id
+        """, (bot['id'], bot['user_id'], bot['exchange_id'], bot['wallet_id'], coin,
+              current_price, bot['profit_coin'], bot['entry_method'], bot['entry_method'],
+              bot['wallet']['is_paper']))
+        pos_id = cur.fetchone()[0]
+        conn.commit()
+    print(f'SHORT POSITION OPENED (tracking only, no trade yet): {bot["name"]} {coin} @ ${current_price:.6f}')
+    return pos_id
+
+def run_cycle():
+    """One full engine cycle: open new position slots where eligible,
+    check sell triggers on existing positions, execute sells, check
+    buyback fills, retry any stuck buyback placements."""
+    r = get_redis()
+    bots = load_short_bots()
+    bots_by_id = {b['id']: b for b in bots}
+
+    smart_mode_active = any(b.get('parameter_mode') == 'smart' for b in bots)
+    coin_params_cache = load_coin_params_cache() if smart_mode_active else {}
+
+    for bot in bots:
+        if not bot['trading_on']:
+            continue
+        coin = bot['wallet']['coin']
+        open_positions = load_open_short_positions(bot['id'])
+        existing_for_coin = [p for p in open_positions if p['coin'] == coin]
+
+        if bot['entry_method'] == 'asap' and len(existing_for_coin) < bot['trades_per_coin']:
+            if bot['wallet']['current_balance'] > 0:
+                new_pos_id = open_short_position_record(bot, coin)
+                if new_pos_id:
+                    # ASAP entry means the FIRST sell happens immediately
+                    # (mirrors Long ASAP's immediate first buy) - not
+                    # waiting for next cycle's trigger check. Subsequent
+                    # sells still require the price to rise further from
+                    # whatever avg_sell_price this first sell establishes.
+                    first_price = get_redis_price(r, coin, bot['wallet']['exchange_name'])
+                    if first_price:
+                        first_pos = {
+                            'id': new_pos_id, 'coin': coin, 'avg_sell_price': first_price,
+                            'last_sell_price': 0, 'quantity': 0, 'total_sold_usdt': 0,
+                            'dca_count': 0, 'short_buyback_order_id': None
+                        }
+                        first_qty = compute_sell_amount(
+                            bot, bot['wallet']['current_balance'], 0, first_price
+                        )
+                        if first_qty > 0:
+                            execute_short_sell(first_pos, bot, first_qty)
+                open_positions = load_open_short_positions(bot['id'])
+                existing_for_coin = [p for p in open_positions if p['coin'] == coin]
+
+        current_price = get_redis_price(r, coin, bot['wallet']['exchange_name'])
+        if not current_price:
+            continue
+
+        if not bot['dca_on']:
+            continue
+
+        for pos in existing_for_coin:
+            should_sell, _ = check_sell_trigger(pos, current_price, bot, coin_params_cache)
+            if should_sell:
+                sell_qty = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], current_price
+                )
+                if sell_qty > 0:
+                    execute_short_sell(pos, bot, sell_qty)
+
+    check_buyback_fills(bots_by_id)
+    retry_pending_buybacks(bots_by_id)
+
+if __name__ == '__main__':
+    db.init_pool()
+    print('Short DCA engine starting (60s cycle)...')
+    while True:
+        try:
+            run_cycle()
+        except Exception as e:
+            print(f'Short engine cycle error: {e}')
+        time.sleep(60)
