@@ -1,5 +1,5 @@
 const API = window.location.origin;
-const ADMIN_BASE = '/admin';
+const ADMIN_BASE = '/admins';
 
 function getAdminToken() { return localStorage.getItem('admin_session_token'); }
 function getLoginToken() { return localStorage.getItem('averion_token'); }
@@ -16,11 +16,11 @@ function requireAdminSession() {
 }
 
 const TABS = [
-  { name: 'Health & Control', path: '/admin/page/health' },
-  { name: 'Users', path: '/admin/page/users' },
-  { name: 'Research Lab', path: '/admin/page/research' },
-  { name: 'Trading Intelligence', path: '/admin/page/champions' },
-  { name: 'System Control', path: '/admin/page/system' },
+  { name: 'Health & Control', path: '/admins/health' },
+  { name: 'Users', path: '/admins/users' },
+  { name: 'Research Lab', path: '/admins/research' },
+  { name: 'Trading Intelligence', path: '/admins/champions' },
+  { name: 'System Control', path: '/admins/system' },
 ];
 
 function renderHeaderAndTabs() {

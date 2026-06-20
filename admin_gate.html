@@ -42,7 +42,7 @@ async function submitPassphrase() {
     }
     const data = await res.json();
     localStorage.setItem('admin_session_token', data.admin_token);
-    window.location.href = '/admin/page/health';
+    window.location.href = '/admins/health';
   } catch (e) {
     errEl.textContent = 'Connection error';
   }
@@ -62,7 +62,7 @@ if (!localStorage.getItem('averion_token')) {
   window.location.href = '/login';
 } else if (localStorage.getItem('admin_session_token')) {
   // Already unlocked - skip straight to the dashboard
-  window.location.href = '/admin/page/health';
+  window.location.href = '/admins/health';
 }
 // Otherwise: Layer 1 satisfied, Layer 2 not yet - show the passphrase box (default state)
 </script>

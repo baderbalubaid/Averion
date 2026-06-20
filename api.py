@@ -180,29 +180,31 @@ def new_admin_gate():
     to move to a different secret URL once the rebuild is finished."""
     return FileResponse('admin_gate.html')
 
-# IMPORTANT: page routes live under /admin/page/* (not just /admin/*)
-# to guarantee zero collision with the existing /admin/* API endpoints
-# (e.g. /admin/health and /admin/users already existed as JSON APIs
-# before this rebuild started - a page route at the exact same path
-# would silently shadow the real API, which is exactly what happened
-# with /admin/health on June 19 2026, found via direct curl testing).
-@app.get(f'/{NEW_ADMIN_BASE}/page/health')
+# IMPORTANT: NEW_ADMIN_BASE must be set to something OTHER than
+# 'admin' (e.g. 'admins') for as long as the existing /admin/* JSON
+# API endpoints (admin/health, admin/users, etc.) still live at the
+# plain '/admin' path - otherwise a page route here would silently
+# shadow the real API (this exact collision happened June 19 2026,
+# found via direct curl testing). Once those old API endpoints are
+# eventually moved/retired, NEW_ADMIN_BASE can safely become 'admin'
+# itself with no /page/ disambiguator needed.
+@app.get(f'/{NEW_ADMIN_BASE}/health')
 def new_admin_health():
     return FileResponse('admin_health.html')
 
-@app.get(f'/{NEW_ADMIN_BASE}/page/users')
+@app.get(f'/{NEW_ADMIN_BASE}/users')
 def new_admin_users():
     return FileResponse('admin_coming_soon.html')
 
-@app.get(f'/{NEW_ADMIN_BASE}/page/research')
+@app.get(f'/{NEW_ADMIN_BASE}/research')
 def new_admin_research():
     return FileResponse('admin_coming_soon.html')
 
-@app.get(f'/{NEW_ADMIN_BASE}/page/champions')
+@app.get(f'/{NEW_ADMIN_BASE}/champions')
 def new_admin_champions():
     return FileResponse('admin_coming_soon.html')
 
-@app.get(f'/{NEW_ADMIN_BASE}/page/system')
+@app.get(f'/{NEW_ADMIN_BASE}/system')
 def new_admin_system():
     return FileResponse('admin_coming_soon.html')
 
