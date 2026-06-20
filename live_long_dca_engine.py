@@ -66,7 +66,8 @@ def load_live_long_bots():
                 vw.is_paper, vw.current_balance, vw.committed_usdt,
                 vw.allocation_amount, vw.coin as wallet_coin,
                 e.exchange as exchange_name,
-                b.reserve_floor, b.resume_threshold, b.auto_resume, b.floor_paused
+                b.reserve_floor, b.resume_threshold, b.auto_resume, b.floor_paused,
+                b.profit_coin
             FROM bots b
             JOIN virtual_wallets vw ON b.wallet_id = vw.id
             JOIN exchanges e ON b.exchange_id = e.id
@@ -114,6 +115,7 @@ def load_live_long_bots():
             'resume_threshold': float(r[25]) if r[25] is not None else None,
             'auto_resume':      r[26] if r[26] is not None else True,
             'floor_paused':     r[27] or False,
+            'profit_coin':      r[28] or 'USDT',
         })
     return bots
 
@@ -312,19 +314,40 @@ def check_tp(pos, current_price):
 
 # ── Execute TP sell ────────────────────────────────────────────────
 def execute_tp_sell(pos, bot, current_price):
-    """Execute TP sell via executor."""
+    """Execute TP sell via executor. ADDED June 20 2026: profit_coin
+    support - if the position's snapshot says 'base_coin', sell only
+    enough to recoup the original investment and leave the rest as
+    real coin in the exchange wallet. Platform fee is still computed
+    on the FULL theoretical profit (sold + kept), same 20% rule,
+    deducted via the existing reserve_wallets mechanism either way -
+    only the SELL QUANTITY changes, not how the fee itself works."""
     wallet = load_wallet(pos['wallet_id'])
     if not wallet:
         return
 
     executor = get_executor(wallet)
+    full_quantity = pos['quantity']
+    total_invested = pos['total_invested']
+
+    # Theoretical full profit if everything sold at current_price -
+    # this is always the fee basis, regardless of how much we actually sell
+    full_value = full_quantity * current_price
+    total_profit_theoretical = full_value - total_invested
+
+    profit_coin = pos.get('profit_coin', 'USDT')
+    keep_in_coin = (profit_coin == 'base_coin' and total_profit_theoretical > 0)
+
+    if keep_in_coin:
+        sell_quantity = min(full_quantity, total_invested / current_price)
+    else:
+        sell_quantity = full_quantity
 
     try:
         with db.get_db() as conn:
             result = executor.place_order(
                 side='sell',
                 coin=pos['coin'],
-                usdt_amount=pos['quantity'],
+                usdt_amount=sell_quantity,
                 wallet=wallet,
                 conn=conn
             )
@@ -333,12 +356,15 @@ def execute_tp_sell(pos, bot, current_price):
                 print(f'⚠️ TP sell failed: {pos["coin"]} {result.error}')
                 return
 
-            # Calculate P&L
+            # Calculate P&L on the portion actually sold
             gross_usdt = result.quantity * result.fill_price
             total_fees = result.fee_usdt
             net_usdt   = gross_usdt - total_fees
-            pnl_usdt   = net_usdt - pos['total_invested']
-            pnl_pct    = (pnl_usdt / pos['total_invested'] * 100) if pos['total_invested'] > 0 else 0
+            pnl_usdt   = net_usdt - total_invested
+            pnl_pct    = (pnl_usdt / total_invested * 100) if total_invested > 0 else 0
+
+            kept_quantity = max(0, full_quantity - result.quantity)
+            kept_value_usdt = kept_quantity * current_price
 
             cur = conn.cursor()
             cur.execute("""
@@ -350,10 +376,13 @@ def execute_tp_sell(pos, bot, current_price):
                     realized_pnl_usdt=%s,
                     realized_pnl_pct=%s,
                     fill_fee_usdt=fill_fee_usdt + %s,
-                    exchange_order_id=%s
+                    exchange_order_id=%s,
+                    kept_coin_quantity=%s,
+                    kept_coin_value_usdt=%s
                 WHERE id=%s
             """, (net_usdt, pnl_usdt, pnl_pct,
-                  result.fee_usdt, result.order_id, pos['id']))
+                  result.fee_usdt, result.order_id,
+                  kept_quantity, kept_value_usdt, pos['id']))
 
             # Log wallet transaction
             cur.execute("""
@@ -377,7 +406,11 @@ def execute_tp_sell(pos, bot, current_price):
             # now respects is_zero_fee and fee_override (per-user rate
             # customization, e.g. family discount) - columns existed
             # on users table but were never read anywhere before today.
-            if pnl_usdt > 0:
+            # Fee basis: full theoretical profit (sold + kept) when
+            # keeping profit in coin, otherwise the realized pnl_usdt
+            # (which equals the full profit anyway when nothing was kept)
+            fee_basis = total_profit_theoretical if keep_in_coin else pnl_usdt
+            if fee_basis > 0:
                 try:
                     _fee_query = ("SELECT is_research_account, is_admin, "
                                   "is_zero_fee, fee_override FROM users WHERE id=%s")
@@ -388,8 +421,8 @@ def execute_tp_sell(pos, bot, current_price):
                     _skip_fee = _urow and (_urow[0] or _urow[1] or _urow[2])
                     if not _skip_fee:
                         _fee_pct = float(_urow[3]) if _urow and _urow[3] is not None else 20.0
-                        fee = pnl_usdt * (_fee_pct / 100)
-                        db.deduct_performance_fee(bot['user_id'], pos['id'], fee, pnl_usdt)
+                        fee = fee_basis * (_fee_pct / 100)
+                        db.deduct_performance_fee(bot['user_id'], pos['id'], fee, fee_basis)
                 except Exception as e:
                     print(f'⚠️ Fee deduction error: {e}')
 
@@ -544,7 +577,7 @@ def open_position(bot, coin, r, coin_params_cache=None):
                     market_age_days,
                     pos_tp_pct, pos_trail_pct, pos_dca_pct,
                     size_mult_at_open, calculation_version,
-                    coin_trade_number, opened_at
+                    coin_trade_number, opened_at, profit_coin
                 ) VALUES (
                     %s, %s, %s, %s,
                     %s, 'long', 'open',
@@ -559,7 +592,7 @@ def open_position(bot, coin, r, coin_params_cache=None):
                     %s,
                     %s, %s, %s,
                     %s, %s,
-                    %s, NOW()
+                    %s, NOW(), %s
                 ) RETURNING id
             """, (
                 bot['id'], bot['user_id'], bot['exchange_id'], bot['wallet_id'],
@@ -579,7 +612,7 @@ def open_position(bot, coin, r, coin_params_cache=None):
                 cp_for_coin.get('dca_spacing', bot['dca_percent']),
                 cp_for_coin.get('size_mult'),
                 cp_for_coin.get('calc_version'),
-                coin_trade_num
+                coin_trade_num, bot.get('profit_coin', 'USDT')
             ))
             pos_id = cur.fetchone()[0]
 
@@ -741,7 +774,7 @@ def refresh_tp_cache():
             SELECT p.id, p.bot_id, p.coin, p.avg_cost, p.quantity,
                    p.total_invested, p.dca_count, p.tp_armed,
                    p.peak_price, p.pos_tp_pct, p.pos_trail_pct,
-                   p.wallet_id, b.user_id, b.name
+                   p.wallet_id, b.user_id, b.name, p.profit_coin
             FROM live_dca_positions p
             JOIN bots b ON p.bot_id = b.id
             WHERE p.status='open'
@@ -765,6 +798,7 @@ def refresh_tp_cache():
             'user_id': r[12],
             'bot_name': r[13],
             'last_buy_price': float(r[3] or 0),  # use avg_cost as fallback
+            'profit_coin': r[14] or 'USDT',
         }
         if coin not in new_cache:
             new_cache[coin] = []
