@@ -9,7 +9,7 @@ import database as db
 import telegram as tg
 import email_service as email_svc
 
-load_dotenv()
+load_dotenv('/home/averion/Averion/.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
 TOKEN_DAYS = 30
@@ -18,20 +18,32 @@ TOKEN_DAYS = 30
 # PASSWORD HASHING
 # ═══════════════════════════════
 def hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256(
-        f'{salt}{password}'.encode()
-    ).hexdigest()
-    return f'{salt}:{hashed}'
+    """Uses bcrypt (the originally locked design decision). FIXED
+    June 20 2026 - bcrypt was imported but never actually used; real
+    hashing used a custom salt+SHA256 scheme instead, which is far
+    faster to brute-force than bcrypt's deliberately slow design. New
+    passwords (registrations, password changes) now correctly use
+    bcrypt going forward."""
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(password: str, stored: str) -> bool:
+    """Supports BOTH the old salt:sha256 format and bcrypt, so
+    existing users aren't locked out during migration. Bcrypt hashes
+    always start with '$2' (e.g. $2b$); the old format always
+    contains a literal ':' separator which bcrypt hashes never do."""
     try:
+        if stored.startswith('$2'):
+            return bcrypt.checkpw(password.encode(), stored.encode())
         salt, hashed = stored.split(':')
-        return hashlib.sha256(
-            f'{salt}{password}'.encode()
-        ).hexdigest() == hashed
-    except:
+        return hashlib.sha256(f'{salt}{password}'.encode()).hexdigest() == hashed
+    except Exception:
         return False
+
+def needs_rehash(stored: str) -> bool:
+    """True if this hash still uses the old scheme and should be
+    upgraded to bcrypt the next time we have the plaintext password
+    available (right after a successful login)."""
+    return not stored.startswith('$2')
 
 # ═══════════════════════════════
 # JWT TOKENS
@@ -94,6 +106,21 @@ def login(email: str, password: str,
             {'reason': 'wrong_password'}
         )
         return None, 'Invalid email or password'
+
+    # Opportunistic bcrypt upgrade (ADDED June 20 2026) - we have the
+    # real plaintext password right here, briefly, exactly as always;
+    # if this account is still on the old salt+sha256 scheme, upgrade
+    # it to bcrypt now and discard the plaintext immediately after,
+    # same as every other path in this file.
+    if needs_rehash(password_hash):
+        try:
+            new_hash = hash_password(password)
+            with db.get_db() as conn:
+                cur = conn.cursor()
+                cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (new_hash, user_id))
+                conn.commit()
+        except Exception as e:
+            print(f'Bcrypt upgrade error (non-fatal): {e}')
 
     # Check if needs verification (new device or 30 days)
     needs_verification = check_needs_verification(user_id, ip)
