@@ -368,16 +368,39 @@ def write_scores_to_db(system_type, regime, window_key, results):
     with db.get_db() as conn:
         cur = conn.cursor()
         for r in results:
+            # Anomaly detection (ADDED June 20 2026, per SYSTEM_MAP
+            # spec): compares this score to ~7 days ago for the same
+            # bot+regime+window. Flags when RARS swung >8% while
+            # trade_count stayed roughly flat - that combination means
+            # old trades rolled out of the rolling window, not a real
+            # behavior change. 6-day lower bound (not exactly 7) gives
+            # buffer for cron scheduling jitter while still excluding
+            # any earlier-today entries if scoring ran more than once.
+            cur.execute("""
+                SELECT rars_score, trade_count FROM rars_scores
+                WHERE system_type=%s AND method=%s AND regime=%s
+                AND score_window=%s AND calculated_at < NOW() - INTERVAL '6 days'
+                ORDER BY calculated_at DESC LIMIT 1
+            """, (system_type, r['bot_name'], regime, window_key))
+            prev = cur.fetchone()
+            anomaly = False
+            if prev and prev[0] and float(prev[0]) != 0:
+                prev_score, prev_trade_count = float(prev[0]), prev[1]
+                pct_swing = abs(r['rars_score'] - prev_score) / abs(prev_score) * 100
+                trade_count_diff = abs(r['trade_count'] - prev_trade_count)
+                if pct_swing > 8 and trade_count_diff <= 2:
+                    anomaly = True
+
             cur.execute("""
                 INSERT INTO rars_scores (
                     system_type, method, regime, score_window,
                     rars_score, excl_top5_pnl, robustness_pct,
-                    trade_count, active_days, calculated_at
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+                    trade_count, active_days, anomaly_flag, calculated_at
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
             """, (system_type, r['bot_name'], regime, window_key,
                   r['rars_score'], r.get('excl_top5_pnl', 0),
                   r.get('robustness_pct', 0), r['trade_count'],
-                  r.get('active_days', 0)))
+                  r.get('active_days', 0), anomaly))
         conn.commit()
     return len(results)
 
