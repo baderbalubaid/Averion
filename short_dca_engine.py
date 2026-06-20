@@ -1,0 +1,311 @@
+"""
+short_dca_engine.py — Live Short DCA Engine
+=============================================
+Built June 20 2026, deliberately a SEPARATE file from
+live_long_dca_engine.py - Short has fundamentally different mechanics
+(sells not buys, limit-order buybacks, coin-quantity wallets instead
+of USDT) and keeping it separate avoids any risk of breaking the
+well-tested Long engine while building this.
+
+Core mechanics (LOCKED spec, 13_LOCKED_DECISIONS.md):
+- User must already hold the coin before opening a Short bot
+- Bot sells portions as price RISES (mirrors Long DCA, direction flipped)
+- avg_sell_price = weighted average of all sells so far
+- TP target = avg_sell_price * (1 - TP%) - price must DROP to trigger buyback
+- Sells are MARKET orders. Buyback is ALWAYS a LIMIT order (reserves
+  USDT on the exchange, prevents Long DCA queue from grabbing it)
+- PENDING_BUYBACK flag blocks Long DCA on the SAME virtual wallet
+  while a sell has happened but the limit buyback isn't placed yet
+- No trailing for Short (fixed limit buyback already locks the target)
+- Entry methods: ASAP or Customized only (no signal-based entry timing
+  the way Long has - user already holds the coin)
+- Parameter mode: Smart (reuses the same per-coin coin_parameters
+  classification system Long already uses) or Customized
+"""
+import sys
+sys.path.insert(0, '/home/averion/Averion')
+import time
+import redis as _redis
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+load_dotenv('/home/averion/Averion/.env')
+import database as db
+from executor import get_executor, PaperAdapter, LiveAdapter
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+
+def get_redis():
+    return _redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+
+def get_redis_price(r, coin, exchange_name='MEXC Paper'):
+    try:
+        val = r.get(f'price:{exchange_name}:{coin}/USDT')
+        return float(val) if val else None
+    except Exception:
+        return None
+
+# ── Load active Short bots ──────────────────────────────────────────
+def load_short_bots():
+    """Load all active Short DCA bots with wallet info (coin
+    quantity, not USDT - this is the key structural difference from
+    Long's load_live_long_bots())."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                b.id, b.user_id, b.exchange_id, b.wallet_id,
+                b.name, b.entry_method, b.bot_params,
+                b.dca_percent, b.spacing_multiplier, b.size_multiplier,
+                b.take_profit_percent, b.profit_coin,
+                b.trades_per_coin, b.trading_on, b.dca_on,
+                vw.is_paper, vw.current_balance, vw.coin as wallet_coin,
+                e.exchange as exchange_name
+            FROM bots b
+            JOIN virtual_wallets vw ON b.wallet_id = vw.id
+            JOIN exchanges e ON b.exchange_id = e.id
+            WHERE b.is_research = FALSE
+            AND b.is_template = FALSE
+            AND b.direction = 'short'
+            AND b.trading_on = TRUE
+            AND b.status = 'open'
+            AND b.status != 'deleted'
+            ORDER BY b.user_id, b.id
+        """)
+        rows = cur.fetchall()
+
+    bots = []
+    for r in rows:
+        import json as _j
+        params = r[6]
+        if isinstance(params, str):
+            try:
+                params = _j.loads(params)
+            except Exception:
+                params = {}
+        params = params or {}
+        bots.append({
+            'id': r[0], 'user_id': r[1], 'exchange_id': r[2], 'wallet_id': r[3],
+            'name': r[4], 'entry_method': r[5], 'bot_params': params,
+            'dca_percent': float(r[7] or 7), 'spacing_multiplier': float(r[8] or 1.4),
+            'size_multiplier': float(r[9] or 1.5), 'tp_percent': float(r[10] or 5),
+            'profit_coin': r[11] or 'USDT', 'trades_per_coin': int(r[12] or 1),
+            'trading_on': r[13], 'dca_on': r[14],
+            'wallet': {
+                'id': r[3], 'is_paper': r[15], 'current_balance': float(r[16] or 0),
+                'coin': r[17], 'exchange_id': r[2], 'exchange_name': r[18],
+            },
+            'parameter_mode': params.get('parameter_mode', 'customized'),
+        })
+    return bots
+
+# ── Load open Short positions for a bot ─────────────────────────────
+def load_open_short_positions(bot_id):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, coin, avg_sell_price, last_sell_price, quantity,
+                   total_sold_usdt, dca_count, pending_buyback,
+                   short_buyback_order_id, sequence_number,
+                   pos_tp_pct, pos_dca_pct
+            FROM positions
+            WHERE bot_id=%s AND status='open' AND direction='short'
+        """, (bot_id,))
+        rows = cur.fetchall()
+    positions = []
+    for r in rows:
+        positions.append({
+            'id': r[0], 'coin': r[1],
+            'avg_sell_price': float(r[2] or 0), 'last_sell_price': float(r[3] or 0),
+            'quantity': float(r[4] or 0), 'total_sold_usdt': float(r[5] or 0),
+            'dca_count': int(r[6] or 0), 'pending_buyback': r[7] or False,
+            'short_buyback_order_id': r[8], 'sequence_number': r[9],
+            'pos_tp_pct': float(r[10]) if r[10] is not None else None,
+            'pos_dca_pct': float(r[11]) if r[11] is not None else None,
+        })
+    return positions
+
+from live_long_dca_engine import load_coin_params_cache
+
+def get_short_params(bot, coin, coin_params_cache):
+    """Returns (dca_pct, spacing_mult, tp_pct) for this bot+coin.
+    Smart mode reuses the SAME coin_parameters classification system
+    Long already uses - a coin's volatility number is the same
+    whether price is rising or falling, so no separate 'short
+    volatility' calculation is needed."""
+    if bot.get('parameter_mode') == 'smart':
+        cp = coin_params_cache.get(coin, {})
+        dca_pct = cp.get('dca_spacing', bot['dca_percent'])
+        tp_pct = cp.get('take_profit', bot['tp_percent'])
+        spacing_mult = bot['spacing_multiplier']  # not in coin_parameters, use bot's own
+        return dca_pct, spacing_mult, tp_pct
+    return bot['dca_percent'], bot['spacing_multiplier'], bot['tp_percent']
+
+def check_sell_trigger(pos, current_price, bot, coin_params_cache):
+    """Mirrors Long's needs_dca() but inverted - price must RISE to
+    trigger the next sell, not drop. Level 1 uses activation price
+    (last_sell_price will be 0 before the first sell); Level 2+ uses
+    the actual last_sell_price. Returns (should_sell, sell_quantity)
+    or (False, 0)."""
+    dca_pct, spacing_mult, tp_pct = get_short_params(bot, pos['coin'], coin_params_cache)
+    dca_count = pos['dca_count']
+    reference_price = pos['last_sell_price'] if pos['last_sell_price'] > 0 else pos['avg_sell_price']
+    if reference_price <= 0:
+        return False, 0  # no valid reference yet
+
+    effective_spacing = dca_pct * (spacing_mult ** dca_count)
+    trigger_price = reference_price * (1 + effective_spacing / 100)
+
+    if current_price < trigger_price:
+        return False, 0  # price hasn't risen enough yet
+
+    return True, None  # caller computes actual quantity separately
+
+def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price):
+    """Computes how much coin to sell for this DCA level. Amount mode
+    (USDT-equivalent / fixed quantity / % of current wallet balance)
+    comes from bot_params, per Bader's explicit design: percentage
+    mode recalculates LIVE off current available balance each time,
+    not a fixed snapshot from bot creation - so it stays proportional
+    as other trades use up the shared coin pool."""
+    params = bot.get('bot_params', {})
+    mode = params.get('short_amount_mode', 'wallet_pct')
+    value = float(params.get('short_amount_value', 10))
+
+    if mode == 'wallet_pct':
+        base_qty = wallet_current_balance * (value / 100)
+    elif mode == 'coin_quantity':
+        base_qty = value
+    elif mode == 'usdt_equivalent':
+        base_qty = value / current_price if current_price > 0 else 0
+    else:
+        base_qty = wallet_current_balance * 0.10  # safe fallback
+
+    size_mult = bot['size_multiplier']
+    scaled_qty = base_qty * (size_mult ** dca_count)
+    return min(scaled_qty, wallet_current_balance)
+
+def execute_short_sell(pos, bot, sell_quantity):
+    """Executes a market sell for a Short position, recalculates
+    avg_sell_price/TP target, cancels old buyback limit + places a
+    fresh one. PENDING_BUYBACK is set immediately on sell (before the
+    buyback is even placed) so Long DCA on this wallet holds right
+    away - cleared only once the new limit order is confirmed placed.
+    If limit placement fails (insufficient USDT), the flag stays SET
+    so Long DCA stays blocked and we retry next cycle - Short buyback
+    funding always wins the race for funds on that wallet."""
+    wallet = bot['wallet']
+    executor = get_executor(wallet)
+    coin = pos['coin']
+
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE positions SET pending_buyback=TRUE, pending_buyback_since=NOW() WHERE id=%s", (pos['id'],))
+        conn.commit()
+
+    with db.get_db() as conn:
+        result = executor.place_short_sell(coin, sell_quantity, wallet, conn)
+        conn.commit()
+
+    if not result.success:
+        print(f'Short sell failed: {coin} {result.error}')
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE positions SET pending_buyback=FALSE WHERE id=%s", (pos['id'],))
+            conn.commit()
+        return False
+
+    new_sold_usdt_this_fill = result.quantity * result.fill_price
+    new_total_sold_usdt = pos['total_sold_usdt'] + new_sold_usdt_this_fill
+    new_quantity = pos['quantity'] + result.quantity
+    new_avg_sell_price = new_total_sold_usdt / new_quantity if new_quantity > 0 else result.fill_price
+    new_dca_count = pos['dca_count'] + 1
+
+    dca_pct, spacing_mult, tp_pct = get_short_params(bot, coin, {})
+    tp_target = new_avg_sell_price * (1 - tp_pct / 100)
+
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        if pos['short_buyback_order_id']:
+            executor.cancel_limit_order(pos['short_buyback_order_id'], coin, wallet, conn)
+
+        cur.execute("""
+            UPDATE positions
+            SET avg_sell_price=%s, last_sell_price=%s, quantity=%s,
+                total_sold_usdt=%s, dca_count=%s
+            WHERE id=%s
+        """, (new_avg_sell_price, result.fill_price, new_quantity,
+              new_total_sold_usdt, new_dca_count, pos['id']))
+        conn.commit()
+
+    print(f'SHORT SELL: {bot["name"]} {coin} @ ${result.fill_price:.6f} '
+          f'qty={result.quantity:.4f} avg_sell=${new_avg_sell_price:.6f} '
+          f'tp_target=${tp_target:.6f}')
+
+    with db.get_db() as conn:
+        limit_result = executor.place_limit_buyback(
+            pos['id'], coin, tp_target, new_quantity, wallet, conn
+        )
+        cur = conn.cursor()
+        if limit_result.success:
+            cur.execute("""
+                UPDATE positions
+                SET short_buyback_order_id=%s, pending_buyback=FALSE,
+                    short_buyback_reserved_usdt=%s, pending_buyback_since=NULL
+                WHERE id=%s
+            """, (limit_result.order_id, limit_result.usdt_reserved, pos['id']))
+            conn.commit()
+            print(f'Buyback limit placed: {coin} target=${tp_target:.6f} qty={new_quantity:.4f}')
+        else:
+            conn.commit()
+            print(f'Buyback limit FAILED (will retry, Long DCA held on wallet): {limit_result.error}')
+
+    return True
+
+def retry_pending_buybacks(bots_by_id):
+    """Each cycle, retry placing the buyback limit order for any
+    position stuck in pending_buyback=TRUE with no order_id yet (sell
+    happened, limit placement failed last time - e.g. insufficient
+    USDT because something else used it first). Per the locked
+    priority rule, Short buyback funding wins the race for funds on
+    that wallet until it succeeds, so we keep retrying every cycle."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, coin, avg_sell_price, quantity, bot_id, pos_tp_pct
+            FROM positions
+            WHERE direction='short' AND status='open'
+            AND pending_buyback=TRUE AND short_buyback_order_id IS NULL
+        """)
+        stuck = cur.fetchall()
+
+    for pos_id, coin, avg_sell_price, quantity, bot_id, pos_tp_pct in stuck:
+        bot = bots_by_id.get(bot_id)
+        if not bot:
+            continue
+        wallet = bot['wallet']
+        executor = get_executor(wallet)
+        dca_pct, spacing_mult, tp_pct = get_short_params(bot, coin, {})
+        if pos_tp_pct is not None:
+            tp_pct = float(pos_tp_pct)
+        tp_target = float(avg_sell_price) * (1 - tp_pct / 100)
+
+        with db.get_db() as conn:
+            limit_result = executor.place_limit_buyback(
+                pos_id, coin, tp_target, float(quantity), wallet, conn
+            )
+            if limit_result.success:
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE positions
+                    SET short_buyback_order_id=%s, pending_buyback=FALSE,
+                        short_buyback_reserved_usdt=%s, pending_buyback_since=NULL
+                    WHERE id=%s
+                """, (limit_result.order_id, limit_result.usdt_reserved, pos_id))
+                conn.commit()
+                print(f'Retry succeeded: buyback limit placed for {coin} pos={pos_id}')
+            else:
+                conn.commit()
+                print(f'Retry still failing for {coin} pos={pos_id}: {limit_result.error}')
+
+print("Chunk 3 loaded: sell execution + buyback placement + retry ready")

@@ -315,7 +315,7 @@ class PaperAdapter:
                 error=str(e)
             )
 
-    def place_limit_buyback(self, position_id, limit_price, quantity, conn):
+    def place_limit_buyback(self, position_id, coin, limit_price, quantity, wallet, conn):
         """Records a pending buyback limit order (paper simulation -
         no real exchange order, just tracked in short_buyback_orders).
         Fill is checked separately each cycle via check_limit_fill()."""
@@ -336,7 +336,7 @@ class PaperAdapter:
             usdt_reserved=usdt_reserved
         )
 
-    def check_limit_fill(self, order_id, coin, conn):
+    def check_limit_fill(self, order_id, coin, wallet, conn):
         """Paper simulation: a limit BUY fills when price drops to or
         below the limit price (mirrors a real exchange limit buy)."""
         cur = conn.cursor()
@@ -361,7 +361,7 @@ class PaperAdapter:
                                     fill_quantity=float(quantity))
         return LimitFillResult(filled=False)
 
-    def cancel_limit_order(self, order_id, conn):
+    def cancel_limit_order(self, order_id, coin, wallet, conn):
         cur = conn.cursor()
         cur.execute("""
             UPDATE short_buyback_orders SET status='cancelled', cancelled_at=NOW()
@@ -510,6 +510,13 @@ class LiveAdapter:
                 error=f'live_error: {e}'
             )
 
+    def place_short_sell(self, coin, quantity, wallet, conn):
+        """Delegates to the existing place_order() - LiveAdapter's
+        sell logic already never touches wallet balance directly
+        (real wallet sync handles it separately), so no Short-specific
+        version is needed here, unlike PaperAdapter."""
+        return self.place_order('sell', coin, quantity, wallet, conn)
+
     def _get_exchange_obj(self, wallet, conn):
         """Shared credential-loading helper for the limit-order
         methods below, mirroring place_order()'s existing pattern."""
@@ -530,7 +537,7 @@ class LiveAdapter:
             'apiKey': api_key, 'secret': secret, 'enableRateLimit': True,
         })
 
-    def place_limit_buyback(self, coin, limit_price, quantity, wallet, conn):
+    def place_limit_buyback(self, position_id, coin, limit_price, quantity, wallet, conn):
         """Places a real limit buy order on the exchange (ADDED June
         20 2026, first limit-order placement in the platform)."""
         try:
