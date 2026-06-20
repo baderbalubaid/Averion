@@ -90,7 +90,7 @@ class MexcWebSocketPrices:
                             REDIS_TTL,
                             t.price
                         )
-                        self.price_count += 1
+                        self.price_count += 1  # cumulative tick counter since process start
                         # Feed scalper engine
                         if scalper_on_price:
                             try:
@@ -126,7 +126,13 @@ class MexcWebSocketPrices:
                 self.last_update = datetime.utcnow()
                 self.r.setex('ws:mexc:status', 60, 'connected')
                 self.r.setex('ws:mexc:last_update', 60, str(self.last_update))
-                self.r.setex('ws:mexc:price_count', 60, str(self.price_count))
+                # FIXED June 20 2026: distinct coin count is computed
+                # in the API endpoint directly from real Redis keys (stable,
+                # accurate) - NOT tracked here, since any single websocket
+                # message only contains a small batch of coins, not the
+                # full set, making a per-message count meaningless.
+                # total_updates is the genuine cumulative tick counter.
+                self.r.setex('ws:mexc:total_updates', 60, str(self.price_count))
             except Exception as e:
                 print(f'❌ WS decode error: {e}')
         elif isinstance(msg, str):

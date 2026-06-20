@@ -22,7 +22,27 @@
 <div id="app-shell"></div>
 
 <div class="main">
+  <div id="status-banner" class="card" style="text-align:center;padding:10px;font-size:13px;font-weight:600">
+    Checking systems...
+  </div>
+
   <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Server Health</div>
+      <div class="health-item">
+        <div class="health-header"><span>CPU</span><span id="cpu-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="cpu-bar" style="width:0%;background:var(--green)"></div></div>
+      </div>
+      <div class="health-item">
+        <div class="health-header"><span>RAM</span><span id="ram-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="ram-bar" style="width:0%;background:#38bdf8"></div></div>
+      </div>
+      <div class="health-item">
+        <div class="health-header"><span>Disk</span><span id="disk-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="disk-bar" style="width:0%;background:var(--amber)"></div></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">Services</div>
       <div class="service-row">
@@ -48,22 +68,11 @@
         <div style="color:var(--muted);font-size:12px" id="last-cycle"></div>
       </div>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-title">Server Health</div>
-      <div class="health-item">
-        <div class="health-header"><span>CPU</span><span id="cpu-val">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="cpu-bar" style="width:0%;background:var(--green)"></div></div>
-      </div>
-      <div class="health-item">
-        <div class="health-header"><span>RAM</span><span id="ram-val">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="ram-bar" style="width:0%;background:#38bdf8"></div></div>
-      </div>
-      <div class="health-item">
-        <div class="health-header"><span>Disk</span><span id="disk-val">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="disk-bar" style="width:0%;background:var(--amber)"></div></div>
-      </div>
-    </div>
+  <div class="card">
+    <div class="card-title">Exchange WebSockets</div>
+    <div id="ws-status-list">Checking...</div>
   </div>
 
   <div class="card">
@@ -128,6 +137,10 @@ async function loadServices() {
     if (statusDot) {
       statusDot.style.background = running ? 'var(--green)' : 'var(--red)';
     }
+    _lastHealthState.db = hdata.db;
+    _lastHealthState.redis = hdata.redis;
+    _lastHealthState.running = running;
+    updateStatusBanner();
   } catch (e) {
     console.error('Services load failed', e);
   }
@@ -149,6 +162,38 @@ async function loadHealth() {
     document.getElementById('disk-bar').style.width = d.disk + '%';
   } catch (e) {
     console.error('Health load failed', e);
+  }
+}
+
+async function loadWSStatus() {
+  const box = document.getElementById('ws-status-list');
+  if (!box) return;
+  try {
+    const res = await fetch(`${API}/admin/ws-status`, { headers: authHeaders() });
+    const list = await res.json();
+    if (!list.length) {
+      box.innerHTML = '<span style="color:var(--muted)">No exchanges configured</span>';
+      return;
+    }
+    box.innerHTML = list.map(ex => {
+      const connected = ex.status === 'connected';
+      const notConfigured = ex.status === 'not_configured';
+      const badgeClass = connected ? 'badge-green' : notConfigured ? '' : 'badge-red';
+      const badgeStyle = notConfigured ? 'background:rgba(136,136,136,0.1);color:var(--muted)' : '';
+      const label = notConfigured ? 'Not Connected' : ex.status;
+      return `
+        <div class="service-row">
+          <div class="service-name">${ex.exchange.toUpperCase()}</div>
+          <div style="text-align:right">
+            <span class="badge ${badgeClass}" style="${badgeStyle}">${label}</span>
+            ${connected ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">
+              ${ex.price_count.toLocaleString()} coins · ${ex.total_updates.toLocaleString()} updates · ${fmtLocal(ex.last_update)}
+            </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
   }
 }
 
@@ -201,6 +246,8 @@ async function loadWatchdogStatus() {
       box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
       box.style.borderColor = 'rgba(255,165,0,0.3)';
     }
+    _lastHealthState.watchdogOk = !(d.count_last_7_days > 0);
+    updateStatusBanner();
   } catch (e) {
     box.innerHTML = 'Watchdog status unavailable';
   }
@@ -284,16 +331,43 @@ async function rerunStep(step) {
   } catch (e) { alert('Failed to start step'); }
 }
 
+let _lastHealthState = { db: null, redis: null, running: null, watchdogOk: null };
+
+function updateStatusBanner() {
+  const banner = document.getElementById('status-banner');
+  if (!banner) return;
+  const { db, redis, running, watchdogOk } = _lastHealthState;
+  if (db === null) { banner.textContent = 'Checking systems...'; return; }
+
+  const allGood = db === 'ok' && redis === 'ok' && running && watchdogOk !== false;
+  if (allGood) {
+    banner.textContent = '✅ All systems normal';
+    banner.style.color = 'var(--green)';
+    banner.style.borderColor = 'rgba(16,217,138,0.3)';
+  } else {
+    const issues = [];
+    if (db !== 'ok') issues.push('Database');
+    if (redis !== 'ok') issues.push('Redis');
+    if (!running) issues.push('Bot stopped');
+    if (watchdogOk === false) issues.push('Watchdog triggered recently');
+    banner.textContent = '⚠️ Attention needed: ' + issues.join(', ');
+    banner.style.color = 'var(--amber)';
+    banner.style.borderColor = 'rgba(243,156,18,0.3)';
+  }
+}
+
 loadServices();
 loadHealth();
+loadWSStatus();
 loadMarketRegime();
 loadWatchdogStatus();
 loadCronStatus();
-setInterval(loadServices, 30000);
-setInterval(loadHealth, 60000);
-setInterval(loadMarketRegime, 60000);
-setInterval(loadWatchdogStatus, 60000);
-setInterval(loadCronStatus, 60000);
+setInterval(loadServices, 10000);
+setInterval(loadHealth, 30000);
+setInterval(loadWSStatus, 10000);
+setInterval(loadMarketRegime, 30000);
+setInterval(loadWatchdogStatus, 30000);
+setInterval(loadCronStatus, 30000);
 </script>
 </body>
 </html>

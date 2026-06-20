@@ -2679,13 +2679,32 @@ def generate_diagnostics(payload: dict = Depends(require_admin)):
 
 @app.get('/admin/ws-status')
 def admin_ws_status(payload: dict = Depends(require_admin)):
+    """Multi-exchange WebSocket status, rebuilt June 20 2026.
+    Dynamically checks every exchange actually configured in the
+    exchanges table (not a hardcoded list) - automatically reflects
+    new exchanges as they're added, no code change needed later."""
     r = get_redis()
-    return {
-        'status': r.get('ws:mexc:status') or 'unknown',
-        'price_count': int(r.get('ws:mexc:price_count') or 0),
-        'total_updates': int(r.get('ws:mexc:total_updates') or 0),
-        'last_update': r.get('ws:mexc:last_update') or 'never',
-    }
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT exchange, custom_name FROM exchanges ORDER BY exchange")
+        configured_exchanges = cur.fetchall()
+
+    result = []
+    for ex_type, custom_name in configured_exchanges:
+        # Status/update tracking keys use the short exchange type (e.g.
+        # 'mexc'), but the actual price keys use custom_name (e.g.
+        # 'MEXC Paper') - confirmed by checking websocket_prices.py's
+        # EXCHANGE_NAME constant, which is the display name, not the type.
+        status = r.get(f'ws:{ex_type}:status')
+        coin_keys = r.keys(f'price:{custom_name}:*')
+        result.append({
+            'exchange': ex_type,
+            'status': status or 'not_configured',
+            'price_count': len(coin_keys),
+            'total_updates': int(r.get(f'ws:{ex_type}:total_updates') or 0),
+            'last_update': r.get(f'ws:{ex_type}:last_update') or 'never',
+        })
+    return result
 
 @app.get('/admin/health')
 def admin_health(payload: dict = Depends(require_admin)):
