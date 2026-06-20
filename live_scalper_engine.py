@@ -138,7 +138,15 @@ class LiveScalperEngine:
         def refresh_loop():
             while True:
                 time.sleep(BOT_REFRESH_INTERVAL)
-                self._load_bots()
+                try:
+                    self._load_bots()
+                except Exception as e:
+                    # FIXED June 20 2026 - same failure class as the
+                    # live DCA outage found earlier today: an
+                    # uncaught exception here would silently kill
+                    # this thread forever, freezing self.live_bots at
+                    # whatever it last loaded, with zero visibility.
+                    print(f'\u26a0\ufe0f Scalper refresh_loop error (continuing): {e}')
         t = threading.Thread(target=refresh_loop, daemon=True)
         t.start()
 
@@ -180,7 +188,10 @@ class LiveScalperEngine:
         def cleanup_loop():
             while True:
                 time.sleep(30)
-                self._cleanup_stuck_positions()
+                try:
+                    self._cleanup_stuck_positions()
+                except Exception as e:
+                    print(f'\u26a0\ufe0f Scalper cleanup_loop error (continuing): {e}')
         t = threading.Thread(target=cleanup_loop, daemon=True)
         t.start()
 
@@ -299,8 +310,16 @@ class LiveScalperEngine:
 
             print(f'⚡ LIVE SCALP OPEN: {bot["name"]} {coin} @ ${price:.8f} jump={trigger_jump:.2f}%')
 
-            # Schedule auto-exit
-            t = threading.Timer(bot['hold_sec'], self._exit_position, args=[key, 'timer'])
+            # Schedule auto-exit. Wrapped (ADDED June 20 2026) so an
+            # uncaught exception in _exit_position when this timer
+            # fires can't leave the position silently stuck open
+            # forever with just an unseen stderr traceback.
+            def _safe_exit():
+                try:
+                    self._exit_position(key, 'timer')
+                except Exception as e:
+                    print(f'\u26a0\ufe0f Scalper timer-exit error for {key}: {e}')
+            t = threading.Timer(bot['hold_sec'], _safe_exit)
             t.daemon = True
             t.start()
 

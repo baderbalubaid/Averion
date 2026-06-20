@@ -223,7 +223,10 @@ class ScalperV2Engine:
         def loop():
             while True:
                 time.sleep(30)
-                self._cleanup_stuck_positions()
+                try:
+                    self._cleanup_stuck_positions()
+                except Exception as e:
+                    print(f'\u26a0\ufe0f ScalperV2 cleanup loop error (continuing): {e}')
         threading.Thread(target=loop, daemon=True).start()
 
     def _get_price_at(self, coin, seconds_ago):
@@ -389,9 +392,13 @@ class ScalperV2Engine:
                     'max_loss':     0.0,
                 }
 
-            # Schedule timeout exit
-            t = threading.Timer(bot['max_hold_sec'], self._exit_position,
-                                args=[key, 'timeout'])
+            # Schedule timeout exit (wrapped June 20 2026)
+            def _safe_timeout_exit():
+                try:
+                    self._exit_position(key, 'timeout')
+                except Exception as e:
+                    print(f'\u26a0\ufe0f ScalperV2 timeout-exit error for {key}: {e}')
+            t = threading.Timer(bot['max_hold_sec'], _safe_timeout_exit)
             t.daemon = True
             t.start()
 

@@ -207,7 +207,10 @@ class ScalperEngine:
         def cleanup_loop():
             while True:
                 time.sleep(30)
-                self._cleanup_stuck_positions()
+                try:
+                    self._cleanup_stuck_positions()
+                except Exception as e:
+                    print(f'\u26a0\ufe0f Research scalper cleanup_loop error (continuing): {e}')
 
         t = threading.Thread(target=cleanup_loop, daemon=True)
         t.start()
@@ -321,8 +324,14 @@ class ScalperEngine:
 
             print(f'⚡ SCALP OPEN: {bot["name"]} {coin} @ ${price:.8f} jump={trigger_jump:.2f}%')
 
-            # Schedule auto-exit
-            t = threading.Timer(bot['hold_sec'], self._exit_position, args=[key, 'timer'])
+            # Schedule auto-exit (wrapped June 20 2026 - see live
+            # engine note, prevents a silently-stuck-open position)
+            def _safe_exit():
+                try:
+                    self._exit_position(key, 'timer')
+                except Exception as e:
+                    print(f'\u26a0\ufe0f Research scalper timer-exit error for {key}: {e}')
+            t = threading.Timer(bot['hold_sec'], _safe_exit)
             t.daemon = True
             t.start()
 
