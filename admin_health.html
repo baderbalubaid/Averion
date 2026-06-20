@@ -187,7 +187,7 @@ async function loadWSStatus() {
           <div style="text-align:right">
             <span class="badge ${badgeClass}" style="${badgeStyle}">${label}</span>
             ${connected ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">
-              ${ex.price_count.toLocaleString()} coins · ${ex.total_updates.toLocaleString()} updates · ${fmtLocal(ex.last_update)}
+              ${ex.price_count.toLocaleString()} coins tracked · last update ${fmtLocal(ex.last_update)}
             </div>` : ''}
           </div>
         </div>`;
