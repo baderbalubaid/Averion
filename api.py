@@ -170,6 +170,16 @@ def check_email_verified(payload: dict = Depends(verify_token)):
 def admin_dashboard():
     return FileResponse('admin.html')
 
+NEW_ADMIN_BASE = os.getenv('NEW_ADMIN_BASE', 'admin')
+
+@app.get(f'/{NEW_ADMIN_BASE}')
+def new_admin_dashboard():
+    """New multi-page admin dashboard (in progress, June 19 2026).
+    Base path is configurable via NEW_ADMIN_BASE env var - change this
+    one setting (and restart) to move to a different secret URL once
+    the rebuild is finished, without touching any code."""
+    return FileResponse('admin_health.html')
+
 @app.get('/')
 def homepage():
     """FIXED June 19 2026: this was redirecting straight to /dashboard,

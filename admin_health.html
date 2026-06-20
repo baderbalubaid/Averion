@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Averion Admin</title>
+<style>
+  :root {
+    --bg: #0a0e14; --bg2: #11161f; --border: #1f2733;
+    --text: #e8eaed; --muted: #8b95a3; --accent: #38bdf8;
+    --green: #10d98a; --red: #e74c3c; --amber: #f39c12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow-x: hidden; width: 100%; max-width: 100vw;
+  }
+  body { min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg2); position: sticky; top: 0; z-index: 50;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .logo { font-weight: 800; font-size: 16px; letter-spacing: 0.5px; flex-shrink: 0; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .menu-wrap { position: relative; flex-shrink: 0; }
+  .menu-btn {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 6px 10px;
+    font-size: 16px; cursor: pointer;
+  }
+  .menu-dropdown {
+    display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow: hidden; z-index: 60;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-item {
+    padding: 10px 14px; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .menu-item:hover { background: var(--border); }
+  .menu-item.danger { color: var(--red); }
+
+  /* ── TAB NAV (horizontally scrollable, page itself never scrolls) ── */
+  .tabnav {
+    display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid var(--border); background: var(--bg2);
+    scrollbar-width: none;
+  }
+  .tabnav::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 12px 16px; font-size: 13px; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── MAIN ── */
+  .main { padding: 16px; max-width: 100%; overflow-x: hidden; }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 14px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+
+  /* ── PASSPHRASE GATE ── */
+  #gate {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 20px;
+  }
+  #gate.hidden { display: none; }
+  .gate-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px 24px; width: 100%; max-width: 320px; text-align: center;
+  }
+  .gate-box input {
+    width: 100%; padding: 12px; margin: 14px 0; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    font-size: 15px; text-align: center;
+  }
+  .gate-box button {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: var(--accent); color: #00131c; font-weight: 600;
+    font-size: 14px; cursor: pointer;
+  }
+  .gate-error { color: var(--red); font-size: 12px; margin-top: 8px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <div style="font-size:22px;font-weight:800;margin-bottom:4px">AVERION</div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:6px">Admin access requires passphrase</div>
+    <input type="password" id="passphrase-input" placeholder="Enter passphrase" autofocus>
+    <button onclick="submitPassphrase()">Unlock</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">AVERION</div>
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Loading...</span>
+    </div>
+  </div>
+  <div class="menu-wrap">
+    <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+    <div class="menu-dropdown" id="menu-dropdown">
+      <div class="menu-item" onclick="restartBot()">🔄 Restart Bot</div>
+      <div class="menu-item danger" onclick="emergencyStop()">🔴 Stop All Trading</div>
+      <div class="menu-item" onclick="logout()">🚪 Sign Out</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabnav">
+  <div class="tab active" data-tab="health">Health & Control</div>
+  <div class="tab" data-tab="users">Users</div>
+  <div class="tab" data-tab="research">Research Lab</div>
+  <div class="tab" data-tab="champions">Trading Intelligence</div>
+  <div class="tab" data-tab="system">System Control</div>
+</div>
+
+<div class="main" id="main-content">
+  <div class="card">
+    <div class="card-title">Health & Control</div>
+    <p style="color:var(--muted);font-size:13px">Content coming next.</p>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+function getAdminToken() { return localStorage.getItem('admin_session_token'); }
+function getLoginToken() { return localStorage.getItem('averion_token'); }
+
+function checkGate() {
+  const token = getAdminToken();
+  if (!token) {
+    document.getElementById('gate').classList.remove('hidden');
+    return false;
+  }
+  document.getElementById('gate').classList.add('hidden');
+  return true;
+}
+
+async function submitPassphrase() {
+  const pass = document.getElementById('passphrase-input').value;
+  const errEl = document.getElementById('gate-error');
+  errEl.textContent = '';
+  try {
+    const res = await fetch(`${API}/admin/verify-passphrase`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getLoginToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ passphrase: pass })
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.detail || 'Incorrect passphrase';
+      return;
+    }
+    const data = await res.json();
+    localStorage.setItem('admin_session_token', data.admin_token);
+    document.getElementById('gate').classList.add('hidden');
+    init();
+  } catch (e) {
+    errEl.textContent = 'Connection error';
+  }
+}
+
+document.getElementById('passphrase-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitPassphrase();
+});
+
+function toggleMenu() {
+  document.getElementById('menu-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.menu-wrap')) {
+    document.getElementById('menu-dropdown').classList.remove('open');
+  }
+});
+
+function logout() {
+  localStorage.removeItem('admin_session_token');
+  localStorage.removeItem('averion_token');
+  window.location.href = '/login';
+}
+
+async function restartBot() {
+  if (!confirm('Restart the trading engine?')) return;
+  alert('Restart triggered (wiring pending)');
+}
+async function emergencyStop() {
+  if (!confirm('Stop ALL trading immediately?')) return;
+  alert('Emergency stop triggered (wiring pending)');
+}
+
+// Tab switching (placeholder - each tab will load real content)
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('main-content').innerHTML =
+      `<div class="card"><div class="card-title">${tab.textContent}</div>
+       <p style="color:var(--muted);font-size:13px">Content coming next.</p></div>`;
+  });
+});
+
+function init() {
+  document.getElementById('status-text').textContent = 'BOT RUNNING';
+}
+
+if (checkGate()) init();
+
+// Re-check the gate every time this page becomes visible again,
+// including when a mobile browser restores it from its back/forward
+// cache instead of doing a real reload (this was hiding the gate
+// after sign-out when navigating back via typed URL or back button).
+window.addEventListener('pageshow', (event) => {
+  if (checkGate()) init();
+});
+</script>
+</body>
+</html>
