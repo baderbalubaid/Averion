@@ -335,6 +335,31 @@ def add_exchange(req: ExchangeCreate,
 # ═══════════════════════════════
 # STATUS
 # ═══════════════════════════════
+@app.get('/health')
+def health_check():
+    """Real connectivity check for PostgreSQL and Redis. FIXED June 19
+    2026 - this endpoint never existed at all despite admin.html's old
+    PG/Redis status badges calling it every page load - they'd always
+    404 silently (swallowed by a bare try/except) and stay stuck on
+    'Checking...' forever. Genuinely tests both services now."""
+    db_status = 'error'
+    redis_status = 'error'
+    try:
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1")
+            cur.fetchone()
+            db_status = 'ok'
+    except Exception:
+        pass
+    try:
+        r = get_redis()
+        r.ping()
+        redis_status = 'ok'
+    except Exception:
+        pass
+    return {'db': db_status, 'redis': redis_status}
+
 @app.get('/status')
 def get_status():
     r = get_redis()
