@@ -594,6 +594,17 @@ def deduct_performance_fee(user_id, position_id,
             VALUES (%s, %s, %s, %s, %s)
         """, (user_id, position_id, fee_amount, trade_profit,
               None if not paid else None))
+
+        # Referral commission: 2.5% of the fee goes to whoever
+        # referred this user, if anyone (ADDED June 20 2026)
+        cur.execute("SELECT referred_by FROM users WHERE id=%s", (user_id,))
+        ref_row = cur.fetchone()
+        if ref_row and ref_row[0]:
+            referrer_id = ref_row[0]
+            commission = round(fee_amount * 0.025, 8)
+            if commission > 0:
+                credit_referral_earning(referrer_id, user_id, commission)
+
         # NOTE: paid_at intentionally left NULL here even if balance
         # covered it - "paid" in fee_debt means "covered by a specific
         # deposit", tracked separately by credit_reserve() reconciling
@@ -1423,6 +1434,27 @@ def check_and_update_floor_state(bot_id, bot_name, wallet_balance,
         return False
 
     return floor_paused
+
+def credit_referral_earning(referrer_user_id, referred_user_id, amount):
+    """Credits a referral commission directly to the referrer's
+    reserve_wallets balance (ADDED June 20 2026). Deliberately NOT
+    using credit_reserve() here - that function is for real external
+    deposits (NOWPayments etc, with gateway fees and a deposits audit
+    row), which would be the wrong semantics for an internal fee-share
+    credit. Tracks the running total in the existing referrals table."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE reserve_wallets SET
+                balance_usdt = balance_usdt + %s,
+                last_updated = NOW()
+            WHERE user_id = %s
+        """, (amount, referrer_user_id))
+        cur.execute("""
+            UPDATE referrals SET total_earned = total_earned + %s
+            WHERE referrer_user_id=%s AND referred_user_id=%s
+        """, (amount, referrer_user_id, referred_user_id))
+        conn.commit()
 
 def is_reserve_in_debt(user_id):
     """Account-level check (ADDED June 20 2026), separate from the
