@@ -3,7 +3,7 @@ import hashlib
 import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -211,6 +211,60 @@ def login(req: LoginRequest, request: Request):
 
     auth_module.clear_login_fails(ip)
     return result
+
+
+class AdminPassphraseRequest(BaseModel):
+    passphrase: str
+
+@app.post('/admin/verify-passphrase')
+def verify_admin_passphrase(req: AdminPassphraseRequest, request: Request,
+                              payload: dict = Depends(verify_token)):
+    """Layer 2 admin gate - separate from regular account login.
+    Requires a valid regular-account token first (Depends(verify_token)),
+    then a separate passphrase stored only as a hash in .env, never in
+    the database, never seen by anyone but the person who set it."""
+    ip = request.client.host
+    if auth_module.check_brute_force(ip):
+        raise HTTPException(status_code=429, detail='Too many failed attempts')
+
+    if not payload.get('is_admin'):
+        raise HTTPException(status_code=403, detail='Not an admin account')
+
+    stored_hash = os.getenv('ADMIN_PASSPHRASE_HASH')
+    if not stored_hash:
+        raise HTTPException(status_code=500, detail='Admin passphrase not configured')
+
+    if not auth_module.verify_password(req.passphrase, stored_hash):
+        auth_module.record_login_fail(ip)
+        raise HTTPException(status_code=401, detail='Incorrect passphrase')
+
+    auth_module.clear_login_fails(ip)
+
+    # Short-lived admin session token, separate from the main login token
+    admin_session_payload = {
+        'user_id': payload['user_id'],
+        'admin_session': True,
+        'exp': datetime.utcnow() + timedelta(hours=8),
+        'iat': datetime.utcnow()
+    }
+    admin_token = jwt.encode(admin_session_payload, auth_module.SECRET_KEY, algorithm='HS256')
+    return {'admin_token': admin_token}
+
+def verify_admin_session(authorization: str = Header(None)):
+    """Dependency for new admin pages/endpoints - checks the SEPARATE
+    8-hour admin session token, not the regular login token."""
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Admin session required')
+    token = authorization.replace('Bearer ', '')
+    try:
+        decoded = jwt.decode(token, auth_module.SECRET_KEY, algorithms=['HS256'])
+        if not decoded.get('admin_session'):
+            raise HTTPException(status_code=401, detail='Invalid admin session')
+        return decoded
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail='Admin session expired - please re-enter passphrase')
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail='Invalid admin session')
 
 
 class VerifyRequest(BaseModel):
@@ -2620,6 +2674,60 @@ def register(req: RegisterRequest, request: Request):
     if error:
         raise HTTPException(status_code=400, detail=error)
     return result
+
+class AdminPassphraseRequest(BaseModel):
+    passphrase: str
+
+@app.post('/admin/verify-passphrase')
+def verify_admin_passphrase(req: AdminPassphraseRequest, request: Request,
+                              payload: dict = Depends(verify_token)):
+    """Layer 2 admin gate - separate from regular account login.
+    Requires a valid regular-account token first (Depends(verify_token)),
+    then a separate passphrase stored only as a hash in .env, never in
+    the database, never seen by anyone but the person who set it."""
+    ip = request.client.host
+    if auth_module.check_brute_force(ip):
+        raise HTTPException(status_code=429, detail='Too many failed attempts')
+
+    if not payload.get('is_admin'):
+        raise HTTPException(status_code=403, detail='Not an admin account')
+
+    stored_hash = os.getenv('ADMIN_PASSPHRASE_HASH')
+    if not stored_hash:
+        raise HTTPException(status_code=500, detail='Admin passphrase not configured')
+
+    if not auth_module.verify_password(req.passphrase, stored_hash):
+        auth_module.record_login_fail(ip)
+        raise HTTPException(status_code=401, detail='Incorrect passphrase')
+
+    auth_module.clear_login_fails(ip)
+
+    # Short-lived admin session token, separate from the main login token
+    admin_session_payload = {
+        'user_id': payload['user_id'],
+        'admin_session': True,
+        'exp': datetime.utcnow() + timedelta(hours=8),
+        'iat': datetime.utcnow()
+    }
+    admin_token = jwt.encode(admin_session_payload, auth_module.SECRET_KEY, algorithm='HS256')
+    return {'admin_token': admin_token}
+
+def verify_admin_session(authorization: str = Header(None)):
+    """Dependency for new admin pages/endpoints - checks the SEPARATE
+    8-hour admin session token, not the regular login token."""
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Admin session required')
+    token = authorization.replace('Bearer ', '')
+    try:
+        decoded = jwt.decode(token, auth_module.SECRET_KEY, algorithms=['HS256'])
+        if not decoded.get('admin_session'):
+            raise HTTPException(status_code=401, detail='Invalid admin session')
+        return decoded
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail='Admin session expired - please re-enter passphrase')
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail='Invalid admin session')
+
 
 class VerifyRequest(BaseModel):
     user_id: int
