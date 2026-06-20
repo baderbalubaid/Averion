@@ -173,12 +173,46 @@ def admin_dashboard():
 NEW_ADMIN_BASE = os.getenv('NEW_ADMIN_BASE', 'admin')
 
 @app.get(f'/{NEW_ADMIN_BASE}')
-def new_admin_dashboard():
+def new_admin_gate():
     """New multi-page admin dashboard (in progress, June 19 2026).
-    Base path is configurable via NEW_ADMIN_BASE env var - change this
-    one setting (and restart) to move to a different secret URL once
-    the rebuild is finished, without touching any code."""
+    This is the Layer 2 passphrase gate ONLY. Base path is configurable
+    via NEW_ADMIN_BASE env var - change this one setting (and restart)
+    to move to a different secret URL once the rebuild is finished."""
+    return FileResponse('admin_gate.html')
+
+# IMPORTANT: page routes live under /admin/page/* (not just /admin/*)
+# to guarantee zero collision with the existing /admin/* API endpoints
+# (e.g. /admin/health and /admin/users already existed as JSON APIs
+# before this rebuild started - a page route at the exact same path
+# would silently shadow the real API, which is exactly what happened
+# with /admin/health on June 19 2026, found via direct curl testing).
+@app.get(f'/{NEW_ADMIN_BASE}/page/health')
+def new_admin_health():
     return FileResponse('admin_health.html')
+
+@app.get(f'/{NEW_ADMIN_BASE}/page/users')
+def new_admin_users():
+    return FileResponse('admin_coming_soon.html')
+
+@app.get(f'/{NEW_ADMIN_BASE}/page/research')
+def new_admin_research():
+    return FileResponse('admin_coming_soon.html')
+
+@app.get(f'/{NEW_ADMIN_BASE}/page/champions')
+def new_admin_champions():
+    return FileResponse('admin_coming_soon.html')
+
+@app.get(f'/{NEW_ADMIN_BASE}/page/system')
+def new_admin_system():
+    return FileResponse('admin_coming_soon.html')
+
+@app.get('/admin_shared.css')
+def admin_shared_css():
+    return FileResponse('admin_shared.css', media_type='text/css')
+
+@app.get('/admin_shared.js')
+def admin_shared_js():
+    return FileResponse('admin_shared.js', media_type='application/javascript')
 
 @app.get('/')
 def homepage():

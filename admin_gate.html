@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Averion Admin</title>
+<link rel="stylesheet" href="/admin_shared.css">
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <div style="font-size:22px;font-weight:800;margin-bottom:4px">AVERION</div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:6px">Admin access requires passphrase</div>
+    <input type="password" id="passphrase-input" placeholder="Enter passphrase" autofocus>
+    <button onclick="submitPassphrase()">Unlock</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+async function submitPassphrase() {
+  const pass = document.getElementById('passphrase-input').value;
+  const errEl = document.getElementById('gate-error');
+  errEl.textContent = '';
+  const loginToken = localStorage.getItem('averion_token');
+  try {
+    const res = await fetch(`${API}/admin/verify-passphrase`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${loginToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ passphrase: pass })
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.detail || 'Incorrect passphrase';
+      return;
+    }
+    const data = await res.json();
+    localStorage.setItem('admin_session_token', data.admin_token);
+    window.location.href = '/admin/page/health';
+  } catch (e) {
+    errEl.textContent = 'Connection error';
+  }
+}
+
+document.getElementById('passphrase-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitPassphrase();
+});
+
+// FIXED June 19 2026: check Layer 1 (regular account login)
+// IMMEDIATELY on page load, before showing the passphrase box at all.
+// Previously the check only happened inside submitPassphrase(), so a
+// signed-out user who typed their (correct) passphrase got bounced
+// back to login AFTER entering it - confusing, since the passphrase
+// box should never appear at all if Layer 1 isn't satisfied yet.
+if (!localStorage.getItem('averion_token')) {
+  window.location.href = '/login';
+} else if (localStorage.getItem('admin_session_token')) {
+  // Already unlocked - skip straight to the dashboard
+  window.location.href = '/admin/page/health';
+}
+// Otherwise: Layer 1 satisfied, Layer 2 not yet - show the passphrase box (default state)
+</script>
+</body>
+</html>

@@ -3,245 +3,297 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Averion Admin</title>
+<title>Averion Admin - Health</title>
+<link rel="stylesheet" href="/admin_shared.css">
 <style>
-  :root {
-    --bg: #0a0e14; --bg2: #11161f; --border: #1f2733;
-    --text: #e8eaed; --muted: #8b95a3; --accent: #38bdf8;
-    --green: #10d98a; --red: #e74c3c; --amber: #f39c12;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    background: var(--bg); color: var(--text);
-    font-family: 'Inter', -apple-system, sans-serif;
-    overflow-x: hidden; width: 100%; max-width: 100vw;
-  }
-  body { min-height: 100vh; }
-
-  /* ── HEADER ── */
-  .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    background: var(--bg2); position: sticky; top: 0; z-index: 50;
-  }
-  .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .logo { font-weight: 800; font-size: 16px; letter-spacing: 0.5px; flex-shrink: 0; }
-  .status-pill {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: var(--muted); white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
-  }
-  .status-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--green); flex-shrink: 0;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  .menu-wrap { position: relative; flex-shrink: 0; }
-  .menu-btn {
-    background: var(--bg); border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px; padding: 6px 10px;
-    font-size: 16px; cursor: pointer;
-  }
-  .menu-dropdown {
-    display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-    min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow: hidden; z-index: 60;
-  }
-  .menu-dropdown.open { display: block; }
-  .menu-item {
-    padding: 10px 14px; font-size: 13px; cursor: pointer;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .menu-item:hover { background: var(--border); }
-  .menu-item.danger { color: var(--red); }
-
-  /* ── TAB NAV (horizontally scrollable, page itself never scrolls) ── */
-  .tabnav {
-    display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    border-bottom: 1px solid var(--border); background: var(--bg2);
-    scrollbar-width: none;
-  }
-  .tabnav::-webkit-scrollbar { display: none; }
-  .tab {
-    flex-shrink: 0; padding: 12px 16px; font-size: 13px; color: var(--muted);
-    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
-  }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  /* ── MAIN ── */
-  .main { padding: 16px; max-width: 100%; overflow-x: hidden; }
-  .card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 16px; margin-bottom: 14px;
-  }
-  .card-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
-
-  /* ── PASSPHRASE GATE ── */
-  #gate {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 999; padding: 20px;
-  }
-  #gate.hidden { display: none; }
-  .gate-box {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
-    padding: 28px 24px; width: 100%; max-width: 320px; text-align: center;
-  }
-  .gate-box input {
-    width: 100%; padding: 12px; margin: 14px 0; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--bg); color: var(--text);
-    font-size: 15px; text-align: center;
-  }
-  .gate-box button {
-    width: 100%; padding: 12px; border-radius: 8px; border: none;
-    background: var(--accent); color: #00131c; font-weight: 600;
-    font-size: 14px; cursor: pointer;
-  }
-  .gate-error { color: var(--red); font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+  .service-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .service-row:last-child { border-bottom: none; }
+  .service-name { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .health-item { margin-bottom: 12px; }
+  .health-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 </style>
 </head>
 <body>
 
-<div id="gate">
-  <div class="gate-box">
-    <div style="font-size:22px;font-weight:800;margin-bottom:4px">AVERION</div>
-    <div style="color:var(--muted);font-size:13px;margin-bottom:6px">Admin access requires passphrase</div>
-    <input type="password" id="passphrase-input" placeholder="Enter passphrase" autofocus>
-    <button onclick="submitPassphrase()">Unlock</button>
-    <div class="gate-error" id="gate-error"></div>
-  </div>
-</div>
+<div id="app-shell"></div>
 
-<div class="header">
-  <div class="header-left">
-    <div class="logo">AVERION</div>
-    <div class="status-pill">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">Loading...</span>
+<div class="main">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Services</div>
+      <div class="service-row">
+        <div class="service-name"><span>🗄️</span> PostgreSQL</div>
+        <div style="text-align:right">
+          <div class="badge badge-green" id="pg-status">Checking...</div>
+        </div>
+      </div>
+      <div class="service-row">
+        <div class="service-name"><span>⚡</span> Redis</div>
+        <div style="text-align:right">
+          <div class="badge badge-green" id="redis-status">Checking...</div>
+        </div>
+      </div>
+      <div class="service-row">
+        <div class="service-name"><span>🤖</span> Bot Loop</div>
+        <div style="text-align:right">
+          <div class="badge" id="bot-badge">Checking...</div>
+        </div>
+      </div>
+      <div class="service-row">
+        <div class="service-name"><span>🔄</span> Last Cycle</div>
+        <div style="color:var(--muted);font-size:12px" id="last-cycle"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Server Health</div>
+      <div class="health-item">
+        <div class="health-header"><span>CPU</span><span id="cpu-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="cpu-bar" style="width:0%;background:var(--green)"></div></div>
+      </div>
+      <div class="health-item">
+        <div class="health-header"><span>RAM</span><span id="ram-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="ram-bar" style="width:0%;background:#38bdf8"></div></div>
+      </div>
+      <div class="health-item">
+        <div class="health-header"><span>Disk</span><span id="disk-val">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="disk-bar" style="width:0%;background:var(--amber)"></div></div>
+      </div>
     </div>
   </div>
-  <div class="menu-wrap">
-    <button class="menu-btn" onclick="toggleMenu()">⋮</button>
-    <div class="menu-dropdown" id="menu-dropdown">
-      <div class="menu-item" onclick="restartBot()">🔄 Restart Bot</div>
-      <div class="menu-item danger" onclick="emergencyStop()">🔴 Stop All Trading</div>
-      <div class="menu-item" onclick="logout()">🚪 Sign Out</div>
-    </div>
-  </div>
-</div>
 
-<div class="tabnav">
-  <div class="tab active" data-tab="health">Health & Control</div>
-  <div class="tab" data-tab="users">Users</div>
-  <div class="tab" data-tab="research">Research Lab</div>
-  <div class="tab" data-tab="champions">Trading Intelligence</div>
-  <div class="tab" data-tab="system">System Control</div>
-</div>
-
-<div class="main" id="main-content">
   <div class="card">
-    <div class="card-title">Health & Control</div>
-    <p style="color:var(--muted);font-size:13px">Content coming next.</p>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      Current Market Regime
+      <button class="btn-xs" onclick="loadMarketRegime()">↻ Refresh</button>
+    </div>
+    <div id="market-regime-box">Loading...</div>
+  </div>
+
+  <div id="watchdog-status" style="margin-bottom:14px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+    Loading watchdog status...
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      Daily Cron Status
+      <button class="btn-xs" onclick="loadCronStatus()">↻ Refresh</button>
+    </div>
+    <div id="cron-grid"></div>
   </div>
 </div>
 
+<script src="/admin_shared.js"></script>
 <script>
-const API = window.location.origin;
-
-function getAdminToken() { return localStorage.getItem('admin_session_token'); }
-function getLoginToken() { return localStorage.getItem('averion_token'); }
-
-function checkGate() {
-  const token = getAdminToken();
-  if (!token) {
-    document.getElementById('gate').classList.remove('hidden');
-    return false;
-  }
-  document.getElementById('gate').classList.add('hidden');
-  return true;
+if (!requireAdminSession()) { }
+else {
+  renderHeaderAndTabs();
 }
 
-async function submitPassphrase() {
-  const pass = document.getElementById('passphrase-input').value;
-  const errEl = document.getElementById('gate-error');
-  errEl.textContent = '';
+async function loadServices() {
   try {
-    const res = await fetch(`${API}/admin/verify-passphrase`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getLoginToken()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ passphrase: pass })
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      errEl.textContent = data.detail || 'Incorrect passphrase';
+    const [healthRes, statusRes] = await Promise.all([
+      fetch(`${API}/health`),
+      fetch(`${API}/status`, { headers: authHeaders() })
+    ]);
+    const hdata = await healthRes.json();
+    const sdata = await statusRes.json();
+
+    const pgEl = document.getElementById('pg-status');
+    pgEl.textContent = hdata.db === 'ok' ? 'Connected' : 'Down';
+    pgEl.className = 'badge ' + (hdata.db === 'ok' ? 'badge-green' : 'badge-red');
+
+    const redisEl = document.getElementById('redis-status');
+    redisEl.textContent = hdata.redis === 'ok' ? 'Connected' : 'Down';
+    redisEl.className = 'badge ' + (hdata.redis === 'ok' ? 'badge-green' : 'badge-red');
+
+    const botEl = document.getElementById('bot-badge');
+    const running = sdata.running;
+    botEl.textContent = running ? 'Running' : 'Stopped';
+    botEl.className = 'badge ' + (running ? 'badge-green' : 'badge-red');
+
+    document.getElementById('last-cycle').textContent = fmtLocal(sdata.last_cycle);
+
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+    if (statusText) {
+      statusText.textContent = running
+        ? `BOT RUNNING · ${sdata.cycle_time || '—'}s`
+        : 'BOT STOPPED';
+    }
+    if (statusDot) {
+      statusDot.style.background = running ? 'var(--green)' : 'var(--red)';
+    }
+  } catch (e) {
+    console.error('Services load failed', e);
+  }
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch(`${API}/admin/health`, { headers: authHeaders() });
+    const arr = await res.json();
+    if (!arr.length) return;
+    const d = arr[0];
+    document.getElementById('cpu-val').textContent = d.cpu.toFixed(1) + '%';
+    document.getElementById('cpu-bar').style.width = d.cpu + '%';
+    document.getElementById('ram-val').textContent =
+      `${d.ram.toFixed(1)}% · ${d.ram_used_gb}GB/${d.ram_total_gb}GB`;
+    document.getElementById('ram-bar').style.width = d.ram + '%';
+    document.getElementById('disk-val').textContent =
+      `${d.disk.toFixed(1)}% · ${d.disk_used_gb}GB/${d.disk_total_gb}GB`;
+    document.getElementById('disk-bar').style.width = d.disk + '%';
+  } catch (e) {
+    console.error('Health load failed', e);
+  }
+}
+
+async function loadMarketRegime() {
+  const box = document.getElementById('market-regime-box');
+  if (!box) return;
+  const refreshedAt = new Date().toLocaleTimeString();
+  try {
+    const res = await fetch(`${API}/admin/market-regime`, { headers: authHeaders() });
+    const d = await res.json();
+    if (!d.available) {
+      box.innerHTML = `<span style="color:var(--muted)">No regime data cached yet</span>
+        <p style="color:var(--muted);font-size:10px;margin-top:6px">Checked at ${refreshedAt}</p>`;
       return;
     }
-    const data = await res.json();
-    localStorage.setItem('admin_session_token', data.admin_token);
-    document.getElementById('gate').classList.add('hidden');
-    init();
+    const regimeColor = d.btc_regime === 'bull' ? 'var(--green)' :
+                         d.btc_regime === 'bear' ? 'var(--red)' : 'var(--amber)';
+    const regimeEmoji = d.btc_regime === 'bull' ? '🐂' : d.btc_regime === 'bear' ? '🐻' : '↔️';
+    const changeColor = d.btc_24h_change >= 0 ? 'var(--green)' : 'var(--red)';
+    box.innerHTML = `
+      <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+        <div style="font-size:22px;font-weight:bold;color:${regimeColor}">
+          ${regimeEmoji} ${d.btc_regime.toUpperCase()}
+        </div>
+        <div style="color:var(--muted);font-size:13px">
+          BTC: <b style="color:var(--text)">$${d.btc_price?.toLocaleString()}</b>
+          · SMA50: $${d.btc_sma50?.toLocaleString()}
+          · 24h: <span style="color:${changeColor}">${d.btc_24h_change >= 0 ? '+' : ''}${d.btc_24h_change}%</span>
+          · Dominance: ${d.btc_dominance}%
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:10px;margin-top:8px">↻ Checked at ${refreshedAt}</p>`;
   } catch (e) {
-    errEl.textContent = 'Connection error';
+    box.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
   }
 }
 
-document.getElementById('passphrase-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') submitPassphrase();
-});
-
-function toggleMenu() {
-  document.getElementById('menu-dropdown').classList.toggle('open');
-}
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.menu-wrap')) {
-    document.getElementById('menu-dropdown').classList.remove('open');
+async function loadWatchdogStatus() {
+  const box = document.getElementById('watchdog-status');
+  if (!box) return;
+  const refreshedAt = new Date().toLocaleTimeString();
+  try {
+    const res = await fetch(`${API}/admin/watchdog-status`, { headers: authHeaders() });
+    const d = await res.json();
+    if (!d.last_triggered) {
+      box.innerHTML = `🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
+      box.style.borderColor = 'rgba(16,217,138,0.3)';
+    } else {
+      const when = new Date(d.last_triggered).toLocaleString();
+      box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
+      box.style.borderColor = 'rgba(255,165,0,0.3)';
+    }
+  } catch (e) {
+    box.innerHTML = 'Watchdog status unavailable';
   }
-});
-
-function logout() {
-  localStorage.removeItem('admin_session_token');
-  localStorage.removeItem('averion_token');
-  window.location.href = '/login';
 }
 
-async function restartBot() {
-  if (!confirm('Restart the trading engine?')) return;
-  alert('Restart triggered (wiring pending)');
+let _rerunPollers = {};
+
+async function loadCronStatus() {
+  try {
+    const res = await fetch(`${API}/admin/cron-status`, { headers: authHeaders() });
+    const cronData = await res.json();
+    // Schedule times are stored as UTC (matching the actual cron
+    // schedule: 0 3 * * * etc) then converted to the browser's local
+    // time below - this stays correct automatically regardless of
+    // timezone, DST, or travel, instead of a hardcoded offset.
+    const steps = [
+      { key: 'db_backup', name: 'DB Backup', utc: '03:00' },
+      { key: 'system_health', name: 'System Health', utc: '03:00' },
+      { key: 'classification', name: 'Classification', utc: '03:45', approx: true },
+      { key: 'params', name: 'Calculate Params', utc: '04:30', approx: true },
+      { key: 'rars', name: 'RARS Scoring', utc: '05:15', approx: true },
+      { key: 'champion', name: 'Champion Promotion', relative: 'after RARS' },
+      { key: 'paper_timer', name: 'Paper Timer', relative: 'after RARS' },
+      { key: 'btc_daily', name: 'BTC Daily Fetch', relative: 'after RARS' },
+      { key: 'cleanup', name: 'Sunday Cleanup', relative: 'Sundays only' },
+      { key: 'reports', name: 'Research Reports', relative: 'after RARS' },
+      { key: 'telegram', name: 'Telegram Report', relative: 'after RARS' },
+    ].map(s => {
+      if (s.relative) { s.time = s.relative; return s; }
+      s.time = (s.approx ? '~' : '') + utcHourMinToLocal(s.utc);
+      return s;
+    });
+    const grid = document.getElementById('cron-grid');
+    grid.innerHTML = steps.map(step => {
+      const d = cronData[step.key];
+      const status = d ? d.status : null;
+      const badge = status === 'success' ? '<span class="badge badge-green">✅ Complete</span>' :
+                    status === 'failed' ? '<span class="badge badge-red">❌ Failed</span>' :
+                    '<span class="badge" style="background:rgba(136,136,136,0.1);color:var(--muted)">— Pending</span>';
+      return `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px">${step.time} · ${step.name}</span>
+            ${badge}
+          </div>
+          ${d ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">
+            Last run: ${fmtLocal(d.completed_at)} · Duration: ${d.duration?.toFixed(1)}s · Records: ${d.records || 0}
+          </div>` : ''}
+          <button class="btn-xs" id="rerun-btn-${step.key}" style="margin-top:6px" onclick="rerunStep('${step.key}')">↻ Re-run</button>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('cron-grid').innerHTML = '<div style="color:var(--muted)">Failed to load cron status</div>';
+  }
 }
-async function emergencyStop() {
-  if (!confirm('Stop ALL trading immediately?')) return;
-  alert('Emergency stop triggered (wiring pending)');
+
+async function rerunStep(step) {
+  try {
+    const beforeRes = await fetch(`${API}/admin/cron-status`, { headers: authHeaders() });
+    const before = await beforeRes.json();
+    const beforeTime = before[step]?.completed_at || null;
+
+    await fetch(`${API}/admin/cron/${step}/run`, { method: 'POST', headers: authHeaders() });
+
+    const btn = document.getElementById(`rerun-btn-${step}`);
+    if (btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
+
+    if (_rerunPollers[step]) clearInterval(_rerunPollers[step]);
+    let attempts = 0;
+    _rerunPollers[step] = setInterval(async () => {
+      attempts++;
+      const res = await fetch(`${API}/admin/cron-status`, { headers: authHeaders() });
+      const data = await res.json();
+      const nowTime = data[step]?.completed_at || null;
+      if ((nowTime && nowTime !== beforeTime) || attempts >= 60) {
+        clearInterval(_rerunPollers[step]);
+        delete _rerunPollers[step];
+        loadCronStatus();
+      }
+    }, 2000);
+  } catch (e) { alert('Failed to start step'); }
 }
 
-// Tab switching (placeholder - each tab will load real content)
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('main-content').innerHTML =
-      `<div class="card"><div class="card-title">${tab.textContent}</div>
-       <p style="color:var(--muted);font-size:13px">Content coming next.</p></div>`;
-  });
-});
-
-function init() {
-  document.getElementById('status-text').textContent = 'BOT RUNNING';
-}
-
-if (checkGate()) init();
-
-// Re-check the gate every time this page becomes visible again,
-// including when a mobile browser restores it from its back/forward
-// cache instead of doing a real reload (this was hiding the gate
-// after sign-out when navigating back via typed URL or back button).
-window.addEventListener('pageshow', (event) => {
-  if (checkGate()) init();
-});
+loadServices();
+loadHealth();
+loadMarketRegime();
+loadWatchdogStatus();
+loadCronStatus();
+setInterval(loadServices, 30000);
+setInterval(loadHealth, 60000);
+setInterval(loadMarketRegime, 60000);
+setInterval(loadWatchdogStatus, 60000);
+setInterval(loadCronStatus, 60000);
 </script>
 </body>
 </html>
