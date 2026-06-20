@@ -269,6 +269,8 @@ class LiveScalperEngine:
                     'base_order': bot['base_order'],
                     'max_profit': 0.0,
                     'max_loss': 0.0,
+                    'user_id': bot['user_id'],
+                    'bot_name': bot['name'],
                 }
 
             print(f'⚡ LIVE SCALP OPEN: {bot["name"]} {coin} @ ${price:.8f} jump={trigger_jump:.2f}%')
@@ -354,6 +356,32 @@ class LiveScalperEngine:
                         """, (wallet_id, pos['pos_id'], returned,
                                 available, new_balance,
                                 f'Close {key[1]} {reason} pnl={pnl_pct:.2f}%'))
+                conn.commit()
+
+            # Deduct performance fee on profit. ADDED June 20 2026 -
+            # scalper had ZERO fee collection before this, confirmed
+            # via grep. Same rule as DCA: 20% default, respects
+            # is_zero_fee/fee_override, skips research/admin accounts.
+            if float(pnl_usdt) > 0:
+                try:
+                    user_id = pos.get('user_id')
+                    if user_id:
+                        with db.get_db() as _fc:
+                            _cur = _fc.cursor()
+                            _cur.execute("""
+                                SELECT is_research_account, is_admin,
+                                       is_zero_fee, fee_override
+                                FROM users WHERE id=%s
+                            """, (user_id,))
+                            _urow = _cur.fetchone()
+                        _skip_fee = _urow and (_urow[0] or _urow[1] or _urow[2])
+                        if not _skip_fee:
+                            _fee_pct = float(_urow[3]) if _urow and _urow[3] is not None else 20.0
+                            fee = float(pnl_usdt) * (_fee_pct / 100)
+                            db.deduct_performance_fee(user_id, pos['pos_id'], fee, float(pnl_usdt))
+                            print(f'💰 Scalper fee: {pos.get("bot_name")} ${fee:.4f} ({_fee_pct}%)')
+                except Exception as _fee_e:
+                    print(f'⚠️ Scalper fee deduction error: {_fee_e}')
 
             # Set cooldown 5 min
             self.cooldowns[key] = time.time() + 300
