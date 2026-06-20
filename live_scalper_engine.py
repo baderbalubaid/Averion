@@ -87,6 +87,7 @@ class LiveScalperEngine:
                         auto_resume if auto_resume is not None else True,
                         floor_paused or False
                     ),
+                    'account_in_debt': db.is_reserve_in_debt(user_id),
                 })
             # Load current scalper champion for smart-mode bots
             scalper_champion = None
@@ -198,6 +199,10 @@ class LiveScalperEngine:
         # entry while floor_paused, which was already computed once
         # per bot-refresh cycle in _load_bots, not on every tick.
         if bot.get('floor_paused'):
+            return
+        # Account-level reserve debt gate (ADDED June 20 2026) -
+        # separate mechanism, also computed once per refresh cycle.
+        if bot.get('account_in_debt'):
             return
         key = (bot['id'], coin)
         # Skip if already have open position for this bot+coin

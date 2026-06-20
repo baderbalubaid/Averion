@@ -553,6 +553,37 @@ def deduct_performance_fee(user_id, position_id,
         new_balance = float(row[0]) if row else 0
         paid = new_balance >= 0
 
+        # Reserve alert thresholds (ADDED June 20 2026): <$5 warning,
+        # <$2 critical, $0/below empty. Only fires when CROSSING into
+        # a worse level than last time, not on every fee deduction
+        # while already below threshold (would spam every trade close).
+        if new_balance <= 0:
+            new_level = 'empty'
+        elif new_balance < 2:
+            new_level = 'critical'
+        elif new_balance < 5:
+            new_level = 'warning'
+        else:
+            new_level = 'none'
+
+        severity = {'none': 0, 'warning': 1, 'critical': 2, 'empty': 3}
+        cur.execute("SELECT last_alert_level FROM reserve_wallets WHERE user_id=%s", (user_id,))
+        level_row = cur.fetchone()
+        last_level = (level_row[0] if level_row else None) or 'none'
+
+        if severity[new_level] > severity[last_level]:
+            try:
+                import telegram as _tg
+                if new_level == 'empty':
+                    _tg.alert_reserve_empty(user_id)
+                elif new_level in ('warning', 'critical'):
+                    _tg.alert_reserve_low(user_id, new_balance)
+            except Exception as _alert_e:
+                print(f'Reserve alert error: {_alert_e}')
+
+        cur.execute("UPDATE reserve_wallets SET last_alert_level=%s WHERE user_id=%s",
+                    (new_level, user_id))
+
         # fee_debt stays as an audit log of every fee event, not the
         # live balance itself - paid_at gets set when a later deposit
         # covers this specific debt row (see credit_reserve())
@@ -597,6 +628,23 @@ def credit_reserve(user_id, amount_usdt, gateway_fee_usdt=0,
             RETURNING balance_usdt
         """, (net_credited, amount_usdt, user_id))
         row = cur.fetchone()
+
+        # Reset alert-level tracking based on the new balance (ADDED
+        # June 20 2026) - without this, a deposit that recovers the
+        # balance would leave last_alert_level stuck at the worst
+        # level ever reached, so a future decline back to that same
+        # severity would never re-trigger an alert.
+        _new_bal = float(row[0]) if row else 0
+        if _new_bal <= 0:
+            _reset_level = 'empty'
+        elif _new_bal < 2:
+            _reset_level = 'critical'
+        elif _new_bal < 5:
+            _reset_level = 'warning'
+        else:
+            _reset_level = 'none'
+        cur.execute("UPDATE reserve_wallets SET last_alert_level=%s WHERE user_id=%s",
+                    (_reset_level, user_id))
         balance_after = float(row[0]) if row else 0
 
         # Mark oldest unpaid fee_debt rows as paid, up to debt_paid amount
@@ -1375,6 +1423,21 @@ def check_and_update_floor_state(bot_id, bot_name, wallet_balance,
         return False
 
     return floor_paused
+
+def is_reserve_in_debt(user_id):
+    """Account-level check (ADDED June 20 2026), separate from the
+    per-bot reserve_floor mechanism. Locked rule: reserve balance > $0
+    -> new trades open across ALL of that user's bots. Reserve = $0 or
+    debt -> new trades pause (DCA and TP are NEVER affected by this -
+    callers must only use this to gate new position opens). Returns
+    True if new trades should be paused for this user right now."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT balance_usdt FROM reserve_wallets WHERE user_id=%s", (user_id,))
+        row = cur.fetchone()
+    if not row:
+        return False  # no reserve_wallets row yet = nothing to deduct from = not in debt
+    return float(row[0]) <= 0
 
 def get_market_age_days(coin: str, exchange: str = 'mexc') -> int:
     """Returns days since coin was first seen by Averion. 0 if unknown."""

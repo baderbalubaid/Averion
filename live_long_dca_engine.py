@@ -698,8 +698,12 @@ def run_bot_cycle(bot, r):
         bot.get('auto_resume', True), bot.get('floor_paused', False)
     )
 
+    # Account-level reserve debt check (ADDED June 20 2026) - separate
+    # mechanism from the bot-level floor above. Each user independent.
+    account_in_debt = db.is_reserve_in_debt(bot['user_id'])
+
     # ── Open new positions ──
-    if bot['trading_on'] and not floor_paused and len(open_positions) < bot['trades_per_bot']:
+    if bot['trading_on'] and not floor_paused and not account_in_debt and len(open_positions) < bot['trades_per_bot']:
         coins = get_tradeable_coins(r, bot.get('bot_params', {}))
         for coin in coins:
             # Check per-coin limit
