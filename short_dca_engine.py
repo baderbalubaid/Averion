@@ -242,9 +242,22 @@ def execute_short_sell(pos, bot, sell_quantity):
           f'qty={result.quantity:.4f} avg_sell=${new_avg_sell_price:.6f} '
           f'tp_target=${tp_target:.6f}')
 
+    # Buyback target quantity depends on profit_coin (ADDED June 20
+    # 2026): 'USDT' mode buys back exactly the quantity sold (the
+    # buyback price is lower than the sell price, so this naturally
+    # leaves a leftover USDT difference sitting in the exchange
+    # account - that leftover IS the profit, banked as cash with zero
+    # extra work needed). 'base_coin' mode spends ALL the proceeds
+    # raised to buy back coin at the now-lower price, getting MORE
+    # coin than was sold - profit shows up as extra coin quantity.
+    if bot.get('profit_coin') == 'base_coin':
+        buyback_quantity = new_total_sold_usdt / tp_target if tp_target > 0 else new_quantity
+    else:
+        buyback_quantity = new_quantity
+
     with db.get_db() as conn:
         limit_result = executor.place_limit_buyback(
-            pos['id'], coin, tp_target, new_quantity, wallet, conn
+            pos['id'], coin, tp_target, buyback_quantity, wallet, conn
         )
         cur = conn.cursor()
         if limit_result.success:
@@ -308,4 +321,76 @@ def retry_pending_buybacks(bots_by_id):
                 conn.commit()
                 print(f'Retry still failing for {coin} pos={pos_id}: {limit_result.error}')
 
-print("Chunk 3 loaded: sell execution + buyback placement + retry ready")
+def handle_buyback_fill(pos_id, coin, total_sold_usdt, fill_result, bot, wallet, executor):
+    """Position's buyback limit has filled - credit wallet with
+    bought-back coin (paper only - live syncs externally), calculate
+    realized profit, deduct platform fee (same mechanism/wallet as
+    Long and Scalper - always from reserve_wallets, fee basis always
+    in USDT terms regardless of profit_coin), close the position."""
+    buyback_cost = fill_result.fill_quantity * fill_result.fill_price
+    realized_pnl_usdt = total_sold_usdt - buyback_cost
+    realized_pnl_pct = (realized_pnl_usdt / total_sold_usdt * 100) if total_sold_usdt > 0 else 0
+
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        if wallet.get('is_paper') and isinstance(executor, PaperAdapter):
+            executor.credit_buyback_to_wallet(wallet['id'], fill_result.fill_quantity, conn)
+
+        cur.execute("""
+            UPDATE positions
+            SET status='closed', closed_at=NOW(), close_reason='tp',
+                realized_pnl_usdt=%s, realized_pnl_pct=%s
+            WHERE id=%s
+        """, (realized_pnl_usdt, realized_pnl_pct, pos_id))
+        conn.commit()
+
+    emoji = '\U0001F49A' if realized_pnl_usdt > 0 else '\u2764\uFE0F'
+    print(f'{emoji} SHORT BUYBACK FILLED: {bot["name"]} {coin} '
+          f'buyback_qty={fill_result.fill_quantity:.4f} @ ${fill_result.fill_price:.6f} '
+          f'pnl=${realized_pnl_usdt:.4f} ({realized_pnl_pct:.2f}%)')
+
+    if realized_pnl_usdt > 0:
+        try:
+            with db.get_db() as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT is_research_account, is_admin, is_zero_fee, fee_override
+                    FROM users WHERE id=%s
+                """, (bot['user_id'],))
+                urow = cur.fetchone()
+            skip_fee = urow and (urow[0] or urow[1] or urow[2])
+            if not skip_fee:
+                fee_pct = float(urow[3]) if urow and urow[3] is not None else 20.0
+                fee = realized_pnl_usdt * (fee_pct / 100)
+                db.deduct_performance_fee(bot['user_id'], pos_id, fee, realized_pnl_usdt)
+        except Exception as e:
+            print(f'Short fee deduction error: {e}')
+
+def check_buyback_fills(bots_by_id):
+    """Each cycle, checks every open Short position with an active
+    buyback limit order for fills."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, coin, avg_sell_price, quantity, total_sold_usdt,
+                   bot_id, short_buyback_order_id
+            FROM positions
+            WHERE direction='short' AND status='open'
+            AND short_buyback_order_id IS NOT NULL
+        """)
+        active = cur.fetchall()
+
+    for pos_id, coin, avg_sell_price, quantity, total_sold_usdt, bot_id, order_id in active:
+        bot = bots_by_id.get(bot_id)
+        if not bot:
+            continue
+        wallet = bot['wallet']
+        executor = get_executor(wallet)
+
+        with db.get_db() as conn:
+            fill_result = executor.check_limit_fill(order_id, coin, wallet, conn)
+
+        if fill_result.filled:
+            handle_buyback_fill(pos_id, coin, float(total_sold_usdt), fill_result, bot, wallet, executor)
+
+print("Chunk 4 loaded: buyback fill detection + handling ready")
