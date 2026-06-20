@@ -65,8 +65,25 @@ def retry_pending_notifications():
 # ═══════════════════════════════
 # TRADE NOTIFICATIONS
 # ═══════════════════════════════
+def is_live_notify_enabled(user_id):
+    """Checks the notify_live_enabled preference. ADDED June 20 2026
+    as an immediate stop-gap after fixing the chat_id indexing bug -
+    notifications suddenly started actually working for the first time
+    ever, flooding the user with every real trade open/close/DCA.
+    Defaults FALSE (paused) until the full preferences UI is built."""
+    try:
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT notify_live_enabled FROM users WHERE id=%s", (user_id,))
+            row = cur.fetchone()
+            return bool(row[0]) if row else False
+    except Exception:
+        return False
+
 def notify_trade_open(user_id, coin, direction,
                        price, amount, method, is_paper):
+    if not is_live_notify_enabled(user_id):
+        return
     user = db.get_user_by_id(user_id)
     if not user or not user[5]:  # telegram_chat_id (FIXED June 20 2026 - was user[3], which is actually is_zero_fee, not chat_id - see database.py get_user_by_id column order)
         return
@@ -90,6 +107,8 @@ def notify_trade_closed(user_id, coin, direction,
                          entry_price, exit_price,
                          profit, fee, dca_count,
                          reason, is_paper):
+    if not is_live_notify_enabled(user_id):
+        return
     user = db.get_user_by_id(user_id)
     if not user or not user[5]:
         return
@@ -116,6 +135,8 @@ Time: {datetime.utcnow().strftime('%H:%M UTC')}"""
 
 def notify_dca(user_id, coin, dca_level,
                price, amount, avg_cost, is_paper):
+    if not is_live_notify_enabled(user_id):
+        return
     user = db.get_user_by_id(user_id)
     if not user or not user[5]:
         return
