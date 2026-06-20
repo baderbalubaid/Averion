@@ -156,7 +156,7 @@ def check_email_verified(payload: dict = Depends(verify_token)):
     user = db.get_user_by_id(payload['user_id'])
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
-    # user[3] = is_admin · check email_verified separately
+    # (real get_user_by_id order: 0=id,1=email,2=is_admin,3=is_zero_fee,4=is_suspended,5=chat_id,6=verified)
     with db.get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -2904,10 +2904,14 @@ def connect_telegram(payload: dict = Depends(verify_token)):
 
 @app.get('/telegram/status')
 def telegram_status(payload: dict = Depends(verify_token)):
+    """FIXED June 20 2026: was checking user[3]/user[4]
+    (is_zero_fee/is_suspended) instead of the real chat_id/verified
+    columns (5/6) - users have likely been shown an incorrect
+    Telegram connection status in Settings this whole time."""
     user = db.get_user_by_id(payload['user_id'])
     return {
-        'connected': bool(user[3]) if user else False,
-        'verified': bool(user[4]) if user else False
+        'connected': bool(user[5]) if user else False,
+        'verified': bool(user[6]) if user else False
     }
 
 # ═══════════════════════════════

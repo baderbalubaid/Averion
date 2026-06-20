@@ -68,10 +68,10 @@ def retry_pending_notifications():
 def notify_trade_open(user_id, coin, direction,
                        price, amount, method, is_paper):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:  # telegram_chat_id
+    if not user or not user[5]:  # telegram_chat_id (FIXED June 20 2026 - was user[3], which is actually is_zero_fee, not chat_id - see database.py get_user_by_id column order)
         return
 
-    chat_id = user[3]
+    chat_id = user[5]
     mode = '📄 Paper' if is_paper else '💰 Live'
     emoji = '📈' if direction == 'long' else '📉'
 
@@ -91,10 +91,10 @@ def notify_trade_closed(user_id, coin, direction,
                          profit, fee, dca_count,
                          reason, is_paper):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
-    chat_id = user[3]
+    chat_id = user[5]
     mode = '📄 Paper' if is_paper else '💰 Live'
     profit_emoji = '✅' if profit > 0 else '❌'
     net_profit = profit - fee
@@ -117,10 +117,10 @@ Time: {datetime.utcnow().strftime('%H:%M UTC')}"""
 def notify_dca(user_id, coin, dca_level,
                price, amount, avg_cost, is_paper):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
-    chat_id = user[3]
+    chat_id = user[5]
     mode = '📄' if is_paper else '💰'
 
     msg = f"""{mode} <b>DCA #{dca_level}</b>
@@ -137,7 +137,7 @@ New Avg Cost: ${avg_cost:.6f}"""
 # ═══════════════════════════════
 def alert_reserve_low(user_id, balance):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""⚠️ <b>Reserve Wallet Low</b>
@@ -148,13 +148,13 @@ Please top up your reserve wallet.
 
 <a href="https://averionbot.com/settings">Top Up Now</a>"""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
     db.add_attention_log(user_id, 'red', 'reserve_low',
                          f'Reserve wallet low: ${balance:.2f}')
 
 def alert_reserve_empty(user_id):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""🔴 <b>Reserve Wallet Empty</b>
@@ -163,11 +163,11 @@ Fees will be recorded as debt.
 Bot continues trading normally.
 Top up to clear debt and avoid issues."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 def alert_api_key_expiring(user_id, exchange_name, days_left):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""⚠️ <b>API Key Expiring Soon</b>
@@ -176,13 +176,13 @@ Exchange: <b>{exchange_name}</b>
 Days remaining: <b>{days_left}</b>
 Please update your API key before it expires."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
     db.add_attention_log(user_id, 'red', 'api_expiring',
                          f'{exchange_name} API key expires in {days_left} days')
 
 def alert_api_key_invalid(user_id, exchange_name):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""🔴 <b>API Key Invalid</b>
@@ -191,13 +191,13 @@ Exchange: <b>{exchange_name}</b>
 Exchange has been paused.
 Please update your API key."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
     db.add_attention_log(user_id, 'red', 'api_invalid',
                          f'{exchange_name} API key invalid · exchange paused')
 
 def alert_st_flag(user_id, coin, pnl):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     emoji = '✅' if pnl >= 0 else '❌'
@@ -209,12 +209,12 @@ P&L: {emoji} ${pnl:.2f}
 
 Exchange suspended trading on this coin."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 def alert_checkpoint(user_id, coin, dca_level,
                       next_cost, bot_id, position_id):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""⚠️ <b>DCA Checkpoint Reached</b>
@@ -226,11 +226,11 @@ Next DCA cost: ${next_cost:.2f}
 DCA has been turned OFF automatically.
 Open dashboard to continue or wait for TP."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 def alert_low_balance(user_id, exchange_name):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""⚠️ <b>Insufficient Balance</b>
@@ -239,7 +239,7 @@ Exchange: <b>{exchange_name}</b>
 No position can be funded right now.
 Bot will retry when funds available."""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 # ═══════════════════════════════
 # REPORT NOTIFICATIONS
@@ -247,7 +247,7 @@ Bot will retry when funds available."""
 def send_daily_report(user_id, closed_today, profit_today,
                        fees_today, open_positions, reserve):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     profit_emoji = '📈' if profit_today > 0 else '📊'
@@ -263,12 +263,12 @@ Net profit: ${profit_today - fees_today:.2f}
 Open positions: {open_positions}
 Reserve balance: ${reserve:.2f}"""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 def send_weekly_report(user_id, closed_week, profit_week,
                         fees_week, best_coin, worst_coin):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""📊 <b>Weekly Report</b>
@@ -282,12 +282,12 @@ Net profit: ${profit_week - fees_week:.2f}
 Best coin: {best_coin or 'N/A'}
 Worst coin: {worst_coin or 'N/A'}"""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 def send_monthly_report(user_id, closed_month,
                          profit_month, fees_month):
     user = db.get_user_by_id(user_id)
-    if not user or not user[3]:
+    if not user or not user[5]:
         return
 
     msg = f"""📅 <b>Monthly Report</b>
@@ -298,7 +298,7 @@ Gross profit: ${profit_month:.2f}
 Fees paid: ${fees_month:.2f}
 <b>Net profit: ${profit_month - fees_month:.2f}</b>"""
 
-    send_message(user[3], msg)
+    send_message(user[5], msg)
 
 # ═══════════════════════════════
 # VERIFICATION CODE

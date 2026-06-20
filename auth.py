@@ -299,11 +299,21 @@ def register_user(email: str, password: str,
 # ═══════════════════════════════
 def change_password(user_id: int, old_password: str,
                      new_password: str, ip: str = None) -> tuple:
-    user = db.get_user_by_id(user_id)
-    if not user:
+    """FIXED June 20 2026: was using db.get_user_by_id(), which never
+    selects password_hash at all - user[2] there is actually is_admin
+    (a boolean), so verify_password() was being called against a
+    boolean instead of a real hash. This meant ANY user attempting to
+    change their own password would always get 'Current password
+    incorrect', regardless of whether they typed the right password.
+    Now uses a dedicated minimal query that actually fetches the hash."""
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT password_hash FROM users WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+    if not row:
         return False, 'User not found'
 
-    if not verify_password(old_password, user[2]):
+    if not verify_password(old_password, row[0]):
         db.log_security_event(
             user_id, 'password_change_failed', ip,
             details={'reason': 'wrong_old_password'}
