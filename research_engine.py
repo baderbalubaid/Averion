@@ -860,7 +860,8 @@ def run_cycle(r):
                     _pos_bot = next((b for b in bots if b[0] == pos[1]), None)
                     pos_is_research = bool(_pos_bot and _pos_bot[31]) if _pos_bot and len(_pos_bot) > 31 else bool(_pos_bot and (_pos_bot[4].startswith('E') or _pos_bot[4].startswith('BM')))
                     if not pos_is_research:
-                        tg.notify_trade_closed(pos[2], pos[4], pos[5], float(pos[7] or 0), result.get('price', 0), gross_profit, fee_amount, pos[10], 'tp', PAPER_MODE)
+                        # fee param is 0 - fees never apply to research/admin (see above)
+                        tg.notify_trade_closed(pos[2], pos[4], pos[5], float(pos[7] or 0), result.get('price', 0), gross_profit, 0, pos[10], 'tp', PAPER_MODE)
 
 
 
