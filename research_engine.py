@@ -637,6 +637,19 @@ def run_cycle(r):
         get_redis().setex('bot:last_cycle', 600, str(datetime.utcnow()))
     except: pass
 
+    # Memory leak diagnostic (ADDED June 20 2026) - logs this
+    # process's own RSS memory every cycle to a Redis list, so the
+    # growth pattern can be observed directly over time instead of
+    # guessing from static code review. Trimmed to last 500 readings.
+    try:
+        import psutil as _psutil_mem
+        _proc = _psutil_mem.Process()
+        _rss_mb = round(_proc.memory_info().rss / 1024 / 1024, 1)
+        get_redis().lpush('research:memory_log', f'{datetime.utcnow()}|{_rss_mb}')
+        get_redis().ltrim('research:memory_log', 0, 499)
+    except Exception as _mem_e:
+        print(f'Memory diagnostic error: {_mem_e}')
+
     # Record system health every 5 minutes
     global _last_health_time
     if time.time() - _last_health_time >= 300:
