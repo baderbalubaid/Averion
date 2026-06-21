@@ -735,6 +735,12 @@ def run_bot_cycle(bot, r):
     # mechanism from the bot-level floor above. Each user independent.
     account_in_debt = db.is_reserve_in_debt(bot['user_id'])
 
+    # Cross-system fund isolation (ADDED June 21 2026) - if a Short
+    # bot on this SAME wallet has a sell pending its buyback limit
+    # placement, Long must hold off opening new positions here. Short
+    # buyback funding has priority per locked spec.
+    wallet_pending_buyback = db.is_wallet_pending_buyback(bot['wallet_id'])
+
     # ── Open new positions ──
     # ASAP-entry bots are now handled reactively in the tick callback
     # (ADDED June 20 2026, zero-delay) - skip here to avoid a
@@ -742,6 +748,7 @@ def run_bot_cycle(bot, r):
     # handler. Template/smart entry still needs this periodic pass,
     # since their entry SIGNAL evaluation is intentionally periodic.
     if bot['trading_on'] and not floor_paused and not account_in_debt \
+            and not wallet_pending_buyback \
             and bot.get('entry_method') != 'dca_asap' \
             and len(open_positions) < bot['trades_per_bot']:
         coins = get_tradeable_coins(r, bot.get('bot_params', {}))
@@ -875,6 +882,8 @@ def make_live_tp_callback():
                     if open_coins_count >= bot['trades_per_coin']:
                         continue
                     if len(open_positions) >= bot['trades_per_bot']:
+                        continue
+                    if db.is_wallet_pending_buyback(bot['wallet_id']):
                         continue
                     if is_st_coin(coin, bot.get('exchange_name', 'mexc'), get_redis()):
                         continue

@@ -1456,6 +1456,19 @@ def credit_referral_earning(referrer_user_id, referred_user_id, amount):
         """, (amount, referrer_user_id, referred_user_id))
         conn.commit()
 
+def is_wallet_pending_buyback(wallet_id):
+    """Cross-system fund-isolation check (ADDED June 21 2026): does
+    ANY Short position on this wallet currently have a sell pending
+    its buyback limit order placement? If so, Long DCA must NOT open
+    new positions on this wallet until that placement succeeds - the
+    locked priority rule is Short buyback funding always wins the
+    race for funds on a shared wallet. Short already sets this flag
+    on every sell; this is the other half - Long actually checking it."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM positions WHERE wallet_id=%s AND direction='short' AND status='open' AND pending_buyback=TRUE", (wallet_id,))
+        return cur.fetchone()[0] > 0
+
 def is_reserve_in_debt(user_id):
     """Account-level check (ADDED June 20 2026), separate from the
     per-bot reserve_floor mechanism. Locked rule: reserve balance > $0
