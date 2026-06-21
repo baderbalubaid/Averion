@@ -98,6 +98,7 @@ run_step "Paper Timer" "paper_timer" "$LOG_DIR/paper_timer.log" python3 $AVERION
 run_step "BTC Daily Fetch" "btc_daily" "$LOG_DIR/daily.log" python3 $AVERION_DIR/fetch_btc_daily.py
 
 if [ "$(date +%u)" = "7" ]; then
+    run_step "Data Retention" "retention" "$LOG_DIR/retention.log" python3 $AVERION_DIR/data_retention_cleanup.py --execute
     run_step "Sunday VACUUM" "cleanup" "$LOG_DIR/cleanup.log" psql -U averion -h localhost averion -c "VACUUM ANALYZE;"
     find $LOG_DIR -name "*.log" -mtime +30 -delete
     DISK=$(df / | tail -1 | awk '{print $5}' | cut -d'%' -f1)
