@@ -1456,6 +1456,47 @@ def credit_referral_earning(referrer_user_id, referred_user_id, amount):
         """, (amount, referrer_user_id, referred_user_id))
         conn.commit()
 
+def get_long_holdings_quantity(user_id, coin, exchange_id):
+    """Sums quantity across ALL open Long DCA positions for this
+    user+coin+exchange (ADDED June 21 2026). Used to protect Long's
+    coin from being sold by a Short position sharing the same real
+    exchange balance - Long's holdings are off-limits to Short until
+    Long actually sells."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COALESCE(SUM(quantity), 0) FROM live_dca_positions WHERE user_id=%s AND coin=%s AND exchange_id=%s AND status='open'", (user_id, coin, exchange_id))
+        return float(cur.fetchone()[0])
+
+def get_available_for_short(user_id, coin, wallet):
+    """Live-only protection (ADDED June 21 2026): real exchange
+    balance minus whatever Long currently holds for this coin on
+    this exchange. Paper mode returns None (no limit) - paper Long
+    and Short wallets are genuinely separate sandboxes with no real
+    shared balance to protect. Fails SAFE (returns 0, not unlimited)
+    if the real balance can't be fetched for any reason."""
+    if wallet.get('is_paper'):
+        return None
+    try:
+        from exchanges import get_balance, decrypt
+        import ccxt
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT exchange, api_key, secret FROM exchanges WHERE id=%s",
+                        (wallet['exchange_id'],))
+            exc_name, api_key, secret = cur.fetchone()
+        exchange_class = getattr(ccxt, exc_name.lower())
+        exchange_obj = exchange_class({
+            'apiKey': decrypt(api_key), 'secret': decrypt(secret), 'enableRateLimit': True
+        })
+        bal = get_balance(exchange_obj, coin)
+        real_balance = bal['free']
+    except Exception as e:
+        print(f'get_available_for_short error for {coin}: {e}')
+        return 0
+
+    long_holdings = get_long_holdings_quantity(user_id, coin, wallet['exchange_id'])
+    return max(0, real_balance - long_holdings)
+
 def is_wallet_pending_buyback(wallet_id):
     """Cross-system fund-isolation check (ADDED June 21 2026): does
     ANY Short position on this wallet currently have a sell pending

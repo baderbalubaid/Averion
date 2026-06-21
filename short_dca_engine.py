@@ -162,7 +162,7 @@ def check_sell_trigger(pos, current_price, bot, coin_params_cache):
 
     return True, None  # caller computes actual quantity separately
 
-def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price):
+def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price, coin):
     """Computes how much coin to sell for this DCA level. Amount mode
     (USDT-equivalent / fixed quantity / % of current wallet balance)
     comes from bot_params, per Bader's explicit design: percentage
@@ -186,6 +186,11 @@ def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price):
     scaled_qty = base_qty * (size_mult ** dca_count)
     if scaled_qty > wallet_current_balance:
         return 0
+
+    available_for_short = db.get_available_for_short(bot['user_id'], coin, bot['wallet'])
+    if available_for_short is not None and scaled_qty > available_for_short:
+        return 0
+
     return scaled_qty
 
 def execute_short_sell(pos, bot, sell_quantity):
@@ -463,7 +468,7 @@ def run_cycle():
             should_sell, _ = check_sell_trigger(pos, current_price, bot, coin_params_cache)
             if should_sell:
                 sell_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], pos['dca_count'], current_price
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], current_price, pos['coin']
                 )
                 if sell_qty > 0:
                     execute_short_sell(pos, bot, sell_qty)
@@ -566,7 +571,7 @@ def on_price_update(coin, price):
                     'dca_count': 0, 'short_buyback_order_id': None
                 }
                 first_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], 0, price
+                    bot, bot['wallet']['current_balance'], 0, price, coin
                 )
                 if first_qty > 0:
                     execute_short_sell(first_pos, bot, first_qty)
@@ -579,7 +584,7 @@ def on_price_update(coin, price):
             should_sell, _ = check_sell_trigger(pos, price, bot, {})
             if should_sell:
                 sell_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], pos['dca_count'], price
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], price, coin
                 )
                 if sell_qty > 0:
                     execute_short_sell(pos, bot, sell_qty)
