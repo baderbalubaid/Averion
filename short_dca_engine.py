@@ -440,42 +440,21 @@ def run_cycle():
     smart_mode_active = any(b.get('parameter_mode') == 'smart' for b in bots)
     coin_params_cache = load_coin_params_cache() if smart_mode_active else {}
 
+    # NOTE: new-slot opening and sell-trigger checks have moved to
+    # on_price_update() for true zero-delay reactive behavior (ADDED
+    # June 20 2026). This periodic loop is now ONLY a safety-net
+    # backup (in case a tick was somehow missed) plus the genuinely
+    # periodic bookkeeping: buyback-fill safety check and stuck
+    # buyback retries.
     for bot in bots:
-        if not bot['trading_on']:
+        if not bot['trading_on'] or not bot['dca_on']:
             continue
         coin = bot['wallet']['coin']
         open_positions = load_open_short_positions(bot['id'])
         existing_for_coin = [p for p in open_positions if p['coin'] == coin]
 
-        if bot['entry_method'] == 'asap' and len(existing_for_coin) < bot['trades_per_coin']:
-            if bot['wallet']['current_balance'] > 0:
-                new_pos_id = open_short_position_record(bot, coin)
-                if new_pos_id:
-                    # ASAP entry means the FIRST sell happens immediately
-                    # (mirrors Long ASAP's immediate first buy) - not
-                    # waiting for next cycle's trigger check. Subsequent
-                    # sells still require the price to rise further from
-                    # whatever avg_sell_price this first sell establishes.
-                    first_price = get_redis_price(r, coin, bot['wallet']['exchange_name'])
-                    if first_price:
-                        first_pos = {
-                            'id': new_pos_id, 'coin': coin, 'avg_sell_price': first_price,
-                            'last_sell_price': 0, 'quantity': 0, 'total_sold_usdt': 0,
-                            'dca_count': 0, 'short_buyback_order_id': None
-                        }
-                        first_qty = compute_sell_amount(
-                            bot, bot['wallet']['current_balance'], 0, first_price
-                        )
-                        if first_qty > 0:
-                            execute_short_sell(first_pos, bot, first_qty)
-                open_positions = load_open_short_positions(bot['id'])
-                existing_for_coin = [p for p in open_positions if p['coin'] == coin]
-
         current_price = get_redis_price(r, coin, bot['wallet']['exchange_name'])
         if not current_price:
-            continue
-
-        if not bot['dca_on']:
             continue
 
         for pos in existing_for_coin:
@@ -566,6 +545,33 @@ def on_price_update(coin, price):
 
     is_paper = bot['wallet']['is_paper']
 
+    # Open a new trade slot reactively, the instant it's eligible
+    # (ADDED June 20 2026 per explicit instruction - this previously
+    # only happened in the 60s run_cycle loop, meaning a bot under
+    # its trades_per_coin capacity could wait up to a minute before
+    # opening its next slot. ASAP entry has no signal dependency at
+    # all, so there's no reason for any delay here - zero-delay
+    # applies to opening new slots just as much as to sells/buybacks.)
+    if bot['trading_on'] and bot['entry_method'] == 'asap' \
+            and len(positions) < bot['trades_per_coin'] \
+            and bot['wallet']['current_balance'] > 0:
+        try:
+            new_pos_id = open_short_position_record(bot, coin)
+            if new_pos_id:
+                first_pos = {
+                    'id': new_pos_id, 'coin': coin, 'avg_sell_price': price,
+                    'last_sell_price': 0, 'quantity': 0, 'total_sold_usdt': 0,
+                    'dca_count': 0, 'short_buyback_order_id': None
+                }
+                first_qty = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], 0, price
+                )
+                if first_qty > 0:
+                    execute_short_sell(first_pos, bot, first_qty)
+                refresh_short_cache()
+        except Exception as e:
+            print(f'\u26a0\ufe0f Short on_price_update new-slot error for {coin}: {e}')
+
     for pos in positions:
         try:
             should_sell, _ = check_sell_trigger(pos, price, bot, {})
@@ -580,7 +586,15 @@ def on_price_update(coin, price):
         except Exception as e:
             print(f'\u26a0\ufe0f Short on_price_update sell-check error for {coin}: {e}')
 
-        if is_paper and pos.get('short_buyback_order_id'):
+        # Buyback fill check: tick-speed for BOTH paper and live
+        # (UPDATED June 20 2026 per explicit instruction - live now
+        # checks the exchange on every tick too, not throttled. Real
+        # rate-limit risk if many positions are simultaneously active
+        # is knowingly accepted in exchange for true zero-delay
+        # behavior; the try/except below still protects against an
+        # exchange error crashing the engine, it just doesn't
+        # preemptively limit call frequency.)
+        if pos.get('short_buyback_order_id'):
             try:
                 executor = get_executor(bot['wallet'])
                 with db.get_db() as conn:

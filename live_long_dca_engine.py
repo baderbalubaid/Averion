@@ -736,7 +736,14 @@ def run_bot_cycle(bot, r):
     account_in_debt = db.is_reserve_in_debt(bot['user_id'])
 
     # ── Open new positions ──
-    if bot['trading_on'] and not floor_paused and not account_in_debt and len(open_positions) < bot['trades_per_bot']:
+    # ASAP-entry bots are now handled reactively in the tick callback
+    # (ADDED June 20 2026, zero-delay) - skip here to avoid a
+    # double-open race between this periodic pass and the tick
+    # handler. Template/smart entry still needs this periodic pass,
+    # since their entry SIGNAL evaluation is intentionally periodic.
+    if bot['trading_on'] and not floor_paused and not account_in_debt \
+            and bot.get('entry_method') != 'dca_asap' \
+            and len(open_positions) < bot['trades_per_bot']:
         coins = get_tradeable_coins(r, bot.get('bot_params', {}))
         for coin in coins:
             # Check per-coin limit
@@ -808,13 +815,75 @@ def refresh_tp_cache():
         _tp_cache = new_cache
         _tp_cache_time = time.time()
 
+# In-memory cache of ASAP-entry bots (ADDED June 20 2026, per
+# explicit instruction: zero-delay entry opening, not just TP). Only
+# the BOT LIST and the coin_parameters table snapshot are cached
+# (config/classification don't change tick-by-tick) - every actual
+# eligibility DECISION (ST flag, per-coin count) still runs LIVE on
+# every tick, since those are cheap (a Redis read, a quick count) and
+# not safe to cache without risking a stale decision.
+_asap_bots_cache = []
+_asap_bots_cache_time = 0
+_asap_bots_lock = threading.Lock()
+_coin_params_cache_local = {}
+_coin_params_cache_local_time = 0
+
+def refresh_asap_bots_cache():
+    global _asap_bots_cache, _asap_bots_cache_time
+    global _coin_params_cache_local, _coin_params_cache_local_time
+    bots = load_live_long_bots()
+    asap_bots = [b for b in bots if b.get('entry_method') == 'dca_asap' and b['trading_on']]
+    with _asap_bots_lock:
+        _asap_bots_cache = asap_bots
+        _asap_bots_cache_time = time.time()
+    # load_coin_params_cache() queries the FULL coin_parameters table
+    # every call - cached locally here, NOT called fresh on every
+    # tick, or it would hammer the DB dozens of times per second
+    _coin_params_cache_local = load_coin_params_cache()
+    _coin_params_cache_local_time = time.time()
+
+def _coin_in_bot_scope(coin, bot_params):
+    """Cheap, instant scope check - no DB/Redis call, mirrors
+    get_tradeable_coins()'s filter logic exactly."""
+    if not isinstance(bot_params, dict):
+        return coin not in ('BTC', 'ETH', 'USDT')
+    if bot_params.get('coin_mode') == 'specific':
+        return coin in bot_params.get('specific_coins', [])
+    return coin not in ('BTC', 'ETH', 'USDT')
+
 def make_live_tp_callback():
-    """Returns WebSocket price callback for live long DCA TP checking."""
+    """Returns WebSocket price callback for live long DCA TP checking,
+    ALSO now handles zero-delay ASAP entry opening on the same tick."""
     def on_price_update(coin, price):
         try:
             # Refresh cache every 30s
             if time.time() - _tp_cache_time > 30:
                 refresh_tp_cache()
+            if time.time() - _asap_bots_cache_time > 60:
+                refresh_asap_bots_cache()
+
+            # ASAP entry: bot list + classification snapshot are
+            # cached above; everything else here is checked LIVE
+            with _asap_bots_lock:
+                asap_bots = list(_asap_bots_cache)
+            for bot in asap_bots:
+                try:
+                    if not _coin_in_bot_scope(coin, bot.get('bot_params', {})):
+                        continue
+                    open_positions = load_open_positions(bot['id'])
+                    open_coins_count = sum(1 for p in open_positions if p['coin'] == coin)
+                    if open_coins_count >= bot['trades_per_coin']:
+                        continue
+                    if len(open_positions) >= bot['trades_per_bot']:
+                        continue
+                    if is_st_coin(coin, bot.get('exchange_name', 'mexc'), get_redis()):
+                        continue
+                    cp_check = _coin_params_cache_local.get(coin, {})
+                    if cp_check and cp_check.get('tradeable') is False:
+                        continue
+                    open_position(bot, coin, get_redis())
+                except Exception:
+                    pass
 
             with _tp_cache_lock:
                 positions = list(_tp_cache.get(coin, []))
