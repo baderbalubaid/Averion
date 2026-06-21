@@ -903,6 +903,20 @@ def home_stats(payload: dict = Depends(verify_token)):
         today_pnl += float(row3[0])
         today_closed += int(row3[1])
 
+        # Today P&L (Short DCA) - ADDED June 21 2026, was never
+        # included anywhere in dashboard stats since Short uses a
+        # separate table (positions, not live_dca_positions)
+        cur.execute("""
+            SELECT COALESCE(SUM(p.realized_pnl_usdt),0), COUNT(*)
+            FROM positions p JOIN bots b ON p.bot_id=b.id
+            WHERE p.user_id=%s AND p.status='closed' AND p.direction='short'
+            AND b.is_research=FALSE AND b.is_template=FALSE
+            AND p.closed_at >= CURRENT_DATE
+        """, (user_id,))
+        row3b = cur.fetchone()
+        today_pnl += float(row3b[0])
+        today_closed += int(row3b[1])
+
         # Total profit (scalper)
         cur.execute("""
             SELECT COALESCE(SUM(lp.pnl_usdt),0)
@@ -917,6 +931,15 @@ def home_stats(payload: dict = Depends(verify_token)):
             SELECT COALESCE(SUM(realized_pnl_usdt),0)
             FROM live_dca_positions
             WHERE user_id=%s AND status='closed'
+        """, (user_id,))
+        total_profit += float(cur.fetchone()[0])
+
+        # Total profit (Short DCA) - ADDED June 21 2026
+        cur.execute("""
+            SELECT COALESCE(SUM(p.realized_pnl_usdt),0)
+            FROM positions p JOIN bots b ON p.bot_id=b.id
+            WHERE p.user_id=%s AND p.status='closed' AND p.direction='short'
+            AND b.is_research=FALSE AND b.is_template=FALSE
         """, (user_id,))
         total_profit += float(cur.fetchone()[0])
 
@@ -1094,8 +1117,14 @@ def close_position(position_id: int,
 def bot_detail_page(bot_id: int):
     return FileResponse('bot-detail.html')
 
-@app.get('/trades')
+@app.get('/trades/data')
 def get_trades(payload: dict = Depends(verify_token)):
+    """FIXED June 21 2026: this was previously registered at the
+    SAME path as the /trades PAGE route (line ~118) - in FastAPI,
+    when two routes share a path+method, only the first one
+    registered ever actually runs. This data endpoint was completely
+    dead/unreachable code. Confirmed no frontend page ever called it
+    (trades.html uses /live-positions instead) before renaming."""
     user_id = payload['user_id']
     with db.get_db() as conn:
         cur = conn.cursor()
