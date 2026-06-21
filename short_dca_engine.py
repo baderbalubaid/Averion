@@ -184,7 +184,9 @@ def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price):
 
     size_mult = bot['size_multiplier']
     scaled_qty = base_qty * (size_mult ** dca_count)
-    return min(scaled_qty, wallet_current_balance)
+    if scaled_qty > wallet_current_balance:
+        return 0
+    return scaled_qty
 
 def execute_short_sell(pos, bot, sell_quantity):
     """Executes a market sell for a Short position, recalculates
