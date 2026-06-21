@@ -1113,10 +1113,6 @@ def close_position(position_id: int,
 # ═══════════════════════════════
 # TRADES / HISTORY
 # ═══════════════════════════════
-@app.get('/bots/{bot_id}')
-def bot_detail_page(bot_id: int):
-    return FileResponse('bot-detail.html')
-
 @app.get('/trades/data')
 def get_trades(payload: dict = Depends(verify_token)):
     """FIXED June 21 2026: this was previously registered at the
@@ -1143,8 +1139,12 @@ def get_trades(payload: dict = Depends(verify_token)):
               'fee': float(r[7] or 0), 'dca_level': r[8],
               'timestamp': str(r[9])} for r in rows]
 
-@app.get('/history')
+@app.get('/history/data')
 def get_history(payload: dict = Depends(verify_token)):
+    """FIXED June 21 2026: same dead-code pattern as /trades/data -
+    was registered at the same path as the /history page route, so
+    it was completely unreachable. Confirmed history.html actually
+    uses /live-positions instead, same as trades.html."""
     user_id = payload['user_id']
     with db.get_db() as conn:
         cur = conn.cursor()
@@ -1298,6 +1298,71 @@ def get_live_positions(payload: dict = Depends(verify_token)):
             'total_invested': total_invested,
         })
 
+    # Add Short DCA positions (ADDED June 21 2026) - was entirely
+    # missing, showed as zero everywhere since Short lives in a
+    # separate table (positions, direction='short') that this
+    # endpoint never queried at all before today
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, p.bot_id, p.coin, p.avg_sell_price, p.quantity,
+                   p.total_sold_usdt, p.dca_count, p.status,
+                   p.opened_at, p.closed_at, p.close_reason,
+                   p.realized_pnl_usdt, p.realized_pnl_pct,
+                   b.name as bot_name
+            FROM positions p
+            JOIN bots b ON p.bot_id = b.id
+            WHERE p.user_id=%s AND p.direction='short' AND b.status!='deleted'
+            ORDER BY p.id DESC
+        """, (user_id,))
+        short_rows = cur.fetchall()
+
+    for p in short_rows:
+        coin = p[2]
+        avg_sell_price = float(p[3] or 0)
+        quantity = float(p[4] or 0)
+        total_sold_usdt = float(p[5] or 0)
+        current_price = avg_sell_price
+
+        if p[7] == 'open' and avg_sell_price > 0:
+            try:
+                keys = r.keys(f'price:*:{coin}/USDT')
+                if keys:
+                    current_price = float(r.get(keys[0]) or avg_sell_price)
+            except:
+                pass
+
+        pnl_usdt = float(p[11] or 0)
+        pnl_pct = float(p[12] or 0)
+
+        if p[7] == 'open' and avg_sell_price > 0 and quantity > 0:
+            buyback_cost_now = current_price * quantity
+            pnl_usdt = total_sold_usdt - buyback_cost_now
+            pnl_pct = (pnl_usdt / total_sold_usdt * 100) if total_sold_usdt > 0 else 0
+
+        result.append({
+            'id': f'short_{p[0]}',
+            'bot_id': p[1],
+            'coin': coin,
+            'type': 'short',
+            'entry_price': avg_sell_price,
+            'current_price': current_price,
+            'exit_price': 0,
+            'base_order': total_sold_usdt,
+            'hold_seconds': None,
+            'pnl_pct': round(pnl_pct, 4),
+            'pnl_usdt': round(pnl_usdt, 6),
+            'status': p[7],
+            'entry_time': str(p[8]),
+            'exit_time': str(p[9]) if p[9] else None,
+            'exit_reason': p[10],
+            'trigger_jump_pct': 0,
+            'bot_name': p[13],
+            'dca_count': int(p[6] or 0),
+            'avg_cost': avg_sell_price,
+            'total_invested': total_sold_usdt,
+        })
+
     return result
 
 @app.get('/api/bots')
@@ -1326,6 +1391,16 @@ def get_bots(payload: dict = Depends(verify_token)):
             WHERE user_id=%s AND status='open'
         """, (user_id,))
         dca_pos = cur.fetchall()
+
+        # Short DCA positions worth (ADDED June 21 2026 - was entirely
+        # missing from the Bots page, same as every other page Short
+        # was never added to)
+        cur.execute("""
+            SELECT bot_id, coin, quantity, total_sold_usdt
+            FROM positions
+            WHERE user_id=%s AND status='open' AND direction='short'
+        """, (user_id,))
+        short_pos = cur.fetchall()
 
         # Wallet info per bot
         cur.execute("""
@@ -1358,6 +1433,14 @@ def get_bots(payload: dict = Depends(verify_token)):
             GROUP BY lp.bot_id
         """, (user_id,))
         scalper_realized = {int(r[0]): float(r[1]) for r in cur.fetchall()}
+
+        cur.execute("""
+            SELECT bot_id, COALESCE(SUM(realized_pnl_usdt), 0)
+            FROM positions
+            WHERE user_id=%s AND status='closed' AND direction='short'
+            GROUP BY bot_id
+        """, (user_id,))
+        short_realized = {int(r[0]): float(r[1]) for r in cur.fetchall()}
     # Calculate current worth per bot
     bot_worth = {}
 
@@ -1378,6 +1461,23 @@ def get_bots(payload: dict = Depends(verify_token)):
             keys = r.keys(f'price:*:{coin}/USDT')
             current_price = float(r.get(keys[0])) if keys else 0
             worth = qty * current_price if current_price > 0 else invested
+        except Exception:
+            worth = invested
+        bot_worth.setdefault(bid, {'invested': 0, 'worth': 0})
+        bot_worth[bid]['invested'] += invested
+        bot_worth[bid]['worth'] += worth
+
+    # Short DCA: invested = USDT raised from selling, worth = cost to
+    # buy back right now (mirrors the live-positions PnL calculation)
+    for pos in short_pos:
+        bid, coin, quantity, total_sold_usdt = int(pos[0]), pos[1], pos[2], pos[3]
+        qty = float(quantity or 0)
+        invested = float(total_sold_usdt or 0)
+        try:
+            keys = r.keys(f'price:*:{coin}/USDT')
+            current_price = float(r.get(keys[0])) if keys else 0
+            buyback_cost = qty * current_price if current_price > 0 else invested
+            worth = invested + (invested - buyback_cost)  # invested + unrealized pnl
         except Exception:
             worth = invested
         bot_worth.setdefault(bid, {'invested': 0, 'worth': 0})
@@ -1424,11 +1524,12 @@ def get_bots(payload: dict = Depends(verify_token)):
             'pnl_usdt': round(pnl, 2),
             'pnl_pct': round(pnl_pct, 2),
             'open_positions': len([p for p in dca_pos if p[0] == bot_id]) +
-                              len([p for p in scalper_pos if p[0] == bot_id]),
+                              len([p for p in scalper_pos if p[0] == bot_id]) +
+                              len([p for p in short_pos if p[0] == bot_id]),
             'wallet_name': wallet.get('wallet_name', '—'),
             'wallet_available': wallet.get('available', 0),
             'wallet_total': wallet.get('total', 0),
-            'realized_pnl': round(dca_realized.get(bot_id, 0) + scalper_realized.get(bot_id, 0), 2),
+            'realized_pnl': round(dca_realized.get(bot_id, 0) + scalper_realized.get(bot_id, 0) + short_realized.get(bot_id, 0), 2),
         })
     return result
 
@@ -2479,22 +2580,6 @@ def update_exchange(exc_id: int, data: dict, payload: dict = Depends(verify_toke
         conn.commit()
     return {'message': 'Exchange updated'}
 
-@app.put('/wallets/{wallet_id}')
-def update_wallet(wallet_id: int, data: dict, payload: dict = Depends(verify_token)):
-    user_id = payload['user_id']
-    with db.get_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM virtual_wallets WHERE id=%s AND user_id=%s", (wallet_id, user_id))
-        if not cur.fetchone():
-            raise HTTPException(status_code=404, detail='Wallet not found')
-        if 'name' in data:
-            cur.execute("UPDATE virtual_wallets SET name=%s WHERE id=%s", (data['name'], wallet_id))
-        if 'allocation_amount' in data:
-            cur.execute("UPDATE virtual_wallets SET allocation_amount=%s WHERE id=%s",
-                       (data['allocation_amount'], wallet_id))
-        conn.commit()
-    return {'message': 'Wallet updated'}
-
 @app.post('/bots/{bot_id}/panic-close')
 def panic_close_bot(bot_id: int, payload: dict = Depends(verify_token)):
     user_id = payload['user_id']
@@ -2555,36 +2640,6 @@ def delete_bot(bot_id: int, payload: dict = Depends(verify_token)):
         """, (bot_id, user_id))
         conn.commit()
     return {'message': 'Bot deleted successfully'}
-
-# ═══════════════════════════════
-# VIRTUAL WALLETS
-# ═══════════════════════════════
-class WalletCreate(BaseModel):
-   exchange_id: int
-   name: str
-   currency: str = 'USDT'
-   allocation_type: str = 'fixed'
-   allocation_amount: float = 0
-
-@app.get('/wallets')
-def get_wallets(payload: dict = Depends(verify_token)):
-   wallets = db.get_user_wallets(payload['user_id'])
-   return [{'id': w[0], 'name': w[1], 'currency': w[2],
-             'allocation_type': w[3],
-             'allocation_amount': float(w[4] or 0),
-             'current_balance': float(w[5] or 0),
-             'standby_reserved': float(w[6] or 0),
-             'exchange': w[7],
-             'exchange_name': w[8]} for w in wallets]
-
-@app.post('/wallets')
-def create_wallet(req: WalletCreate,
-                 payload: dict = Depends(verify_token)):
-   wallet_id = db.create_wallet(
-       payload['user_id'], req.exchange_id, req.name,
-       req.currency, req.allocation_type, req.allocation_amount
-   )
-   return {'message': 'Wallet created', 'wallet_id': wallet_id}
 
 # ═══════════════════════════════
 # ADMIN — CRON STATUS
@@ -2793,78 +2848,6 @@ def register(req: RegisterRequest, request: Request):
     if error:
         raise HTTPException(status_code=400, detail=error)
     return result
-
-class AdminPassphraseRequest(BaseModel):
-    passphrase: str
-
-@app.post('/admin/verify-passphrase')
-def verify_admin_passphrase(req: AdminPassphraseRequest, request: Request,
-                              payload: dict = Depends(verify_token)):
-    """Layer 2 admin gate - separate from regular account login.
-    Requires a valid regular-account token first (Depends(verify_token)),
-    then a separate passphrase stored only as a hash in .env, never in
-    the database, never seen by anyone but the person who set it."""
-    ip = request.client.host
-    if auth_module.check_brute_force(ip):
-        raise HTTPException(status_code=429, detail='Too many failed attempts')
-
-    if not payload.get('is_admin'):
-        raise HTTPException(status_code=403, detail='Not an admin account')
-
-    stored_hash = os.getenv('ADMIN_PASSPHRASE_HASH')
-    if not stored_hash:
-        raise HTTPException(status_code=500, detail='Admin passphrase not configured')
-
-    if not auth_module.verify_password(req.passphrase, stored_hash):
-        auth_module.record_login_fail(ip)
-        raise HTTPException(status_code=401, detail='Incorrect passphrase')
-
-    auth_module.clear_login_fails(ip)
-
-    # Short-lived admin session token, separate from the main login token
-    admin_session_payload = {
-        'user_id': payload['user_id'],
-        'admin_session': True,
-        'exp': datetime.utcnow() + timedelta(hours=8),
-        'iat': datetime.utcnow()
-    }
-    admin_token = jwt.encode(admin_session_payload, auth_module.SECRET_KEY, algorithm='HS256')
-    return {'admin_token': admin_token}
-
-def verify_admin_session(authorization: str = Header(None)):
-    """Dependency for new admin pages/endpoints - checks the SEPARATE
-    8-hour admin session token, not the regular login token."""
-    if not authorization or not authorization.startswith('Bearer '):
-        raise HTTPException(status_code=401, detail='Admin session required')
-    token = authorization.replace('Bearer ', '')
-    try:
-        decoded = jwt.decode(token, auth_module.SECRET_KEY, algorithms=['HS256'])
-        if not decoded.get('admin_session'):
-            raise HTTPException(status_code=401, detail='Invalid admin session')
-        return decoded
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail='Admin session expired - please re-enter passphrase')
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail='Invalid admin session')
-
-
-class VerifyRequest(BaseModel):
-    user_id: int
-    code: str
-    remember: bool = True
-
-@app.post('/auth/verify')
-def verify(req: VerifyRequest, request: Request):
-    ip = request.client.host
-    success = auth_module.verify_code(
-        req.user_id, req.code, ip, remember=req.remember
-    )
-    if not success:
-        raise HTTPException(
-            status_code=400,
-            detail='Invalid or expired code'
-        )
-    return {'message': 'Verified successfully'}
 
 @app.post('/auth/send-code')
 def send_code(payload: dict = Depends(verify_token)):
@@ -3123,24 +3106,6 @@ async def validate_exchange_key(req: dict, payload: dict = Depends(verify_token)
 
     return results
 
-
-@app.get("/health")
-def health_check():
-   try:
-       with db.get_db() as conn:
-           cur = conn.cursor()
-           cur.execute("SELECT 1")
-       db_ok = True
-   except:
-       db_ok = False
-   try:
-       r = get_redis()
-       r.ping()
-       redis_ok = True
-   except:
-       redis_ok = False
-   status = "ok" if db_ok and redis_ok else "degraded"
-   return {"status": status, "db": "ok" if db_ok else "error", "redis": "ok" if redis_ok else "error"}
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8080)
