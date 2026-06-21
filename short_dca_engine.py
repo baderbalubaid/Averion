@@ -25,6 +25,7 @@ Core mechanics (LOCKED spec, 13_LOCKED_DECISIONS.md):
 import sys
 sys.path.insert(0, '/home/averion/Averion')
 import time
+import threading
 import redis as _redis
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -428,7 +429,10 @@ def open_short_position_record(bot, coin):
 def run_cycle():
     """One full engine cycle: open new position slots where eligible,
     check sell triggers on existing positions, execute sells, check
-    buyback fills, retry any stuck buyback placements."""
+    buyback fills, retry any stuck buyback placements. Also refreshes
+    the tick-based cache used by on_price_update() for real-time
+    checking - this periodic loop remains as a safety-net backup."""
+    refresh_short_cache()
     r = get_redis()
     bots = load_short_bots()
     bots_by_id = {b['id']: b for b in bots}
@@ -486,12 +490,108 @@ def run_cycle():
     check_buyback_fills(bots_by_id)
     retry_pending_buybacks(bots_by_id)
 
-if __name__ == '__main__':
-    db.init_pool()
+_running = False
+_cycle_thread = None
+
+def _engine_loop():
+    global _running
     print('Short DCA engine starting (60s cycle)...')
-    while True:
+    while _running:
         try:
             run_cycle()
         except Exception as e:
             print(f'Short engine cycle error: {e}')
         time.sleep(60)
+
+def is_engine_alive():
+    """Watchdog check: is the Short DCA thread actually running right now?"""
+    global _cycle_thread
+    return _running and _cycle_thread is not None and _cycle_thread.is_alive()
+
+def start_engine():
+    """Start the Short DCA engine. NOT a daemon thread - same reasoning
+    as live_long_dca_engine.py's start_engine(): daemon threads die
+    silently with zero warning if the host process restarts/reloads
+    internally. Non-daemon means a crash is visible and a watchdog can
+    detect + restart it, rather than the engine just vanishing forever."""
+    global _running, _cycle_thread
+    if is_engine_alive():
+        return
+    _running = True
+    _cycle_thread = threading.Thread(target=_engine_loop, daemon=False)
+    _cycle_thread.start()
+    print('\u2705 Short DCA engine started')
+
+if __name__ == '__main__':
+    db.init_pool()
+    _running = True
+    _engine_loop()
+
+# ── Real-time tick-based checking (ADDED June 20 2026) ──────────────
+# Previously the only check was the 60s polling loop, which could
+# miss a price spike that rises and falls back within that window -
+# Long DCA's TP and Scalper's entry checks already work tick-by-tick
+# via the websocket feed; this brings Short DCA in line with that.
+_short_cache_lock = __import__('threading').Lock()
+_short_bots_by_coin = {}  # coin -> bot dict, refreshed periodically
+_short_positions_by_coin = {}  # coin -> list of open position dicts
+
+def refresh_short_cache():
+    """Refreshes the in-memory coin->bot/position lookup used by
+    on_price_update() for fast per-tick checks (no DB hit per tick)."""
+    global _short_bots_by_coin, _short_positions_by_coin
+    bots = load_short_bots()
+    bots_by_coin = {}
+    positions_by_coin = {}
+    for bot in bots:
+        if not bot['trading_on']:
+            continue
+        coin = bot['wallet']['coin']
+        bots_by_coin[coin] = bot
+        positions_by_coin[coin] = load_open_short_positions(bot['id'])
+    with _short_cache_lock:
+        _short_bots_by_coin = bots_by_coin
+        _short_positions_by_coin = positions_by_coin
+
+def on_price_update(coin, price):
+    """Called on every websocket price tick (registered in
+    websocket_prices.py, same pattern as Long DCA's TP callback and
+    Scalper's entry check). Fast no-op for the 1700+ coins with no
+    active Short bot - only does real work for matched coins."""
+    with _short_cache_lock:
+        bot = _short_bots_by_coin.get(coin)
+        positions = list(_short_positions_by_coin.get(coin, []))
+    if not bot:
+        return
+
+    is_paper = bot['wallet']['is_paper']
+
+    for pos in positions:
+        try:
+            should_sell, _ = check_sell_trigger(pos, price, bot, {})
+            if should_sell:
+                sell_qty = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], price
+                )
+                if sell_qty > 0:
+                    execute_short_sell(pos, bot, sell_qty)
+                    refresh_short_cache()
+                    continue
+        except Exception as e:
+            print(f'\u26a0\ufe0f Short on_price_update sell-check error for {coin}: {e}')
+
+        if is_paper and pos.get('short_buyback_order_id'):
+            try:
+                executor = get_executor(bot['wallet'])
+                with db.get_db() as conn:
+                    fill_result = executor.check_limit_fill(
+                        pos['short_buyback_order_id'], coin, bot['wallet'], conn
+                    )
+                if fill_result.filled:
+                    handle_buyback_fill(
+                        pos['id'], coin, pos['total_sold_usdt'], fill_result, bot,
+                        bot['wallet'], executor
+                    )
+                    refresh_short_cache()
+            except Exception as e:
+                print(f'\u26a0\ufe0f Short on_price_update fill-check error for {coin}: {e}')

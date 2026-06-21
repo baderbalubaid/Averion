@@ -20,6 +20,11 @@ except Exception:
     live_scalper_on_price = None
 
 try:
+    from short_dca_engine import on_price_update as short_on_price
+except Exception:
+    short_on_price = None
+
+try:
     from scalper_v2_engine import on_price_update as scalper_v2_on_price
 except Exception:
     scalper_v2_on_price = None
@@ -34,6 +39,14 @@ def _init_live_dca():
         print('✅ LiveLongDCA engine wired to WebSocket')
     except Exception as _e:
         print(f'⚠️ LiveLongDCA engine not loaded: {_e}')
+
+def _init_short_dca():
+    try:
+        from short_dca_engine import start_engine as start_short_engine
+        start_short_engine()
+        print('✅ ShortDCA engine wired to WebSocket')
+    except Exception as _e:
+        print(f'⚠️ ShortDCA engine not loaded: {_e}')
 import websocket
 from datetime import datetime
 
@@ -59,6 +72,7 @@ class MexcWebSocketPrices:
         global _live_dca_tp
         if _live_dca_tp is None:
             _init_live_dca()
+            _init_short_dca()
         self.r = get_redis()
         self.ws = None
         self.running = False
@@ -108,6 +122,11 @@ class MexcWebSocketPrices:
                         if live_scalper_on_price:
                             try:
                                 live_scalper_on_price(coin, float(t.price))
+                            except Exception:
+                                pass
+                        if short_on_price:
+                            try:
+                                short_on_price(coin, float(t.price))
                             except Exception:
                                 pass
                         # Event-driven TP check
