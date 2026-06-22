@@ -2344,9 +2344,16 @@ def update_category_limits(category: str, body: dict, payload: dict = Depends(re
 
 @app.post('/admin/bot/restart')
 def admin_restart_bot(payload: dict = Depends(require_admin)):
+    # FIXED June 22 2026: was restarting a PM2 process literally named
+    # 'averion', which has never existed - the real process names are
+    # 'averion-api' and 'averion-research'. This button likely never
+    # actually worked, just silently failed every time. Now correctly
+    # targets averion-research, where the real trading engines live.
     import subprocess
-    subprocess.run(['pm2', 'restart', 'averion'])
-    return {'message': 'Bot restarting'}
+    result = subprocess.run(['pm2', 'restart', 'averion-research'], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail=f'Restart failed: {result.stderr[-300:]}')
+    return {'message': 'Trading engine restarting'}
 
 @app.post('/admin/cron/{step}/run')
 def admin_run_cron_step(step: str,
