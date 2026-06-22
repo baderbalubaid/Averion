@@ -376,6 +376,15 @@ def update_peak_price(position_id, peak_price):
 def close_position(position_id, close_reason, sell_price=None, usdt_received=None):
     with get_db() as conn:
         cur = conn.cursor()
+        cur.execute("SELECT total_invested FROM positions WHERE id=%s", (position_id,))
+        row = cur.fetchone()
+        total_invested = float(row[0] or 0) if row else 0
+        pnl_usdt = None
+        pnl_pct = None
+        if usdt_received is not None and total_invested > 0:
+            pnl_usdt = usdt_received - total_invested
+            pnl_pct = (pnl_usdt / total_invested) * 100
+
         cur.execute("""
             UPDATE positions SET
                 status = 'closed',
@@ -383,9 +392,11 @@ def close_position(position_id, close_reason, sell_price=None, usdt_received=Non
                 close_reason = %s,
                 is_gate_reference = FALSE,
                 avg_sell_price = COALESCE(%s, avg_sell_price),
-                total_sold_usdt = COALESCE(%s, total_sold_usdt)
+                total_sold_usdt = COALESCE(%s, total_sold_usdt),
+                realized_pnl_usdt = COALESCE(%s, realized_pnl_usdt),
+                realized_pnl_pct = COALESCE(%s, realized_pnl_pct)
             WHERE id = %s
-        """, (close_reason, sell_price, usdt_received, position_id))
+        """, (close_reason, sell_price, usdt_received, pnl_usdt, pnl_pct, position_id))
 
 def promote_gate_reference(bot_id, coin):
     with get_db() as conn:
