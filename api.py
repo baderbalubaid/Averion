@@ -2794,8 +2794,16 @@ def admin_ws_status(payload: dict = Depends(require_admin)):
     r = get_redis()
     with db.get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT DISTINCT exchange, custom_name FROM exchanges ORDER BY exchange")
+        cur.execute("SELECT DISTINCT exchange, custom_name FROM exchanges")
         configured_exchanges = cur.fetchall()
+
+    # Sorted by Bader's explicit priority sequence (ADDED June 22 2026),
+    # not alphabetically - any exchange not in this list falls to the end.
+    priority = ['mexc', 'kucoin', 'binance', 'bybit', 'okx', 'bitget', 'gateio', 'gate']
+    configured_exchanges = sorted(
+        configured_exchanges,
+        key=lambda x: priority.index(x[0].lower()) if x[0].lower() in priority else len(priority)
+    )
 
     result = []
     for ex_type, custom_name in configured_exchanges:

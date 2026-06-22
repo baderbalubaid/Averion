@@ -73,6 +73,12 @@ class MexcWebSocketPrices:
         if _live_dca_tp is None:
             _init_live_dca()
             _init_short_dca()
+            try:
+                from kucoin_websocket import KucoinWebSocketPrices
+                KucoinWebSocketPrices().start_background()
+                print('✅ KuCoin price feed started')
+            except Exception as _kc_e:
+                print(f'⚠️ KuCoin feed not started: {_kc_e}')
         self.r = get_redis()
         self.ws = None
         self.running = False
