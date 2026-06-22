@@ -436,6 +436,15 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
     if not wallet:
         return False
 
+    # Exchange minimum check (ADDED June 21 2026) - Long never does a
+    # partial buy, so if this amount is below the real minimum, skip
+    # entirely rather than create a dust order. Fast DB read, refreshed
+    # daily by refresh_min_orders.py, never a slow live API call.
+    min_req = db.get_min_order(wallet['exchange_id'], pos['coin'])
+    if min_req and amount_usdt < min_req.get('min_cost', 0):
+        print(f"DCA buy skipped: {pos['coin']} amount {amount_usdt} below exchange minimum {min_req.get('min_cost')}")
+        return False
+
     executor = get_executor(wallet)
 
     try:
@@ -511,6 +520,11 @@ def open_position(bot, coin, r, coin_params_cache=None):
 
     base_order = bot['base_order']
     if wallet['current_balance'] < base_order:
+        return False
+
+    min_req = db.get_min_order(wallet['exchange_id'], coin)
+    if min_req and base_order < min_req.get('min_cost', 0):
+        print(f"Open position skipped: {coin} base_order {base_order} below exchange minimum {min_req.get('min_cost')}")
         return False
 
     executor = get_executor(wallet)
