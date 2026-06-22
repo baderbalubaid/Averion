@@ -65,8 +65,12 @@ class KucoinWebSocketPrices:
         return ws_url, ping_interval
 
     def send_ping_loop(self, ws, interval_ms):
+        # SIMPLIFIED June 22 2026 - removed the ws.sock.connected
+        # check, a failed send() already breaks the loop naturally
+        # when the connection is truly closed, and that attribute
+        # check was unreliable across reconnects.
         interval_s = max(interval_ms / 1000.0 - 2, 5)
-        while self.running and ws.sock and ws.sock.connected:
+        while self.running:
             try:
                 ws.send(json.dumps({"id": str(int(time.time() * 1000)), "type": "ping"}))
             except Exception:
@@ -169,6 +173,14 @@ class KucoinWebSocketPrices:
             on_error=self.on_error,
             on_close=self.on_close
         )
+        # REVERTED June 22 2026: tried adding the websocket library's
+        # native protocol-level ping_interval/ping_timeout, but this
+        # made things WORSE - confirmed via logs ("ping/pong timed
+        # out"), KuCoin's server doesn't respond to low-level protocol
+        # ping frames with a pong, so the library's own timeout logic
+        # incorrectly thought the connection was dead and closed it.
+        # KuCoin only understands the custom JSON application-level
+        # ping (sent via send_ping_loop) - relying on that alone.
         self.ws.run_forever()
 
     def run(self):
