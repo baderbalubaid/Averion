@@ -23,7 +23,14 @@ def init_pool():
     global _pool
     _pool = psycopg2.pool.ThreadedConnectionPool(
         minconn=2,
-        maxconn=10,
+        maxconn=30,  # INCREASED June 21 2026 from 10 - today's zero-delay
+        # tick-based checks (Long ASAP entry, Short sell/buyback/standby)
+        # genuinely raised peak concurrent DB connection demand across
+        # multiple threads hitting it simultaneously per tick. 10 was
+        # exhausted at least once today, causing record_bot_event to
+        # fail silently, which cascaded into the Health dashboard
+        # showing Bot Loop as Stopped (the status-write itself failed,
+        # not the actual trading loop).
         **DB_CONFIG
     )
     print('✅ Database connection pool initialized')
