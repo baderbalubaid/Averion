@@ -461,8 +461,20 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
     bot_id = bot[0]
     user_id = bot[1]
     exchange_id = bot[2]
-    coin_category = db.get_all_coin_categories()
     method = bot[4]
+
+    # FIXED June 22 2026: Scalper bots (E58, E58v2) are already fully
+    # and correctly handled by the separate fast Scalper engine - they
+    # were being wrongly caught by this DCA-style loop too, since the
+    # existing method.startswith('E') check for entry signals doesn't
+    # distinguish "E58" from DCA methods like "E9"/"E29". This was
+    # pure wasted work every cycle (Scalper entry logic doesn't apply
+    # here at all, never affected any real trade) - skipping early
+    # removes that waste without changing any actual trading behavior.
+    if method and method.startswith('E58'):
+        return
+
+    coin_category = db.get_all_coin_categories()
     direction = bot[5]
     base_coin = bot[9]
 
@@ -767,6 +779,7 @@ def run_cycle(r):
         if not tickers:
             continue
 
+        _t_exch_start = time.time()
         # Get open positions for this exchange
         open_positions = db.get_open_positions(exchange_id=exc_id)
         # Pre-filter: only check TP for armed positions or positions near TP
@@ -835,6 +848,8 @@ def run_cycle(r):
                         )
 
 
+        print(f'  ST flags check: {time.time() - _t_exch_start:.2f}s')
+        _t_tp_start = time.time()
         # TP check - separate loop for ALL open positions every cycle
         for pos in open_positions:
             coin = pos[4]
@@ -881,6 +896,8 @@ def run_cycle(r):
                 # Promote gate reference
                 db.promote_gate_reference(pos[1], pos[4])
 
+        print(f'  TP check + close: {time.time() - _t_tp_start:.2f}s')
+        _t_queue_start = time.time()
         # ─────────────────────────
         # STEP 2: Smart Queue DCA
         # ─────────────────────────
@@ -962,6 +979,8 @@ def run_cycle(r):
                 except Exception:
                     pass
 
+        print(f'  Queue DCA: {time.time() - _t_queue_start:.2f}s')
+        _t_step3_start = time.time()
         # ─────────────────────────
         # STEP 3: Open new positions
         # ─────────────────────────
@@ -980,8 +999,11 @@ def run_cycle(r):
             if open_counts.get(b[0], 0) < int(b[16] or 1)
         ]
         print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
+        _t_open_start = time.time()
         for bot in bots_needing_trades:
             try_open_position(bot, exchange_obj, tickers, r, coin_params_cache, btc_regime_data)
+        print(f'  Open new positions loop ({len(bots_needing_trades)} bots): {time.time() - _t_open_start:.2f}s')
+        print(f'  TOTAL for exchange {exc_row[2]}: {time.time() - _t_exch_start:.2f}s')
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
