@@ -206,7 +206,7 @@ def new_admin_champions():
 
 @app.get(f'/{NEW_ADMIN_BASE}/system')
 def new_admin_system():
-    return FileResponse('admin_coming_soon.html')
+    return FileResponse('admin_system.html')
 
 @app.get('/admin_shared.css')
 def admin_shared_css():
@@ -2667,6 +2667,55 @@ def admin_market_regime(payload: dict = Depends(require_admin)):
     data = json.loads(cached)
     data['available'] = True
     return data
+
+SETTING_DEFAULTS = {
+    'emergency_halt': 'false',
+    'new_bot_creation_enabled': 'true',
+    'new_trade_opening_enabled': 'true',
+    'long_dca_enabled': 'true',
+    'long_smart_enabled': 'true',
+    'long_customized_enabled': 'true',
+    'long_asap_enabled': 'true',
+    'short_dca_enabled': 'true',
+    'short_smart_enabled': 'true',
+    'short_customized_enabled': 'true',
+    'scalper_enabled': 'true',
+    'dca_continuation_enabled': 'true',
+    'tp_trailing_enabled': 'true',
+    'short_buyback_enabled': 'true',
+    'exchange_mexc_enabled': 'true',
+    'exchange_kucoin_enabled': 'true',
+    'live_trading_enabled': 'true',
+    'research_trading_enabled': 'true',
+    'waitlist_mode_enabled': 'false',
+    'notify_daily_report': 'true',
+    'notify_champion_change': 'true',
+    'notify_health_alerts': 'true',
+    'price_extra_bot': '1.00',
+    'price_trade_bundle': '',
+    'price_trades_per_bundle': '',
+    'cron_classification_enabled': 'true',
+    'cron_min_orders_enabled': 'true',
+    'cron_params_enabled': 'true',
+    'cron_rars_enabled': 'true',
+    'cron_champion_enabled': 'true',
+    'cron_reports_enabled': 'true',
+    'cron_retention_enabled': 'true',
+}
+
+@app.get('/admin/settings')
+def admin_get_settings(payload: dict = Depends(require_admin)):
+    stored = db.get_all_settings()
+    result = dict(SETTING_DEFAULTS)
+    result.update(stored)
+    return result
+
+@app.post('/admin/settings')
+def admin_update_settings(updates: dict, payload: dict = Depends(require_admin)):
+    user_id = payload['user_id']
+    for key, value in updates.items():
+        db.set_setting(key, value, updated_by=user_id)
+    return {'message': f'{len(updates)} setting(s) updated'}
 
 @app.get('/admin/watchdog-status')
 def admin_watchdog_status(payload: dict = Depends(require_admin)):

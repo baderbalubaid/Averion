@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Averion Admin - System Control</title>
+<link rel="stylesheet" href="/admin_shared.css">
+<style>
+  .ctrl-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .ctrl-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .ctrl-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .ctrl-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 0; border-top: 1px solid var(--border);
+  }
+  .ctrl-row:first-of-type { border-top: none; }
+  .ctrl-label { font-size: 13px; }
+  .ctrl-label-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--border); border-radius: 24px; transition: .2s;
+  }
+  .toggle-slider:before {
+    content: ""; position: absolute; height: 18px; width: 18px;
+    left: 3px; bottom: 3px; background: var(--text);
+    border-radius: 50%; transition: .2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--green); }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+  .danger-card { border-color: rgba(231,76,60,0.35); }
+  .danger-card .ctrl-title { color: var(--red); }
+  .master-row {
+    background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .pill-input {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 13px; width: 90px; text-align: right;
+  }
+  .pending-list { display: none; padding: 10px 0 4px; }
+  .pending-list.open { display: block; }
+  .pending-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 10px 0; }
+  .save-toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: var(--bg); padding: 8px 16px;
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 100;
+  }
+  .save-toast.show { opacity: 1; }
+  .save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 12px 16px; display: none; align-items: center;
+    justify-content: space-between; z-index: 90;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+  }
+  .save-bar.visible { display: flex; }
+  .save-bar-text { font-size: 12px; color: var(--muted); }
+  .save-btn {
+    background: var(--accent); color: var(--bg); border: none; border-radius: 8px;
+    padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .discard-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; margin-right: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="app-shell"></div>
+<div class="main" style="padding:14px;max-width:680px;margin:0 auto">
+
+  <div class="ctrl-card">
+    <div class="ctrl-title">👤 User Registration</div>
+    <div class="ctrl-sub">Control new signups when the server needs breathing room.</div>
+    <div class="ctrl-row">
+      <div>
+        <div class="ctrl-label">Waitlist mode</div>
+        <div class="ctrl-label-sub">New signups held for manual approval instead of instant access</div>
+      </div>
+      <label class="toggle"><input type="checkbox" data-key="waitlist_mode_enabled"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row" style="cursor:pointer" onclick="document.getElementById('pending-list').classList.toggle('open')">
+      <div class="ctrl-label">Pending approvals</div>
+      <div style="font-size:13px;color:var(--accent)">0 waiting &nbsp;▾</div>
+    </div>
+    <div id="pending-list" class="pending-list">
+      <div class="pending-empty">No one waiting right now.</div>
+    </div>
+  </div>
+
+  <div class="ctrl-card">
+    <div class="ctrl-title">💲 Pricing &amp; Add-ons</div>
+    <div class="ctrl-sub">Free plan: 5 bots, 100 open trades. Set extra pricing below.</div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Extra bot — $ per bot / month</div>
+      <input class="pill-input" data-key="price_extra_bot" value="1.00">
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Extra trade bundle — $ per bundle / month</div>
+      <input class="pill-input" data-key="price_trade_bundle" placeholder="—">
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Trades per bundle</div>
+      <input class="pill-input" data-key="price_trades_per_bundle" placeholder="—">
+    </div>
+  </div>
+
+  <div class="ctrl-card">
+    <div class="ctrl-title">🔔 Admin Notifications</div>
+    <div class="ctrl-sub">System-level alerts to you, not per-user trade notifications.</div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Daily system report</div>
+      <label class="toggle"><input type="checkbox" data-key="notify_daily_report"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Champion change alerts</div>
+      <label class="toggle"><input type="checkbox" data-key="notify_champion_change"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">Health/watchdog alerts</div>
+      <label class="toggle"><input type="checkbox" data-key="notify_health_alerts"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="ctrl-card">
+    <div class="ctrl-title">🔗 Exchanges</div>
+    <div class="ctrl-sub">Turning an exchange off only blocks NEW trades there - existing open trades on it keep running normally.</div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">MEXC</div>
+      <label class="toggle"><input type="checkbox" data-key="exchange_mexc_enabled"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label">KuCoin</div>
+      <label class="toggle"><input type="checkbox" data-key="exchange_kucoin_enabled"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="ctrl-card">
+    <div class="ctrl-title">⏱️ Cron Jobs</div>
+    <div class="ctrl-sub">Enable or disable scheduled jobs. Full status lives in Health.</div>
+    <div class="ctrl-row"><div class="ctrl-label">Classification</div><label class="toggle"><input type="checkbox" data-key="cron_classification_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Exchange min orders</div><label class="toggle"><input type="checkbox" data-key="cron_min_orders_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Calculate params</div><label class="toggle"><input type="checkbox" data-key="cron_params_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">RARS scoring</div><label class="toggle"><input type="checkbox" data-key="cron_rars_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Champion promotion</div><label class="toggle"><input type="checkbox" data-key="cron_champion_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Daily reports</div><label class="toggle"><input type="checkbox" data-key="cron_reports_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Data retention</div><label class="toggle"><input type="checkbox" data-key="cron_retention_enabled"><span class="toggle-slider"></span></label></div>
+  </div>
+
+  <div class="ctrl-card danger-card">
+    <div class="ctrl-title">⚠️ Trade Control</div>
+    <div class="ctrl-sub">Existing open trades always keep running their own DCA/TP/trailing/buyback - these switches only affect what's allowed to start. Green = currently active/allowed, same rule everywhere on this page.</div>
+
+    <div class="master-row">
+      <div class="ctrl-row" style="border-top:none;padding:0">
+        <div>
+          <div class="ctrl-label" style="font-weight:700">Trading enabled</div>
+          <div class="ctrl-label-sub">Off = blocks every new trade platform-wide. Existing trades unaffected.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" data-key="emergency_halt" data-invert="true"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="ctrl-row"><div class="ctrl-label">New bot creation</div><label class="toggle"><input type="checkbox" data-key="new_bot_creation_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">New trade opening (all systems)</div><label class="toggle"><input type="checkbox" data-key="new_trade_opening_enabled"><span class="toggle-slider"></span></label></div>
+
+    <div class="ctrl-row" style="padding-top:18px"><div class="ctrl-label" style="font-weight:700">By system</div></div>
+    <div class="ctrl-row"><div class="ctrl-label">Long DCA</div><label class="toggle"><input type="checkbox" data-key="long_dca_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">— Smart mode</div><label class="toggle"><input type="checkbox" data-key="long_smart_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">— Customized mode</div><label class="toggle"><input type="checkbox" data-key="long_customized_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">— ASAP</div><label class="toggle"><input type="checkbox" data-key="long_asap_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Short DCA</div><label class="toggle"><input type="checkbox" data-key="short_dca_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">— Smart mode</div><label class="toggle"><input type="checkbox" data-key="short_smart_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">— Customized mode</div><label class="toggle"><input type="checkbox" data-key="short_customized_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Scalper</div><label class="toggle"><input type="checkbox" data-key="scalper_enabled"><span class="toggle-slider"></span></label></div>
+
+    <div class="ctrl-row" style="padding-top:18px"><div class="ctrl-label" style="font-weight:700">Finer control</div></div>
+    <div class="ctrl-row"><div class="ctrl-label">DCA continuation (existing trades)</div><label class="toggle"><input type="checkbox" data-key="dca_continuation_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">TP / Trailing execution</div><label class="toggle"><input type="checkbox" data-key="tp_trailing_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Short buyback execution</div><label class="toggle"><input type="checkbox" data-key="short_buyback_enabled"><span class="toggle-slider"></span></label></div>
+
+    <div class="ctrl-row" style="padding-top:18px"><div class="ctrl-label" style="font-weight:700">Live vs Research</div></div>
+    <div class="ctrl-row"><div class="ctrl-label">Live trading (real money)</div><label class="toggle"><input type="checkbox" data-key="live_trading_enabled"><span class="toggle-slider"></span></label></div>
+    <div class="ctrl-row"><div class="ctrl-label">Research/paper bots</div><label class="toggle"><input type="checkbox" data-key="research_trading_enabled"><span class="toggle-slider"></span></label></div>
+  </div>
+
+</div>
+<div id="save-bar" class="save-bar">
+  <div class="save-bar-text" id="save-bar-text">1 change pending</div>
+  <div>
+    <button class="discard-btn" onclick="discardChanges()">Discard</button>
+    <button class="save-btn" onclick="saveAllChanges()">Save Changes</button>
+  </div>
+</div>
+<script src="/admin_shared.js"></script>
+<script>
+if (requireAdminSession()) renderHeaderAndTabs();
+
+let _originalSettings = {};
+let _pendingChanges = {};
+
+function getElValue(el) {
+  if (el.type === 'checkbox') {
+    return el.dataset.invert === 'true' ? String(!el.checked) : String(el.checked);
+  }
+  return el.value;
+}
+
+function setElValue(el, value) {
+  if (el.type === 'checkbox') {
+    const boolVal = value === 'true';
+    el.checked = el.dataset.invert === 'true' ? !boolVal : boolVal;
+  } else {
+    el.value = value;
+  }
+}
+
+async function loadSettings() {
+  try {
+    const res = await fetch(`${API}/admin/settings`, { headers: authHeaders() });
+    const settings = await res.json();
+    _originalSettings = settings;
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      if (key in settings) setElValue(el, settings[key]);
+    });
+  } catch (e) {
+    console.error('Failed to load settings', e);
+  }
+}
+
+function updateSaveBar() {
+  const bar = document.getElementById('save-bar');
+  const text = document.getElementById('save-bar-text');
+  const count = Object.keys(_pendingChanges).length;
+  if (count > 0) {
+    bar.classList.add('visible');
+    text.textContent = `${count} change${count > 1 ? 's' : ''} pending`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function discardChanges() {
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (key in _originalSettings) setElValue(el, _originalSettings[key]);
+  });
+  _pendingChanges = {};
+  updateSaveBar();
+}
+
+async function saveAllChanges() {
+  if (Object.keys(_pendingChanges).length === 0) return;
+  try {
+    await fetch(`${API}/admin/settings`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(_pendingChanges)
+    });
+    Object.assign(_originalSettings, _pendingChanges);
+    _pendingChanges = {};
+    updateSaveBar();
+  } catch (e) {
+    alert('Failed to save: ' + e.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings().then(() => {
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const eventType = el.type === 'checkbox' ? 'change' : 'input';
+      el.addEventListener(eventType, () => {
+        const key = el.dataset.key;
+        const newVal = getElValue(el);
+        if (_originalSettings[key] === newVal) {
+          delete _pendingChanges[key];
+        } else {
+          _pendingChanges[key] = newVal;
+        }
+        updateSaveBar();
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

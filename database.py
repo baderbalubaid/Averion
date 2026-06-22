@@ -1550,6 +1550,56 @@ def update_standby_amount(position_id, new_amount):
         cur.execute("UPDATE positions SET standby_amount=%s WHERE id=%s", (new_amount, position_id))
         conn.commit()
 
+def get_setting(key, default=None):
+    # Simple key-value settings store (ADDED June 22 2026) - the table
+    # already existed with one unused 'emergency_halt' row, now used
+    # for all System Control tab toggles. Cached briefly in Redis
+    # since engines check this frequently (every tick in some cases),
+    # avoiding a DB hit per check.
+    try:
+        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        cached = r.get(f'setting:{key}')
+        if cached is not None:
+            return cached
+    except Exception:
+        pass
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT value FROM system_settings WHERE key=%s", (key,))
+        row = cur.fetchone()
+        value = row[0] if row else default
+    try:
+        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        r.setex(f'setting:{key}', 30, str(value))
+    except Exception:
+        pass
+    return value
+
+def get_setting_bool(key, default=False):
+    val = get_setting(key, str(default))
+    return str(val).lower() in ('true', '1', 'yes')
+
+def set_setting(key, value, updated_by=None):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO system_settings (key, value, updated_at, updated_by)
+            VALUES (%s, %s, NOW(), %s)
+            ON CONFLICT (key) DO UPDATE SET value=%s, updated_at=NOW(), updated_by=%s
+        ''', (key, str(value), updated_by, str(value), updated_by))
+        conn.commit()
+    try:
+        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        r.delete(f'setting:{key}')
+    except Exception:
+        pass
+
+def get_all_settings():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT key, value FROM system_settings")
+        return {row[0]: row[1] for row in cur.fetchall()}
+
 def is_wallet_pending_buyback(wallet_id):
     """Cross-system fund-isolation check (ADDED June 21 2026): does
     ANY Short position on this wallet currently have a sell pending

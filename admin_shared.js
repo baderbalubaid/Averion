@@ -48,6 +48,31 @@ function renderHeaderAndTabs() {
     </div>
   `;
   document.getElementById('app-shell').insertAdjacentHTML('afterbegin', headerHtml);
+  updateStatusPill();
+  setInterval(updateStatusPill, 10000);
+}
+
+// MOVED June 22 2026: this previously only lived inside admin_health.html's
+// own page-specific script, so the status pill in the shared header
+// showed "Loading..." forever on every OTHER admin tab. Now part of
+// the shared render function, so it works identically everywhere.
+async function updateStatusPill() {
+  try {
+    const res = await fetch(`${API}/status`, { headers: authHeaders() });
+    const sdata = await res.json();
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+    if (statusText) {
+      statusText.textContent = sdata.running
+        ? `BOT RUNNING · ${sdata.cycle_time || '—'}s`
+        : 'BOT STOPPED';
+    }
+    if (statusDot) {
+      statusDot.style.background = sdata.running ? 'var(--green)' : 'var(--red)';
+    }
+  } catch (e) {
+    console.error('Status pill update failed', e);
+  }
 }
 
 function toggleMenu() {
