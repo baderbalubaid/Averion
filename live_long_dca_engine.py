@@ -321,6 +321,10 @@ def execute_tp_sell(pos, bot, current_price):
     on the FULL theoretical profit (sold + kept), same 20% rule,
     deducted via the existing reserve_wallets mechanism either way -
     only the SELL QUANTITY changes, not how the fee itself works."""
+    import system_gates
+    if not system_gates.is_tp_trailing_allowed():
+        return
+
     wallet = load_wallet(pos['wallet_id'])
     if not wallet:
         return
@@ -432,6 +436,10 @@ def execute_tp_sell(pos, bot, current_price):
 # ── Execute DCA buy ────────────────────────────────────────────────
 def execute_dca_buy(pos, bot, amount_usdt, r):
     """Execute DCA buy via executor."""
+    import system_gates
+    if not system_gates.is_dca_continuation_allowed():
+        return False
+
     wallet = load_wallet(pos['wallet_id'])
     if not wallet:
         return False
@@ -513,6 +521,14 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
 # ── Open new position ──────────────────────────────────────────────
 def open_position(bot, coin, r, coin_params_cache=None):
     """Open a new long DCA position."""
+    import system_gates
+    if not system_gates.is_new_trade_allowed(
+        'long', entry_method=bot.get('entry_method'),
+        exchange_name=bot.get('exchange_name'),
+        is_research=bot.get('is_research', False)
+    ):
+        return False
+
     cp_for_coin = (coin_params_cache or {}).get(coin, {})
     wallet = load_wallet(bot['wallet_id'])
     if not wallet:

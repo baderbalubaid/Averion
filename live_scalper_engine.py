@@ -215,6 +215,12 @@ class LiveScalperEngine:
         # separate mechanism, also computed once per refresh cycle.
         if bot.get('account_in_debt'):
             return
+        import system_gates
+        if not system_gates.is_new_trade_allowed(
+            'scalper', exchange_name=bot.get('exchange_name'),
+            is_research=bot.get('is_research', False)
+        ):
+            return
         key = (bot['id'], coin)
         # Skip if already have open position for this bot+coin
         with self._lock:

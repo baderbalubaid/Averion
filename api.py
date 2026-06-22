@@ -2557,6 +2557,9 @@ class BotCreate(BaseModel):
 @app.post('/bots')
 def create_bot(req: BotCreate,
               payload: dict = Depends(verify_token)):
+   import system_gates
+   if not system_gates.is_new_bot_creation_allowed():
+       raise HTTPException(status_code=403, detail='New bot creation is currently disabled platform-wide')
    bot_id = db.create_bot(
        payload['user_id'], req.exchange_id, req.wallet_id,
        req.name, req.method, req.direction, req.base_order,

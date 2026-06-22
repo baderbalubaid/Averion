@@ -144,6 +144,14 @@ def calculate_score(position, current_price, bot):
 def execute_buy(exchange_obj, coin, amount_usdt,
                 position_id, bot_id, user_id, exchange_id,
                 dca_level, reason, r):
+    import system_gates
+    if reason == 'entry':
+        if not system_gates.is_new_trade_allowed('long', is_research=True):
+            return None
+    elif reason == 'dca':
+        if not system_gates.is_dca_continuation_allowed():
+            return None
+
     symbol = f'{coin}/USDT'
 
     if PAPER_MODE:

@@ -222,6 +222,18 @@ def execute_short_sell(pos, bot, sell_quantity):
     If limit placement fails (insufficient USDT), the flag stays SET
     so Long DCA stays blocked and we retry next cycle - Short buyback
     funding always wins the race for funds on that wallet."""
+    import system_gates
+    if pos.get('dca_count', 0) == 0:
+        if not system_gates.is_new_trade_allowed(
+            'short', entry_method=bot.get('bot_params', {}).get('parameter_mode'),
+            exchange_name=bot['wallet'].get('exchange_name'),
+            is_research=bot.get('is_research', False)
+        ):
+            return False
+    else:
+        if not system_gates.is_dca_continuation_allowed():
+            return False
+
     wallet = bot['wallet']
     executor = get_executor(wallet)
     coin = pos['coin']
@@ -283,6 +295,14 @@ def execute_short_sell(pos, bot, sell_quantity):
     else:
         buyback_quantity = new_quantity
 
+    import system_gates
+    if not system_gates.is_short_buyback_allowed():
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE positions SET pending_buyback=TRUE WHERE id=%s", (pos['id'],))
+            conn.commit()
+        return True
+
     with db.get_db() as conn:
         limit_result = executor.place_limit_buyback(
             pos['id'], coin, tp_target, buyback_quantity, wallet, conn
@@ -330,6 +350,10 @@ def retry_pending_buybacks(bots_by_id):
         if pos_tp_pct is not None:
             tp_pct = float(pos_tp_pct)
         tp_target = float(avg_sell_price) * (1 - tp_pct / 100)
+
+        import system_gates
+        if not system_gates.is_short_buyback_allowed():
+            continue
 
         with db.get_db() as conn:
             limit_result = executor.place_limit_buyback(
