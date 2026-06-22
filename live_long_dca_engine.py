@@ -1003,6 +1003,15 @@ def _engine_loop():
     while _running:
         try:
             cycle_start = time.time()
+            # Heartbeat (ADDED June 21 2026) - written from WITHIN this
+            # process so the api.py process (a SEPARATE process) can
+            # read real engine-alive status via Redis instead of trying
+            # to import this module directly, which would only ever see
+            # its OWN never-started copy of these globals.
+            try:
+                r.setex('engine:long_dca:heartbeat', 150, str(time.time()))
+            except Exception:
+                pass
             print(f'\n--- LiveLongDCA Cycle {datetime.now(timezone.utc)} ---')
 
             # Load champion ONCE per tick before any bot processing

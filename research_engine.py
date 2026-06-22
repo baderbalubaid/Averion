@@ -1034,6 +1034,29 @@ def run_bot():
             except Exception as _wd_e:
                 print(f'⚠️ Watchdog check failed: {_wd_e}')
 
+            # Watchdog for Short DCA engine (ADDED June 21 2026) - same
+            # exact reasoning as Long above, this was a real gap since
+            # Short's engine was added more recently and never got its
+            # own watchdog coverage despite having the identical
+            # is_engine_alive/start_engine safety pattern built for it.
+            try:
+                from short_dca_engine import is_engine_alive as _short_alive, start_engine as _restart_short_dca
+                if not _short_alive():
+                    print('⚠️ Watchdog: ShortDCA engine not running, restarting it')
+                    try:
+                        with db.get_db() as _wd_conn2:
+                            _wd_cur2 = _wd_conn2.cursor()
+                            _wd_cur2.execute("""
+                                INSERT INTO watchdog_events (engine_name, note)
+                                VALUES ('short_dca', 'Auto-restarted by watchdog - thread was found dead')
+                            """)
+                            _wd_conn2.commit()
+                    except Exception as _wd_log_e2:
+                        print(f'⚠️ Watchdog event log failed: {_wd_log_e2}')
+                    _restart_short_dca()
+            except Exception as _wd_e2:
+                print(f'⚠️ Watchdog check failed: {_wd_e2}')
+
             consecutive_errors = 0
             time.sleep(60)
 

@@ -2361,10 +2361,12 @@ def admin_run_cron_step(step: str,
         'db_backup': None,  # part of daily_cron.sh, not independently re-runnable
         'system_health': None,
         'classification': f'{AVERION_DIR}/classify_coins.py',
+        'min_orders': f'{AVERION_DIR}/refresh_min_orders.py',
         'params': f'{AVERION_DIR}/calculate_coin_params.py',
         'rars': f'{AVERION_DIR}/rars_scoring.py',
         'paper_timer': f'{AVERION_DIR}/automation/check_paper_timer.py',
         'btc_daily': f'{AVERION_DIR}/fetch_btc_daily.py',
+        'retention': f'{AVERION_DIR}/data_retention_cleanup.py',
         'reports': f'{AVERION_DIR}/generate_reports.sh',
         'cleanup': None,  # Sunday-only, not manually re-runnable
         'full_cron': f'{AVERION_DIR}/automation/daily_cron.sh',
@@ -2673,13 +2675,33 @@ def admin_watchdog_status(payload: dict = Depends(require_admin)):
         row = cur.fetchone()
         cur.execute("SELECT COUNT(*) FROM watchdog_events WHERE triggered_at > NOW() - INTERVAL '7 days'")
         count_7d = cur.fetchone()[0]
+    # Live engine status (ADDED June 21 2026) - distinct from the
+    # historical watchdog_events log above, this checks RIGHT NOW
+    # whether each engine's background thread is actually alive.
+    # FIXED: is_engine_alive() lives in the averion-research process,
+    # not this api.py process - importing it here would only ever see
+    # a fresh, never-started copy of its globals. Reads a Redis
+    # heartbeat written FROM WITHIN the real engine loop instead.
+    try:
+        _r = get_redis()
+        long_hb = _r.get('engine:long_dca:heartbeat')
+        short_hb = _r.get('engine:short_dca:heartbeat')
+        long_alive = long_hb is not None
+        short_alive = short_hb is not None
+    except Exception:
+        long_alive = None
+        short_alive = None
+
+    live_status = {'long_dca_alive': long_alive, 'short_dca_alive': short_alive}
+
     if not row:
-        return {'last_triggered': None, 'engine_name': None, 'count_last_7_days': 0}
+        return {'last_triggered': None, 'engine_name': None, 'count_last_7_days': 0, 'live_status': live_status}
     return {
         'last_triggered': row[1].isoformat(),
         'engine_name': row[0],
         'note': row[2],
         'count_last_7_days': count_7d,
+        'live_status': live_status,
     }
 
 @app.get('/admin/cron-status')
@@ -2706,11 +2728,13 @@ def admin_cron_status(payload: dict = Depends(require_admin)):
        'db_backup': None,
        'system_health': None,
        'classification': None,
+       'min_orders': None,
        'params': None,
        'rars': None,
        'champion': None,
        'paper_timer': None,
        'btc_daily': None,
+       'retention': None,
        'cleanup': None,
        'reports': None,
        'telegram': None,

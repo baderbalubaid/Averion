@@ -238,15 +238,23 @@ async function loadWatchdogStatus() {
   try {
     const res = await fetch(`${API}/admin/watchdog-status`, { headers: authHeaders() });
     const d = await res.json();
+    const live = d.live_status || {};
+    const longBadge = live.long_dca_alive === true ? '🟢 Long alive' : live.long_dca_alive === false ? '🔴 Long DEAD' : '⚪ Long unknown';
+    const shortBadge = live.short_dca_alive === true ? '🟢 Short alive' : live.short_dca_alive === false ? '🔴 Short DEAD' : '⚪ Short unknown';
+    const liveLine = `<div style="margin-bottom:4px">${longBadge} &nbsp; ${shortBadge}</div>`;
+    let historyLine;
     if (!d.last_triggered) {
-      box.innerHTML = `🟢 <b>Live DCA Watchdog:</b> never had to restart the engine — healthy <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
+      historyLine = `🟢 <b>Watchdog:</b> never had to restart an engine — healthy <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
       box.style.borderColor = 'rgba(16,217,138,0.3)';
     } else {
       const when = new Date(d.last_triggered).toLocaleString();
-      box.innerHTML = `🟡 <b>Live DCA Watchdog:</b> last triggered ${when} · ${d.count_last_7_days} time(s) in last 7 days <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
+      historyLine = `🟡 <b>Watchdog:</b> last triggered ${when} (${d.engine_name}) · ${d.count_last_7_days} time(s) in last 7 days <span style="color:var(--muted);font-size:10px">(checked ${refreshedAt})</span>`;
       box.style.borderColor = 'rgba(255,165,0,0.3)';
     }
-    _lastHealthState.watchdogOk = !(d.count_last_7_days > 0);
+    box.innerHTML = liveLine + historyLine;
+    const anyDead = live.long_dca_alive === false || live.short_dca_alive === false;
+    if (anyDead) box.style.borderColor = 'rgba(239,68,68,0.4)';
+    _lastHealthState.watchdogOk = !(d.count_last_7_days > 0) && !anyDead;
     updateStatusBanner();
   } catch (e) {
     box.innerHTML = 'Watchdog status unavailable';
@@ -267,11 +275,13 @@ async function loadCronStatus() {
       { key: 'db_backup', name: 'DB Backup', utc: '03:00' },
       { key: 'system_health', name: 'System Health', utc: '03:00' },
       { key: 'classification', name: 'Classification', utc: '03:45', approx: true },
+      { key: 'min_orders', name: 'Exchange Min Orders', relative: 'after Classification' },
       { key: 'params', name: 'Calculate Params', utc: '04:30', approx: true },
       { key: 'rars', name: 'RARS Scoring', utc: '05:15', approx: true },
       { key: 'champion', name: 'Champion Promotion', relative: 'after RARS' },
       { key: 'paper_timer', name: 'Paper Timer', relative: 'after RARS' },
       { key: 'btc_daily', name: 'BTC Daily Fetch', relative: 'after RARS' },
+      { key: 'retention', name: 'Data Retention', relative: 'Sundays only' },
       { key: 'cleanup', name: 'Sunday Cleanup', relative: 'Sundays only' },
       { key: 'reports', name: 'Research Reports', relative: 'after RARS' },
       { key: 'telegram', name: 'Telegram Report', relative: 'after RARS' },

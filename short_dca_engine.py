@@ -507,6 +507,11 @@ def _engine_loop():
     print('Short DCA engine starting (60s cycle)...')
     while _running:
         try:
+            r = get_redis()
+            r.setex('engine:short_dca:heartbeat', 150, str(time.time()))
+        except Exception:
+            pass
+        try:
             run_cycle()
         except Exception as e:
             print(f'Short engine cycle error: {e}')
