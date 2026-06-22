@@ -1497,6 +1497,41 @@ def get_available_for_short(user_id, coin, wallet):
     long_holdings = get_long_holdings_quantity(user_id, coin, wallet['exchange_id'])
     return max(0, real_balance - long_holdings)
 
+def get_min_order(exchange_id, coin):
+    """Fast read-only lookup (ADDED June 21 2026) - instant database
+    read, never a slow live exchange API call during actual trading.
+    Real data refreshed daily by refresh_min_orders.py via cron.
+    Returns None if never fetched yet (e.g. brand new coin/exchange
+    combo not yet seen by the daily refresh)."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT min_amount, min_cost FROM exchange_min_orders WHERE exchange_id=%s AND coin=%s",
+            (exchange_id, coin)
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return {"min_amount": float(row[0] or 0), "min_cost": float(row[1] or 0)}
+
+def upsert_min_order(exchange_id, coin, min_amount, min_cost):
+    """Used by the daily refresh script to write real exchange data."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO exchange_min_orders (exchange_id, coin, min_amount, min_cost, updated_at)
+            VALUES (%s, %s, %s, %s, NOW())
+            ON CONFLICT (exchange_id, coin)
+            DO UPDATE SET min_amount=%s, min_cost=%s, updated_at=NOW()
+        """, (exchange_id, coin, min_amount, min_cost, min_amount, min_cost))
+        conn.commit()
+
+def update_standby_amount(position_id, new_amount):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE positions SET standby_amount=%s WHERE id=%s", (new_amount, position_id))
+        conn.commit()
+
 def is_wallet_pending_buyback(wallet_id):
     """Cross-system fund-isolation check (ADDED June 21 2026): does
     ANY Short position on this wallet currently have a sell pending

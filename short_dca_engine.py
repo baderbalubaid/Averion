@@ -108,7 +108,7 @@ def load_open_short_positions(bot_id):
             SELECT id, coin, avg_sell_price, last_sell_price, quantity,
                    total_sold_usdt, dca_count, pending_buyback,
                    short_buyback_order_id, sequence_number,
-                   pos_tp_pct, pos_dca_pct
+                   pos_tp_pct, pos_dca_pct, standby_amount
             FROM positions
             WHERE bot_id=%s AND status='open' AND direction='short'
         """, (bot_id,))
@@ -122,6 +122,7 @@ def load_open_short_positions(bot_id):
             'dca_count': int(r[6] or 0), 'pending_buyback': r[7] or False,
             'short_buyback_order_id': r[8], 'sequence_number': r[9],
             'pos_tp_pct': float(r[10]) if r[10] is not None else None,
+            'standby_amount': float(r[12] or 0),
             'pos_dca_pct': float(r[11]) if r[11] is not None else None,
         })
     return positions
@@ -162,13 +163,20 @@ def check_sell_trigger(pos, current_price, bot, coin_params_cache):
 
     return True, None  # caller computes actual quantity separately
 
-def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price, coin):
-    """Computes how much coin to sell for this DCA level. Amount mode
-    (USDT-equivalent / fixed quantity / % of current wallet balance)
-    comes from bot_params, per Bader's explicit design: percentage
-    mode recalculates LIVE off current available balance each time,
-    not a fixed snapshot from bot creation - so it stays proportional
-    as other trades use up the shared coin pool."""
+# Min order size rarely changes - fast DB read, refreshed daily
+# by refresh_min_orders.py via cron. Never a slow live API call.
+def get_cached_min_order(bot, coin):
+    result = db.get_min_order(bot['wallet']['exchange_id'], coin)
+    if result is None:
+        return {'min_amount': 0, 'min_cost': 1.0}
+    return result
+
+# Computes how much coin to sell for this DCA level. Returns
+# (sell_qty, new_standby_amount). sell_qty=0 means skip entirely
+# this tick. Partial fills (>=75% of required, meeting exchange
+# minimum) sell what's available and carry the remainder forward
+# as standby_amount, added on top of the NEXT level's requirement.
+def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price, coin, standby_amount=0):
     params = bot.get('bot_params', {})
     mode = params.get('short_amount_mode', 'wallet_pct')
     value = float(params.get('short_amount_value', 10))
@@ -180,18 +188,30 @@ def compute_sell_amount(bot, wallet_current_balance, dca_count, current_price, c
     elif mode == 'usdt_equivalent':
         base_qty = value / current_price if current_price > 0 else 0
     else:
-        base_qty = wallet_current_balance * 0.10  # safe fallback
+        base_qty = wallet_current_balance * 0.10
 
     size_mult = bot['size_multiplier']
     scaled_qty = base_qty * (size_mult ** dca_count)
-    if scaled_qty > wallet_current_balance:
-        return 0
+    required_total = scaled_qty + standby_amount
 
-    available_for_short = db.get_available_for_short(bot['user_id'], coin, bot['wallet'])
-    if available_for_short is not None and scaled_qty > available_for_short:
-        return 0
+    available_cap = db.get_available_for_short(bot['user_id'], coin, bot['wallet'])
+    effective_available = wallet_current_balance if available_cap is None else min(wallet_current_balance, available_cap)
 
-    return scaled_qty
+    min_req = get_cached_min_order(bot, coin)
+    min_qty_floor = max(
+        min_req.get('min_amount', 0) or 0,
+        (min_req.get('min_cost', 0) or 0) / current_price if current_price > 0 else 0
+    )
+
+    if effective_available >= required_total:
+        return required_total, 0
+
+    threshold = max(required_total * 0.75, min_qty_floor)
+    if effective_available >= threshold and effective_available >= min_qty_floor:
+        new_standby = required_total - effective_available
+        return effective_available, new_standby
+
+    return 0, standby_amount
 
 def execute_short_sell(pos, bot, sell_quantity):
     """Executes a market sell for a Short position, recalculates
@@ -467,9 +487,12 @@ def run_cycle():
         for pos in existing_for_coin:
             should_sell, _ = check_sell_trigger(pos, current_price, bot, coin_params_cache)
             if should_sell:
-                sell_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], pos['dca_count'], current_price, pos['coin']
+                sell_qty, new_standby = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], current_price,
+                    pos['coin'], pos.get('standby_amount', 0)
                 )
+                if new_standby != pos.get('standby_amount', 0):
+                    db.update_standby_amount(pos['id'], new_standby)
                 if sell_qty > 0:
                     execute_short_sell(pos, bot, sell_qty)
 
@@ -570,11 +593,13 @@ def on_price_update(coin, price):
                     'last_sell_price': 0, 'quantity': 0, 'total_sold_usdt': 0,
                     'dca_count': 0, 'short_buyback_order_id': None
                 }
-                first_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], 0, price, coin
+                first_qty, new_standby = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], 0, price, coin, 0
                 )
                 if first_qty > 0:
                     execute_short_sell(first_pos, bot, first_qty)
+                if new_standby > 0:
+                    db.update_standby_amount(new_pos_id, new_standby)
                 refresh_short_cache()
         except Exception as e:
             print(f'\u26a0\ufe0f Short on_price_update new-slot error for {coin}: {e}')
@@ -583,9 +608,12 @@ def on_price_update(coin, price):
         try:
             should_sell, _ = check_sell_trigger(pos, price, bot, {})
             if should_sell:
-                sell_qty = compute_sell_amount(
-                    bot, bot['wallet']['current_balance'], pos['dca_count'], price, coin
+                sell_qty, new_standby = compute_sell_amount(
+                    bot, bot['wallet']['current_balance'], pos['dca_count'], price,
+                    coin, pos.get('standby_amount', 0)
                 )
+                if new_standby != pos.get('standby_amount', 0):
+                    db.update_standby_amount(pos['id'], new_standby)
                 if sell_qty > 0:
                     execute_short_sell(pos, bot, sell_qty)
                     refresh_short_cache()

@@ -135,6 +135,15 @@ def get_redis_price(coin: str) -> tuple:
 # ══════════════════════════════════════════════════════════════════
 class PaperAdapter:
 
+    def get_min_order_requirements(self, wallet, coin, conn):
+        """Paper-mode minimum order check (ADDED June 21 2026). No
+        real exchange to query, so this uses a sensible industry-
+        standard default ($1 USDT minimum notional, which is common
+        across most exchanges for most pairs) - close enough to test
+        the dust-prevention LOGIC correctly in paper before going
+        live, where the real per-coin minimum gets used instead."""
+        return {"min_amount": 0, "min_cost": 1.0, "symbol": coin}
+
     def place_order(self, side: str, coin: str, usdt_amount: float,
                     wallet: dict, conn) -> OrderResult:
         """
@@ -536,6 +545,20 @@ class LiveAdapter:
         return exchange_class({
             'apiKey': api_key, 'secret': secret, 'enableRateLimit': True,
         })
+
+    def get_min_order_requirements(self, wallet, coin, conn):
+        """Real exchange minimum order check (ADDED June 21 2026) -
+        never execute any trade or DCA level, partial or full, below
+        the exchange's actual minimum. Fails safe (impossible-high
+        minimum) if the real check can't be made."""
+        try:
+            from exchanges import get_min_order_size
+            exchange_obj = self._get_exchange_obj(wallet, conn)
+            symbol = f"{coin}/USDT"
+            return get_min_order_size(exchange_obj, symbol)
+        except Exception as e:
+            print(f"get_min_order_requirements error for {coin}: {e}")
+            return {"min_amount": float("inf"), "min_cost": float("inf"), "symbol": coin}
 
     def place_limit_buyback(self, position_id, coin, limit_price, quantity, wallet, conn):
         """Places a real limit buy order on the exchange (ADDED June

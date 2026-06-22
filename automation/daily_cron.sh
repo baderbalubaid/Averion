@@ -77,6 +77,7 @@ sleep 2700
 # ~03:45 — COIN CLASSIFICATION
 # ═══════════════════════════════
 run_step "Classification" "classification" "$LOG_DIR/classify.log" python3 $AVERION_DIR/classify_coins.py
+run_step "Exchange Min Orders" "min_orders" "$LOG_DIR/min_orders.log" python3 $AVERION_DIR/refresh_min_orders.py
 sleep 2700
 
 # ═══════════════════════════════
