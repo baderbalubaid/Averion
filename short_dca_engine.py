@@ -36,8 +36,12 @@ from executor import get_executor, PaperAdapter, LiveAdapter
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 
+_shared_redis_conn = None
 def get_redis():
-    return _redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+    global _shared_redis_conn
+    if _shared_redis_conn is None:
+        _shared_redis_conn = _redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+    return _shared_redis_conn
 
 def get_redis_price(r, coin, exchange_name='MEXC Paper'):
     try:

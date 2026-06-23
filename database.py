@@ -1,10 +1,21 @@
 import os
 import psycopg2
+import redis
 from psycopg2 import pool
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# FIXED June 22 2026: get_setting()/set_setting() were each creating
+# a BRAND NEW redis.Redis() connection on every single call - found
+# during a real memory-leak investigation (confirmed ~120MB/hour
+# steady climb via research:memory_log). These functions are now
+# called on every tick across hundreds of bots (Long/Short/Scalper
+# all check System Control settings constantly), so this was
+# creating a massive number of fresh connection objects per minute.
+# One shared, reusable module-level client instead.
+_settings_redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 # ═══════════════════════════════
 # CONNECTION POOL
@@ -1557,7 +1568,7 @@ def get_setting(key, default=None):
     # since engines check this frequently (every tick in some cases),
     # avoiding a DB hit per check.
     try:
-        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        r = _settings_redis
         cached = r.get(f'setting:{key}')
         if cached is not None:
             return cached
@@ -1569,7 +1580,7 @@ def get_setting(key, default=None):
         row = cur.fetchone()
         value = row[0] if row else default
     try:
-        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        r = _settings_redis
         r.setex(f'setting:{key}', 30, str(value))
     except Exception:
         pass
@@ -1589,7 +1600,7 @@ def set_setting(key, value, updated_by=None):
         ''', (key, str(value), updated_by, str(value), updated_by))
         conn.commit()
     try:
-        r = __import__('redis').Redis(host='localhost', port=6379, decode_responses=True)
+        r = _settings_redis
         r.delete(f'setting:{key}')
     except Exception:
         pass

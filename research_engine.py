@@ -2,6 +2,8 @@ import os
 import time
 import ccxt
 import redis
+import tracemalloc
+tracemalloc.start()
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
@@ -23,13 +25,17 @@ ADMIN_CHAT = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
 # ═══════════════════════════════
 # REDIS CLIENT
 # ═══════════════════════════════
+_shared_redis_conn = None
 def get_redis():
-    return redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        password=REDIS_PASSWORD,
-        decode_responses=True
-    )
+    global _shared_redis_conn
+    if _shared_redis_conn is None:
+        _shared_redis_conn = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            password=REDIS_PASSWORD,
+            decode_responses=True
+        )
+    return _shared_redis_conn
 
 # ═══════════════════════════════
 # TELEGRAM
@@ -40,6 +46,12 @@ def get_redis():
 # EXCHANGE INITIALIZATION
 # ═══════════════════════════════
 def init_exchange(exchange_row):
+    # REVERTED June 22 2026: tried caching the ccxt exchange object
+    # across cycles, but memory grew even FASTER afterward (3.5GB+
+    # within ~25 min) - the cached object's own internal state (HTTP
+    # connection pool, market cache, etc) appears to grow unbounded
+    # with repeated reuse, worse than the original per-cycle creation.
+    # Reverted to the original behavior pending a more careful fix.
     from exchanges import init_exchange as _init
     return _init(exchange_row)
 
@@ -667,6 +679,59 @@ def run_cycle(r):
         _rss_mb = round(_proc.memory_info().rss / 1024 / 1024, 1)
         get_redis().lpush('research:memory_log', f'{datetime.utcnow()}|{_rss_mb}')
         get_redis().ltrim('research:memory_log', 0, 499)
+
+        import json as _json_mem
+        _snapshot = tracemalloc.take_snapshot()
+        _top_lines = _snapshot.statistics('lineno')[:15]
+        _top_lines_serializable = [
+            {'file': str(s.traceback[0].filename).split('/')[-1],
+             'line': s.traceback[0].lineno,
+             'size_mb': round(s.size / 1024 / 1024, 2),
+             'count': s.count}
+            for s in _top_lines
+        ]
+        # Direct price_history inspection (ADDED June 22 2026) - to
+        # determine definitively whether this is bounded growth toward
+        # a higher ceiling (more coins after adding KuCoin) or a true
+        # unbounded leak (e.g. duplicate/malformed coin keys).
+        _ph_stats = {}
+        try:
+            from live_scalper_engine import get_live_scalper as _gls
+            _live_ph = _gls().price_history
+            _ph_stats['live_scalper_coins'] = len(_live_ph)
+            _ph_stats['live_scalper_entries'] = sum(len(v) for v in _live_ph.values())
+        except Exception as _e1:
+            _ph_stats['live_scalper_error'] = str(_e1)
+        try:
+            from scalper_engine import get_scalper as _gs
+            _res_ph = _gs().price_history
+            _ph_stats['research_scalper_coins'] = len(_res_ph)
+            _ph_stats['research_scalper_entries'] = sum(len(v) for v in _res_ph.values())
+        except Exception as _e2:
+            _ph_stats['research_scalper_error'] = str(_e2)
+        try:
+            from scalper_v2_engine import get_scalper_v2 as _gv2
+            _v2_ph = _gv2().price_history
+            _ph_stats['scalper_v2_coins'] = len(_v2_ph)
+            _ph_stats['scalper_v2_entries'] = sum(len(v) for v in _v2_ph.values())
+        except Exception as _e3:
+            _ph_stats['scalper_v2_error'] = str(_e3)
+
+        _current_ohlcv_cache = globals().get('_ohlcv_cache', {})
+        _ph_stats['ohlcv_cache_coins'] = len(_current_ohlcv_cache)
+        try:
+            import sys as _sys_mem
+            _ph_stats['ohlcv_cache_bytes_approx'] = sum(
+                _sys_mem.getsizeof(v) for v in _current_ohlcv_cache.values() if v is not None
+            )
+        except Exception:
+            pass
+
+        get_redis().lpush('research:object_log', _json_mem.dumps({
+            'time': str(datetime.utcnow()), 'rss_mb': _rss_mb,
+            'top_lines': _top_lines_serializable, 'price_history_stats': _ph_stats
+        }))
+        get_redis().ltrim('research:object_log', 0, 99)
     except Exception as _mem_e:
         print(f'Memory diagnostic error: {_mem_e}')
 

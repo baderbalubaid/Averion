@@ -27,11 +27,21 @@ REDIS_PORT     = int(os.getenv('REDIS_PORT', 6379))
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
 # ── Redis ──────────────────────────────────────────────────────────
+_shared_redis_conn = None
 def get_redis():
-    return _redis.Redis(
-        host=REDIS_HOST, port=REDIS_PORT,
-        password=REDIS_PASSWORD, decode_responses=True
-    )
+    # FIXED June 22 2026: was creating a BRAND NEW redis connection on
+    # every single call - found during a real memory leak investigation
+    # (gc object counts showed RLock/list objects exploding). This gets
+    # called on every price tick now via the ASAP reactive handler, so
+    # this was creating a massive number of connection objects per
+    # minute. One shared, reusable module-level connection instead.
+    global _shared_redis_conn
+    if _shared_redis_conn is None:
+        _shared_redis_conn = _redis.Redis(
+            host=REDIS_HOST, port=REDIS_PORT,
+            password=REDIS_PASSWORD, decode_responses=True
+        )
+    return _shared_redis_conn
 
 def get_redis_price(r, coin):
     """Get latest price from Redis. Returns float or None."""
