@@ -278,6 +278,12 @@ class ScalperEngine:
 
             jump_pct = (price - old_price) / old_price * 100
 
+            if jump_pct > 1000 or jump_pct < -1000:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
+
             if jump_pct >= bot['trigger_pct']:
                 self._open_position(bot, coin, price, jump_pct, now)
             else:
@@ -358,7 +364,7 @@ class ScalperEngine:
             t.start()
 
         except Exception as e:
-            print(f'⚠️ Scalper open error: {e}')
+            print(f'⚠️ Scalper open error for {coin} @ {price}: {e}')
 
     def _update_active(self, coin, price, now):
         """Update max profit/loss and check stop loss for active positions."""

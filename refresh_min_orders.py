@@ -27,6 +27,7 @@ def run():
         coins = [r[0] for r in cur.fetchall()]
 
     print(f"Refreshing min orders for {len(exchanges_list)} exchanges x {len(coins)} coins")
+    total_updated = 0
 
     for exc_id, exc_name, api_key_enc, secret_enc in exchanges_list:
         try:
@@ -53,8 +54,10 @@ def run():
             except Exception as e:
                 print(f"  {coin} on {exc_name}: {e}")
         print(f"{exc_name} (id={exc_id}): updated {updated}/{len(coins)} coins")
+        total_updated += updated
 
     print("Min order refresh complete")
+    print(f"RECORDS_PROCESSED:{total_updated}")
 
 if __name__ == '__main__':
     run()

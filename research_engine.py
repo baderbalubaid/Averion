@@ -2,8 +2,9 @@ import os
 import time
 import ccxt
 import redis
-import tracemalloc
-tracemalloc.start()
+# tracemalloc.start() REMOVED June 23 2026 for diagnostic test -
+# testing whether tracemalloc's own overhead was making memory growth
+# look (and possibly be) far worse than the actual underlying issue.
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import database as db
@@ -681,15 +682,7 @@ def run_cycle(r):
         get_redis().ltrim('research:memory_log', 0, 499)
 
         import json as _json_mem
-        _snapshot = tracemalloc.take_snapshot()
-        _top_lines = _snapshot.statistics('lineno')[:15]
-        _top_lines_serializable = [
-            {'file': str(s.traceback[0].filename).split('/')[-1],
-             'line': s.traceback[0].lineno,
-             'size_mb': round(s.size / 1024 / 1024, 2),
-             'count': s.count}
-            for s in _top_lines
-        ]
+        _top_lines_serializable = []
         # Direct price_history inspection (ADDED June 22 2026) - to
         # determine definitively whether this is bounded growth toward
         # a higher ceiling (more coins after adding KuCoin) or a true
@@ -719,6 +712,21 @@ def run_cycle(r):
 
         _current_ohlcv_cache = globals().get('_ohlcv_cache', {})
         _ph_stats['ohlcv_cache_coins'] = len(_current_ohlcv_cache)
+        try:
+            from live_scalper_engine import get_live_scalper as _gls2
+            _ph_stats['live_scalper_active'] = len(_gls2().active)
+        except Exception as _e4:
+            _ph_stats['live_scalper_active_error'] = str(_e4)
+        try:
+            from scalper_engine import get_scalper as _gs2
+            _ph_stats['research_scalper_active'] = len(_gs2().active)
+        except Exception as _e5:
+            _ph_stats['research_scalper_active_error'] = str(_e5)
+        try:
+            from scalper_v2_engine import get_scalper_v2 as _gv22
+            _ph_stats['scalper_v2_active'] = len(_gv22().active)
+        except Exception as _e6:
+            _ph_stats['scalper_v2_active_error'] = str(_e6)
         try:
             import sys as _sys_mem
             _ph_stats['ohlcv_cache_bytes_approx'] = sum(
@@ -852,7 +860,6 @@ def run_cycle(r):
         if not tickers:
             continue
 
-        _t_exch_start = time.time()
         # Get open positions for this exchange
         open_positions = db.get_open_positions(exchange_id=exc_id)
         # Pre-filter: only check TP for armed positions or positions near TP
@@ -921,8 +928,6 @@ def run_cycle(r):
                         )
 
 
-        print(f'  ST flags check: {time.time() - _t_exch_start:.2f}s')
-        _t_tp_start = time.time()
         # TP check - separate loop for ALL open positions every cycle
         for pos in open_positions:
             coin = pos[4]
@@ -969,8 +974,6 @@ def run_cycle(r):
                 # Promote gate reference
                 db.promote_gate_reference(pos[1], pos[4])
 
-        print(f'  TP check + close: {time.time() - _t_tp_start:.2f}s')
-        _t_queue_start = time.time()
         # ─────────────────────────
         # STEP 2: Smart Queue DCA
         # ─────────────────────────
@@ -1052,8 +1055,6 @@ def run_cycle(r):
                 except Exception:
                     pass
 
-        print(f'  Queue DCA: {time.time() - _t_queue_start:.2f}s')
-        _t_step3_start = time.time()
         # ─────────────────────────
         # STEP 3: Open new positions
         # ─────────────────────────
@@ -1072,11 +1073,8 @@ def run_cycle(r):
             if open_counts.get(b[0], 0) < int(b[16] or 1)
         ]
         print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
-        _t_open_start = time.time()
         for bot in bots_needing_trades:
             try_open_position(bot, exchange_obj, tickers, r, coin_params_cache, btc_regime_data)
-        print(f'  Open new positions loop ({len(bots_needing_trades)} bots): {time.time() - _t_open_start:.2f}s')
-        print(f'  TOTAL for exchange {exc_row[2]}: {time.time() - _t_exch_start:.2f}s')
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
