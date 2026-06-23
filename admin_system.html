@@ -84,10 +84,10 @@
     </div>
     <div class="ctrl-row" style="cursor:pointer" onclick="document.getElementById('pending-list').classList.toggle('open')">
       <div class="ctrl-label">Pending approvals</div>
-      <div style="font-size:13px;color:var(--accent)">0 waiting &nbsp;▾</div>
+      <div style="font-size:13px;color:var(--accent)"><span id="pending-count">0</span> waiting &nbsp;▾</div>
     </div>
     <div id="pending-list" class="pending-list">
-      <div class="pending-empty">No one waiting right now.</div>
+      <div class="pending-empty">Loading...</div>
     </div>
   </div>
 
@@ -269,6 +269,44 @@ async function saveAllChanges() {
   }
 }
 
+async function loadPendingUsers() {
+  try {
+    const res = await fetch(`${API}/admin/pending-users`, { headers: authHeaders() });
+    const data = await res.json();
+    const pending = data.pending || [];
+    document.getElementById('pending-count').textContent = pending.length;
+    const listEl = document.getElementById('pending-list');
+    if (pending.length === 0) {
+      listEl.innerHTML = '<div class="pending-empty">No one waiting right now.</div>';
+      return;
+    }
+    listEl.innerHTML = pending.map(u => `
+      <div class="pending-row">
+        <div>
+          <div style="font-size:13px">${u.email}</div>
+          <div style="font-size:11px;color:var(--muted)">ID ${u.id} · registered ${new Date(u.registered_at).toLocaleDateString()}</div>
+        </div>
+        <button class="approve-btn" onclick="approveUserAction(${u.id})">Approve</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load pending users', e);
+  }
+}
+
+async function approveUserAction(userId) {
+  if (!confirm('Approve this user and grant them access?')) return;
+  try {
+    await fetch(`${API}/admin/approve-user/${userId}`, {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    loadPendingUsers();
+  } catch (e) {
+    alert('Failed to approve: ' + e.message);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings().then(() => {
     document.querySelectorAll('[data-key]').forEach(el => {
@@ -285,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+  loadPendingUsers();
 });
 </script>
 </body>

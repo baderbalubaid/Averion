@@ -2706,6 +2706,68 @@ SETTING_DEFAULTS = {
     'cron_retention_enabled': 'true',
 }
 
+@app.get('/admin/pending-users')
+def admin_pending_users(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, email, created_at FROM users
+            WHERE is_pending_approval=TRUE
+            ORDER BY created_at ASC
+        """)
+        rows = cur.fetchall()
+    return {'pending': [
+        {'id': r[0], 'email': r[1], 'registered_at': r[2].isoformat()}
+        for r in rows
+    ]}
+
+@app.post('/admin/approve-user/{user_id}')
+def admin_approve_user(user_id: int, payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET is_pending_approval=FALSE WHERE id=%s RETURNING email", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail='User not found')
+        # Create reserve wallet now, since registration skipped it
+        # while the account was pending (mirrors normal signup flow)
+        cur.execute("SELECT id FROM reserve_wallets WHERE user_id=%s", (user_id,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO reserve_wallets (user_id) VALUES (%s)", (user_id,))
+        conn.commit()
+    return {'message': f'{row[0]} approved'}
+
+@app.get('/admin/pending-users')
+def admin_pending_users(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, email, created_at FROM users
+            WHERE is_pending_approval=TRUE
+            ORDER BY created_at ASC
+        """)
+        rows = cur.fetchall()
+    return {'pending': [
+        {'id': r[0], 'email': r[1], 'registered_at': r[2].isoformat()}
+        for r in rows
+    ]}
+
+@app.post('/admin/approve-user/{user_id}')
+def admin_approve_user(user_id: int, payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET is_pending_approval=FALSE WHERE id=%s RETURNING email", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail='User not found')
+        # Create reserve wallet now, since registration skipped it
+        # while the account was pending (mirrors normal signup flow)
+        cur.execute("SELECT id FROM reserve_wallets WHERE user_id=%s", (user_id,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO reserve_wallets (user_id) VALUES (%s)", (user_id,))
+        conn.commit()
+    return {'message': f'{row[0]} approved'}
+
 @app.get('/admin/settings')
 def admin_get_settings(payload: dict = Depends(require_admin)):
     stored = db.get_all_settings()

@@ -282,6 +282,22 @@ def register_user(email: str, password: str,
     # Create user
     user_id = db.create_user(email, password_hash, user_referral)
 
+    # Waitlist mode check (ADDED June 23 2026) - account is still
+    # created so nothing is lost, but held pending manual admin
+    # approval instead of getting immediate access. Separate from
+    # is_suspended, which is reserved for ToS-violation style
+    # suspension, a different feature for later.
+    if db.get_setting_bool('waitlist_mode_enabled', False):
+        with db.get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET is_pending_approval=TRUE WHERE id=%s", (user_id,))
+            conn.commit()
+        db.log_security_event(
+            user_id, 'registration_waitlisted',
+            details={'email': email}
+        )
+        return {'waitlisted': True, 'message': "You're on the waitlist - we'll notify you once your account is approved."}, None
+
     # Create reserve wallet
     with db.get_db() as conn:
         cur = conn.cursor()

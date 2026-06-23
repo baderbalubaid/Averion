@@ -35,8 +35,21 @@ def is_new_trade_allowed(direction, entry_method=None, exchange_name=None, is_re
             return False
 
     if exchange_name:
-        exc_key = f'exchange_{exchange_name.lower().replace(" ", "_")}_enabled'
-        if not db.get_setting_bool(exc_key, True):
+        # FIXED June 23 2026: real bug found while reviewing System
+        # Control - exchange custom_names are "MEXC Paper" and
+        # "KuCoin Live", but this was transforming the FULL name
+        # (exchange_mexc_paper_enabled), never matching the actual
+        # setting keys (exchange_mexc_enabled). The toggles in Tab 5
+        # have never actually done anything as a result. Now matches
+        # on a substring instead of the exact full name.
+        name_lower = exchange_name.lower()
+        if 'mexc' in name_lower:
+            exc_key = 'exchange_mexc_enabled'
+        elif 'kucoin' in name_lower:
+            exc_key = 'exchange_kucoin_enabled'
+        else:
+            exc_key = None
+        if exc_key and not db.get_setting_bool(exc_key, True):
             return False
 
     return True
