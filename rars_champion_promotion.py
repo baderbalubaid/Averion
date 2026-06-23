@@ -138,6 +138,15 @@ def run_promotion(system_type, regime):
         promote_champion(system_type, regime, best_method, best_score,
                         best_data['robustness_pct'], None,
                         'Initial champion - no previous champion existed')
+        try:
+            import admin_notifications as an
+            an.notify_champion_change(
+                f'New Champion Set\n\n'
+                f'{system_type}/{regime}: {best_method} (RARS={best_score})\n'
+                f'No previous champion existed for this slot.'
+            )
+        except Exception:
+            pass
         return
 
     champ_id, champ_method, champ_score, challenger_id, challenger_since = champion
@@ -164,6 +173,16 @@ def run_promotion(system_type, regime):
                     best_data['robustness_pct'], champ_method,
                     f'Promoted after {days_ahead} days ahead by '
                     f'{round((best_score/champ_score-1)*100,1)}%')
+                try:
+                    import admin_notifications as an
+                    an.notify_champion_change(
+                        f'Champion Change\n\n'
+                        f'{system_type}/{regime}: {champ_method} -> {best_method}\n'
+                        f'New RARS={best_score} vs old {champ_score}\n'
+                        f'Ahead {days_ahead} days by {round((best_score/champ_score-1)*100,1)}%'
+                    )
+                except Exception:
+                    pass
             else:
                 print(f"⏳ {system_type}/{regime}: {best_method} leads by "
                       f"{round((best_score/champ_score-1)*100,1)}% "
