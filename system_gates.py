@@ -1,7 +1,11 @@
 import database as db
 
 
-def is_new_trade_allowed(direction, entry_method=None, exchange_name=None, is_research=False, user_id=None, is_admin=False):
+def is_new_trade_allowed(direction, entry_method=None, exchange_name=None, is_research=False, user_id=None, is_paper=False):
+    # NOTE: is_research = platform-owned internal R&D bots (no real
+    # customer, no user_id). is_paper = a real customer's own bot
+    # running in simulation mode - these are genuinely different
+    # things, found and corrected after initially conflating them.
     if db.get_setting_bool('emergency_halt', False):
         return False
     if not db.get_setting_bool('new_trade_opening_enabled', True):
@@ -19,7 +23,7 @@ def is_new_trade_allowed(direction, entry_method=None, exchange_name=None, is_re
     # paper or live attempts, not just live. Only checked when user_id
     # is actually passed - existing callers that don't pass it are
     # unaffected until wired in.
-    if user_id is not None and not is_within_trade_limit(user_id, is_admin, is_research):
+    if user_id is not None and not is_within_trade_limit(user_id, is_paper):
         return False
 
     if direction == 'long':
@@ -63,18 +67,21 @@ def is_new_trade_allowed(direction, entry_method=None, exchange_name=None, is_re
     return True
 
 
-def is_within_trade_limit(user_id, is_admin=False, is_research=False):
+def is_within_trade_limit(user_id, is_paper=False):
     # REVISED June 23 2026 - 100 total open trades (paper+live
     # combined) is the free-tier hard cap, and within that, paper
     # specifically cannot exceed 30 - per explicit clarification, a
     # user must close paper trades to free room for live ones, not
-    # two separate independent caps. Admin/owner exempt entirely.
-    if is_admin:
+    # two separate independent caps. Admin/owner exempt entirely -
+    # looked up internally so callers only ever need to pass user_id.
+    # is_paper here means a real customer's own simulation-mode bot,
+    # distinct from is_research (platform-owned R&D, no user_id at all).
+    if db.get_is_admin(user_id):
         return True
     total, paper = db.get_open_trade_counts_for_user(user_id)
     if total >= 100:
         return False
-    if is_research and paper >= 30:
+    if is_paper and paper >= 30:
         return False
     return True
 

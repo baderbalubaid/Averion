@@ -231,7 +231,9 @@ def execute_short_sell(pos, bot, sell_quantity):
         if not system_gates.is_new_trade_allowed(
             'short', entry_method=bot.get('bot_params', {}).get('parameter_mode'),
             exchange_name=bot['wallet'].get('exchange_name'),
-            is_research=bot.get('is_research', False)
+            is_research=bot.get('is_research', False),
+            user_id=bot.get('user_id'),
+            is_paper=bot.get('is_paper', False)
         ):
             return False
     else:

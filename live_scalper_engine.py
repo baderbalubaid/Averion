@@ -218,7 +218,9 @@ class LiveScalperEngine:
         import system_gates
         if not system_gates.is_new_trade_allowed(
             'scalper', exchange_name=bot.get('exchange_name'),
-            is_research=bot.get('is_research', False)
+            is_research=bot.get('is_research', False),
+            user_id=bot.get('user_id'),
+            is_paper=bot.get('is_paper', False)
         ):
             return
         key = (bot['id'], coin)

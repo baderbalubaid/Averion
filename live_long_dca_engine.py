@@ -535,7 +535,9 @@ def open_position(bot, coin, r, coin_params_cache=None):
     if not system_gates.is_new_trade_allowed(
         'long', entry_method=bot.get('entry_method'),
         exchange_name=bot.get('exchange_name'),
-        is_research=bot.get('is_research', False)
+        is_research=bot.get('is_research', False),
+        user_id=bot.get('user_id'),
+        is_paper=bot.get('is_paper', False)
     ):
         return False
 

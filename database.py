@@ -1611,12 +1611,21 @@ def get_all_settings():
         cur.execute("SELECT key, value FROM system_settings")
         return {row[0]: row[1] for row in cur.fetchall()}
 
+def get_is_admin(user_id):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT is_admin FROM users WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+        return bool(row[0]) if row else False
+
 def get_open_trade_counts_for_user(user_id):
     # REVISED June 23 2026 - paper trades are NOT a separate cap from
     # the 100 limit, they're a 30-trade sub-cap WITHIN it, per explicit
     # clarification: total (paper+live combined) <= 100, and of that,
     # paper specifically <= 30 - a user must close paper trades to
     # free up room for live ones once near the shared ceiling.
+    # Counted across ALL systems (Long/Short/Scalper) and ALL
+    # exchanges combined, per explicit clarification.
     # Returns (total_count, paper_count).
     with get_db() as conn:
         cur = conn.cursor()
@@ -1633,13 +1642,13 @@ def get_open_trade_counts_for_user(user_id):
                  WHERE b.user_id = %s AND sp.status = 'open'),
                 (SELECT COUNT(*) FROM positions p
                  JOIN bots b ON p.bot_id = b.id
-                 WHERE b.user_id = %s AND p.status = 'open' AND b.is_research = TRUE),
+                 WHERE b.user_id = %s AND p.status = 'open' AND b.is_paper = TRUE),
                 (SELECT COUNT(*) FROM live_positions lp
                  JOIN bots b ON lp.bot_id = b.id
-                 WHERE b.user_id = %s AND lp.status = 'open' AND b.is_research = TRUE),
+                 WHERE b.user_id = %s AND lp.status = 'open' AND b.is_paper = TRUE),
                 (SELECT COUNT(*) FROM scalper_positions sp
                  JOIN bots b ON sp.bot_id = b.id
-                 WHERE b.user_id = %s AND sp.status = 'open' AND b.is_research = TRUE)
+                 WHERE b.user_id = %s AND sp.status = 'open' AND b.is_paper = TRUE)
         """, (user_id,) * 6)
         row = cur.fetchone()
         total = sum(row[0:3])
