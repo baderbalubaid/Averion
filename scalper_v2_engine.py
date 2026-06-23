@@ -321,16 +321,39 @@ class ScalperV2Engine:
     def _check_entry(self, bot, coin, price, now, pumped):
         key = (bot['name'], coin)
 
-        if key in self.active:
-            return
-        if now < self.cooldowns.get(key, 0):
-            return
-        if pumped:
-            return
-        if not self._velocity_signal(bot, coin, price, now):
-            return
+        # FIXED June 23 2026: real race condition found during a deep
+        # memory leak investigation - same pattern as the other two
+        # Scalper variants, no lock on the check, self.active[key]
+        # only set much later inside _open_position. Reserves the
+        # slot atomically with the check now.
+        with self._lock:
+            if key in self.active:
+                return
+            self.active[key] = 'RESERVED'
 
-        self._open_position(bot, coin, price, now)
+        try:
+            if now < self.cooldowns.get(key, 0):
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
+            if pumped:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
+            if not self._velocity_signal(bot, coin, price, now):
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
+
+            self._open_position(bot, coin, price, now)
+        except Exception:
+            with self._lock:
+                if self.active.get(key) == 'RESERVED':
+                    del self.active[key]
+            raise
 
     def _open_position(self, bot, coin, price, now):
         key = (bot['name'], coin)

@@ -222,24 +222,46 @@ class LiveScalperEngine:
         ):
             return
         key = (bot['id'], coin)
-        # Skip if already have open position for this bot+coin
+        # FIXED June 23 2026: real race condition found during a deep
+        # memory leak investigation. The check ("is this already
+        # active?") and the actual reservation (self.active[key]=...,
+        # which only happened later inside _open_position) were NOT
+        # atomic - there was a real gap between them where
+        # check_entry_signal() ran unprotected. Since MEXC and KuCoin
+        # feed the same coin's correlated price moves from separate
+        # threads, both could pass the check before either reserved
+        # the slot, both proceed, and both open a duplicate position
+        # for the same bot+coin - doubling DB writes, wallet
+        # deductions, and real objects created. Now reserves the slot
+        # atomically with the check, releasing it cleanly if the
+        # signal doesn't actually trigger.
         with self._lock:
             if key in self.active:
                 return
-        # Use shared signal logic
-        bot_signal = {
-            'name': str(bot['id']),
-            'trigger_pct': bot['trigger_pct'],
-            'window_sec': bot['window_sec'],
-            'hold_sec': bot['hold_sec'],
-            'stop_loss_pct': bot.get('stop_loss_pct'),
-        }
-        jump_pct = check_entry_signal(
-            bot_signal, coin, price, now,
-            self.price_history, self.active, self.cooldowns
-        )
-        if jump_pct is not None:
-            self._open_position(bot, coin, price, jump_pct, now)
+            self.active[key] = 'RESERVED'
+        try:
+            bot_signal = {
+                'name': str(bot['id']),
+                'trigger_pct': bot['trigger_pct'],
+                'window_sec': bot['window_sec'],
+                'hold_sec': bot['hold_sec'],
+                'stop_loss_pct': bot.get('stop_loss_pct'),
+            }
+            jump_pct = check_entry_signal(
+                bot_signal, coin, price, now,
+                self.price_history, self.active, self.cooldowns
+            )
+            if jump_pct is not None:
+                self._open_position(bot, coin, price, jump_pct, now)
+            else:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+        except Exception:
+            with self._lock:
+                if self.active.get(key) == 'RESERVED':
+                    del self.active[key]
+            raise
 
     def _open_position(self, bot, coin, price, trigger_jump, now):
         key = (bot['id'], coin)

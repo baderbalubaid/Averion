@@ -241,32 +241,54 @@ class ScalperEngine:
     def _check_entry(self, bot, coin, price, now):
         key = (bot['name'], coin)
 
-        # Skip if already have position for this bot+coin
-        if key in self.active:
-            return
+        # FIXED June 23 2026: real race condition found during a deep
+        # memory leak investigation - this check had NO lock at all,
+        # and self.active[key] only got set much later inside
+        # _open_position. Since MEXC and KuCoin feed the same coin's
+        # correlated price moves from separate threads, both could
+        # pass this check before either reserved the slot, both
+        # proceed, both open a duplicate position. Now reserves the
+        # slot atomically with the check.
+        with self._lock:
+            if key in self.active:
+                return
+            self.active[key] = 'RESERVED'
 
-        # Check cooldown (5 min)
-        cooldown_end = self.cooldowns.get(key, 0)
-        if now < cooldown_end:
-            return
+        try:
+            cooldown_end = self.cooldowns.get(key, 0)
+            if now < cooldown_end:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
 
-        # Get price window_sec ago
-        window = bot['window_sec']
-        history = self.price_history[coin]
-        old_price = None
-        for ts, px in reversed(history):
-            if now - ts >= window:
-                old_price = px
-                break
+            window = bot['window_sec']
+            history = self.price_history[coin]
+            old_price = None
+            for ts, px in reversed(history):
+                if now - ts >= window:
+                    old_price = px
+                    break
 
-        if old_price is None or old_price == 0:
-            return
+            if old_price is None or old_price == 0:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+                return
 
-        # Calculate jump
-        jump_pct = (price - old_price) / old_price * 100
+            jump_pct = (price - old_price) / old_price * 100
 
-        if jump_pct >= bot['trigger_pct']:
-            self._open_position(bot, coin, price, jump_pct, now)
+            if jump_pct >= bot['trigger_pct']:
+                self._open_position(bot, coin, price, jump_pct, now)
+            else:
+                with self._lock:
+                    if self.active.get(key) == 'RESERVED':
+                        del self.active[key]
+        except Exception:
+            with self._lock:
+                if self.active.get(key) == 'RESERVED':
+                    del self.active[key]
+            raise
 
     def _open_position(self, bot, coin, price, trigger_jump, now):
         key = (bot['name'], coin)
