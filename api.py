@@ -2560,6 +2560,33 @@ def create_bot(req: BotCreate,
    import system_gates
    if not system_gates.is_new_bot_creation_allowed():
        raise HTTPException(status_code=403, detail='New bot creation is currently disabled platform-wide')
+
+   # ADDED June 23 2026 - bot_slots_total existed on users since
+   # before today but was never actually checked anywhere, found
+   # while building out the pricing/billing foundation. Free tier is
+   # 5 bots (default value), extra slots purchasable per
+   # PRICING_FINAL.md - this is the actual enforcement point.
+   with db.get_db() as conn:
+       cur = conn.cursor()
+       cur.execute(
+           "SELECT COUNT(*) FROM bots WHERE user_id=%s AND is_research=FALSE",
+           (payload['user_id'],)
+       )
+       current_bot_count = cur.fetchone()[0]
+       cur.execute("SELECT bot_slots_total, is_admin FROM users WHERE id=%s", (payload['user_id'],))
+       row = cur.fetchone()
+       bot_slots_total = row[0] if row else 5
+       is_admin_user = row[1] if row else False
+   # Admin/owner accounts exempt - the cap is for paying customers,
+   # not the platform owner testing/building. Found and fixed
+   # immediately when initial testing showed the owner's own account
+   # already has 162 bots, far past the free-tier limit.
+   if current_bot_count >= bot_slots_total and not is_admin_user:
+       raise HTTPException(
+           status_code=403,
+           detail=f'Bot limit reached ({current_bot_count}/{bot_slots_total}). Purchase an extra bot slot to add more.'
+       )
+
    bot_id = db.create_bot(
        payload['user_id'], req.exchange_id, req.wallet_id,
        req.name, req.method, req.direction, req.base_order,

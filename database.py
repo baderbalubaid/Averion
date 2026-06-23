@@ -1611,6 +1611,42 @@ def get_all_settings():
         cur.execute("SELECT key, value FROM system_settings")
         return {row[0]: row[1] for row in cur.fetchall()}
 
+def get_open_trade_counts_for_user(user_id):
+    # REVISED June 23 2026 - paper trades are NOT a separate cap from
+    # the 100 limit, they're a 30-trade sub-cap WITHIN it, per explicit
+    # clarification: total (paper+live combined) <= 100, and of that,
+    # paper specifically <= 30 - a user must close paper trades to
+    # free up room for live ones once near the shared ceiling.
+    # Returns (total_count, paper_count).
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM positions p
+                 JOIN bots b ON p.bot_id = b.id
+                 WHERE b.user_id = %s AND p.status = 'open'),
+                (SELECT COUNT(*) FROM live_positions lp
+                 JOIN bots b ON lp.bot_id = b.id
+                 WHERE b.user_id = %s AND lp.status = 'open'),
+                (SELECT COUNT(*) FROM scalper_positions sp
+                 JOIN bots b ON sp.bot_id = b.id
+                 WHERE b.user_id = %s AND sp.status = 'open'),
+                (SELECT COUNT(*) FROM positions p
+                 JOIN bots b ON p.bot_id = b.id
+                 WHERE b.user_id = %s AND p.status = 'open' AND b.is_research = TRUE),
+                (SELECT COUNT(*) FROM live_positions lp
+                 JOIN bots b ON lp.bot_id = b.id
+                 WHERE b.user_id = %s AND lp.status = 'open' AND b.is_research = TRUE),
+                (SELECT COUNT(*) FROM scalper_positions sp
+                 JOIN bots b ON sp.bot_id = b.id
+                 WHERE b.user_id = %s AND sp.status = 'open' AND b.is_research = TRUE)
+        """, (user_id,) * 6)
+        row = cur.fetchone()
+        total = sum(row[0:3])
+        paper = sum(row[3:6])
+        return total, paper
+
+
 def is_wallet_pending_buyback(wallet_id):
     """Cross-system fund-isolation check (ADDED June 21 2026): does
     ANY Short position on this wallet currently have a sell pending
