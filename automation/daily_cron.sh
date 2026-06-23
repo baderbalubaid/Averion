@@ -52,6 +52,22 @@ db.record_performance_timing('$step_key', $duration, $records, '$status')
 " >> "$logfile" 2>&1
 }
 
+# ADDED June 23 2026 - checks a System Control cron toggle before
+# running a step. Defaults to enabled (true) if the setting row
+# doesn't exist yet, matching every other toggle's safe default.
+setting_enabled() {
+    local key="$1"
+    local val=$(psql -U averion -h localhost averion -t -A -c "SELECT value FROM system_settings WHERE key='$key'" 2>/dev/null)
+    if [ -z "$val" ]; then
+        return 0
+    fi
+    if [ "$val" = "true" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # ═══════════════════════════════
 # 03:00 — INFRASTRUCTURE
 # ═══════════════════════════════
@@ -76,21 +92,31 @@ sleep 2700
 # ═══════════════════════════════
 # ~03:45 — COIN CLASSIFICATION
 # ═══════════════════════════════
-run_step "Classification" "classification" "$LOG_DIR/classify.log" python3 $AVERION_DIR/classify_coins.py
-run_step "Exchange Min Orders" "min_orders" "$LOG_DIR/min_orders.log" python3 $AVERION_DIR/refresh_min_orders.py
+if setting_enabled "cron_classification_enabled"; then
+    run_step "Classification" "classification" "$LOG_DIR/classify.log" python3 $AVERION_DIR/classify_coins.py
+fi
+if setting_enabled "cron_min_orders_enabled"; then
+    run_step "Exchange Min Orders" "min_orders" "$LOG_DIR/min_orders.log" python3 $AVERION_DIR/refresh_min_orders.py
+fi
 sleep 2700
 
 # ═══════════════════════════════
 # ~04:30 — CALCULATE COIN PARAMS
 # ═══════════════════════════════
-run_step "Calculate Parameters" "params" "$LOG_DIR/params.log" python3 $AVERION_DIR/calculate_coin_params.py
+if setting_enabled "cron_params_enabled"; then
+    run_step "Calculate Parameters" "params" "$LOG_DIR/params.log" python3 $AVERION_DIR/calculate_coin_params.py
+fi
 sleep 2700
 
 # ═══════════════════════════════
 # ~05:15 — RARS SCORING
 # ═══════════════════════════════
-run_step "RARS Scoring" "rars" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_scoring.py
-run_step "Champion Promotion" "champion" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_promotion.py
+if setting_enabled "cron_rars_enabled"; then
+    run_step "RARS Scoring" "rars" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_scoring.py
+fi
+if setting_enabled "cron_champion_enabled"; then
+    run_step "Champion Promotion" "champion" "$LOG_DIR/rars.log" python3 $AVERION_DIR/rars_champion_promotion.py
+fi
 
 # ═══════════════════════════════
 # TAIL STEPS — fast, run right after each other
@@ -99,7 +125,9 @@ run_step "Paper Timer" "paper_timer" "$LOG_DIR/paper_timer.log" python3 $AVERION
 run_step "BTC Daily Fetch" "btc_daily" "$LOG_DIR/daily.log" python3 $AVERION_DIR/fetch_btc_daily.py
 
 if [ "$(date +%u)" = "7" ]; then
-    run_step "Data Retention" "retention" "$LOG_DIR/retention.log" python3 $AVERION_DIR/data_retention_cleanup.py --execute
+    if setting_enabled "cron_retention_enabled"; then
+        run_step "Data Retention" "retention" "$LOG_DIR/retention.log" python3 $AVERION_DIR/data_retention_cleanup.py --execute
+    fi
     run_step "Sunday VACUUM" "cleanup" "$LOG_DIR/cleanup.log" psql -U averion -h localhost averion -c "VACUUM ANALYZE;"
     find $LOG_DIR -name "*.log" -mtime +30 -delete
     DISK=$(df / | tail -1 | awk '{print $5}' | cut -d'%' -f1)
@@ -108,8 +136,11 @@ if [ "$(date +%u)" = "7" ]; then
     fi
 fi
 
-run_step "Research Reports" "reports" "$LOG_DIR/daily.log" bash $AVERION_DIR/generate_reports.sh
+if setting_enabled "cron_reports_enabled"; then
+    run_step "Research Reports" "reports" "$LOG_DIR/daily.log" bash $AVERION_DIR/generate_reports.sh
+fi
 
+if setting_enabled "notify_daily_report"; then
 run_step "Telegram Daily Report" "telegram" "$LOG_DIR/daily.log" python3 -c "
 import sys; sys.path.insert(0, '$AVERION_DIR')
 from dotenv import load_dotenv; load_dotenv('/home/averion/Averion/.env')
@@ -140,16 +171,19 @@ Research: {open_pos:,} open · data collecting
 Generated at: {datetime.utcnow().strftime('%H:%M UTC')}''')
 print('✅ Telegram daily report sent')
 "
+fi
 
 echo "=== Daily Cron Complete $(date) ===" | tee -a $LOG_DIR/daily.log
 
 if [ ${#FAILED_STEPS[@]} -gt 0 ]; then
     FAILED_LIST=$(printf '%s, ' "${FAILED_STEPS[@]}")
     echo "⚠️ FAILED STEPS TODAY: $FAILED_LIST" | tee -a $LOG_DIR/daily.log
-    python3 -c "
+    if setting_enabled "notify_health_alerts"; then
+        python3 -c "
 import sys; sys.path.insert(0, '$AVERION_DIR')
 from dotenv import load_dotenv; load_dotenv('/home/averion/Averion/.env')
 import telegram as tg
 tg.send_admin('⚠️ <b>Averion Daily Cron — Step Failures</b>\n\nFailed: ${FAILED_LIST}\n\nCheck /var/log/averion/ logs for details.')
 " >> $LOG_DIR/daily.log 2>&1
+    fi
 fi
