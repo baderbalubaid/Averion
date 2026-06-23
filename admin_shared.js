@@ -99,8 +99,22 @@ async function restartBot() {
   } catch (e) { alert('Failed: ' + e.message); }
 }
 async function emergencyStop() {
-  if (!confirm('Stop ALL trading immediately?')) return;
-  alert('Emergency stop - wiring pending');
+  // WIRED June 23 2026 - was a placeholder showing "wiring pending"
+  // forever, found while reviewing what's still incomplete in Health
+  // and Controls. Now calls the same emergency_halt setting Tab 5's
+  // Trade Control section uses, so this quicker dropdown shortcut
+  // genuinely works too, not just the full Tab 5 toggle.
+  if (!confirm('Stop ALL new trading immediately? Existing open trades will keep running their own DCA/TP/trailing/buyback normally - this only blocks new entries platform-wide.')) return;
+  try {
+    await fetch(`${API}/admin/settings`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emergency_halt: 'true' })
+    });
+    alert('Emergency stop activated. New trades are now blocked platform-wide. Release it from System Control when ready.');
+  } catch (e) {
+    alert('Failed to activate emergency stop: ' + e.message);
+  }
 }
 
 // Single source of truth for timezone display - respects the user's

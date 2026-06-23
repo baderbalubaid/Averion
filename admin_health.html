@@ -360,9 +360,31 @@ function updateStatusBanner() {
     if (redis !== 'ok') issues.push('Redis');
     if (!running) issues.push('Bot stopped');
     if (watchdogOk === false) issues.push('Watchdog triggered recently');
-    banner.textContent = '⚠️ Attention needed: ' + issues.join(', ');
     banner.style.color = 'var(--amber)';
     banner.style.borderColor = 'rgba(243,156,18,0.3)';
+    // ADDED June 23 2026 - the watchdog-only issue is now dismissible
+    // since it's a 7-day historical count, not a live problem (engine
+    // alive status already confirms that separately). Other issues
+    // (DB/Redis/bot stopped) are genuinely live and stay non-dismissible.
+    const onlyWatchdog = watchdogOk === false && db === 'ok' && redis === 'ok' && running;
+    if (onlyWatchdog) {
+      banner.innerHTML = '⚠️ Attention needed: ' + issues.join(', ') +
+        ' <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="dismissWatchdogAlert()">[Dismiss]</span>';
+    } else {
+      banner.textContent = '⚠️ Attention needed: ' + issues.join(', ');
+    }
+  }
+}
+
+async function dismissWatchdogAlert() {
+  try {
+    await fetch(`${API}/admin/watchdog-acknowledge`, {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    loadWatchdogStatus();
+  } catch (e) {
+    alert('Failed to dismiss: ' + e.message);
   }
 }
 

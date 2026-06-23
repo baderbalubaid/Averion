@@ -2720,10 +2720,23 @@ def admin_update_settings(updates: dict, payload: dict = Depends(require_admin))
         db.set_setting(key, value, updated_by=user_id)
     return {'message': f'{len(updates)} setting(s) updated'}
 
+@app.post('/admin/watchdog-acknowledge')
+def admin_watchdog_acknowledge(payload: dict = Depends(require_admin)):
+    # ADDED June 23 2026 - the watchdog banner used a fixed 7-day
+    # rolling window with no way to dismiss it, found annoying after
+    # today's heavy testing legitimately triggered several restarts.
+    # Engine is confirmed healthy right now (live_status check below
+    # already proves that) - this lets the admin clear the count
+    # without losing the underlying historical log, just marking
+    # everything before now as "seen/acknowledged".
+    db.set_setting('watchdog_acknowledged_at', str(datetime.utcnow()), updated_by=payload['user_id'])
+    return {'message': 'Watchdog alert dismissed'}
+
 @app.get('/admin/watchdog-status')
 def admin_watchdog_status(payload: dict = Depends(require_admin)):
     """Last time the live DCA watchdog had to restart the engine.
     A healthy system shows this rarely or never firing."""
+    ack_at = db.get_setting('watchdog_acknowledged_at', None)
     with db.get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -2732,7 +2745,13 @@ def admin_watchdog_status(payload: dict = Depends(require_admin)):
             ORDER BY triggered_at DESC LIMIT 1
         """)
         row = cur.fetchone()
-        cur.execute("SELECT COUNT(*) FROM watchdog_events WHERE triggered_at > NOW() - INTERVAL '7 days'")
+        if ack_at:
+            cur.execute(
+                "SELECT COUNT(*) FROM watchdog_events WHERE triggered_at > NOW() - INTERVAL '7 days' AND triggered_at > %s",
+                (ack_at,)
+            )
+        else:
+            cur.execute("SELECT COUNT(*) FROM watchdog_events WHERE triggered_at > NOW() - INTERVAL '7 days'")
         count_7d = cur.fetchone()[0]
     # Live engine status (ADDED June 21 2026) - distinct from the
     # historical watchdog_events log above, this checks RIGHT NOW
