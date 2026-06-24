@@ -93,18 +93,23 @@
 
   <div class="ctrl-card">
     <div class="ctrl-title">💲 Pricing &amp; Add-ons</div>
-    <div class="ctrl-sub">Free plan: 5 bots, 100 open trades. Set extra pricing below.</div>
-    <div class="ctrl-row">
-      <div class="ctrl-label">Extra bot — $ per bot / month</div>
-      <input class="pill-input" data-key="price_extra_bot" value="1.00">
+    <div class="ctrl-sub">Free plan: 5 bots, 100 open trades. Admin can add, edit, or remove products anytime - no code changes needed.</div>
+    <div id="pricing-list"></div>
+    <div class="ctrl-row" style="cursor:pointer" onclick="document.getElementById('add-product-form').classList.toggle('open')">
+      <div class="ctrl-label" style="color:var(--accent)">+ Add product</div>
+      <div style="color:var(--accent);font-size:13px">＋</div>
     </div>
-    <div class="ctrl-row">
-      <div class="ctrl-label">Extra trade bundle — $ per bundle / month</div>
-      <input class="pill-input" data-key="price_trade_bundle" placeholder="—">
-    </div>
-    <div class="ctrl-row">
-      <div class="ctrl-label">Trades per bundle</div>
-      <input class="pill-input" data-key="price_trades_per_bundle" placeholder="—">
+    <div id="add-product-form" class="pending-list">
+      <select class="pill-input" id="np-category" style="width:100%;text-align:left;margin-bottom:8px">
+        <option value="bot_slot">Bot slot</option>
+        <option value="trade_limit">Trade limit</option>
+      </select>
+      <input class="pill-input" id="np-product-id" style="width:100%;text-align:left;margin-bottom:8px" placeholder="Product ID (e.g. BUNDLE_2000)">
+      <input class="pill-input" id="np-name" style="width:100%;text-align:left;margin-bottom:8px" placeholder="Display name">
+      <input class="pill-input" id="np-description" style="width:100%;text-align:left;margin-bottom:8px" placeholder="Description">
+      <input class="pill-input" id="np-price" style="width:100%;text-align:left;margin-bottom:8px" placeholder="Price $ (leave blank for TBD)">
+      <input class="pill-input" id="np-trade-limit" style="width:100%;text-align:left;margin-bottom:8px" placeholder="Trade limit value (optional)">
+      <button class="approve-btn" style="width:100%" onclick="addProductAction()">Add Product</button>
     </div>
   </div>
 
@@ -307,6 +312,89 @@ async function approveUserAction(userId) {
   }
 }
 
+async function loadPricing() {
+  try {
+    const res = await fetch(`${API}/admin/pricing`, { headers: authHeaders() });
+    const data = await res.json();
+    const products = (data.products || []).filter(p => p.is_active);
+    const listEl = document.getElementById('pricing-list');
+    listEl.innerHTML = products.map(p => `
+      <div class="ctrl-row">
+        <div>
+          <div class="ctrl-label">${p.name} <span style="font-size:10px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px">${p.category === 'bot_slot' ? 'BOT' : 'TRADES'}</span></div>
+          <div class="ctrl-label-sub">${p.description || ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="pill-input" value="${p.price !== null ? p.price : ''}" placeholder="TBD"
+                 onblur="updateProductPrice(${p.id}, this.value)">
+          <span style="cursor:pointer;color:var(--red);font-size:13px" onclick="removeProductAction(${p.id})">✕</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load pricing', e);
+  }
+}
+
+async function updateProductPrice(productDbId, newValue) {
+  const price = newValue.trim() === '' ? null : parseFloat(newValue);
+  try {
+    await fetch(`${API}/admin/pricing/${productDbId}`, {
+      method: 'PUT',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ price })
+    });
+  } catch (e) {
+    alert('Failed to update price: ' + e.message);
+  }
+}
+
+async function removeProductAction(productDbId) {
+  if (!confirm('Remove this product? It will no longer be available to purchase.')) return;
+  try {
+    await fetch(`${API}/admin/pricing/${productDbId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    loadPricing();
+  } catch (e) {
+    alert('Failed to remove: ' + e.message);
+  }
+}
+
+async function addProductAction() {
+  const category = document.getElementById('np-category').value;
+  const product_id = document.getElementById('np-product-id').value.trim();
+  const name = document.getElementById('np-name').value.trim();
+  const description = document.getElementById('np-description').value.trim();
+  const priceVal = document.getElementById('np-price').value.trim();
+  const limitVal = document.getElementById('np-trade-limit').value.trim();
+  if (!product_id || !name) {
+    alert('Product ID and name are required');
+    return;
+  }
+  try {
+    await fetch(`${API}/admin/pricing`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id, name, description, category,
+        price: priceVal === '' ? null : parseFloat(priceVal),
+        trade_limit_value: limitVal === '' ? null : parseInt(limitVal)
+      })
+    });
+    document.getElementById('np-product-id').value = '';
+    document.getElementById('np-name').value = '';
+    document.getElementById('np-description').value = '';
+    document.getElementById('np-price').value = '';
+    document.getElementById('np-trade-limit').value = '';
+    document.getElementById('add-product-form').classList.remove('open');
+    loadPricing();
+  } catch (e) {
+    alert('Failed to add product: ' + e.message);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings().then(() => {
     document.querySelectorAll('[data-key]').forEach(el => {
@@ -324,6 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   loadPendingUsers();
+  loadPricing();
 });
 </script>
 </body>

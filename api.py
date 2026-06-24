@@ -2795,6 +2795,65 @@ def admin_approve_user(user_id: int, payload: dict = Depends(require_admin)):
         conn.commit()
     return {'message': f'{row[0]} approved'}
 
+@app.get('/admin/pricing')
+def admin_get_pricing(payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, product_id, name, type, description, price,
+                   trade_limit_value, is_active, category
+            FROM platform_pricing ORDER BY id
+        """)
+        rows = cur.fetchall()
+    return {'products': [
+        {'id': r[0], 'product_id': r[1], 'name': r[2], 'type': r[3],
+         'description': r[4], 'price': float(r[5]) if r[5] is not None else None,
+         'trade_limit_value': r[6], 'is_active': r[7], 'category': r[8]}
+        for r in rows
+    ]}
+
+@app.post('/admin/pricing')
+def admin_add_pricing(payload_data: dict, payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO platform_pricing (product_id, name, type, description, price, trade_limit_value, category)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            payload_data['product_id'], payload_data['name'],
+            payload_data.get('type', 'monthly'), payload_data.get('description', ''),
+            payload_data.get('price'), payload_data.get('trade_limit_value'),
+            payload_data.get('category', 'bot_slot')
+        ))
+        conn.commit()
+    return {'message': 'Product added'}
+
+@app.put('/admin/pricing/{product_db_id}')
+def admin_update_pricing(product_db_id: int, payload_data: dict, payload: dict = Depends(require_admin)):
+    fields = []
+    values = []
+    for key in ('name', 'type', 'description', 'price', 'trade_limit_value', 'is_active', 'category'):
+        if key in payload_data:
+            fields.append(f"{key}=%s")
+            values.append(payload_data[key])
+    if not fields:
+        raise HTTPException(status_code=400, detail='No fields to update')
+    fields.append("updated_at=NOW()")
+    values.append(product_db_id)
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE platform_pricing SET {', '.join(fields)} WHERE id=%s", values)
+        conn.commit()
+    return {'message': 'Product updated'}
+
+@app.delete('/admin/pricing/{product_db_id}')
+def admin_delete_pricing(product_db_id: int, payload: dict = Depends(require_admin)):
+    with db.get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE platform_pricing SET is_active=FALSE WHERE id=%s", (product_db_id,))
+        conn.commit()
+    return {'message': 'Product deactivated'}
+
 @app.get('/admin/settings')
 def admin_get_settings(payload: dict = Depends(require_admin)):
     stored = db.get_all_settings()
