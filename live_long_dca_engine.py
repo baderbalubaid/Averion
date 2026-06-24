@@ -729,8 +729,12 @@ def run_bot_cycle(bot, r):
         for pos in open_positions:
             current_price = get_redis_price(r, pos['coin'])
             if not current_price:
+                if bot['id'] == 745:
+                    print(f"DEBUG745: {pos['coin']} - no current_price found in redis")
                 continue
             needs, amount = needs_dca(pos, current_price, bot['base_order'], bot['size_multiplier'])
+            if bot['id'] == 745 and pos['coin'] in ('ALVA', 'XT'):
+                print(f"DEBUG745: {pos['coin']} price={current_price} avg_cost={pos['avg_cost']} last_buy={pos['last_buy_price']} dca_count={pos['dca_count']} pos_dca_pct={pos['pos_dca_pct']} needs={needs} amount={amount}")
             if needs:
                 score = score_position(pos, current_price, amount)
                 candidates.append((score, pos, amount, current_price))
