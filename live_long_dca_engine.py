@@ -3,7 +3,7 @@ live_long_dca_engine.py — Averion Live Long DCA Engine
 =======================================================
 Handles live user Long DCA bots only.
 - Reads from: bots (is_research=FALSE, is_template=FALSE)
-- Writes to:  live_dca_positions
+- Writes to:  positions (FIXED June 23 2026 - was the stale live_dca_positions table)
 - Execution:  executor.py (PaperAdapter or LiveAdapter)
 - TP:         WebSocket price callback (real-time)
 - DCA queue:  60s cycle, per-user isolation
@@ -131,15 +131,26 @@ def load_live_long_bots():
 
 # ── Load open positions for a bot ──────────────────────────────────
 def load_open_positions(bot_id):
+    # FIXED June 23 2026: was reading from live_dca_positions, a
+    # stale/abandoned table found during a real-money DCA bug
+    # investigation - the codebase map (generate_codebase_map.py)
+    # showed it touched by only 3 files vs 22 for the genuinely
+    # maintained positions table. Real positions ("ALVA", "XT" on
+    # bot 745) existed correctly in positions but were missing or
+    # marked closed in live_dca_positions, so this DCA-trigger check
+    # never even saw them. Targeted fix: redirect to positions,
+    # the actively-maintained table everything else uses, instead
+    # of reorganizing/merging tables (too high-risk for an unknown
+    # number of other connected places).
     with db.get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
             SELECT id, coin, avg_cost, quantity, total_invested,
-                   dca_count, tp_armed, peak_price, tp_price,
+                   dca_count, tp_armed, peak_price,
                    pos_tp_pct, pos_trail_pct, pos_dca_pct,
                    status, opened_at, wallet_id, last_buy_price
-            FROM live_dca_positions
-            WHERE bot_id=%s AND status='open'
+            FROM positions
+            WHERE bot_id=%s AND status='open' AND direction='long'
             ORDER BY opened_at ASC
         """, (bot_id,))
         rows = cur.fetchall()
@@ -152,13 +163,12 @@ def load_open_positions(bot_id):
         'dca_count':      int(r[5] or 0),
         'tp_armed':       r[6],
         'peak_price':     float(r[7] or 0),
-        'tp_price':       float(r[8] or 0),
-        'pos_tp_pct':     float(r[9] or 0),
-        'pos_trail_pct':  float(r[10] or 0),
-        'pos_dca_pct':    float(r[11] or 0),
-        'status':         r[12],
-        'last_buy_price': float(r[15] or r[2] or 0),
-        'wallet_id':      r[14],
+        'pos_tp_pct':     float(r[8] or 0),
+        'pos_trail_pct':  float(r[9] or 0),
+        'pos_dca_pct':    float(r[10] or 0),
+        'status':         r[11],
+        'last_buy_price': float(r[14] or r[2] or 0),
+        'wallet_id':      r[13],
     } for r in rows]
 
 # ── Load wallet fresh ──────────────────────────────────────────────
@@ -293,7 +303,7 @@ def check_tp(pos, current_price):
         with db.get_db() as conn:
             cur = conn.cursor()
             cur.execute("""
-                UPDATE live_dca_positions
+                UPDATE positions
                 SET tp_armed=TRUE, peak_price=%s
                 WHERE id=%s
             """, (current_price, pos['id']))
@@ -308,7 +318,7 @@ def check_tp(pos, current_price):
         with db.get_db() as conn:
             cur = conn.cursor()
             cur.execute(
-                "UPDATE live_dca_positions SET peak_price=%s WHERE id=%s",
+                "UPDATE positions SET peak_price=%s WHERE id=%s",
                 (current_price, pos['id']))
         pos['peak_price'] = current_price
 
@@ -380,9 +390,17 @@ def execute_tp_sell(pos, bot, current_price):
             kept_quantity = max(0, full_quantity - result.quantity)
             kept_value_usdt = kept_quantity * current_price
 
+            # FIXED June 23 2026: was UPDATE live_dca_positions, the
+            # stale table found during the DCA bug investigation -
+            # the real position lives in positions, the same fix
+            # applied to load_open_positions() above. fill_fee_usdt,
+            # exchange_order_id, kept_coin_quantity, and
+            # kept_coin_value_usdt were added to positions
+            # specifically to preserve this fee/profit_coin tracking
+            # rather than dropping it.
             cur = conn.cursor()
             cur.execute("""
-                UPDATE live_dca_positions
+                UPDATE positions
                 SET status='closed',
                     closed_at=NOW(),
                     close_reason='tp',
@@ -487,9 +505,15 @@ def execute_dca_buy(pos, bot, amount_usdt, r):
             new_qty    = pos['quantity'] + result.quantity
             new_avg    = (old_value + new_value) / new_qty if new_qty > 0 else result.fill_price
 
+            # FIXED June 23 2026: was UPDATE live_dca_positions, the
+            # stale table found during the DCA bug investigation -
+            # same fix as load_open_positions() and the TP-close
+            # update above. total_fees_usdt, price_age_ms, and
+            # last_dca_at added to positions to preserve this
+            # tracking rather than dropping it.
             cur = conn.cursor()
             cur.execute("""
-                UPDATE live_dca_positions
+                UPDATE positions
                 SET avg_cost=%s,
                     quantity=%s,
                     total_invested=total_invested + %s,
@@ -598,14 +622,14 @@ def open_position(bot, coin, r, coin_params_cache=None):
             # Coin trade number
             cur = conn.cursor()
             cur.execute("""
-                SELECT COUNT(*) FROM live_dca_positions
+                SELECT COUNT(*) FROM positions
                 WHERE bot_id=%s AND coin=%s
             """, (bot['id'], coin))
             coin_trade_num = cur.fetchone()[0] + 1
 
             # Insert position
             cur.execute("""
-                INSERT INTO live_dca_positions (
+                INSERT INTO positions (
                     bot_id, user_id, exchange_id, wallet_id,
                     coin, direction, status,
                     avg_cost, quantity, total_invested,
@@ -729,12 +753,8 @@ def run_bot_cycle(bot, r):
         for pos in open_positions:
             current_price = get_redis_price(r, pos['coin'])
             if not current_price:
-                if bot['id'] == 745:
-                    print(f"DEBUG745: {pos['coin']} - no current_price found in redis")
                 continue
             needs, amount = needs_dca(pos, current_price, bot['base_order'], bot['size_multiplier'])
-            if bot['id'] == 745 and pos['coin'] in ('ALVA', 'XT'):
-                print(f"DEBUG745: {pos['coin']} price={current_price} avg_cost={pos['avg_cost']} last_buy={pos['last_buy_price']} dca_count={pos['dca_count']} pos_dca_pct={pos['pos_dca_pct']} needs={needs} amount={amount}")
             if needs:
                 score = score_position(pos, current_price, amount)
                 candidates.append((score, pos, amount, current_price))
@@ -750,13 +770,31 @@ def run_bot_cycle(bot, r):
         # gave up entirely if unaffordable, even when a cheaper #2/#3
         # candidate sat right there fully fundable. Real capital could
         # sit idle for this reason.
-        funded = False
+        # FIXED June 23 2026: was stopping after the FIRST successful
+        # buy (break), even when the wallet had plenty left to fund
+        # several more. With many open positions and small DCA
+        # amounts, the single highest-priority candidate was always
+        # affordable, so it always won and lower-priority candidates
+        # could be starved indefinitely. Now processes every
+        # affordable candidate in the same cycle, not just one.
+        #
+        # ALSO FIXED June 23 2026, the real root cause of a live,
+        # confirmed-stuck position (bot 745, coin XT, dca_count never
+        # advancing past 8 despite needs_dca()=True every cycle for
+        # an extended period): load_wallet(pos['wallet_id']) silently
+        # returned None because positions.wallet_id was NULL on this
+        # row (and 264,116 others platform-wide, a historical data
+        # issue, not an active bug in current INSERT statements which
+        # already set wallet_id correctly). Backfilled every affected
+        # row from its own bot's wallet_id. Found via direct,
+        # methodical debug logging rather than guessing - confirmed
+        # the exact silent failure point before touching any data.
+        funded_count = 0
         for score, pos, amount, price in candidates:
             wallet = load_wallet(pos['wallet_id'])
             if wallet and wallet['current_balance'] >= amount:
                 execute_dca_buy(pos, bot, amount, r)
-                funded = True
-                break
+                funded_count += 1
             else:
                 try:
                     key = f'insuf:{bot["id"]}:{pos["id"]}'
@@ -765,7 +803,7 @@ def run_bot_cycle(bot, r):
                 except Exception:
                     pass
 
-        if not funded and candidates:
+        if funded_count == 0 and candidates:
             print(f'⚠️ {bot["name"]}: no affordable DCA candidate this '
                   f'cycle out of {len(candidates)} needing DCA')
 
@@ -830,14 +868,18 @@ def refresh_tp_cache():
     global _tp_cache, _tp_cache_time
     with db.get_db() as conn:
         cur = conn.cursor()
+        # FIXED June 23 2026: was FROM live_dca_positions, the stale
+        # table found during the DCA bug investigation - same fix as
+        # everywhere else in this file. Added direction filter since
+        # positions holds both long and short, unlike the old table.
         cur.execute("""
             SELECT p.id, p.bot_id, p.coin, p.avg_cost, p.quantity,
                    p.total_invested, p.dca_count, p.tp_armed,
                    p.peak_price, p.pos_tp_pct, p.pos_trail_pct,
                    p.wallet_id, b.user_id, b.name, p.profit_coin
-            FROM live_dca_positions p
+            FROM positions p
             JOIN bots b ON p.bot_id = b.id
-            WHERE p.status='open'
+            WHERE p.status='open' AND p.direction='long'
         """)
         rows = cur.fetchall()
 
