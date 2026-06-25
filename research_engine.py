@@ -478,7 +478,7 @@ def get_btc_regime_data(r):
         return None
 
 
-def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc_regime_data=None):
+def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc_regime_data=None, coin_category_cache=None):
     bot_id = bot[0]
     user_id = bot[1]
     exchange_id = bot[2]
@@ -495,7 +495,6 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
     if method and method.startswith('E58'):
         return
 
-    coin_category = db.get_all_coin_categories()
     direction = bot[5]
     base_coin = bot[9]
 
@@ -549,14 +548,33 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
             if cp_check and cp_check.get('tradeable') is False:
                 continue
 
-        category = coin_category.get(coin, 'micro')
+        category = (coin_category_cache or {}).get(coin, 'micro')
 
         # Check entry signal for research bots
         if method and (method.startswith('E') or method.startswith('BM')):
             params = {}
             try:
                 import json
-                params = json.loads(bot[29]) if bot[29] else {}
+                # FIXED June 24 2026: was bot[29], which is e.paused_at
+                # (always None) per get_active_bots()'s real column
+                # order - check_entry_signal()'s own docstring says
+                # params comes "from bot_params JSON field", which is
+                # genuinely bot[30]. Every research bot's unique,
+                # individually-tuned parameters (the entire point of
+                # running 717 distinct grid-search combinations) were
+                # silently replaced with an empty dict on every single
+                # entry-signal check since this index was introduced.
+                # Also confirmed bot[30] is already a dict (psycopg2
+                # auto-deserializes the JSONB column) - json.loads()
+                # on an already-deserialized dict would throw and
+                # silently fall back to {} anyway, masking the fix.
+                raw_params = bot[30]
+                if isinstance(raw_params, dict):
+                    params = raw_params
+                elif raw_params:
+                    params = json.loads(raw_params)
+                else:
+                    params = {}
             except:
                 params = {}
             # Use cached OHLCV data (fetched once per coin per cycle)
@@ -598,8 +616,15 @@ def try_open_position(bot, exchange_obj, tickers, r, coin_params_cache=None, btc
 
             # Open position in DB
             _cp_snapshot = (coin_params_cache or {}).get(coin, {})
+            # FIXED June 24 2026: was hardcoded None - found while
+            # fixing the bot_params index bug above. Most research
+            # bots (597 of 717) genuinely have a real wallet_id set,
+            # but get_active_bots() never selected it, so there was
+            # nothing to pass. Appended b.wallet_id to that query
+            # (bot[32], at the end so no existing index shifts) and
+            # use it here instead of a hardcoded None.
             pos_id = db.open_position(
-                bot_id, user_id, exchange_id, None,
+                bot_id, user_id, exchange_id, bot[32] if len(bot) > 32 else None,
                 coin, direction, price, quantity,
                 base_order, price, category,
                 PAPER_MODE, base_coin, 'USDT',
@@ -774,6 +799,19 @@ def run_cycle(r):
                 }
     except Exception as e:
         print(f'⚠️ coin_params load error: {e}')
+
+    # FIXED June 24 2026 - found via timing investigation showing 90%
+    # of cycle time (171 of 190s) spent in try_open_position, called
+    # once per research bot (712 times this cycle). It was calling
+    # db.get_all_coin_categories() fresh every single time despite
+    # the result being identical for the entire cycle - the exact
+    # same wasteful pattern coin_params_cache above already avoids.
+    # Loaded once per cycle here instead, passed in as a parameter.
+    try:
+        coin_category_cache = db.get_all_coin_categories()
+    except Exception as e:
+        print(f'⚠️ coin_category load error: {e}')
+        coin_category_cache = {}
 
     # Sync trades_per_bot = open_count + 1 for all research bots
     with db.get_db() as conn:
@@ -1074,7 +1112,7 @@ def run_cycle(r):
         ]
         print(f'Bots needing trades: {len(bots_needing_trades)}/{len(bots)}')
         for bot in bots_needing_trades:
-            try_open_position(bot, exchange_obj, tickers, r, coin_params_cache, btc_regime_data)
+            try_open_position(bot, exchange_obj, tickers, r, coin_params_cache, btc_regime_data, coin_category_cache)
 
     # Record cycle time
     cycle_time = time.time() - cycle_start
