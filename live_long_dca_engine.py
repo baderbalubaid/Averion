@@ -84,11 +84,22 @@ def load_live_long_bots():
             WHERE b.is_research = FALSE
             AND b.is_template = FALSE
             AND b.direction = 'long'
-            AND b.trading_on = TRUE
             AND b.status = 'open'
             AND b.status != 'deleted'
             AND (b.method LIKE 'DCA%' OR b.method LIKE 'E%')
             ORDER BY b.user_id, b.id
+            -- FIXED June 25 2026: was "AND b.trading_on = TRUE" here,
+            -- which excluded the bot from this entire function -
+            -- silently freezing DCA and TP on every existing open
+            -- position the moment a bot stopped, went into debt, or
+            -- expired. Per locked discussion: trading_on=FALSE should
+            -- only ever block NEW positions/entries, never existing
+            -- ones - DCA and TP must keep managing what's already
+            -- open regardless of why trading stopped. New-position
+            -- opening is already separately, explicitly gated by
+            -- trading_on at its own call sites (open_position() at
+            -- line ~834 and the ASAP-bot filter at ~930), so removing
+            -- the filter here does not reopen that door.
         """)
         rows = cur.fetchall()
 
