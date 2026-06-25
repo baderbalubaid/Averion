@@ -339,6 +339,17 @@ _rt_cache = {}
 _rt_cache_time = 0
 _rt_cache_lock = __import__('threading').Lock()
 
+# FIXED June 25 2026 - found while investigating sustained high CPU
+# (stable ~115-119% across multiple samples regardless of which main
+# cycle phase was running, pointing at a continuously-running path
+# separate from run_cycle entirely). on_price_update() below fires on
+# every single WebSocket price tick across ~2000 tracked coins, and
+# was calling db.get_active_bots() - a 32-column query joined against
+# exchanges - fresh every single time. Same cache-every-30s pattern
+# as _rt_cache above, applied here too.
+_rt_bots_cache = []
+_rt_bots_cache_time = 0
+
 def _refresh_rt_cache(exc_id):
     global _rt_cache, _rt_cache_time
     import time as _t
@@ -389,8 +400,13 @@ def make_realtime_tp_checker(exchange_obj, exc_id, exc_row):
             if not positions:
                 return
 
-            # Get bots for these positions
-            active_bots = db.get_active_bots()
+            # Get bots for these positions - cached, refreshed every
+            # 30s, not queried fresh on every single price tick
+            global _rt_bots_cache, _rt_bots_cache_time
+            if _t.time() - _rt_bots_cache_time > 30:
+                _rt_bots_cache = db.get_active_bots()
+                _rt_bots_cache_time = _t.time()
+            active_bots = _rt_bots_cache
             r = get_redis()
             tickers = {f'{coin}/USDT': {'last': price}}
             # Remove closed positions from cache immediately
