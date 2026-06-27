@@ -309,7 +309,7 @@
         "ws:{}:status",
         "ws:{}:total_updates"
       ],
-      "line_count": 3369
+      "line_count": 3380
     },
     "attached_assets/api_1779740966898.py": {
       "tables": [
@@ -684,6 +684,23 @@
       "local_imports": [],
       "redis_keys": [],
       "line_count": 46
+    },
+    "bot_audit.py": {
+      "tables": [
+        "bots",
+        "positions",
+        "virtual_wallets"
+      ],
+      "functions": [
+        "flag",
+        "get_redis_price",
+        "main"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 235
     },
     "bot_loop.py": {
       "tables": [
@@ -1310,10 +1327,9 @@
     "live_long_dca_engine.py": {
       "tables": [
         "bots",
-        "champion_history",
         "coin_parameters",
         "exchanges",
-        "live_dca_positions",
+        "positions",
         "virtual_wallets",
         "wallet_transactions"
       ],
@@ -1355,7 +1371,7 @@
         "engine:long_dca:heartbeat",
         "st:{}:{}"
       ],
-      "line_count": 1105
+      "line_count": 1158
     },
     "live_scalper_engine.py": {
       "tables": [
@@ -1561,7 +1577,7 @@
         "st:{}:{}",
         "ws:mexc:status"
       ],
-      "line_count": 1175
+      "line_count": 1229
     },
     "save_scalper_snapshot.py": {
       "tables": [
@@ -1793,26 +1809,46 @@
     }
   },
   "table_to_files": {
-    "system_health": [
+    "live_dca_positions": [
       "api.py",
-      "automation/generate_diagnostics.py",
-      "main.py"
+      "database.py"
     ],
-    "trades": [
+    "rars_scores": [
       "api.py",
-      "attached_assets/api_1779740966898.py",
-      "attached_assets/api_1779741157276.py",
-      "attached_assets/bot_1779664637272.py",
-      "attached_assets/bot_1779664997163.py",
-      "automation/generate_excel.py",
-      "automation/generate_metrics.py",
-      "data_retention_cleanup.py",
-      "database.py",
-      "exchanges.py",
-      "main.py"
+      "rars_champion_promotion.py",
+      "rars_champion_scoring.py"
+    ],
+    "category_limits": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "champion_history": [
+      "api.py",
+      "live_scalper_engine.py",
+      "rars_champion_promotion.py"
+    ],
+    "coin_parameters": [
+      "api.py",
+      "bot_loop.py",
+      "calculate_coin_params.py",
+      "live_long_dca_engine.py",
+      "refresh_min_orders.py",
+      "research_engine.py"
+    ],
+    "virtual_wallets": [
+      "api.py",
+      "bot_audit.py",
+      "executor.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py",
+      "short_dca_engine.py"
     ],
     "platform_pricing": [
       "api.py"
+    ],
+    "coin_parameter_history": [
+      "api.py",
+      "calculate_coin_params.py"
     ],
     "positions": [
       "api.py",
@@ -1825,12 +1861,14 @@
       "automation/fetch_ohlcv.py",
       "automation/generate_excel.py",
       "automation/generate_metrics.py",
+      "bot_audit.py",
       "bot_loop.py",
       "data_retention_cleanup.py",
       "database.py",
       "generate_dca_report.py",
       "generate_research_report.py",
       "generate_top25_csv.py",
+      "live_long_dca_engine.py",
       "main.py",
       "rars_champion_scoring.py",
       "rars_scoring.py",
@@ -1838,36 +1876,26 @@
       "research_engine.py",
       "short_dca_engine.py"
     ],
-    "exchanges": [
+    "system_health": [
       "api.py",
-      "automation/fetch_ohlcv.py",
-      "automation/generate_excel.py",
-      "automation/rotate_fernet.py",
-      "database.py",
-      "executor.py",
-      "fetch_ohlcv.py",
-      "live_long_dca_engine.py",
-      "main.py",
-      "refresh_min_orders.py",
-      "setup/launch_research_bots.py",
-      "setup_kucoin.py",
-      "short_dca_engine.py"
+      "automation/generate_diagnostics.py",
+      "main.py"
     ],
-    "performance_timing": [
+    "watchdog_events": [
       "api.py",
-      "automation/generate_diagnostics.py"
+      "research_engine.py"
     ],
     "live_positions": [
       "api.py",
       "database.py",
       "live_scalper_engine.py"
     ],
-    "virtual_wallets": [
+    "fee_debt": [
       "api.py",
-      "executor.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py",
-      "short_dca_engine.py"
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "database.py"
     ],
     "scalper_positions": [
       "api.py",
@@ -1883,33 +1911,47 @@
       "scalper_engine.py",
       "scalper_v2_engine.py"
     ],
-    "live_dca_positions": [
-      "api.py",
-      "database.py",
-      "live_long_dca_engine.py"
-    ],
     "reserve_wallets": [
       "api.py",
       "auth.py",
       "automation/generate_excel.py",
       "database.py"
     ],
-    "watchdog_events": [
+    "trades": [
       "api.py",
-      "research_engine.py"
-    ],
-    "fee_debt": [
-      "api.py",
-      "automation/daily_aggregation.py",
+      "attached_assets/api_1779740966898.py",
+      "attached_assets/api_1779741157276.py",
+      "attached_assets/bot_1779664637272.py",
+      "attached_assets/bot_1779664997163.py",
       "automation/generate_excel.py",
       "automation/generate_metrics.py",
-      "database.py"
+      "data_retention_cleanup.py",
+      "database.py",
+      "exchanges.py",
+      "main.py"
+    ],
+    "performance_timing": [
+      "api.py",
+      "automation/generate_diagnostics.py"
+    ],
+    "users": [
+      "api.py",
+      "auth.py",
+      "automation/check_paper_timer.py",
+      "automation/generate_metrics.py",
+      "database.py",
+      "live_scalper_engine.py",
+      "setup/init_db.py",
+      "setup/launch_research_bots.py",
+      "short_dca_engine.py",
+      "telegram.py"
     ],
     "bots": [
       "api.py",
       "automation/daily_aggregation.py",
       "automation/generate_excel.py",
       "automation/generate_metrics.py",
+      "bot_audit.py",
       "bot_loop.py",
       "data_retention_cleanup.py",
       "database.py",
@@ -1932,47 +1974,27 @@
       "setup/launch_research_bots.py",
       "short_dca_engine.py"
     ],
-    "rars_scores": [
+    "exchanges": [
       "api.py",
-      "rars_champion_promotion.py",
-      "rars_champion_scoring.py"
-    ],
-    "champion_history": [
-      "api.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py",
-      "rars_champion_promotion.py"
-    ],
-    "coin_parameters": [
-      "api.py",
-      "bot_loop.py",
-      "calculate_coin_params.py",
-      "live_long_dca_engine.py",
-      "refresh_min_orders.py",
-      "research_engine.py"
-    ],
-    "category_limits": [
-      "api.py",
-      "calculate_coin_params.py"
-    ],
-    "coin_parameter_history": [
-      "api.py",
-      "calculate_coin_params.py"
-    ],
-    "users": [
-      "api.py",
-      "auth.py",
-      "automation/check_paper_timer.py",
-      "automation/generate_metrics.py",
+      "automation/fetch_ohlcv.py",
+      "automation/generate_excel.py",
+      "automation/rotate_fernet.py",
       "database.py",
-      "live_scalper_engine.py",
-      "setup/init_db.py",
+      "executor.py",
+      "fetch_ohlcv.py",
+      "live_long_dca_engine.py",
+      "main.py",
+      "refresh_min_orders.py",
       "setup/launch_research_bots.py",
-      "short_dca_engine.py",
-      "telegram.py"
+      "setup_kucoin.py",
+      "short_dca_engine.py"
     ],
     "referrals": [
       "auth.py"
+    ],
+    "market_regimes": [
+      "automation/classify_coins.py",
+      "database.py"
     ],
     "coin_history": [
       "automation/classify_coins.py",
@@ -1980,10 +2002,6 @@
       "automation/fetch_coingecko.py",
       "calculate_coin_params.py",
       "classify_coins.py",
-      "database.py"
-    ],
-    "market_regimes": [
-      "automation/classify_coins.py",
       "database.py"
     ],
     "owner_balance": [
@@ -2009,28 +2027,28 @@
       "calculate_coin_params.py",
       "classify_coins.py"
     ],
-    "exchange_min_orders": [
+    "attention_log": [
       "database.py"
     ],
     "security_audit_log": [
       "database.py"
     ],
-    "attention_log": [
-      "database.py"
-    ],
     "user_telegram": [
-      "database.py"
-    ],
-    "user_subscriptions": [
       "database.py"
     ],
     "system_settings": [
       "database.py"
     ],
-    "short_buyback_orders": [
-      "executor.py"
+    "exchange_min_orders": [
+      "database.py"
+    ],
+    "user_subscriptions": [
+      "database.py"
     ],
     "exchange_coin_limits": [
+      "executor.py"
+    ],
+    "short_buyback_orders": [
       "executor.py"
     ],
     "scalper_daily_snapshots": [

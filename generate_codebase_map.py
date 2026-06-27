@@ -141,6 +141,130 @@ with open(OUTPUT_MD, 'w') as f:
             f.write(f"- **Redis keys used**: {', '.join(d['redis_keys'])}\n")
         f.write("\n")
 
+# ═══════════════════════════════════════════════════
+# ADDED June 27 2026 - API endpoints + frontend mapping
+# + Mermaid diagrams (concept-level and DB ER diagram).
+# Closes the exact gap that cost real time today: finding
+# which frontend page calls which backend endpoint required
+# manual grepping through multiple files one at a time.
+# ═══════════════════════════════════════════════════
+
+FETCH_PATTERN = re.compile(
+    r'''fetch\(\s*(?:`\$\{API\}([^`]*)`|['"]([^'"]*)['"])''')
+
+endpoints = []
+api_files = [p for p in py_files if os.path.basename(p) == 'api.py']
+for filepath in api_files:
+    rel_name = os.path.relpath(filepath, AVERION_DIR)
+    with open(filepath, 'r', errors='ignore') as f:
+        content_api = f.read()
+    for m in re.finditer(
+        r'''@app\.(get|post|put|delete|patch)\(\s*['"]([^'"]+)['"][^)]*\)\s*\n\s*def\s+(\w+)''',
+        content_api):
+        method, path, func_name = m.groups()
+        endpoints.append({
+            'method': method.upper(), 'path': path,
+            'function': func_name, 'file': rel_name,
+        })
+
+endpoint_paths = {e['path'] for e in endpoints}
+
+frontend_files = []
+for root, dirs, files in os.walk(AVERION_DIR):
+    dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+    for fname in files:
+        if fname.endswith(('.html', '.js')):
+            frontend_files.append(os.path.join(root, fname))
+
+endpoint_to_frontend = defaultdict(set)
+frontend_to_endpoints = defaultdict(set)
+for filepath in frontend_files:
+    rel_name = os.path.relpath(filepath, AVERION_DIR)
+    try:
+        with open(filepath, 'r', errors='ignore') as f:
+            fcontent = f.read()
+    except Exception:
+        continue
+    for m in FETCH_PATTERN.finditer(fcontent):
+        raw_path = m.group(1) or m.group(2) or ''
+        base_path = raw_path.split('?')[0]
+        base_path = re.sub(r'\$\{[^}]+\}', '{}', base_path)
+        for ep_path in endpoint_paths:
+            ep_normalized = re.sub(r'\{[^}]+\}', '{}', ep_path)
+            if base_path.startswith(ep_normalized) or ep_normalized.startswith(base_path.rstrip('{}')):
+                if base_path.strip('/'):
+                    endpoint_to_frontend[ep_path].add(rel_name)
+                    frontend_to_endpoints[rel_name].add(ep_path)
+
+with open(OUTPUT_MD, 'a') as f:
+    f.write("\n## API Endpoints -> Frontend usage\n\n")
+    f.write("Closes the 'which page calls which endpoint' gap. ")
+    f.write("Match is best-effort string matching, not guaranteed perfect "
+            "for heavily dynamic URLs - always verify with grep for anything critical.\n\n")
+    for ep in sorted(endpoints, key=lambda e: e['path']):
+        callers = sorted(endpoint_to_frontend.get(ep['path'], []))
+        f.write(f"### `{ep['method']} {ep['path']}`\n")
+        f.write(f"- Defined in: {ep['file']} (`{ep['function']}`)\n")
+        if callers:
+            f.write(f"- Called from: {', '.join(callers)}\n")
+        else:
+            f.write(f"- Called from: (no frontend match found - may be admin-only, internal, or called dynamically)\n")
+        f.write("\n")
+
+    f.write("\n## Frontend pages -> Endpoints they call\n\n")
+    for fname in sorted(frontend_to_endpoints.keys()):
+        eps = sorted(frontend_to_endpoints[fname])
+        f.write(f"### {fname}\n")
+        for ep in eps:
+            f.write(f"- {ep}\n")
+        f.write("\n")
+
+with db.get_db() as _conn:
+    _cur = _conn.cursor()
+    _fk_query = ("SELECT tc.table_name, kcu.column_name, "
+                 "ccu.table_name AS foreign_table, ccu.column_name AS foreign_column "
+                 "FROM information_schema.table_constraints tc "
+                 "JOIN information_schema.key_column_usage kcu "
+                 "ON tc.constraint_name = kcu.constraint_name "
+                 "JOIN information_schema.constraint_column_usage ccu "
+                 "ON tc.constraint_name = ccu.constraint_name "
+                 "WHERE tc.constraint_type = 'FOREIGN KEY'")
+    _cur.execute(_fk_query)
+    fk_rows = _cur.fetchall()
+
+os.makedirs(os.path.join(AVERION_DIR, 'system_map', 'architecture'), exist_ok=True)
+with open(os.path.join(AVERION_DIR, 'system_map', 'architecture', 'database_er.mmd'), 'w') as f:
+    f.write("erDiagram\n")
+    seen_rels = set()
+    for table, col, ftable, fcol in fk_rows:
+        rel = (table, ftable)
+        if rel in seen_rels:
+            continue
+        seen_rels.add(rel)
+        f.write("    " + ftable + " ||--o{ " + table + " : \"" + col + "\"\n")
+print(f"Mermaid DB ER diagram written to system_map/architecture/database_er.mmd ({len(seen_rels)} relationships)")
+
+with open(os.path.join(AVERION_DIR, 'system_map', 'architecture', 'positions.mmd'), 'w') as f:
+    f.write("graph TD\n")
+    pos_tables = ['positions', 'live_dca_positions', 'live_positions', 'scalper_positions']
+    for t in pos_tables:
+        files_for_t = table_to_files.get(t, set())
+        for fn in files_for_t:
+            safe_fn = fn.replace('/', '_').replace('.', '_')
+            f.write("    " + t + "[(\"" + t + "\")] --> " + safe_fn + "[\"" + fn + "\"]\n")
+    for ep in endpoints:
+        if 'position' in ep['path'].lower():
+            safe_fn = ep['file'].replace('/', '_').replace('.', '_')
+            ep_id = ep['path'].replace('/', '_').replace('{', '').replace('}', '')
+            f.write("    " + safe_fn + " --> " + ep_id + "[\"" + ep['method'] + " " + ep['path'] + "\"]\n")
+            for caller in endpoint_to_frontend.get(ep['path'], []):
+                safe_caller = caller.replace('/', '_').replace('.', '_')
+                f.write("    " + ep_id + " --> " + safe_caller + "[\"" + caller + "\"]\n")
+print("Mermaid concept diagram written to system_map/architecture/positions.mmd")
+
+print(f"Endpoints found: {len(endpoints)}")
+print(f"Endpoints with a matched frontend caller: {sum(1 for e in endpoints if endpoint_to_frontend.get(e['path']))}")
+
 print(f"Map written to {OUTPUT_MD}")
 print(f"JSON written to {OUTPUT_JSON}")
 print(f"Total files scanned: {len(file_data)}")
