@@ -98,3 +98,19 @@ don't delete the line (keeps a record of what was checked).
 CONFIRMED NOT A GAP: Short genuinely has no floor-pause concept at
 all (reserve_floor/resume_threshold/floor_paused) - confirmed
 intentional, not carrying this feature into Short at all.
+
+## ADDED June 27 2026 (found during Scalper research for the full sequence table)
+
+16. **CONFIRMED: Scalper has the same "stopped bot freezes existing
+    positions" bug as Long (fixed June 25) and Short (logged #14,
+    not yet fixed).** live_scalper_engine.py's _load_bots() still has
+    `AND b.trading_on=TRUE` in its WHERE clause. This is now the
+    THIRD confirmed instance of this exact bug class across all 3
+    systems. HIGH PRIORITY - same real-money risk pattern each time.
+
+17. Floor-pause (reserve_floor/resume_threshold/auto_resume/
+    floor_paused) is genuinely shared between Long and Scalper (both
+    confirmed in their real _load_bots()) - Short is the one
+    genuinely without it, not Long being the special case. Corrects
+    an earlier assumption in full_sequence_table.md that this was
+    "Long-only by design" - it is actually "Long+Scalper, not Short".
