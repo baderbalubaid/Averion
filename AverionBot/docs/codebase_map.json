@@ -1,5 +1,76 @@
 {
   "files": {
+    "AverionBot/core/heartbeat_service.py": {
+      "tables": [],
+      "functions": [
+        "is_heartbeat_alive",
+        "write_heartbeat"
+      ],
+      "local_imports": [],
+      "redis_keys": [
+        "engine:{}:heartbeat"
+      ],
+      "line_count": 37
+    },
+    "AverionBot/core/long_short_market_price.py": {
+      "tables": [],
+      "functions": [
+        "get_redis_price"
+      ],
+      "local_imports": [],
+      "redis_keys": [
+        "price:{}:{}/USDT"
+      ],
+      "line_count": 27
+    },
+    "AverionBot/core/redis_connection.py": {
+      "tables": [],
+      "functions": [
+        "get_redis"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 32
+    },
+    "AverionBot/engines/long_engine.py": {
+      "tables": [],
+      "functions": [
+        "_engine_loop",
+        "is_engine_alive",
+        "start_engine"
+      ],
+      "local_imports": [
+        "heartbeat_service",
+        "redis_connection"
+      ],
+      "redis_keys": [],
+      "line_count": 57
+    },
+    "AverionBot/engines/scalper_engine.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [
+        "database",
+        "heartbeat_service",
+        "redis_connection"
+      ],
+      "redis_keys": [],
+      "line_count": 72
+    },
+    "AverionBot/engines/short_engine.py": {
+      "tables": [],
+      "functions": [
+        "_engine_loop",
+        "is_engine_alive",
+        "start_engine"
+      ],
+      "local_imports": [
+        "heartbeat_service",
+        "redis_connection"
+      ],
+      "redis_keys": [],
+      "line_count": 46
+    },
     "AverionBot/tools/bot_audit.py": {
       "tables": [
         "bots",
@@ -1816,66 +1887,13 @@
     }
   },
   "table_to_files": {
-    "positions": [
+    "fee_debt": [
       "AverionBot/tools/bot_audit.py",
       "api.py",
-      "attached_assets/api_1779740966898.py",
-      "attached_assets/api_1779741157276.py",
-      "attached_assets/bot_1779664637272.py",
-      "attached_assets/bot_1779664997163.py",
-      "automation/check_paper_timer.py",
       "automation/daily_aggregation.py",
-      "automation/fetch_ohlcv.py",
       "automation/generate_excel.py",
       "automation/generate_metrics.py",
-      "bot_loop.py",
-      "data_retention_cleanup.py",
-      "database.py",
-      "generate_dca_report.py",
-      "generate_research_report.py",
-      "generate_top25_csv.py",
-      "live_long_dca_engine.py",
-      "main.py",
-      "rars_champion_scoring.py",
-      "rars_scoring.py",
-      "recover_short_buybacks.py",
-      "research_engine.py",
-      "short_dca_engine.py"
-    ],
-    "wallet_transactions": [
-      "AverionBot/tools/bot_audit.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py"
-    ],
-    "virtual_wallets": [
-      "AverionBot/tools/bot_audit.py",
-      "api.py",
-      "executor.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py",
-      "short_dca_engine.py"
-    ],
-    "reserve_wallets": [
-      "AverionBot/tools/bot_audit.py",
-      "api.py",
-      "auth.py",
-      "automation/generate_excel.py",
       "database.py"
-    ],
-    "scalper_positions": [
-      "AverionBot/tools/bot_audit.py",
-      "api.py",
-      "data_retention_cleanup.py",
-      "database.py",
-      "generate_research_report.py",
-      "generate_scalper_report.py",
-      "generate_scalper_results.py",
-      "generate_scalper_v2_report.py",
-      "generate_top25_csv.py",
-      "rars_champion_scoring.py",
-      "save_scalper_snapshot.py",
-      "scalper_engine.py",
-      "scalper_v2_engine.py"
     ],
     "bots": [
       "AverionBot/tools/bot_audit.py",
@@ -1905,21 +1923,142 @@
       "setup/launch_research_bots.py",
       "short_dca_engine.py"
     ],
-    "fee_debt": [
+    "virtual_wallets": [
       "AverionBot/tools/bot_audit.py",
       "api.py",
+      "executor.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py",
+      "short_dca_engine.py"
+    ],
+    "wallet_transactions": [
+      "AverionBot/tools/bot_audit.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py"
+    ],
+    "positions": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "attached_assets/api_1779740966898.py",
+      "attached_assets/api_1779741157276.py",
+      "attached_assets/bot_1779664637272.py",
+      "attached_assets/bot_1779664997163.py",
+      "automation/check_paper_timer.py",
       "automation/daily_aggregation.py",
+      "automation/fetch_ohlcv.py",
       "automation/generate_excel.py",
       "automation/generate_metrics.py",
+      "bot_loop.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "generate_dca_report.py",
+      "generate_research_report.py",
+      "generate_top25_csv.py",
+      "live_long_dca_engine.py",
+      "main.py",
+      "rars_champion_scoring.py",
+      "rars_scoring.py",
+      "recover_short_buybacks.py",
+      "research_engine.py",
+      "short_dca_engine.py"
+    ],
+    "reserve_wallets": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "auth.py",
+      "automation/generate_excel.py",
       "database.py"
+    ],
+    "scalper_positions": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "generate_research_report.py",
+      "generate_scalper_report.py",
+      "generate_scalper_results.py",
+      "generate_scalper_v2_report.py",
+      "generate_top25_csv.py",
+      "rars_champion_scoring.py",
+      "save_scalper_snapshot.py",
+      "scalper_engine.py",
+      "scalper_v2_engine.py"
+    ],
+    "platform_pricing": [
+      "api.py"
+    ],
+    "live_dca_positions": [
+      "api.py",
+      "database.py"
+    ],
+    "trades": [
+      "api.py",
+      "attached_assets/api_1779740966898.py",
+      "attached_assets/api_1779741157276.py",
+      "attached_assets/bot_1779664637272.py",
+      "attached_assets/bot_1779664997163.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "exchanges.py",
+      "main.py"
+    ],
+    "live_positions": [
+      "api.py",
+      "database.py",
+      "live_scalper_engine.py"
+    ],
+    "champion_history": [
+      "api.py",
+      "live_scalper_engine.py",
+      "rars_champion_promotion.py"
+    ],
+    "performance_timing": [
+      "api.py",
+      "automation/generate_diagnostics.py"
+    ],
+    "users": [
+      "api.py",
+      "auth.py",
+      "automation/check_paper_timer.py",
+      "automation/generate_metrics.py",
+      "database.py",
+      "live_scalper_engine.py",
+      "setup/init_db.py",
+      "setup/launch_research_bots.py",
+      "short_dca_engine.py",
+      "telegram.py"
+    ],
+    "category_limits": [
+      "api.py",
+      "calculate_coin_params.py"
     ],
     "watchdog_events": [
       "api.py",
       "research_engine.py"
     ],
-    "category_limits": [
+    "system_health": [
+      "api.py",
+      "automation/generate_diagnostics.py",
+      "main.py"
+    ],
+    "coin_parameters": [
+      "api.py",
+      "bot_loop.py",
+      "calculate_coin_params.py",
+      "live_long_dca_engine.py",
+      "refresh_min_orders.py",
+      "research_engine.py"
+    ],
+    "coin_parameter_history": [
       "api.py",
       "calculate_coin_params.py"
+    ],
+    "rars_scores": [
+      "api.py",
+      "rars_champion_promotion.py",
+      "rars_champion_scoring.py"
     ],
     "exchanges": [
       "api.py",
@@ -1935,74 +2074,6 @@
       "setup/launch_research_bots.py",
       "setup_kucoin.py",
       "short_dca_engine.py"
-    ],
-    "system_health": [
-      "api.py",
-      "automation/generate_diagnostics.py",
-      "main.py"
-    ],
-    "coin_parameter_history": [
-      "api.py",
-      "calculate_coin_params.py"
-    ],
-    "live_dca_positions": [
-      "api.py",
-      "database.py"
-    ],
-    "live_positions": [
-      "api.py",
-      "database.py",
-      "live_scalper_engine.py"
-    ],
-    "champion_history": [
-      "api.py",
-      "live_scalper_engine.py",
-      "rars_champion_promotion.py"
-    ],
-    "coin_parameters": [
-      "api.py",
-      "bot_loop.py",
-      "calculate_coin_params.py",
-      "live_long_dca_engine.py",
-      "refresh_min_orders.py",
-      "research_engine.py"
-    ],
-    "trades": [
-      "api.py",
-      "attached_assets/api_1779740966898.py",
-      "attached_assets/api_1779741157276.py",
-      "attached_assets/bot_1779664637272.py",
-      "attached_assets/bot_1779664997163.py",
-      "automation/generate_excel.py",
-      "automation/generate_metrics.py",
-      "data_retention_cleanup.py",
-      "database.py",
-      "exchanges.py",
-      "main.py"
-    ],
-    "users": [
-      "api.py",
-      "auth.py",
-      "automation/check_paper_timer.py",
-      "automation/generate_metrics.py",
-      "database.py",
-      "live_scalper_engine.py",
-      "setup/init_db.py",
-      "setup/launch_research_bots.py",
-      "short_dca_engine.py",
-      "telegram.py"
-    ],
-    "rars_scores": [
-      "api.py",
-      "rars_champion_promotion.py",
-      "rars_champion_scoring.py"
-    ],
-    "performance_timing": [
-      "api.py",
-      "automation/generate_diagnostics.py"
-    ],
-    "platform_pricing": [
-      "api.py"
     ],
     "referrals": [
       "auth.py"
@@ -2042,13 +2113,16 @@
       "calculate_coin_params.py",
       "classify_coins.py"
     ],
-    "attention_log": [
-      "database.py"
-    ],
     "user_subscriptions": [
       "database.py"
     ],
     "system_settings": [
+      "database.py"
+    ],
+    "attention_log": [
+      "database.py"
+    ],
+    "user_telegram": [
       "database.py"
     ],
     "exchange_min_orders": [
@@ -2057,13 +2131,10 @@
     "security_audit_log": [
       "database.py"
     ],
-    "user_telegram": [
-      "database.py"
-    ],
-    "exchange_coin_limits": [
+    "short_buyback_orders": [
       "executor.py"
     ],
-    "short_buyback_orders": [
+    "exchange_coin_limits": [
       "executor.py"
     ],
     "scalper_daily_snapshots": [

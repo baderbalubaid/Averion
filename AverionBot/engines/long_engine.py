@@ -14,6 +14,7 @@ import threading
 import sys
 sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
+from heartbeat_service import write_heartbeat
 
 _running = False
 _cycle_thread = None
@@ -46,12 +47,11 @@ def start_engine():
 
 
 def _engine_loop():
-    """Main cycle loop. Connected to the shared get_redis() (June 27
-    2026) - confirmed Long genuinely just needs one shared connection
-    here, same as Short and Scalper.
+    """Main cycle loop. Connected to the shared get_redis() and
+    write_heartbeat() (June 27 2026).
     TODO: rest of the loop body not yet built - next piece to trace
-    is the heartbeat write, then load_dca_champion(), then the bots
-    list itself."""
+    is load_dca_champion(), then the bots list itself."""
     r = get_redis()
     while _running:
+        write_heartbeat(r, 'long_dca')
         raise NotImplementedError("rest of loop body not yet built")

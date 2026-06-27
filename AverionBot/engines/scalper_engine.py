@@ -19,6 +19,7 @@ sys.path.insert(0, '/home/averion/Averion')
 import database as db
 sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
+from heartbeat_service import write_heartbeat
 
 BOT_REFRESH_INTERVAL = 60
 
@@ -61,5 +62,11 @@ class ScalperEngine:
         raise NotImplementedError("_start_cleanup_thread not yet built")
 
     def _start_bot_refresh_thread(self):
-        """TODO: not yet implemented."""
+        """TODO: not yet implemented. GAP FOUND June 27 2026: the
+        original live_scalper_engine.py had NO heartbeat at all,
+        unlike Long/Short which both write one every cycle - meaning
+        a dead Scalper thread would never be detected or restarted.
+        write_heartbeat(self.r, 'scalper') must be called here once
+        this periodic refresh loop is actually built, fixing that gap
+        as part of this rebuild rather than carrying it forward."""
         raise NotImplementedError("_start_bot_refresh_thread not yet built")
