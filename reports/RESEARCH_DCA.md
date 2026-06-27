@@ -1,6 +1,6 @@
 # Averion DCA Research Report
 
-> Generated: 2026-06-26 05:16 UTC · Paper trading · MEXC
+> Generated: 2026-06-27 05:16 UTC · Paper trading · MEXC
 
 > ⚠️ All trades are paper (simulated). Use for directional research only.
 
@@ -10,10 +10,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Closed Trades | 186,772 |
-| Open Positions | 70,626 |
-| Total P&L | $1907862.77 |
-| Active Methods | 59 |
+| Total Closed Trades | 189,794 |
+| Open Positions | 68,930 |
+| Total P&L | $2051157.74 |
+| Active Methods | 60 |
 
 ## Market Regime Coverage
 
@@ -21,7 +21,7 @@
 
 | Regime | Trades |
 |--------|--------|
-| unknown | 186,772 ✅ |
+| unknown | 189,794 ✅ |
 
 ---
 
@@ -29,65 +29,66 @@
 
 | Rank | Method | Description | Bots | Trades | Win% | Avg P&L% | Median P&L% | Std Dev | Total P&L | Avg Hold |
 |------|--------|-------------|------|--------|------|----------|-------------|---------|-----------|----------|
-| 1 | **E31** | Kalman Filter Deviation | 9 | 8,428 | 99.1% | +12.413% | +4.907% | 43.575 | $+109699.25 | 26.2h |
-| 2 | **E7** | Volatility Squeeze Breakout | 17 | 9,418 | 99.2% | +9.272% | +4.298% | 60.560 | $+89035.62 | 47.4h |
-| 3 | **E10** | Pure Price Drop | 12 | 9,269 | 99.1% | +8.272% | +4.287% | 20.414 | $+77620.13 | 43.4h |
-| 4 | **E36** | Parabolic SAR Flip | 9 | 7,512 | 99.4% | +9.863% | +4.489% | 27.005 | $+76459.48 | 36.5h |
-| 5 | **E18b** | Low ADX Ranging Market | 9 | 4,172 | 99.6% | +16.390% | +4.460% | 121.153 | $+68394.51 | 54.1h |
-| 6 | **E6** | Z-Score Mean Reversion | 9 | 4,024 | 99.0% | +16.538% | +4.437% | 118.699 | $+66625.04 | 50.6h |
-| 7 | **E16** | RSI Divergence | 9 | 4,374 | 99.8% | +15.024% | +4.828% | 115.735 | $+65736.42 | 57.7h |
-| 8 | **E17** | Liquidity Sweep | 9 | 5,335 | 99.6% | +11.532% | +4.339% | 88.470 | $+61651.97 | 52.0h |
-| 9 | **E4** | SMA Pullback Entry | 9 | 6,704 | 99.6% | +9.058% | +4.338% | 24.090 | $+61016.91 | 47.6h |
-| 10 | **E23** | BTC Relative Strength | 12 | 6,551 | 99.8% | +8.442% | +4.168% | 38.912 | $+55595.25 | 39.1h |
-| 11 | **E15** | OBV Divergence + RSI | 9 | 5,904 | 99.8% | +8.721% | +4.268% | 24.490 | $+51519.74 | 55.1h |
-| 12 | **E22** | Hammer/Engulfing at Support | 9 | 2,303 | 99.6% | +22.311% | +4.936% | 168.696 | $+51382.83 | 75.9h |
-| 13 | **E14** | StochRSI Oversold + Trend | 9 | 3,817 | 99.3% | +11.709% | +4.119% | 112.775 | $+45571.79 | 65.2h |
-| 14 | **E26** | Ichimoku Cloud Support | 9 | 3,896 | 99.5% | +11.402% | +4.223% | 62.446 | $+44436.99 | 62.0h |
-| 15 | **E8** | VWAP + Swing Structure | 9 | 4,456 | 99.1% | +9.392% | +4.116% | 62.945 | $+42245.86 | 62.4h |
-| 16 | **E24** | MACD + RSI Confluence | 9 | 4,414 | 99.7% | +9.343% | +4.605% | 30.456 | $+41254.68 | 64.1h |
-| 17 | **E18** | ADX Trend Pullback | 9 | 4,342 | 99.5% | +9.119% | +4.491% | 20.096 | $+39601.09 | 64.7h |
-| 18 | **E5** | Multi-Timeframe EMA Pullback | 12 | 5,110 | 100.0% | +7.632% | +4.397% | 14.145 | $+38998.00 | 55.8h |
-| 19 | **E49** | TRIX Signal Cross | 5 | 3,814 | 99.4% | +8.986% | +4.762% | 21.357 | $+38522.70 | 32.8h |
-| 20 | **E45** | Aroon Indicator Cross | 5 | 3,801 | 99.8% | +9.901% | +4.292% | 40.230 | $+38278.92 | 42.2h |
-| 21 | **E25** | Pivot Point Bounce | 9 | 4,388 | 99.7% | +8.663% | +4.641% | 19.666 | $+38067.45 | 64.8h |
-| 22 | **E51** | Force Index Reversal | 5 | 3,676 | 99.4% | +9.509% | +4.573% | 40.741 | $+36666.75 | 26.3h |
-| 23 | **E21** | Fair Value Gap | 9 | 4,250 | 99.3% | +8.558% | +4.143% | 58.732 | $+36554.44 | 59.7h |
-| 24 | **E46** | Ultimate Oscillator Oversold | 5 | 3,988 | 99.8% | +8.846% | +4.344% | 29.860 | $+36515.24 | 41.7h |
-| 25 | **E64** | Imbalance Fill | 5 | 3,528 | 99.7% | +9.361% | +4.517% | 24.668 | $+35220.35 | 33.9h |
-| 26 | **E42** | Detrended Price Oscillator | 5 | 3,792 | 99.7% | +8.975% | +4.505% | 20.930 | $+34989.58 | 42.7h |
-| 27 | **E37** | Donchian Channel Breakout | 5 | 3,580 | 99.9% | +9.676% | +4.701% | 27.082 | $+34980.28 | 39.1h |
-| 28 | **E56** | Squeeze Momentum | 5 | 2,071 | 99.8% | +15.621% | +4.266% | 128.132 | $+33790.92 | 67.9h |
-| 29 | **E65** | Premium/Discount Zone | 7 | 4,239 | 99.8% | +7.587% | +4.531% | 10.595 | $+33427.83 | 32.9h |
-| 30 | **E61** | Supply/Demand Zone | 5 | 3,455 | 99.5% | +8.839% | +4.338% | 43.822 | $+30984.53 | 41.1h |
-| 31 | **E55** | Waddah Attar Explosion | 5 | 2,555 | 99.7% | +11.470% | +4.373% | 96.034 | $+30181.22 | 57.2h |
-| 32 | **E19** | Fibonacci Retracement | 9 | 2,600 | 99.7% | +11.312% | +4.225% | 72.331 | $+29411.64 | 80.9h |
-| 33 | **E48** | Vortex Indicator Cross | 5 | 2,306 | 99.6% | +11.901% | +4.265% | 98.467 | $+27456.55 | 64.9h |
-| 34 | **E33** | VWAP Standard Deviation Band | 5 | 2,487 | 99.9% | +10.292% | +4.519% | 69.068 | $+26312.03 | 65.0h |
-| 35 | **E20** | VPOC Volume Profile | 9 | 3,241 | 99.2% | +8.011% | +4.479% | 16.058 | $+25964.81 | 62.5h |
-| 36 | **E53** | Negative Volume Index | 5 | 2,530 | 99.4% | +9.573% | +4.355% | 19.550 | $+24994.47 | 41.7h |
-| 37 | **E39** | Linear Regression Deviation | 5 | 2,458 | 100.0% | +9.906% | +4.647% | 33.179 | $+24950.73 | 53.0h |
-| 38 | **E62** | Order Block Entry | 5 | 2,901 | 99.8% | +7.722% | +4.069% | 44.138 | $+22495.23 | 52.7h |
-| 39 | **E43** | Price Channel Breakout | 5 | 2,257 | 99.1% | +9.352% | +4.957% | 17.698 | $+22016.25 | 67.2h |
-| 40 | **E60** | Market Structure Break | 5 | 3,078 | 99.8% | +6.661% | +4.148% | 15.050 | $+20637.85 | 48.8h |
-| 41 | **E29** | CCI Oversold Reversal | 5 | 1,996 | 99.6% | +9.794% | +4.164% | 66.778 | $+19874.58 | 69.0h |
-| 42 | **E2** | Bollinger Band Squeeze Breakout | 9 | 1,898 | 99.2% | +10.099% | +3.811% | 52.939 | $+19168.07 | 49.2h |
-| 43 | **E38** | Keltner Channel Mean Reversion | 5 | 1,755 | 99.8% | +8.233% | +4.643% | 10.973 | $+14692.91 | 25.2h |
-| 44 | **BM_SIMPLE** | — | 1 | 929 | 98.9% | +11.073% | +5.018% | 30.062 | $+10491.12 | 24.9h |
-| 45 | **E32** | Session Killzone Sweep | 5 | 1,235 | 99.9% | +8.251% | +4.167% | 11.228 | $+10217.99 | 32.6h |
-| 46 | **E3** | Volume Spike + Narrow Range | 12 | 1,281 | 98.9% | +7.007% | +4.258% | 7.912 | $+8976.55 | 60.5h |
-| 47 | **E35** | Supertrend Bounce | 5 | 1,042 | 100.0% | +7.082% | +4.169% | 9.047 | $+7425.17 | 58.2h |
-| 48 | **BM_STATIC** | — | 1 | 790 | 99.7% | +8.357% | +4.481% | 21.235 | $+6648.34 | 40.9h |
-| 49 | **E59** | Adaptive RSI | 5 | 993 | 100.0% | +6.245% | +3.795% | 7.115 | $+6614.16 | 31.1h |
-| 50 | **E54** | Support Reclaim + Breakdown | 5 | 397 | 100.0% | +14.151% | +5.318% | 23.388 | $+6483.91 | 25.0h |
-| 51 | **E1** | RSI Oversold + VWAP Drop + ATR Spike | 12 | 424 | 100.0% | +12.494% | +6.166% | 28.573 | $+5322.99 | 35.9h |
-| 52 | **E9** | Consecutive Red Candles + Volume | 9 | 878 | 100.0% | +5.868% | +3.733% | 5.868 | $+5152.44 | 59.5h |
+| 1 | **E31** | Kalman Filter Deviation | 9 | 8,446 | 99.1% | +12.401% | +4.904% | 43.530 | $+109839.87 | 26.4h |
+| 2 | **E7** | Volatility Squeeze Breakout | 17 | 9,574 | 99.1% | +9.320% | +4.305% | 61.004 | $+90946.50 | 48.9h |
+| 3 | **E36** | Parabolic SAR Flip | 9 | 7,623 | 99.1% | +11.012% | +4.485% | 44.484 | $+86331.10 | 38.4h |
+| 4 | **E10** | Pure Price Drop | 12 | 9,420 | 99.0% | +8.207% | +4.276% | 20.273 | $+78261.40 | 44.8h |
+| 5 | **E18b** | Low ADX Ranging Market | 9 | 4,230 | 99.5% | +18.513% | +4.468% | 130.295 | $+77957.72 | 55.3h |
+| 6 | **E6** | Z-Score Mean Reversion | 9 | 4,104 | 99.0% | +18.702% | +4.437% | 127.041 | $+76827.64 | 52.2h |
+| 7 | **E16** | RSI Divergence | 9 | 4,486 | 99.8% | +16.880% | +4.829% | 122.991 | $+75746.18 | 61.2h |
+| 8 | **E17** | Liquidity Sweep | 9 | 5,436 | 99.5% | +13.122% | +4.347% | 97.109 | $+71463.29 | 54.4h |
+| 9 | **E4** | SMA Pullback Entry | 9 | 6,792 | 99.6% | +9.945% | +4.348% | 38.185 | $+67842.66 | 49.3h |
+| 10 | **E15** | OBV Divergence + RSI | 9 | 5,975 | 99.8% | +10.217% | +4.257% | 46.502 | $+61076.26 | 56.0h |
+| 11 | **E23** | BTC Relative Strength | 12 | 6,645 | 99.8% | +8.450% | +4.171% | 38.653 | $+56440.76 | 40.6h |
+| 12 | **E24** | MACD + RSI Confluence | 9 | 4,575 | 99.7% | +11.360% | +4.692% | 53.795 | $+51986.01 | 66.7h |
+| 13 | **E22** | Hammer/Engulfing at Support | 9 | 2,337 | 99.6% | +22.101% | +4.998% | 167.474 | $+51649.04 | 78.3h |
+| 14 | **E26** | Ichimoku Cloud Support | 9 | 4,001 | 99.5% | +12.504% | +4.292% | 70.500 | $+50044.62 | 65.8h |
+| 15 | **E18** | ADX Trend Pullback | 9 | 4,505 | 99.5% | +10.720% | +4.588% | 44.296 | $+48300.84 | 67.3h |
+| 16 | **E25** | Pivot Point Bounce | 9 | 4,528 | 99.6% | +10.483% | +4.737% | 46.517 | $+47521.55 | 67.0h |
+| 17 | **E14** | StochRSI Oversold + Trend | 9 | 3,872 | 99.2% | +11.678% | +4.151% | 111.977 | $+46094.10 | 68.3h |
+| 18 | **E8** | VWAP + Swing Structure | 9 | 4,557 | 99.1% | +9.353% | +4.122% | 62.257 | $+43016.98 | 64.9h |
+| 19 | **E5** | Multi-Timeframe EMA Pullback | 12 | 5,206 | 100.0% | +7.825% | +4.459% | 14.177 | $+40736.35 | 60.0h |
+| 20 | **E49** | TRIX Signal Cross | 5 | 3,852 | 99.4% | +8.946% | +4.753% | 21.261 | $+38711.71 | 33.9h |
+| 21 | **E45** | Aroon Indicator Cross | 5 | 3,839 | 99.8% | +9.855% | +4.292% | 40.036 | $+38480.35 | 43.0h |
+| 22 | **E21** | Fair Value Gap | 9 | 4,330 | 99.2% | +8.615% | +4.166% | 58.216 | $+37485.36 | 62.3h |
+| 23 | **E56** | Squeeze Momentum | 5 | 2,109 | 99.6% | +17.074% | +4.277% | 133.218 | $+37448.03 | 70.0h |
+| 24 | **E51** | Force Index Reversal | 5 | 3,694 | 99.3% | +9.493% | +4.614% | 40.645 | $+36799.16 | 27.4h |
+| 25 | **E46** | Ultimate Oscillator Oversold | 5 | 4,035 | 99.7% | +8.804% | +4.341% | 29.697 | $+36762.75 | 42.8h |
+| 26 | **E55** | Waddah Attar Explosion | 5 | 2,592 | 99.7% | +13.539% | +4.395% | 106.442 | $+35968.77 | 59.2h |
+| 27 | **E64** | Imbalance Fill | 5 | 3,558 | 99.5% | +9.321% | +4.514% | 24.592 | $+35370.22 | 34.8h |
+| 28 | **E42** | Detrended Price Oscillator | 5 | 3,826 | 99.7% | +8.957% | +4.504% | 20.849 | $+35225.42 | 44.0h |
+| 29 | **E37** | Donchian Channel Breakout | 5 | 3,608 | 99.8% | +9.623% | +4.669% | 26.985 | $+35059.72 | 39.8h |
+| 30 | **E65** | Premium/Discount Zone | 7 | 4,292 | 99.7% | +7.801% | +4.526% | 19.097 | $+34761.98 | 33.5h |
+| 31 | **E61** | Supply/Demand Zone | 5 | 3,526 | 99.3% | +9.046% | +4.317% | 46.675 | $+32347.66 | 42.8h |
+| 32 | **E48** | Vortex Indicator Cross | 5 | 2,348 | 99.6% | +13.721% | +4.285% | 107.111 | $+32229.62 | 67.1h |
+| 33 | **E19** | Fibonacci Retracement | 9 | 2,634 | 99.7% | +11.336% | +4.262% | 71.870 | $+29859.23 | 83.9h |
+| 34 | **E33** | VWAP Standard Deviation Band | 5 | 2,519 | 99.8% | +11.058% | +4.523% | 74.245 | $+28571.70 | 67.0h |
+| 35 | **E20** | VPOC Volume Profile | 9 | 3,322 | 99.2% | +8.288% | +4.482% | 16.493 | $+27532.61 | 65.3h |
+| 36 | **E43** | Price Channel Breakout | 5 | 2,313 | 98.9% | +11.502% | +4.985% | 49.363 | $+27514.28 | 70.5h |
+| 37 | **E53** | Negative Volume Index | 5 | 2,563 | 99.3% | +10.002% | +4.388% | 28.312 | $+26425.31 | 44.2h |
+| 38 | **E39** | Linear Regression Deviation | 5 | 2,491 | 100.0% | +10.105% | +4.649% | 33.138 | $+25771.99 | 54.3h |
+| 39 | **E62** | Order Block Entry | 5 | 2,949 | 99.8% | +8.008% | +4.055% | 47.808 | $+23709.55 | 53.8h |
+| 40 | **E60** | Market Structure Break | 5 | 3,105 | 99.6% | +6.669% | +4.147% | 15.052 | $+20841.82 | 49.8h |
+| 41 | **E29** | CCI Oversold Reversal | 5 | 2,028 | 99.6% | +9.793% | +4.166% | 66.263 | $+20185.73 | 71.2h |
+| 42 | **E2** | Bollinger Band Squeeze Breakout | 9 | 1,909 | 99.0% | +10.045% | +3.811% | 52.791 | $+19176.59 | 48.9h |
+| 43 | **E38** | Keltner Channel Mean Reversion | 5 | 1,781 | 99.8% | +8.461% | +4.643% | 11.599 | $+15320.46 | 26.1h |
+| 44 | **BM_SIMPLE** | — | 1 | 931 | 98.9% | +11.061% | +5.020% | 30.031 | $+10502.14 | 24.9h |
+| 45 | **E32** | Session Killzone Sweep | 5 | 1,251 | 99.9% | +8.200% | +4.167% | 11.166 | $+10305.41 | 34.6h |
+| 46 | **E3** | Volume Spike + Narrow Range | 12 | 1,304 | 98.9% | +6.927% | +4.080% | 7.866 | $+9032.84 | 59.8h |
+| 47 | **BM_STATIC** | — | 1 | 803 | 99.6% | +9.687% | +4.481% | 44.022 | $+7824.74 | 41.8h |
+| 48 | **E35** | Supertrend Bounce | 5 | 1,053 | 99.5% | +7.009% | +4.169% | 9.031 | $+7426.83 | 60.1h |
+| 49 | **E59** | Adaptive RSI | 5 | 1,001 | 100.0% | +6.217% | +3.795% | 7.094 | $+6651.30 | 32.6h |
+| 50 | **E54** | Support Reclaim + Breakdown | 5 | 402 | 100.0% | +14.079% | +5.608% | 23.251 | $+6567.84 | 29.0h |
+| 51 | **E9** | Consecutive Red Candles + Volume | 9 | 900 | 100.0% | +6.085% | +3.885% | 6.236 | $+5476.09 | 64.7h |
+| 52 | **E1** | RSI Oversold + VWAP Drop + ATR Spike | 12 | 424 | 100.0% | +12.494% | +6.166% | 28.573 | $+5322.99 | 35.9h |
 | 53 | **E13** | EMA Cross + RSI | 10 | 580 | 98.3% | +8.108% | +4.494% | 11.047 | $+4702.85 | 63.1h |
-| 54 | **E34** | Heikin-Ashi Reversal | 5 | 387 | 98.7% | +8.502% | +4.503% | 10.025 | $+3642.85 | 44.1h |
-| 55 | **BM_RANDOM** | — | 1 | 504 | 99.6% | +6.404% | +3.939% | 9.188 | $+3227.59 | 61.2h |
-| 56 | **E40** | Hull Moving Average Cross | 5 | 451 | 100.0% | +6.791% | +5.283% | 6.364 | $+3102.70 | 19.8h |
-| 57 | **E47** | ATR Expansion Breakout | 5 | 176 | 99.4% | +14.810% | +9.767% | 17.350 | $+2606.56 | 31.5h |
+| 54 | **E34** | Heikin-Ashi Reversal | 5 | 397 | 98.7% | +8.461% | +4.503% | 9.930 | $+3724.80 | 50.7h |
+| 55 | **E40** | Hull Moving Average Cross | 5 | 469 | 100.0% | +7.482% | +5.283% | 9.639 | $+3564.59 | 22.1h |
+| 56 | **BM_RANDOM** | — | 1 | 516 | 99.6% | +6.473% | +3.953% | 9.221 | $+3339.97 | 61.8h |
+| 57 | **E47** | ATR Expansion Breakout | 5 | 193 | 99.5% | +14.587% | +9.723% | 17.151 | $+2815.38 | 36.9h |
 | 58 | **E30** | Elder Ray Bear Power | 5 | 25 | 80.0% | +5.558% | +6.339% | 4.989 | $+138.95 | 18.2h |
 | 59 | **E11** | QFL Base Bounce | 9 | 7 | 57.1% | +15.389% | +27.115% | 23.770 | $+107.72 | 0.2h |
+| 60 | **E63** | Breaker Block | 5 | 3 | 66.7% | +3.473% | +5.131% | 3.012 | $+10.42 | 9.6h |
 
 ---
 
@@ -100,17 +101,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 8,428 |
-| Open Now | 1380 |
+| Closed Trades | 8,446 |
+| Open Now | 1371 |
 | Win Rate | 99.1% |
-| Avg P&L | +12.413% |
-| Median P&L | +4.907% |
-| Std Deviation | 43.575 |
+| Avg P&L | +12.401% |
+| Median P&L | +4.904% |
+| Std Deviation | 43.530 |
 | Best Trade | +1043.84% |
 | Worst Trade | -56.67% |
-| Total P&L | $+109699.25 |
-| Profit Factor | 115.65 |
-| Avg Hold | 26.2h |
+| Total P&L | $+109839.87 |
+| Profit Factor | 115.46 |
+| Avg Hold | 26.4h |
 | Max Win Streak | 8115 |
 | Max Loss Streak | 9 |
 
@@ -125,44 +126,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 17 |
-| Closed Trades | 9,418 |
-| Open Now | 3774 |
-| Win Rate | 99.2% |
-| Avg P&L | +9.272% |
-| Median P&L | +4.298% |
-| Std Deviation | 60.560 |
+| Closed Trades | 9,574 |
+| Open Now | 3768 |
+| Win Rate | 99.1% |
+| Avg P&L | +9.320% |
+| Median P&L | +4.305% |
+| Std Deviation | 61.004 |
 | Best Trade | +2334.72% |
 | Worst Trade | -18.21% |
-| Total P&L | $+89035.62 |
-| Profit Factor | 129.06 |
-| Avg Hold | 47.4h |
+| Total P&L | $+90946.50 |
+| Profit Factor | 131.59 |
+| Avg Hold | 48.9h |
 | Max Win Streak | 9135 |
 | Max Loss Streak | 43 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E10 — Pure Price Drop
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 12 |
-| Closed Trades | 9,269 |
-| Open Now | 2852 |
-| Win Rate | 99.1% |
-| Avg P&L | +8.272% |
-| Median P&L | +4.287% |
-| Std Deviation | 20.414 |
-| Best Trade | +568.60% |
-| Worst Trade | -56.55% |
-| Total P&L | $+77620.13 |
-| Profit Factor | 121.78 |
-| Avg Hold | 43.4h |
-| Max Win Streak | 8828 |
-| Max Loss Streak | 11 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -175,19 +151,44 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 7,512 |
-| Open Now | 1830 |
-| Win Rate | 99.4% |
-| Avg P&L | +9.863% |
-| Median P&L | +4.489% |
-| Std Deviation | 27.005 |
-| Best Trade | +689.73% |
+| Closed Trades | 7,623 |
+| Open Now | 1741 |
+| Win Rate | 99.1% |
+| Avg P&L | +11.012% |
+| Median P&L | +4.485% |
+| Std Deviation | 44.484 |
+| Best Trade | +1048.79% |
 | Worst Trade | -56.81% |
-| Total P&L | $+76459.48 |
-| Profit Factor | 177.08 |
-| Avg Hold | 36.5h |
+| Total P&L | $+86331.10 |
+| Profit Factor | 152.62 |
+| Avg Hold | 38.4h |
 | Max Win Streak | 7181 |
 | Max Loss Streak | 9 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E10 — Pure Price Drop
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 12 |
+| Closed Trades | 9,420 |
+| Open Now | 2751 |
+| Win Rate | 99.0% |
+| Avg P&L | +8.207% |
+| Median P&L | +4.276% |
+| Std Deviation | 20.273 |
+| Best Trade | +568.60% |
+| Worst Trade | -56.55% |
+| Total P&L | $+78261.40 |
+| Profit Factor | 111.56 |
+| Avg Hold | 44.8h |
+| Max Win Streak | 8828 |
+| Max Loss Streak | 11 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -200,17 +201,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,172 |
-| Open Now | 1732 |
-| Win Rate | 99.6% |
-| Avg P&L | +16.390% |
-| Median P&L | +4.460% |
-| Std Deviation | 121.153 |
+| Closed Trades | 4,230 |
+| Open Now | 1701 |
+| Win Rate | 99.5% |
+| Avg P&L | +18.513% |
+| Median P&L | +4.468% |
+| Std Deviation | 130.295 |
 | Best Trade | +2398.50% |
-| Worst Trade | -3.31% |
-| Total P&L | $+68394.51 |
-| Profit Factor | 1639.95 |
-| Avg Hold | 54.1h |
+| Worst Trade | -41.45% |
+| Total P&L | $+77957.72 |
+| Profit Factor | 120.5 |
+| Avg Hold | 55.3h |
 | Max Win Streak | 4138 |
 | Max Loss Streak | 9 |
 
@@ -225,17 +226,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,024 |
-| Open Now | 1941 |
+| Closed Trades | 4,104 |
+| Open Now | 1876 |
 | Win Rate | 99.0% |
-| Avg P&L | +16.538% |
+| Avg P&L | +18.702% |
 | Median P&L | +4.437% |
-| Std Deviation | 118.699 |
+| Std Deviation | 127.041 |
 | Best Trade | +2385.48% |
 | Worst Trade | -20.18% |
-| Total P&L | $+66625.04 |
-| Profit Factor | 340.64 |
-| Avg Hold | 50.6h |
+| Total P&L | $+76827.64 |
+| Profit Factor | 391.56 |
+| Avg Hold | 52.2h |
 | Max Win Streak | 3729 |
 | Max Loss Streak | 9 |
 
@@ -250,17 +251,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,374 |
-| Open Now | 1697 |
+| Closed Trades | 4,486 |
+| Open Now | 1590 |
 | Win Rate | 99.8% |
-| Avg P&L | +15.024% |
-| Median P&L | +4.828% |
-| Std Deviation | 115.735 |
+| Avg P&L | +16.880% |
+| Median P&L | +4.829% |
+| Std Deviation | 122.991 |
 | Best Trade | +2432.63% |
 | Worst Trade | -3.74% |
-| Total P&L | $+65736.42 |
-| Profit Factor | 1953.92 |
-| Avg Hold | 57.7h |
+| Total P&L | $+75746.18 |
+| Profit Factor | 2251.29 |
+| Avg Hold | 61.2h |
 | Max Win Streak | 4318 |
 | Max Loss Streak | 9 |
 
@@ -275,17 +276,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 5,335 |
-| Open Now | 1911 |
-| Win Rate | 99.6% |
-| Avg P&L | +11.532% |
-| Median P&L | +4.339% |
-| Std Deviation | 88.470 |
+| Closed Trades | 5,436 |
+| Open Now | 1832 |
+| Win Rate | 99.5% |
+| Avg P&L | +13.122% |
+| Median P&L | +4.347% |
+| Std Deviation | 97.109 |
 | Best Trade | +2391.04% |
 | Worst Trade | -19.27% |
-| Total P&L | $+61651.97 |
-| Profit Factor | 2681.23 |
-| Avg Hold | 52.0h |
+| Total P&L | $+71463.29 |
+| Profit Factor | 1339.1 |
+| Avg Hold | 54.4h |
 | Max Win Streak | 5192 |
 | Max Loss Streak | 18 |
 
@@ -300,44 +301,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 6,704 |
-| Open Now | 2041 |
+| Closed Trades | 6,792 |
+| Open Now | 1971 |
 | Win Rate | 99.6% |
-| Avg P&L | +9.058% |
-| Median P&L | +4.338% |
-| Std Deviation | 24.090 |
-| Best Trade | +664.12% |
+| Avg P&L | +9.945% |
+| Median P&L | +4.348% |
+| Std Deviation | 38.185 |
+| Best Trade | +1047.70% |
 | Worst Trade | -20.12% |
-| Total P&L | $+61016.91 |
-| Profit Factor | 436.79 |
-| Avg Hold | 47.6h |
+| Total P&L | $+67842.66 |
+| Profit Factor | 476.83 |
+| Avg Hold | 49.3h |
 | Max Win Streak | 6454 |
 | Max Loss Streak | 7 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E23 — BTC Relative Strength
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 12 |
-| Closed Trades | 6,551 |
-| Open Now | 2556 |
-| Win Rate | 99.8% |
-| Avg P&L | +8.442% |
-| Median P&L | +4.168% |
-| Std Deviation | 38.912 |
-| Best Trade | +1232.37% |
-| Worst Trade | -10.08% |
-| Total P&L | $+55595.25 |
-| Profit Factor | 444.09 |
-| Avg Hold | 39.1h |
-| Max Win Streak | 6419 |
-| Max Loss Streak | 12 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -350,17 +326,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 5,904 |
-| Open Now | 1681 |
+| Closed Trades | 5,975 |
+| Open Now | 1622 |
 | Win Rate | 99.8% |
-| Avg P&L | +8.721% |
-| Median P&L | +4.268% |
-| Std Deviation | 24.490 |
-| Best Trade | +547.89% |
+| Avg P&L | +10.217% |
+| Median P&L | +4.257% |
+| Std Deviation | 46.502 |
+| Best Trade | +1030.65% |
 | Worst Trade | -9.98% |
-| Total P&L | $+51519.74 |
-| Profit Factor | 563.63 |
-| Avg Hold | 55.1h |
+| Total P&L | $+61076.26 |
+| Profit Factor | 662.76 |
+| Avg Hold | 56.0h |
 | Max Win Streak | 5852 |
 | Max Loss Streak | 9 |
 
@@ -368,101 +344,26 @@
 
 ---
 
-### E22 — Hammer/Engulfing at Support
+### E23 — BTC Relative Strength
 
 **Summary**
 
 | Metric | Value |
 |--------|-------|
-| Bots | 9 |
-| Closed Trades | 2,303 |
-| Open Now | 1717 |
-| Win Rate | 99.6% |
-| Avg P&L | +22.311% |
-| Median P&L | +4.936% |
-| Std Deviation | 168.696 |
-| Best Trade | +2415.45% |
-| Worst Trade | -18.57% |
-| Total P&L | $+51382.83 |
-| Profit Factor | 309.19 |
-| Avg Hold | 75.9h |
-| Max Win Streak | 2213 |
-| Max Loss Streak | 9 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E14 — StochRSI Oversold + Trend
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 3,817 |
-| Open Now | 1851 |
-| Win Rate | 99.3% |
-| Avg P&L | +11.709% |
-| Median P&L | +4.119% |
-| Std Deviation | 112.775 |
-| Best Trade | +2329.40% |
-| Worst Trade | -55.63% |
-| Total P&L | $+45571.79 |
-| Profit Factor | 180.75 |
-| Avg Hold | 65.2h |
-| Max Win Streak | 3699 |
-| Max Loss Streak | 13 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E26 — Ichimoku Cloud Support
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 3,896 |
-| Open Now | 2029 |
-| Win Rate | 99.5% |
-| Avg P&L | +11.402% |
-| Median P&L | +4.223% |
-| Std Deviation | 62.446 |
+| Bots | 12 |
+| Closed Trades | 6,645 |
+| Open Now | 2490 |
+| Win Rate | 99.8% |
+| Avg P&L | +8.450% |
+| Median P&L | +4.171% |
+| Std Deviation | 38.653 |
 | Best Trade | +1232.37% |
-| Worst Trade | -9.98% |
-| Total P&L | $+44436.99 |
-| Profit Factor | 429.02 |
-| Avg Hold | 62.0h |
-| Max Win Streak | 3845 |
-| Max Loss Streak | 9 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E8 — VWAP + Swing Structure
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 4,456 |
-| Open Now | 2173 |
-| Win Rate | 99.1% |
-| Avg P&L | +9.392% |
-| Median P&L | +4.116% |
-| Std Deviation | 62.945 |
-| Best Trade | +2407.89% |
-| Worst Trade | -18.21% |
-| Total P&L | $+42245.86 |
-| Profit Factor | 91.03 |
-| Avg Hold | 62.4h |
-| Max Win Streak | 4294 |
-| Max Loss Streak | 27 |
+| Worst Trade | -10.08% |
+| Total P&L | $+56440.76 |
+| Profit Factor | 450.83 |
+| Avg Hold | 40.6h |
+| Max Win Streak | 6419 |
+| Max Loss Streak | 12 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -475,19 +376,69 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,414 |
-| Open Now | 2197 |
+| Closed Trades | 4,575 |
+| Open Now | 2122 |
 | Win Rate | 99.7% |
-| Avg P&L | +9.343% |
-| Median P&L | +4.605% |
-| Std Deviation | 30.456 |
+| Avg P&L | +11.360% |
+| Median P&L | +4.692% |
+| Std Deviation | 53.795 |
 | Best Trade | +1400.38% |
-| Worst Trade | -18.92% |
-| Total P&L | $+41254.68 |
-| Profit Factor | 451.04 |
-| Avg Hold | 64.1h |
+| Worst Trade | -23.80% |
+| Total P&L | $+51986.01 |
+| Profit Factor | 451.22 |
+| Avg Hold | 66.7h |
 | Max Win Streak | 4182 |
 | Max Loss Streak | 4 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E22 — Hammer/Engulfing at Support
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 2,337 |
+| Open Now | 1689 |
+| Win Rate | 99.6% |
+| Avg P&L | +22.101% |
+| Median P&L | +4.998% |
+| Std Deviation | 167.474 |
+| Best Trade | +2415.45% |
+| Worst Trade | -18.57% |
+| Total P&L | $+51649.04 |
+| Profit Factor | 310.78 |
+| Avg Hold | 78.3h |
+| Max Win Streak | 2213 |
+| Max Loss Streak | 9 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E26 — Ichimoku Cloud Support
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 4,001 |
+| Open Now | 1951 |
+| Win Rate | 99.5% |
+| Avg P&L | +12.504% |
+| Median P&L | +4.292% |
+| Std Deviation | 70.500 |
+| Best Trade | +1232.37% |
+| Worst Trade | -9.98% |
+| Total P&L | $+50044.62 |
+| Profit Factor | 470.31 |
+| Avg Hold | 65.8h |
+| Max Win Streak | 3845 |
+| Max Loss Streak | 9 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -500,19 +451,94 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,342 |
-| Open Now | 2214 |
+| Closed Trades | 4,505 |
+| Open Now | 2153 |
 | Win Rate | 99.5% |
-| Avg P&L | +9.119% |
-| Median P&L | +4.491% |
-| Std Deviation | 20.096 |
-| Best Trade | +661.59% |
+| Avg P&L | +10.720% |
+| Median P&L | +4.588% |
+| Std Deviation | 44.296 |
+| Best Trade | +1048.19% |
 | Worst Trade | -19.80% |
-| Total P&L | $+39601.09 |
-| Profit Factor | 464.5 |
-| Avg Hold | 64.7h |
+| Total P&L | $+48300.84 |
+| Profit Factor | 532.8 |
+| Avg Hold | 67.3h |
 | Max Win Streak | 4123 |
 | Max Loss Streak | 9 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E25 — Pivot Point Bounce
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 4,528 |
+| Open Now | 2125 |
+| Win Rate | 99.6% |
+| Avg P&L | +10.483% |
+| Median P&L | +4.737% |
+| Std Deviation | 46.517 |
+| Best Trade | +1048.19% |
+| Worst Trade | -19.03% |
+| Total P&L | $+47521.55 |
+| Profit Factor | 902.02 |
+| Avg Hold | 67.0h |
+| Max Win Streak | 4191 |
+| Max Loss Streak | 6 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E14 — StochRSI Oversold + Trend
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 3,872 |
+| Open Now | 1809 |
+| Win Rate | 99.2% |
+| Avg P&L | +11.678% |
+| Median P&L | +4.151% |
+| Std Deviation | 111.977 |
+| Best Trade | +2329.40% |
+| Worst Trade | -55.63% |
+| Total P&L | $+46094.10 |
+| Profit Factor | 179.29 |
+| Avg Hold | 68.3h |
+| Max Win Streak | 3699 |
+| Max Loss Streak | 13 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E8 — VWAP + Swing Structure
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 4,557 |
+| Open Now | 2145 |
+| Win Rate | 99.1% |
+| Avg P&L | +9.353% |
+| Median P&L | +4.122% |
+| Std Deviation | 62.257 |
+| Best Trade | +2407.89% |
+| Worst Trade | -18.21% |
+| Total P&L | $+43016.98 |
+| Profit Factor | 91.44 |
+| Avg Hold | 64.9h |
+| Max Win Streak | 4294 |
+| Max Loss Streak | 27 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -525,18 +551,18 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 12 |
-| Closed Trades | 5,110 |
-| Open Now | 2486 |
+| Closed Trades | 5,206 |
+| Open Now | 2402 |
 | Win Rate | 100.0% |
-| Avg P&L | +7.632% |
-| Median P&L | +4.397% |
-| Std Deviation | 14.145 |
+| Avg P&L | +7.825% |
+| Median P&L | +4.459% |
+| Std Deviation | 14.177 |
 | Best Trade | +240.30% |
 | Worst Trade | -3.17% |
-| Total P&L | $+38998.00 |
-| Profit Factor | 6148.28 |
-| Avg Hold | 55.8h |
-| Max Win Streak | 5106 |
+| Total P&L | $+40736.35 |
+| Profit Factor | 6422.3 |
+| Avg Hold | 60.0h |
+| Max Win Streak | 5202 |
 | Max Loss Streak | 2 |
 
 **Market Regime:** No regime data captured yet.
@@ -550,17 +576,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,814 |
-| Open Now | 1079 |
+| Closed Trades | 3,852 |
+| Open Now | 1061 |
 | Win Rate | 99.4% |
-| Avg P&L | +8.986% |
-| Median P&L | +4.762% |
-| Std Deviation | 21.357 |
+| Avg P&L | +8.946% |
+| Median P&L | +4.753% |
+| Std Deviation | 21.261 |
 | Best Trade | +537.12% |
 | Worst Trade | -54.38% |
-| Total P&L | $+38522.70 |
-| Profit Factor | 287.54 |
-| Avg Hold | 32.8h |
+| Total P&L | $+38711.71 |
+| Profit Factor | 287.81 |
+| Avg Hold | 33.9h |
 | Max Win Streak | 3700 |
 | Max Loss Streak | 10 |
 
@@ -575,69 +601,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,801 |
-| Open Now | 946 |
+| Closed Trades | 3,839 |
+| Open Now | 919 |
 | Win Rate | 99.8% |
-| Avg P&L | +9.901% |
+| Avg P&L | +9.855% |
 | Median P&L | +4.292% |
-| Std Deviation | 40.230 |
+| Std Deviation | 40.036 |
 | Best Trade | +1043.84% |
 | Worst Trade | -12.90% |
-| Total P&L | $+38278.92 |
-| Profit Factor | 1188.02 |
-| Avg Hold | 42.2h |
+| Total P&L | $+38480.35 |
+| Profit Factor | 1194.26 |
+| Avg Hold | 43.0h |
 | Max Win Streak | 3729 |
 | Max Loss Streak | 3 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E25 — Pivot Point Bounce
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 4,388 |
-| Open Now | 2187 |
-| Win Rate | 99.7% |
-| Avg P&L | +8.663% |
-| Median P&L | +4.641% |
-| Std Deviation | 19.666 |
-| Best Trade | +767.92% |
-| Worst Trade | -19.03% |
-| Total P&L | $+38067.45 |
-| Profit Factor | 723.21 |
-| Avg Hold | 64.8h |
-| Max Win Streak | 4191 |
-| Max Loss Streak | 6 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E51 — Force Index Reversal
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 5 |
-| Closed Trades | 3,676 |
-| Open Now | 697 |
-| Win Rate | 99.4% |
-| Avg P&L | +9.509% |
-| Median P&L | +4.573% |
-| Std Deviation | 40.741 |
-| Best Trade | +1157.86% |
-| Worst Trade | -66.55% |
-| Total P&L | $+36666.75 |
-| Profit Factor | 49.24 |
-| Avg Hold | 26.3h |
-| Max Win Streak | 3642 |
-| Max Loss Streak | 12 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -650,19 +626,69 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 4,250 |
-| Open Now | 2082 |
-| Win Rate | 99.3% |
-| Avg P&L | +8.558% |
-| Median P&L | +4.143% |
-| Std Deviation | 58.732 |
+| Closed Trades | 4,330 |
+| Open Now | 2044 |
+| Win Rate | 99.2% |
+| Avg P&L | +8.615% |
+| Median P&L | +4.166% |
+| Std Deviation | 58.216 |
 | Best Trade | +2368.93% |
 | Worst Trade | -13.32% |
-| Total P&L | $+36554.44 |
-| Profit Factor | 168.59 |
-| Avg Hold | 59.7h |
+| Total P&L | $+37485.36 |
+| Profit Factor | 170.73 |
+| Avg Hold | 62.3h |
 | Max Win Streak | 4094 |
 | Max Loss Streak | 9 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E56 — Squeeze Momentum
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 2,109 |
+| Open Now | 1134 |
+| Win Rate | 99.6% |
+| Avg P&L | +17.074% |
+| Median P&L | +4.277% |
+| Std Deviation | 133.218 |
+| Best Trade | +2345.42% |
+| Worst Trade | -21.72% |
+| Total P&L | $+37448.03 |
+| Profit Factor | 790.8 |
+| Avg Hold | 70.0h |
+| Max Win Streak | 2051 |
+| Max Loss Streak | 4 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E51 — Force Index Reversal
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 3,694 |
+| Open Now | 679 |
+| Win Rate | 99.3% |
+| Avg P&L | +9.493% |
+| Median P&L | +4.614% |
+| Std Deviation | 40.645 |
+| Best Trade | +1157.86% |
+| Worst Trade | -66.55% |
+| Total P&L | $+36799.16 |
+| Profit Factor | 48.4 |
+| Avg Hold | 27.4h |
+| Max Win Streak | 3642 |
+| Max Loss Streak | 12 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -675,18 +701,43 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,988 |
-| Open Now | 900 |
-| Win Rate | 99.8% |
-| Avg P&L | +8.846% |
-| Median P&L | +4.344% |
-| Std Deviation | 29.860 |
+| Closed Trades | 4,035 |
+| Open Now | 876 |
+| Win Rate | 99.7% |
+| Avg P&L | +8.804% |
+| Median P&L | +4.341% |
+| Std Deviation | 29.697 |
 | Best Trade | +1043.84% |
-| Worst Trade | -3.42% |
-| Total P&L | $+36515.24 |
-| Profit Factor | 3127.55 |
-| Avg Hold | 41.7h |
+| Worst Trade | -5.37% |
+| Total P&L | $+36762.75 |
+| Profit Factor | 1621.93 |
+| Avg Hold | 42.8h |
 | Max Win Streak | 3945 |
+| Max Loss Streak | 5 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E55 — Waddah Attar Explosion
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 2,592 |
+| Open Now | 1068 |
+| Win Rate | 99.7% |
+| Avg P&L | +13.539% |
+| Median P&L | +4.395% |
+| Std Deviation | 106.442 |
+| Best Trade | +2350.81% |
+| Worst Trade | -12.90% |
+| Total P&L | $+35968.77 |
+| Profit Factor | 1807.93 |
+| Avg Hold | 59.2h |
+| Max Win Streak | 2520 |
 | Max Loss Streak | 3 |
 
 **Market Regime:** No regime data captured yet.
@@ -700,17 +751,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,528 |
-| Open Now | 1016 |
-| Win Rate | 99.7% |
-| Avg P&L | +9.361% |
-| Median P&L | +4.517% |
-| Std Deviation | 24.668 |
+| Closed Trades | 3,558 |
+| Open Now | 1010 |
+| Win Rate | 99.5% |
+| Avg P&L | +9.321% |
+| Median P&L | +4.514% |
+| Std Deviation | 24.592 |
 | Best Trade | +538.89% |
 | Worst Trade | -45.36% |
-| Total P&L | $+35220.35 |
-| Profit Factor | 367.92 |
-| Avg Hold | 33.9h |
+| Total P&L | $+35370.22 |
+| Profit Factor | 242.58 |
+| Avg Hold | 34.8h |
 | Max Win Streak | 3454 |
 | Max Loss Streak | 5 |
 
@@ -725,17 +776,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,792 |
-| Open Now | 951 |
+| Closed Trades | 3,826 |
+| Open Now | 927 |
 | Win Rate | 99.7% |
-| Avg P&L | +8.975% |
-| Median P&L | +4.505% |
-| Std Deviation | 20.930 |
+| Avg P&L | +8.957% |
+| Median P&L | +4.504% |
+| Std Deviation | 20.849 |
 | Best Trade | +463.73% |
 | Worst Trade | -8.00% |
-| Total P&L | $+34989.58 |
-| Profit Factor | 856.15 |
-| Avg Hold | 42.7h |
+| Total P&L | $+35225.42 |
+| Profit Factor | 861.91 |
+| Avg Hold | 44.0h |
 | Max Win Streak | 3751 |
 | Max Loss Streak | 5 |
 
@@ -750,44 +801,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,580 |
-| Open Now | 854 |
-| Win Rate | 99.9% |
-| Avg P&L | +9.676% |
-| Median P&L | +4.701% |
-| Std Deviation | 27.082 |
+| Closed Trades | 3,608 |
+| Open Now | 840 |
+| Win Rate | 99.8% |
+| Avg P&L | +9.623% |
+| Median P&L | +4.669% |
+| Std Deviation | 26.985 |
 | Best Trade | +607.69% |
 | Worst Trade | -55.62% |
-| Total P&L | $+34980.28 |
-| Profit Factor | 414.27 |
-| Avg Hold | 39.1h |
+| Total P&L | $+35059.72 |
+| Profit Factor | 391.32 |
+| Avg Hold | 39.8h |
 | Max Win Streak | 3534 |
 | Max Loss Streak | 4 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E56 — Squeeze Momentum
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 5 |
-| Closed Trades | 2,071 |
-| Open Now | 1159 |
-| Win Rate | 99.8% |
-| Avg P&L | +15.621% |
-| Median P&L | +4.266% |
-| Std Deviation | 128.132 |
-| Best Trade | +2345.42% |
-| Worst Trade | -5.41% |
-| Total P&L | $+33790.92 |
-| Profit Factor | 2000.9 |
-| Avg Hold | 67.9h |
-| Max Win Streak | 2051 |
-| Max Loss Streak | 3 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -800,17 +826,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 7 |
-| Closed Trades | 4,239 |
-| Open Now | 1423 |
-| Win Rate | 99.8% |
-| Avg P&L | +7.587% |
-| Median P&L | +4.531% |
-| Std Deviation | 10.595 |
-| Best Trade | +148.16% |
+| Closed Trades | 4,292 |
+| Open Now | 1422 |
+| Win Rate | 99.7% |
+| Avg P&L | +7.801% |
+| Median P&L | +4.526% |
+| Std Deviation | 19.097 |
+| Best Trade | +1050.01% |
 | Worst Trade | -7.14% |
-| Total P&L | $+33427.83 |
-| Profit Factor | 1420.18 |
-| Avg Hold | 32.9h |
+| Total P&L | $+34761.98 |
+| Profit Factor | 1155.55 |
+| Avg Hold | 33.5h |
 | Max Win Streak | 4198 |
 | Max Loss Streak | 6 |
 
@@ -825,69 +851,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,455 |
-| Open Now | 1129 |
-| Win Rate | 99.5% |
-| Avg P&L | +8.839% |
-| Median P&L | +4.338% |
-| Std Deviation | 43.822 |
+| Closed Trades | 3,526 |
+| Open Now | 1096 |
+| Win Rate | 99.3% |
+| Avg P&L | +9.046% |
+| Median P&L | +4.317% |
+| Std Deviation | 46.675 |
 | Best Trade | +2322.35% |
 | Worst Trade | -9.20% |
-| Total P&L | $+30984.53 |
-| Profit Factor | 533.67 |
-| Avg Hold | 41.1h |
+| Total P&L | $+32347.66 |
+| Profit Factor | 456.97 |
+| Avg Hold | 42.8h |
 | Max Win Streak | 3407 |
 | Max Loss Streak | 10 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E55 — Waddah Attar Explosion
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 5 |
-| Closed Trades | 2,555 |
-| Open Now | 1093 |
-| Win Rate | 99.7% |
-| Avg P&L | +11.470% |
-| Median P&L | +4.373% |
-| Std Deviation | 96.034 |
-| Best Trade | +2350.81% |
-| Worst Trade | -12.90% |
-| Total P&L | $+30181.22 |
-| Profit Factor | 1705.65 |
-| Avg Hold | 57.2h |
-| Max Win Streak | 2520 |
-| Max Loss Streak | 3 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E19 — Fibonacci Retracement
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 2,600 |
-| Open Now | 1904 |
-| Win Rate | 99.7% |
-| Avg P&L | +11.312% |
-| Median P&L | +4.225% |
-| Std Deviation | 72.331 |
-| Best Trade | +1225.84% |
-| Worst Trade | -12.84% |
-| Total P&L | $+29411.64 |
-| Profit Factor | 261.03 |
-| Avg Hold | 80.9h |
-| Max Win Streak | 2548 |
-| Max Loss Streak | 9 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -900,18 +876,43 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 2,306 |
-| Open Now | 1161 |
+| Closed Trades | 2,348 |
+| Open Now | 1139 |
 | Win Rate | 99.6% |
-| Avg P&L | +11.901% |
-| Median P&L | +4.265% |
-| Std Deviation | 98.467 |
+| Avg P&L | +13.721% |
+| Median P&L | +4.285% |
+| Std Deviation | 107.111 |
 | Best Trade | +2343.63% |
 | Worst Trade | -1.94% |
-| Total P&L | $+27456.55 |
-| Profit Factor | 5287.08 |
-| Avg Hold | 64.9h |
+| Total P&L | $+32229.62 |
+| Profit Factor | 6206.02 |
+| Avg Hold | 67.1h |
 | Max Win Streak | 2297 |
+| Max Loss Streak | 9 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E19 — Fibonacci Retracement
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 2,634 |
+| Open Now | 1878 |
+| Win Rate | 99.7% |
+| Avg P&L | +11.336% |
+| Median P&L | +4.262% |
+| Std Deviation | 71.870 |
+| Best Trade | +1225.84% |
+| Worst Trade | -12.84% |
+| Total P&L | $+29859.23 |
+| Profit Factor | 264.99 |
+| Avg Hold | 83.9h |
+| Max Win Streak | 2548 |
 | Max Loss Streak | 9 |
 
 **Market Regime:** No regime data captured yet.
@@ -925,17 +926,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 2,487 |
-| Open Now | 1080 |
-| Win Rate | 99.9% |
-| Avg P&L | +10.292% |
-| Median P&L | +4.519% |
-| Std Deviation | 69.068 |
+| Closed Trades | 2,519 |
+| Open Now | 1056 |
+| Win Rate | 99.8% |
+| Avg P&L | +11.058% |
+| Median P&L | +4.523% |
+| Std Deviation | 74.245 |
 | Best Trade | +2358.03% |
 | Worst Trade | -2.81% |
-| Total P&L | $+26312.03 |
-| Profit Factor | 6304.57 |
-| Avg Hold | 65.0h |
+| Total P&L | $+28571.70 |
+| Profit Factor | 5377.0 |
+| Avg Hold | 67.0h |
 | Max Win Streak | 2472 |
 | Max Loss Streak | 2 |
 
@@ -950,19 +951,44 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 3,241 |
-| Open Now | 1889 |
+| Closed Trades | 3,322 |
+| Open Now | 1865 |
 | Win Rate | 99.2% |
-| Avg P&L | +8.011% |
-| Median P&L | +4.479% |
-| Std Deviation | 16.058 |
+| Avg P&L | +8.288% |
+| Median P&L | +4.482% |
+| Std Deviation | 16.493 |
 | Best Trade | +240.30% |
 | Worst Trade | -11.47% |
-| Total P&L | $+25964.81 |
-| Profit Factor | 833.72 |
-| Avg Hold | 62.5h |
+| Total P&L | $+27532.61 |
+| Profit Factor | 884.0 |
+| Avg Hold | 65.3h |
 | Max Win Streak | 3153 |
 | Max Loss Streak | 15 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E43 — Price Channel Breakout
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 2,313 |
+| Open Now | 1075 |
+| Win Rate | 98.9% |
+| Avg P&L | +11.502% |
+| Median P&L | +4.985% |
+| Std Deviation | 49.363 |
+| Best Trade | +1003.04% |
+| Worst Trade | -13.40% |
+| Total P&L | $+27514.28 |
+| Profit Factor | 192.61 |
+| Avg Hold | 70.5h |
+| Max Win Streak | 2159 |
+| Max Loss Streak | 5 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -975,17 +1001,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 2,530 |
-| Open Now | 1055 |
-| Win Rate | 99.4% |
-| Avg P&L | +9.573% |
-| Median P&L | +4.355% |
-| Std Deviation | 19.550 |
-| Best Trade | +282.26% |
+| Closed Trades | 2,563 |
+| Open Now | 1032 |
+| Win Rate | 99.3% |
+| Avg P&L | +10.002% |
+| Median P&L | +4.388% |
+| Std Deviation | 28.312 |
+| Best Trade | +1050.37% |
 | Worst Trade | -7.14% |
-| Total P&L | $+24994.47 |
-| Profit Factor | 394.76 |
-| Avg Hold | 41.7h |
+| Total P&L | $+26425.31 |
+| Profit Factor | 346.66 |
+| Avg Hold | 44.2h |
 | Max Win Streak | 2491 |
 | Max Loss Streak | 10 |
 
@@ -1000,18 +1026,18 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 2,458 |
-| Open Now | 1048 |
+| Closed Trades | 2,491 |
+| Open Now | 1026 |
 | Win Rate | 100.0% |
-| Avg P&L | +9.906% |
-| Median P&L | +4.647% |
-| Std Deviation | 33.179 |
+| Avg P&L | +10.105% |
+| Median P&L | +4.649% |
+| Std Deviation | 33.138 |
 | Best Trade | +690.38% |
 | Worst Trade | +0.51% |
-| Total P&L | $+24950.73 |
-| Profit Factor | 24950729.66 |
-| Avg Hold | 53.0h |
-| Max Win Streak | 2458 |
+| Total P&L | $+25771.99 |
+| Profit Factor | 25771988.11 |
+| Avg Hold | 54.3h |
+| Max Win Streak | 2491 |
 | Max Loss Streak | 0 |
 
 **Market Regime:** No regime data captured yet.
@@ -1025,44 +1051,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 2,901 |
-| Open Now | 1047 |
+| Closed Trades | 2,949 |
+| Open Now | 1046 |
 | Win Rate | 99.8% |
-| Avg P&L | +7.722% |
-| Median P&L | +4.069% |
-| Std Deviation | 44.138 |
+| Avg P&L | +8.008% |
+| Median P&L | +4.055% |
+| Std Deviation | 47.808 |
 | Best Trade | +2308.37% |
 | Worst Trade | -56.53% |
-| Total P&L | $+22495.23 |
-| Profit Factor | 386.41 |
-| Avg Hold | 52.7h |
+| Total P&L | $+23709.55 |
+| Profit Factor | 392.46 |
+| Avg Hold | 53.8h |
 | Max Win Streak | 2822 |
 | Max Loss Streak | 3 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E43 — Price Channel Breakout
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 5 |
-| Closed Trades | 2,257 |
-| Open Now | 1096 |
-| Win Rate | 99.1% |
-| Avg P&L | +9.352% |
-| Median P&L | +4.957% |
-| Std Deviation | 17.698 |
-| Best Trade | +239.82% |
-| Worst Trade | -9.56% |
-| Total P&L | $+22016.25 |
-| Profit Factor | 288.48 |
-| Avg Hold | 67.2h |
-| Max Win Streak | 2159 |
-| Max Loss Streak | 5 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1075,19 +1076,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 3,078 |
-| Open Now | 1054 |
-| Win Rate | 99.8% |
-| Avg P&L | +6.661% |
-| Median P&L | +4.148% |
-| Std Deviation | 15.050 |
+| Closed Trades | 3,105 |
+| Open Now | 1042 |
+| Win Rate | 99.6% |
+| Avg P&L | +6.669% |
+| Median P&L | +4.147% |
+| Std Deviation | 15.052 |
 | Best Trade | +551.56% |
 | Worst Trade | -12.72% |
-| Total P&L | $+20637.85 |
-| Profit Factor | 464.32 |
-| Avg Hold | 48.8h |
+| Total P&L | $+20841.82 |
+| Profit Factor | 414.07 |
+| Avg Hold | 49.8h |
 | Max Win Streak | 3005 |
-| Max Loss Streak | 3 |
+| Max Loss Streak | 5 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1100,17 +1101,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 1,996 |
-| Open Now | 1196 |
+| Closed Trades | 2,028 |
+| Open Now | 1181 |
 | Win Rate | 99.6% |
-| Avg P&L | +9.794% |
-| Median P&L | +4.164% |
-| Std Deviation | 66.778 |
+| Avg P&L | +9.793% |
+| Median P&L | +4.166% |
+| Std Deviation | 66.263 |
 | Best Trade | +2338.28% |
-| Worst Trade | -10.36% |
-| Total P&L | $+19874.58 |
-| Profit Factor | 874.43 |
-| Avg Hold | 69.0h |
+| Worst Trade | -13.50% |
+| Total P&L | $+20185.73 |
+| Profit Factor | 557.71 |
+| Avg Hold | 71.2h |
 | Max Win Streak | 1962 |
 | Max Loss Streak | 2 |
 
@@ -1125,17 +1126,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 9 |
-| Closed Trades | 1,898 |
-| Open Now | 700 |
-| Win Rate | 99.2% |
-| Avg P&L | +10.099% |
+| Closed Trades | 1,909 |
+| Open Now | 703 |
+| Win Rate | 99.0% |
+| Avg P&L | +10.045% |
 | Median P&L | +3.811% |
-| Std Deviation | 52.939 |
+| Std Deviation | 52.791 |
 | Best Trade | +767.92% |
 | Worst Trade | -2.97% |
-| Total P&L | $+19168.07 |
-| Profit Factor | 508.49 |
-| Avg Hold | 49.2h |
+| Total P&L | $+19176.59 |
+| Profit Factor | 479.96 |
+| Avg Hold | 48.9h |
 | Max Win Streak | 1874 |
 | Max Loss Streak | 9 |
 
@@ -1150,18 +1151,18 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 1,755 |
-| Open Now | 302 |
+| Closed Trades | 1,781 |
+| Open Now | 291 |
 | Win Rate | 99.8% |
-| Avg P&L | +8.233% |
+| Avg P&L | +8.461% |
 | Median P&L | +4.643% |
-| Std Deviation | 10.973 |
+| Std Deviation | 11.599 |
 | Best Trade | +91.37% |
 | Worst Trade | -2.14% |
-| Total P&L | $+14692.91 |
-| Profit Factor | 3086.48 |
-| Avg Hold | 25.2h |
-| Max Win Streak | 1734 |
+| Total P&L | $+15320.46 |
+| Profit Factor | 3218.26 |
+| Avg Hold | 26.1h |
+| Max Win Streak | 1760 |
 | Max Loss Streak | 2 |
 
 **Market Regime:** No regime data captured yet.
@@ -1175,16 +1176,16 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 1 |
-| Closed Trades | 929 |
-| Open Now | 183 |
+| Closed Trades | 931 |
+| Open Now | 181 |
 | Win Rate | 98.9% |
-| Avg P&L | +11.073% |
-| Median P&L | +5.018% |
-| Std Deviation | 30.062 |
+| Avg P&L | +11.061% |
+| Median P&L | +5.020% |
+| Std Deviation | 30.031 |
 | Best Trade | +485.24% |
 | Worst Trade | -58.64% |
-| Total P&L | $+10491.12 |
-| Profit Factor | 101.43 |
+| Total P&L | $+10502.14 |
+| Profit Factor | 101.54 |
 | Avg Hold | 24.9h |
 | Max Win Streak | 886 |
 | Max Loss Streak | 1 |
@@ -1200,17 +1201,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 1,235 |
-| Open Now | 293 |
+| Closed Trades | 1,251 |
+| Open Now | 278 |
 | Win Rate | 99.9% |
-| Avg P&L | +8.251% |
+| Avg P&L | +8.200% |
 | Median P&L | +4.167% |
-| Std Deviation | 11.228 |
+| Std Deviation | 11.166 |
 | Best Trade | +107.04% |
 | Worst Trade | -0.68% |
-| Total P&L | $+10217.99 |
-| Profit Factor | 15013.19 |
-| Avg Hold | 32.6h |
+| Total P&L | $+10305.41 |
+| Profit Factor | 15141.63 |
+| Avg Hold | 34.6h |
 | Max Win Streak | 1233 |
 | Max Loss Streak | 1 |
 
@@ -1225,44 +1226,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 12 |
-| Closed Trades | 1,281 |
-| Open Now | 678 |
+| Closed Trades | 1,304 |
+| Open Now | 663 |
 | Win Rate | 98.9% |
-| Avg P&L | +7.007% |
-| Median P&L | +4.258% |
-| Std Deviation | 7.912 |
+| Avg P&L | +6.927% |
+| Median P&L | +4.080% |
+| Std Deviation | 7.866 |
 | Best Trade | +52.14% |
 | Worst Trade | -1.05% |
-| Total P&L | $+8976.55 |
-| Profit Factor | 693.34 |
-| Avg Hold | 60.5h |
+| Total P&L | $+9032.84 |
+| Profit Factor | 697.68 |
+| Avg Hold | 59.8h |
 | Max Win Streak | 1226 |
 | Max Loss Streak | 12 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### E35 — Supertrend Bounce
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 5 |
-| Closed Trades | 1,042 |
-| Open Now | 394 |
-| Win Rate | 100.0% |
-| Avg P&L | +7.082% |
-| Median P&L | +4.169% |
-| Std Deviation | 9.047 |
-| Best Trade | +65.52% |
-| Worst Trade | +0.52% |
-| Total P&L | $+7425.17 |
-| Profit Factor | 7425165.51 |
-| Avg Hold | 58.2h |
-| Max Win Streak | 1042 |
-| Max Loss Streak | 0 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1275,19 +1251,44 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 1 |
-| Closed Trades | 790 |
-| Open Now | 250 |
-| Win Rate | 99.7% |
-| Avg P&L | +8.357% |
+| Closed Trades | 803 |
+| Open Now | 244 |
+| Win Rate | 99.6% |
+| Avg P&L | +9.687% |
 | Median P&L | +4.481% |
-| Std Deviation | 21.235 |
-| Best Trade | +483.76% |
+| Std Deviation | 44.022 |
+| Best Trade | +1103.54% |
 | Worst Trade | -6.25% |
-| Total P&L | $+6648.34 |
-| Profit Factor | 739.51 |
-| Avg Hold | 40.9h |
+| Total P&L | $+7824.74 |
+| Profit Factor | 639.71 |
+| Avg Hold | 41.8h |
 | Max Win Streak | 754 |
 | Max Loss Streak | 1 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E35 — Supertrend Bounce
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 1,053 |
+| Open Now | 383 |
+| Win Rate | 99.5% |
+| Avg P&L | +7.009% |
+| Median P&L | +4.169% |
+| Std Deviation | 9.031 |
+| Best Trade | +65.52% |
+| Worst Trade | -2.70% |
+| Total P&L | $+7426.83 |
+| Profit Factor | 550.44 |
+| Avg Hold | 60.1h |
+| Max Win Streak | 1043 |
+| Max Loss Streak | 5 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1300,18 +1301,18 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 993 |
-| Open Now | 322 |
+| Closed Trades | 1,001 |
+| Open Now | 314 |
 | Win Rate | 100.0% |
-| Avg P&L | +6.245% |
+| Avg P&L | +6.217% |
 | Median P&L | +3.795% |
-| Std Deviation | 7.115 |
+| Std Deviation | 7.094 |
 | Best Trade | +48.14% |
 | Worst Trade | +0.44% |
-| Total P&L | $+6614.16 |
-| Profit Factor | 6614163.78 |
-| Avg Hold | 31.1h |
-| Max Win Streak | 993 |
+| Total P&L | $+6651.30 |
+| Profit Factor | 6651304.4 |
+| Avg Hold | 32.6h |
+| Max Win Streak | 1001 |
 | Max Loss Streak | 0 |
 
 **Market Regime:** No regime data captured yet.
@@ -1325,18 +1326,43 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 397 |
-| Open Now | 55 |
+| Closed Trades | 402 |
+| Open Now | 50 |
 | Win Rate | 100.0% |
-| Avg P&L | +14.151% |
-| Median P&L | +5.318% |
-| Std Deviation | 23.388 |
+| Avg P&L | +14.079% |
+| Median P&L | +5.608% |
+| Std Deviation | 23.251 |
 | Best Trade | +127.97% |
 | Worst Trade | +0.51% |
-| Total P&L | $+6483.91 |
-| Profit Factor | 6483907.94 |
-| Avg Hold | 25.0h |
-| Max Win Streak | 397 |
+| Total P&L | $+6567.84 |
+| Profit Factor | 6567841.86 |
+| Avg Hold | 29.0h |
+| Max Win Streak | 402 |
+| Max Loss Streak | 0 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E9 — Consecutive Red Candles + Volume
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 9 |
+| Closed Trades | 900 |
+| Open Now | 383 |
+| Win Rate | 100.0% |
+| Avg P&L | +6.085% |
+| Median P&L | +3.885% |
+| Std Deviation | 6.236 |
+| Best Trade | +30.80% |
+| Worst Trade | +0.31% |
+| Total P&L | $+5476.09 |
+| Profit Factor | 5476090.63 |
+| Avg Hold | 64.7h |
+| Max Win Streak | 900 |
 | Max Loss Streak | 0 |
 
 **Market Regime:** No regime data captured yet.
@@ -1368,31 +1394,6 @@
 
 ---
 
-### E9 — Consecutive Red Candles + Volume
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 9 |
-| Closed Trades | 878 |
-| Open Now | 403 |
-| Win Rate | 100.0% |
-| Avg P&L | +5.868% |
-| Median P&L | +3.733% |
-| Std Deviation | 5.868 |
-| Best Trade | +30.80% |
-| Worst Trade | +0.31% |
-| Total P&L | $+5152.44 |
-| Profit Factor | 5152435.73 |
-| Avg Hold | 59.5h |
-| Max Win Streak | 878 |
-| Max Loss Streak | 0 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
 ### E13 — EMA Cross + RSI
 
 **Summary**
@@ -1401,7 +1402,7 @@
 |--------|-------|
 | Bots | 10 |
 | Closed Trades | 580 |
-| Open Now | 266 |
+| Open Now | 269 |
 | Win Rate | 98.3% |
 | Avg P&L | +8.108% |
 | Median P&L | +4.494% |
@@ -1425,44 +1426,19 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 387 |
-| Open Now | 115 |
+| Closed Trades | 397 |
+| Open Now | 105 |
 | Win Rate | 98.7% |
-| Avg P&L | +8.502% |
+| Avg P&L | +8.461% |
 | Median P&L | +4.503% |
-| Std Deviation | 10.025 |
+| Std Deviation | 9.930 |
 | Best Trade | +54.44% |
 | Worst Trade | -1.76% |
-| Total P&L | $+3642.85 |
-| Profit Factor | 468.64 |
-| Avg Hold | 44.1h |
-| Max Win Streak | 375 |
+| Total P&L | $+3724.80 |
+| Profit Factor | 479.16 |
+| Avg Hold | 50.7h |
+| Max Win Streak | 385 |
 | Max Loss Streak | 5 |
-
-**Market Regime:** No regime data captured yet.
-
----
-
-### BM_RANDOM — 
-
-**Summary**
-
-| Metric | Value |
-|--------|-------|
-| Bots | 1 |
-| Closed Trades | 504 |
-| Open Now | 240 |
-| Win Rate | 99.6% |
-| Avg P&L | +6.404% |
-| Median P&L | +3.939% |
-| Std Deviation | 9.188 |
-| Best Trade | +148.36% |
-| Worst Trade | -3.74% |
-| Total P&L | $+3227.59 |
-| Profit Factor | 573.81 |
-| Avg Hold | 61.2h |
-| Max Win Streak | 498 |
-| Max Loss Streak | 1 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1475,19 +1451,44 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 451 |
-| Open Now | 73 |
+| Closed Trades | 469 |
+| Open Now | 68 |
 | Win Rate | 100.0% |
-| Avg P&L | +6.791% |
+| Avg P&L | +7.482% |
 | Median P&L | +5.283% |
-| Std Deviation | 6.364 |
-| Best Trade | +74.65% |
+| Std Deviation | 9.639 |
+| Best Trade | +78.05% |
 | Worst Trade | +0.58% |
-| Total P&L | $+3102.70 |
-| Profit Factor | 3102702.05 |
-| Avg Hold | 19.8h |
-| Max Win Streak | 451 |
+| Total P&L | $+3564.59 |
+| Profit Factor | 3564585.33 |
+| Avg Hold | 22.1h |
+| Max Win Streak | 469 |
 | Max Loss Streak | 0 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### BM_RANDOM — 
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 1 |
+| Closed Trades | 516 |
+| Open Now | 234 |
+| Win Rate | 99.6% |
+| Avg P&L | +6.473% |
+| Median P&L | +3.953% |
+| Std Deviation | 9.221 |
+| Best Trade | +148.36% |
+| Worst Trade | -3.74% |
+| Total P&L | $+3339.97 |
+| Profit Factor | 593.76 |
+| Avg Hold | 61.8h |
+| Max Win Streak | 498 |
+| Max Loss Streak | 1 |
 
 **Market Regime:** No regime data captured yet.
 
@@ -1500,17 +1501,17 @@
 | Metric | Value |
 |--------|-------|
 | Bots | 5 |
-| Closed Trades | 176 |
-| Open Now | 79 |
-| Win Rate | 99.4% |
-| Avg P&L | +14.810% |
-| Median P&L | +9.767% |
-| Std Deviation | 17.350 |
+| Closed Trades | 193 |
+| Open Now | 62 |
+| Win Rate | 99.5% |
+| Avg P&L | +14.587% |
+| Median P&L | +9.723% |
+| Std Deviation | 17.151 |
 | Best Trade | +70.73% |
 | Worst Trade | -0.54% |
-| Total P&L | $+2606.56 |
-| Profit Factor | 4811.97 |
-| Avg Hold | 31.5h |
+| Total P&L | $+2815.38 |
+| Profit Factor | 5197.39 |
+| Avg Hold | 36.9h |
 | Max Win Streak | 162 |
 | Max Loss Streak | 1 |
 
@@ -1563,6 +1564,31 @@
 | Avg Hold | 0.2h |
 | Max Win Streak | 2 |
 | Max Loss Streak | 2 |
+
+**Market Regime:** No regime data captured yet.
+
+---
+
+### E63 — Breaker Block
+
+**Summary**
+
+| Metric | Value |
+|--------|-------|
+| Bots | 5 |
+| Closed Trades | 3 |
+| Open Now | 12 |
+| Win Rate | 66.7% |
+| Avg P&L | +3.473% |
+| Median P&L | +5.131% |
+| Std Deviation | 3.012 |
+| Best Trade | +5.29% |
+| Worst Trade | +0.00% |
+| Total P&L | $+10.42 |
+| Profit Factor | 2801.99 |
+| Avg Hold | 9.6h |
+| Max Win Streak | 1 |
+| Max Loss Streak | 1 |
 
 **Market Regime:** No regime data captured yet.
 
