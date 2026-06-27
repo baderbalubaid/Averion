@@ -108,9 +108,15 @@ intentional, not carrying this feature into Short at all.
     THIRD confirmed instance of this exact bug class across all 3
     systems. HIGH PRIORITY - same real-money risk pattern each time.
 
-17. Floor-pause (reserve_floor/resume_threshold/auto_resume/
-    floor_paused) is genuinely shared between Long and Scalper (both
-    confirmed in their real _load_bots()) - Short is the one
-    genuinely without it, not Long being the special case. Corrects
-    an earlier assumption in full_sequence_table.md that this was
-    "Long-only by design" - it is actually "Long+Scalper, not Short".
+17. CORRECTED (originally misread): floor-pause genuinely IS
+    Long-only by design, confirmed by explanation - its real purpose
+    is to stop opening NEW positions so a struggling bot can focus on
+    DCA-ing its way back to recovering USDT, which only makes sense
+    for a system that holds positions open for a while. Scalper is
+    quick-in-quick-out by nature, so USDT cycles back almost
+    immediately if working correctly - the concept genuinely doesn't
+    apply. Scalper's _load_bots() does query reserve_floor/
+    floor_paused columns, but this is very likely just inherited
+    structure from copying Long's query shape, not a genuinely
+    meaningful working feature for Scalper - not confirmed as an
+    active bug, just noted as likely-dead code to verify later.
