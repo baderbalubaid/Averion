@@ -3398,6 +3398,19 @@ Same cap protection (+10% up · immediate down)
 Same confidence system (0-30 · 30-90 · 90+ days)
 
 ### Smart DCA Champions (3 separate Short champions)
+SUPERSEDED June 27 2026 - confirmed against the real running code
+during the AverionBot clean-migration mapping: short_dca_engine.py
+has ZERO champion-related logic anywhere. This planned feature was
+replaced by a simpler, later design - each Short bot is pre-assigned
+to one specific coin from the start (never scans across multiple
+coins looking for the best one), and its entry method is either
+'asap' (no decision logic at all) or a manually customized
+parameter set the user already chose by hand. A champion only makes
+sense when a system is actively choosing between several methods -
+Short never makes that choice, so there is nothing for a champion to
+select between. Left below as a historical record of the original
+plan, not as the current behavior.
+
 Bull Short Champion (separate from Long)
 Bear Short Champion (separate from Long)
 Sideways Short Champion (separate from Long)
