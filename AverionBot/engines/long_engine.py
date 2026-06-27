@@ -19,6 +19,7 @@ from champion_service import load_champions, get_current_regime
 from bot_loader import load_bots
 from position_loader import load_open_positions
 from coin_params_service import load_coin_params_cache
+from long_short_market_price import get_redis_price
 
 _running = False
 _cycle_thread = None
@@ -50,6 +51,36 @@ def start_engine():
     print('✅ LongEngine started')
 
 
+def needs_dca(pos, current_price, base_order=10.0, size_mult=1.5):
+    """Returns (True, dca_amount) if this position needs DCA right
+    now. Confirmed Long-specific - Short has no equivalent at all
+    (check_sell_trigger() is the inverted, Short-only version, lives
+    in short_engine.py once built)."""
+    if pos['avg_cost'] <= 0 or pos['last_buy_price'] <= 0:
+        return False, 0
+
+    dca_pct = pos['pos_dca_pct'] or 7.0
+    last_buy = pos['last_buy_price'] if pos['dca_count'] > 0 else pos['avg_cost']
+    drop_pct = (last_buy - current_price) / last_buy * 100
+
+    if drop_pct >= dca_pct:
+        next_dca_num = pos['dca_count'] + 1
+        dca_amount = base_order * (size_mult ** next_dca_num)
+        dca_amount = max(dca_amount, 5.0)
+        return True, round(dca_amount, 2)
+
+    return False, 0
+
+
+def score_position(pos, current_price, dca_amount=10.0):
+    """Score: loss% / required_usdt - higher loss per dollar = higher
+    priority. Confirmed Long-specific, no Short equivalent."""
+    if pos['avg_cost'] <= 0 or dca_amount <= 0:
+        return 0
+    loss_pct = (pos['avg_cost'] - current_price) / pos['avg_cost'] * 100
+    return loss_pct / dca_amount
+
+
 def run_bot_cycle(bot, r):
     """Run one bot's DCA cycle. Connected to the shared
     position_loader and coin_params_service (June 27 2026).
@@ -58,7 +89,20 @@ def run_bot_cycle(bot, r):
     Short has no equivalent queue/scoring system at all."""
     open_positions = load_open_positions(bot['id'], 'long')
     coin_params_cache = load_coin_params_cache()
-    raise NotImplementedError("rest of run_bot_cycle not yet built")
+
+    if bot['dca_on'] and open_positions:
+        candidates = []
+        for pos in open_positions:
+            current_price = get_redis_price(r, pos['coin'], bot['wallet']['exchange_name'])
+            if not current_price:
+                continue
+            needs, amount = needs_dca(pos, current_price, bot['base_order'], bot['size_multiplier'])
+            if needs:
+                score = score_position(pos, current_price, amount)
+                candidates.append((score, pos, amount, current_price))
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        raise NotImplementedError("the priority-funding loop (load_wallet, execute_dca_buy) not yet built")
 
 
 def _engine_loop():

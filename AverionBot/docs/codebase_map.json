@@ -32,6 +32,19 @@
       ],
       "line_count": 68
     },
+    "AverionBot/core/coin_params_service.py": {
+      "tables": [
+        "coin_parameters"
+      ],
+      "functions": [
+        "load_coin_params_cache"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 43
+    },
     "AverionBot/core/heartbeat_service.py": {
       "tables": [],
       "functions": [
@@ -55,6 +68,19 @@
       ],
       "line_count": 27
     },
+    "AverionBot/core/position_loader.py": {
+      "tables": [
+        "positions"
+      ],
+      "functions": [
+        "load_open_positions"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 54
+    },
     "AverionBot/core/redis_connection.py": {
       "tables": [],
       "functions": [
@@ -69,16 +95,22 @@
       "functions": [
         "_engine_loop",
         "is_engine_alive",
+        "needs_dca",
+        "run_bot_cycle",
+        "score_position",
         "start_engine"
       ],
       "local_imports": [
         "bot_loader",
         "champion_service",
+        "coin_params_service",
         "heartbeat_service",
+        "long_short_market_price",
+        "position_loader",
         "redis_connection"
       ],
       "redis_keys": [],
-      "line_count": 65
+      "line_count": 154
     },
     "AverionBot/engines/scalper_engine.py": {
       "tables": [],
@@ -1984,15 +2016,17 @@
       "live_scalper_engine.py",
       "rars_champion_promotion.py"
     ],
-    "fee_debt": [
-      "AverionBot/tools/bot_audit.py",
+    "coin_parameters": [
+      "AverionBot/core/coin_params_service.py",
       "api.py",
-      "automation/daily_aggregation.py",
-      "automation/generate_excel.py",
-      "automation/generate_metrics.py",
-      "database.py"
+      "bot_loop.py",
+      "calculate_coin_params.py",
+      "live_long_dca_engine.py",
+      "refresh_min_orders.py",
+      "research_engine.py"
     ],
     "positions": [
+      "AverionBot/core/position_loader.py",
       "AverionBot/tools/bot_audit.py",
       "api.py",
       "attached_assets/api_1779740966898.py",
@@ -2018,11 +2052,6 @@
       "research_engine.py",
       "short_dca_engine.py"
     ],
-    "wallet_transactions": [
-      "AverionBot/tools/bot_audit.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py"
-    ],
     "scalper_positions": [
       "AverionBot/tools/bot_audit.py",
       "api.py",
@@ -2038,6 +2067,14 @@
       "scalper_engine.py",
       "scalper_v2_engine.py"
     ],
+    "fee_debt": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "database.py"
+    ],
     "reserve_wallets": [
       "AverionBot/tools/bot_audit.py",
       "api.py",
@@ -2045,18 +2082,52 @@
       "automation/generate_excel.py",
       "database.py"
     ],
-    "rars_scores": [
-      "api.py",
-      "rars_champion_promotion.py",
-      "rars_champion_scoring.py"
-    ],
-    "coin_parameters": [
-      "api.py",
-      "bot_loop.py",
-      "calculate_coin_params.py",
+    "wallet_transactions": [
+      "AverionBot/tools/bot_audit.py",
       "live_long_dca_engine.py",
-      "refresh_min_orders.py",
+      "live_scalper_engine.py"
+    ],
+    "users": [
+      "api.py",
+      "auth.py",
+      "automation/check_paper_timer.py",
+      "automation/generate_metrics.py",
+      "database.py",
+      "live_scalper_engine.py",
+      "setup/init_db.py",
+      "setup/launch_research_bots.py",
+      "short_dca_engine.py",
+      "telegram.py"
+    ],
+    "live_positions": [
+      "api.py",
+      "database.py",
+      "live_scalper_engine.py"
+    ],
+    "system_health": [
+      "api.py",
+      "automation/generate_diagnostics.py",
+      "main.py"
+    ],
+    "category_limits": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "performance_timing": [
+      "api.py",
+      "automation/generate_diagnostics.py"
+    ],
+    "coin_parameter_history": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "watchdog_events": [
+      "api.py",
       "research_engine.py"
+    ],
+    "live_dca_positions": [
+      "api.py",
+      "database.py"
     ],
     "trades": [
       "api.py",
@@ -2071,47 +2142,10 @@
       "exchanges.py",
       "main.py"
     ],
-    "category_limits": [
+    "rars_scores": [
       "api.py",
-      "calculate_coin_params.py"
-    ],
-    "system_health": [
-      "api.py",
-      "automation/generate_diagnostics.py",
-      "main.py"
-    ],
-    "live_positions": [
-      "api.py",
-      "database.py",
-      "live_scalper_engine.py"
-    ],
-    "live_dca_positions": [
-      "api.py",
-      "database.py"
-    ],
-    "users": [
-      "api.py",
-      "auth.py",
-      "automation/check_paper_timer.py",
-      "automation/generate_metrics.py",
-      "database.py",
-      "live_scalper_engine.py",
-      "setup/init_db.py",
-      "setup/launch_research_bots.py",
-      "short_dca_engine.py",
-      "telegram.py"
-    ],
-    "performance_timing": [
-      "api.py",
-      "automation/generate_diagnostics.py"
-    ],
-    "coin_parameter_history": [
-      "api.py",
-      "calculate_coin_params.py"
-    ],
-    "watchdog_events": [
-      "api.py",
-      "research_engine.py"
+      "rars_champion_promotion.py",
+      "rars_champion_scoring.py"
     ],
     "platform_pricing": [
       "api.py"
@@ -2154,28 +2188,28 @@
       "calculate_coin_params.py",
       "classify_coins.py"
     ],
-    "security_audit_log": [
+    "attention_log": [
       "database.py"
     ],
     "user_telegram": [
       "database.py"
     ],
-    "exchange_min_orders": [
-      "database.py"
-    ],
     "user_subscriptions": [
       "database.py"
     ],
-    "attention_log": [
+    "exchange_min_orders": [
       "database.py"
     ],
     "system_settings": [
       "database.py"
     ],
-    "short_buyback_orders": [
-      "executor.py"
+    "security_audit_log": [
+      "database.py"
     ],
     "exchange_coin_limits": [
+      "executor.py"
+    ],
+    "short_buyback_orders": [
       "executor.py"
     ],
     "scalper_daily_snapshots": [
