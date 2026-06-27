@@ -73,3 +73,28 @@ don't delete the line (keeps a record of what was checked).
     logic on already-open positions would silently stop too - same
     class of bug, not yet fixed here. HIGH PRIORITY - same real-money
     risk as the original.
+
+## ADDED June 27 2026 (found during Short research for the full sequence table)
+
+14. **Short has NO debt check before opening new positions** -
+    confirmed by direct search (no account_in_debt reference anywhere
+    in short_dca_engine.py). Long correctly blocks new entries while
+    a user's reserve wallet is negative (debt) - Short has no
+    equivalent check at all, meaning a user in debt could still have
+    Short open brand-new positions while Long is correctly blocked.
+    Real inconsistency, confirmed needs fixing in the rebuild - NOT
+    carrying this gap forward.
+
+15. **Short has NO ST-flag (delisting) check at all** - confirmed,
+    no is_st_coin reference anywhere in short_dca_engine.py. Long has
+    this (with its own separate detection gap already logged).
+    DESIGN NOTE for the rebuild (per explicit instruction): Short's
+    ST handling needs to be different from Long's, not just copied -
+    Short holds real coin inventory, so on ST/delisting detection,
+    the correct behavior is to NOTIFY the user to sell their
+    remaining coin before delisting completes, not just block new
+    entries the way Long does.
+
+CONFIRMED NOT A GAP: Short genuinely has no floor-pause concept at
+all (reserve_floor/resume_threshold/floor_paused) - confirmed
+intentional, not carrying this feature into Short at all.
