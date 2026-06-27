@@ -60,3 +60,16 @@ don't delete the line (keeps a record of what was checked).
   (June 24) - fixed, commit 296c0cd.
 - /live-positions showing -40% instead of real -12% (same stale
   live_dca_positions table, June 25) - fixed, commit (api.py fix).
+
+## ADDED June 27 2026 (found during AverionBot load_bots comparison)
+
+13. **Short likely has the same "stopped bot freezes existing positions"
+    bug already found and fixed for Long on June 25.** Confirmed:
+    short_dca_engine.py's load_short_bots() still has
+    `AND b.trading_on = TRUE` in its WHERE clause - the exact filter
+    that was removed from Long's load_live_long_bots() for this exact
+    reason. If a Short bot is stopped (manually, debt, or expiry), it
+    is fully excluded from this function, meaning its buyback/DCA
+    logic on already-open positions would silently stop too - same
+    class of bug, not yet fixed here. HIGH PRIORITY - same real-money
+    risk as the original.
