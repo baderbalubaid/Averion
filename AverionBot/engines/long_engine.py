@@ -48,6 +48,15 @@ def start_engine():
     print('✅ LongEngine started')
 
 
+def run_bot_cycle(bot, r):
+    """TODO: not yet implemented - next piece to trace is the
+    original run_bot_cycle() in live_long_dca_engine.py, which is
+    where the actual entry/DCA decision logic lives (this is the
+    'finish entry fully' piece we deferred earlier until bots were
+    genuinely loaded)."""
+    raise NotImplementedError("run_bot_cycle not yet built")
+
+
 def _engine_loop():
     """Main cycle loop. Connected to the shared get_redis(),
     write_heartbeat(), and champion_service (June 27 2026) - this
@@ -77,4 +86,21 @@ def _engine_loop():
                 bot['_champion'] = champ  # None if no champion yet for this regime
                 bot['_regime'] = current_regime
 
-        raise NotImplementedError("rest of loop body not yet built - next is grouping bots by user")
+        # FIXED June 27 2026: original code grouped bots by user_id
+        # and called run_user_cycle() per group - confirmed this
+        # structure never actually did anything user-level (no
+        # reserve-wallet check, no fund-priority logic across bots
+        # sharing a wallet, nothing) - it just looped through each
+        # group's bots one by one, identical to looping the full
+        # flat list directly. Genuine fund-priority across shared
+        # wallets is a real future need (see architecture_overview.md)
+        # but belongs with real/live wallets specifically, not faked
+        # here while paper wallets are unlimited. Looping bots
+        # directly, matching Short's simpler original pattern.
+        for bot in bots:
+            try:
+                run_bot_cycle(bot, r)
+            except Exception as e:
+                print(f'⚠️ Bot cycle error {bot["name"]}: {e}')
+
+        raise NotImplementedError("run_bot_cycle not yet built - next piece to trace")
