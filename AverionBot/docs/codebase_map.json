@@ -1,0 +1,2077 @@
+{
+  "files": {
+    "AverionBot/tools/bot_audit.py": {
+      "tables": [
+        "bots",
+        "fee_debt",
+        "positions",
+        "reserve_wallets",
+        "scalper_positions",
+        "virtual_wallets",
+        "wallet_transactions"
+      ],
+      "functions": [
+        "audit_long_or_short_positions",
+        "audit_scalper_positions",
+        "flag",
+        "get_redis_price",
+        "main",
+        "verify_historical_price"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 454
+    },
+    "PrivateAccountV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PrivateDealsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PrivateOrdersV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PublicAggreBookTickerV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PublicAggreDealsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 28
+    },
+    "PublicAggreDepthsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 28
+    },
+    "PublicBookTickerBatchV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [
+        "PublicBookTickerV3Api_pb2"
+      ],
+      "redis_keys": [],
+      "line_count": 27
+    },
+    "PublicBookTickerV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PublicDealsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 28
+    },
+    "PublicIncreaseDepthsBatchV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [
+        "PublicIncreaseDepthsV3Api_pb2"
+      ],
+      "redis_keys": [],
+      "line_count": 27
+    },
+    "PublicIncreaseDepthsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 28
+    },
+    "PublicLimitDepthsV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 28
+    },
+    "PublicMiniTickerV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PublicMiniTickersV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [
+        "PublicMiniTickerV3Api_pb2"
+      ],
+      "redis_keys": [],
+      "line_count": 27
+    },
+    "PublicSpotKlineV3Api_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "PushDataV3ApiWrapper_pb2.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [
+        "PrivateAccountV3Api_pb2",
+        "PrivateDealsV3Api_pb2",
+        "PrivateOrdersV3Api_pb2",
+        "PublicAggreBookTickerV3Api_pb2",
+        "PublicAggreDealsV3Api_pb2",
+        "PublicAggreDepthsV3Api_pb2",
+        "PublicBookTickerBatchV3Api_pb2",
+        "PublicBookTickerV3Api_pb2",
+        "PublicDealsV3Api_pb2",
+        "PublicIncreaseDepthsBatchV3Api_pb2",
+        "PublicIncreaseDepthsV3Api_pb2",
+        "PublicLimitDepthsV3Api_pb2",
+        "PublicMiniTickerV3Api_pb2",
+        "PublicMiniTickersV3Api_pb2",
+        "PublicSpotKlineV3Api_pb2"
+      ],
+      "redis_keys": [],
+      "line_count": 41
+    },
+    "admin_notifications.py": {
+      "tables": [],
+      "functions": [
+        "notify_champion_change",
+        "notify_daily_report",
+        "notify_health_alert"
+      ],
+      "local_imports": [
+        "database",
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 26
+    },
+    "api.py": {
+      "tables": [
+        "bots",
+        "category_limits",
+        "champion_history",
+        "coin_parameter_history",
+        "coin_parameters",
+        "exchanges",
+        "fee_debt",
+        "live_dca_positions",
+        "live_positions",
+        "performance_timing",
+        "platform_pricing",
+        "positions",
+        "rars_scores",
+        "reserve_wallets",
+        "scalper_positions",
+        "system_health",
+        "trades",
+        "users",
+        "virtual_wallets",
+        "watchdog_events"
+      ],
+      "functions": [
+        "add_exchange",
+        "add_exchange",
+        "admin_add_pricing",
+        "admin_approve_user",
+        "admin_approve_user",
+        "admin_cron_status",
+        "admin_dashboard",
+        "admin_delete_pricing",
+        "admin_diagnostics",
+        "admin_get_pricing",
+        "admin_get_settings",
+        "admin_health",
+        "admin_market_regime",
+        "admin_pending_users",
+        "admin_pending_users",
+        "admin_restart_bot",
+        "admin_run_cron_step",
+        "admin_security_logs",
+        "admin_shared_css",
+        "admin_shared_js",
+        "admin_stats",
+        "admin_update_pricing",
+        "admin_update_settings",
+        "admin_update_user_fee",
+        "admin_users",
+        "admin_watchdog_acknowledge",
+        "admin_watchdog_status",
+        "admin_ws_status",
+        "base_js",
+        "bot_detail_page",
+        "bots_page",
+        "change_password",
+        "check_brute_force",
+        "check_email_verified",
+        "clear_login_fails",
+        "close_live_dca_position",
+        "close_position",
+        "connect_telegram",
+        "create_bot",
+        "create_bot_page",
+        "create_dca_bot",
+        "create_scalper_bot",
+        "create_wallet",
+        "dashboard",
+        "delete_bot",
+        "delete_exchange",
+        "delete_wallet",
+        "exchanges_page",
+        "execute_reset",
+        "generate_diagnostics",
+        "get_admin_features",
+        "get_attention_log",
+        "get_available_coins",
+        "get_balance_history",
+        "get_bots",
+        "get_category_affected_count",
+        "get_category_limits",
+        "get_champion_status",
+        "get_dca_templates",
+        "get_exchanges",
+        "get_history",
+        "get_live_positions",
+        "get_position_detail",
+        "get_positions",
+        "get_redis",
+        "get_research_bots_admin",
+        "get_research_champions",
+        "get_research_history",
+        "get_research_positions",
+        "get_reserve",
+        "get_scalper_v2_rankings",
+        "get_scalper_v2_score",
+        "get_scalper_variants",
+        "get_status",
+        "get_supported_exchanges",
+        "get_trades",
+        "get_wallets",
+        "health_check",
+        "history_page",
+        "home_stats",
+        "homepage",
+        "login",
+        "login_page",
+        "new_admin_champions",
+        "new_admin_gate",
+        "new_admin_health",
+        "new_admin_research",
+        "new_admin_system",
+        "new_admin_users",
+        "panic_close_bot",
+        "record_login_fail",
+        "register",
+        "register_page",
+        "reports_page",
+        "require_admin",
+        "research_champ_score",
+        "research_dca_queue",
+        "research_scalper",
+        "research_scalper_score",
+        "resend_verification",
+        "reset_password",
+        "reset_password_confirm",
+        "reset_summary",
+        "resolve_log",
+        "send_code",
+        "settings_page",
+        "styles_css",
+        "telegram_status",
+        "test_exchange",
+        "toggle_bot",
+        "trades_page",
+        "update_bot",
+        "update_category_limits",
+        "update_exchange",
+        "update_wallet",
+        "verify",
+        "verify_admin_passphrase",
+        "verify_admin_session",
+        "verify_token"
+      ],
+      "local_imports": [
+        "auth",
+        "database"
+      ],
+      "redis_keys": [
+        "bot:cycle_time",
+        "bot:last_cycle",
+        "bot:status",
+        "btc:regime_data",
+        "engine:long_dca:heartbeat",
+        "engine:short_dca:heartbeat",
+        "login_fails:{}",
+        "price:BTC/USDT",
+        "ws:{}:last_update",
+        "ws:{}:status",
+        "ws:{}:total_updates"
+      ],
+      "line_count": 3380
+    },
+    "attached_assets/api_1779740966898.py": {
+      "tables": [
+        "positions",
+        "trades"
+      ],
+      "functions": [
+        "add_funds",
+        "close_position",
+        "get_config",
+        "get_positions",
+        "get_status",
+        "get_trades",
+        "run_bot",
+        "start_bot",
+        "startup",
+        "stop_bot"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 146
+    },
+    "attached_assets/api_1779741157276.py": {
+      "tables": [
+        "positions",
+        "trades"
+      ],
+      "functions": [
+        "add_funds",
+        "close_position",
+        "get_config",
+        "get_positions",
+        "get_status",
+        "get_trades",
+        "run_bot",
+        "start_bot",
+        "startup",
+        "stop_bot"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 146
+    },
+    "attached_assets/bot_1779664637272.py": {
+      "tables": [
+        "positions",
+        "trades"
+      ],
+      "functions": [
+        "close_position",
+        "dca_position",
+        "get_open_position",
+        "get_price",
+        "open_position",
+        "run_bot"
+      ],
+      "local_imports": [
+        "config",
+        "database",
+        "dca_logic"
+      ],
+      "redis_keys": [],
+      "line_count": 118
+    },
+    "attached_assets/bot_1779664997163.py": {
+      "tables": [
+        "positions",
+        "trades"
+      ],
+      "functions": [
+        "close_position",
+        "dca_position",
+        "get_open_position",
+        "get_price",
+        "open_position",
+        "run_bot"
+      ],
+      "local_imports": [
+        "config",
+        "database",
+        "dca_logic"
+      ],
+      "redis_keys": [],
+      "line_count": 118
+    },
+    "attached_assets/config_1779664637274.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 10
+    },
+    "attached_assets/database_1779664637275.py": {
+      "tables": [],
+      "functions": [
+        "get_db",
+        "init_db"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 45
+    },
+    "attached_assets/dca_logic_1779664637275.py": {
+      "tables": [],
+      "functions": [
+        "calc_new_average",
+        "calc_quantity",
+        "should_dca",
+        "should_take_profit"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 16
+    },
+    "attached_assets/main_1779663451783.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 21
+    },
+    "attached_assets/patch_dashboard_1780031037447.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 339
+    },
+    "attached_assets/patch_dashboard_1780031116414.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 339
+    },
+    "attached_assets/write_dashboard_1780104282378.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 1677
+    },
+    "attached_assets/write_dashboard_1780105174078.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 1677
+    },
+    "auth.py": {
+      "tables": [
+        "referrals",
+        "reserve_wallets",
+        "users"
+      ],
+      "functions": [
+        "change_password",
+        "check_brute_force",
+        "check_needs_verification",
+        "clear_login_fails",
+        "create_token",
+        "hash_password",
+        "is_token_expiring_soon",
+        "login",
+        "needs_rehash",
+        "record_login_fail",
+        "register_user",
+        "send_verification",
+        "trust_device",
+        "verify_code",
+        "verify_password",
+        "verify_token"
+      ],
+      "local_imports": [
+        "database",
+        "email_service",
+        "telegram"
+      ],
+      "redis_keys": [
+        "login_fails:{}"
+      ],
+      "line_count": 386
+    },
+    "automation/check_paper_timer.py": {
+      "tables": [
+        "positions",
+        "users"
+      ],
+      "functions": [
+        "check_paper_timer"
+      ],
+      "local_imports": [
+        "database",
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 54
+    },
+    "automation/classify_coins.py": {
+      "tables": [
+        "coin_history",
+        "market_regimes"
+      ],
+      "functions": [
+        "apply_cap_protection",
+        "calculate_coin_spacing",
+        "calculate_coin_tp",
+        "classify_and_store",
+        "determine_and_write_regime",
+        "fetch_coingecko",
+        "fetch_coinmarketcap",
+        "get_category",
+        "get_previous_data",
+        "get_regime_tp_multiplier",
+        "main",
+        "send_telegram"
+      ],
+      "local_imports": [
+        "database",
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 380
+    },
+    "automation/daily_aggregation.py": {
+      "tables": [
+        "bots",
+        "fee_debt",
+        "owner_balance",
+        "positions"
+      ],
+      "functions": [
+        "aggregate_daily",
+        "cleanup_old_data",
+        "main",
+        "send_daily_report",
+        "send_telegram"
+      ],
+      "local_imports": [
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 127
+    },
+    "automation/fetch_cmc.py": {
+      "tables": [
+        "coin_history"
+      ],
+      "functions": [
+        "main",
+        "send_telegram"
+      ],
+      "local_imports": [
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 82
+    },
+    "automation/fetch_coingecko.py": {
+      "tables": [
+        "coin_history"
+      ],
+      "functions": [
+        "fetch_page",
+        "main",
+        "send_telegram"
+      ],
+      "local_imports": [
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 86
+    },
+    "automation/fetch_ohlcv.py": {
+      "tables": [
+        "exchanges",
+        "ohlcv_hourly",
+        "positions"
+      ],
+      "functions": [
+        "calculate_atr",
+        "cleanup_old_ohlcv",
+        "fetch_and_store_ohlcv",
+        "get_active_coins",
+        "main"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 118
+    },
+    "automation/generate_diagnostics.py": {
+      "tables": [
+        "bot_events",
+        "performance_timing",
+        "system_health"
+      ],
+      "functions": [
+        "analyze_bot_crashes",
+        "analyze_coingecko",
+        "analyze_cycle_time",
+        "analyze_server_trend",
+        "format_analysis",
+        "format_bot_events",
+        "format_health_table",
+        "format_timing_table",
+        "format_trade_events",
+        "generate_analysis",
+        "generate_report",
+        "get_conn"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 316
+    },
+    "automation/generate_excel.py": {
+      "tables": [
+        "bots",
+        "exchanges",
+        "fee_debt",
+        "owner_balance",
+        "positions",
+        "reserve_wallets",
+        "trades"
+      ],
+      "functions": [
+        "freeze_and_filter",
+        "generate_report",
+        "style_header"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 407
+    },
+    "automation/generate_metrics.py": {
+      "tables": [
+        "bots",
+        "fee_debt",
+        "positions",
+        "trades",
+        "users"
+      ],
+      "functions": [
+        "generate_metrics"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 110
+    },
+    "automation/rotate_fernet.py": {
+      "tables": [
+        "exchanges"
+      ],
+      "functions": [
+        "rotate_fernet_key"
+      ],
+      "local_imports": [
+        "database",
+        "telegram"
+      ],
+      "redis_keys": [],
+      "line_count": 95
+    },
+    "automation/split_fernet_key.py": {
+      "tables": [],
+      "functions": [
+        "split_fernet_key"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 46
+    },
+    "bot_loop.py": {
+      "tables": [
+        "bots",
+        "btc_daily",
+        "coin_parameters",
+        "positions"
+      ],
+      "functions": [
+        "_refresh_rt_cache",
+        "calculate_score",
+        "check_gate_conditions",
+        "check_st_flag",
+        "check_tp",
+        "execute_buy",
+        "execute_sell",
+        "fetch_and_cache_prices",
+        "get_btc_regime_data",
+        "get_price",
+        "get_redis",
+        "init_exchange",
+        "make_realtime_tp_checker",
+        "run_bot",
+        "run_cycle",
+        "try_open_position"
+      ],
+      "local_imports": [
+        "database",
+        "entry_signals",
+        "indicators",
+        "telegram",
+        "websocket_prices"
+      ],
+      "redis_keys": [
+        "average",
+        "bot:cycle_time",
+        "bot:last_cycle",
+        "bot:status",
+        "btc:dominance",
+        "btc:regime_data",
+        "cost",
+        "fee",
+        "filled",
+        "id",
+        "info",
+        "last",
+        "price",
+        "price:{}:{}",
+        "price:{}:{}/USDT",
+        "st:{}:{}",
+        "ws:mexc:status"
+      ],
+      "line_count": 1002
+    },
+    "calculate_coin_params.py": {
+      "tables": [
+        "category_limits",
+        "coin_first_seen",
+        "coin_history",
+        "coin_parameter_history",
+        "coin_parameters"
+      ],
+      "functions": [
+        "apply_daily_cap",
+        "atr_14_raw_check",
+        "calculate_params_for_coin",
+        "check_circuit_breaker",
+        "check_new_coin_eligibility",
+        "clamp",
+        "get_first_seen_days",
+        "get_previous_params",
+        "is_pegged_by_volatility",
+        "is_stablecoin",
+        "load_category_limits",
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 457
+    },
+    "classify_coins.py": {
+      "tables": [
+        "coin_first_seen",
+        "coin_history"
+      ],
+      "functions": [
+        "classify_by_cap",
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 134
+    },
+    "config.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 19
+    },
+    "data_retention_cleanup.py": {
+      "tables": [
+        "bots",
+        "ohlcv_hourly",
+        "positions",
+        "scalper_positions",
+        "trades"
+      ],
+      "functions": [
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 94
+    },
+    "database.py": {
+      "tables": [
+        "attention_log",
+        "bots",
+        "coin_history",
+        "exchange_min_orders",
+        "exchanges",
+        "fee_debt",
+        "live_dca_positions",
+        "live_positions",
+        "market_regimes",
+        "ohlcv_hourly",
+        "positions",
+        "reserve_wallets",
+        "scalper_positions",
+        "security_audit_log",
+        "system_settings",
+        "trades",
+        "user_subscriptions",
+        "user_telegram",
+        "users"
+      ],
+      "functions": [
+        "add_attention_log",
+        "add_exchange",
+        "arm_tp",
+        "cancel_standby_order",
+        "check_and_update_floor_state",
+        "cleanup_old_ohlcv",
+        "close_position",
+        "create_bot",
+        "create_standby_order",
+        "create_user",
+        "create_verification_code",
+        "create_wallet",
+        "credit_referral_earning",
+        "credit_reserve",
+        "deduct_performance_fee",
+        "get_active_bots",
+        "get_active_standby_orders",
+        "get_all_coin_categories",
+        "get_all_settings",
+        "get_all_users_admin",
+        "get_available_for_short",
+        "get_balance_history",
+        "get_btc_24h_change",
+        "get_btc_7d_change",
+        "get_coin_category",
+        "get_coin_params",
+        "get_db",
+        "get_exchange_by_id",
+        "get_is_admin",
+        "get_last_resend_time",
+        "get_long_holdings_quantity",
+        "get_market_age_days",
+        "get_market_regime",
+        "get_market_volatility",
+        "get_min_order",
+        "get_ohlcv",
+        "get_open_positions",
+        "get_open_trade_counts_for_user",
+        "get_pending_notifications",
+        "get_platform_stats",
+        "get_position_trades",
+        "get_queue_candidates",
+        "get_regime_history",
+        "get_research_bots",
+        "get_research_rankings",
+        "get_reserve_wallet",
+        "get_security_logs",
+        "get_setting",
+        "get_setting_bool",
+        "get_user_attention_logs",
+        "get_user_bots",
+        "get_user_by_email",
+        "get_user_by_id",
+        "get_user_exchanges",
+        "get_user_trade_usage",
+        "get_user_wallets",
+        "get_wallet_by_id",
+        "increment_notification_retry",
+        "increment_trade_usage",
+        "init_pool",
+        "is_reserve_in_debt",
+        "is_wallet_pending_buyback",
+        "log_security_event",
+        "mark_notification_sent",
+        "open_position",
+        "pause_exchange",
+        "promote_gate_reference",
+        "queue_notification",
+        "record_balance_history",
+        "record_bot_event",
+        "record_performance_timing",
+        "record_system_health",
+        "record_trade",
+        "record_wallet_transaction",
+        "regenerate_verification_code",
+        "resolve_attention_log",
+        "resume_exchange",
+        "set_position_queued",
+        "set_setting",
+        "store_ohlcv",
+        "trigger_standby_order",
+        "update_atr",
+        "update_peak_price",
+        "update_position_after_dca",
+        "update_research_score",
+        "update_standby_amount",
+        "update_wallet_balance",
+        "upsert_min_order",
+        "verify_code",
+        "write_market_regime"
+      ],
+      "local_imports": [],
+      "redis_keys": [
+        "setting:{}"
+      ],
+      "line_count": 1714
+    },
+    "dca_logic.py": {
+      "tables": [],
+      "functions": [
+        "calc_new_average",
+        "calc_quantity",
+        "should_dca",
+        "should_take_profit"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 17
+    },
+    "email_service.py": {
+      "tables": [],
+      "functions": [
+        "_base_template",
+        "send_api_key_expiring_email",
+        "send_email",
+        "send_password_reset_email",
+        "send_reserve_low_email",
+        "send_verification_email",
+        "send_welcome_email"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 213
+    },
+    "entry_signals.py": {
+      "tables": [],
+      "functions": [
+        "check_entry_signal",
+        "get_ohlcv_data",
+        "signal_bm_hold",
+        "signal_bm_random",
+        "signal_bm_simple",
+        "signal_bm_static",
+        "signal_e1",
+        "signal_e10",
+        "signal_e11",
+        "signal_e12",
+        "signal_e13",
+        "signal_e14",
+        "signal_e15",
+        "signal_e16",
+        "signal_e17",
+        "signal_e18",
+        "signal_e18b",
+        "signal_e19",
+        "signal_e2",
+        "signal_e20",
+        "signal_e21",
+        "signal_e22",
+        "signal_e23",
+        "signal_e24",
+        "signal_e25",
+        "signal_e26",
+        "signal_e27",
+        "signal_e28",
+        "signal_e29",
+        "signal_e3",
+        "signal_e30",
+        "signal_e31",
+        "signal_e32",
+        "signal_e33",
+        "signal_e34",
+        "signal_e35",
+        "signal_e36",
+        "signal_e37",
+        "signal_e38",
+        "signal_e39",
+        "signal_e4",
+        "signal_e40",
+        "signal_e41",
+        "signal_e42",
+        "signal_e43",
+        "signal_e44",
+        "signal_e45",
+        "signal_e46",
+        "signal_e47",
+        "signal_e48",
+        "signal_e49",
+        "signal_e5",
+        "signal_e50",
+        "signal_e51",
+        "signal_e52",
+        "signal_e53",
+        "signal_e54",
+        "signal_e55",
+        "signal_e56",
+        "signal_e57",
+        "signal_e59",
+        "signal_e6",
+        "signal_e60",
+        "signal_e61",
+        "signal_e62",
+        "signal_e63",
+        "signal_e64",
+        "signal_e65",
+        "signal_e66",
+        "signal_e7",
+        "signal_e8",
+        "signal_e9"
+      ],
+      "local_imports": [
+        "database",
+        "indicators"
+      ],
+      "redis_keys": [],
+      "line_count": 1796
+    },
+    "exchanges.py": {
+      "tables": [
+        "trades"
+      ],
+      "functions": [
+        "cancel_order",
+        "check_st_flag_exchange",
+        "decrypt",
+        "encrypt",
+        "fetch_all_tickers",
+        "fetch_order",
+        "fetch_recent_orders",
+        "fetch_ticker",
+        "get_all_balances",
+        "get_all_min_orders",
+        "get_balance",
+        "get_fernet",
+        "get_min_order_size",
+        "get_supported_exchanges",
+        "init_exchange",
+        "limit_buy",
+        "market_buy",
+        "market_sell",
+        "parse_order",
+        "reconcile_exchange_orders",
+        "requires_passphrase"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "amount",
+        "ask",
+        "average",
+        "baseVolume",
+        "bid",
+        "cost",
+        "fee",
+        "filled",
+        "id",
+        "info",
+        "last",
+        "price",
+        "remaining",
+        "side",
+        "status",
+        "symbol",
+        "timestamp",
+        "type"
+      ],
+      "line_count": 357
+    },
+    "executor.py": {
+      "tables": [
+        "exchange_coin_limits",
+        "exchanges",
+        "short_buyback_orders",
+        "virtual_wallets"
+      ],
+      "functions": [
+        "get_executor",
+        "get_fee_rate",
+        "get_redis_price"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "amount",
+        "average",
+        "fee",
+        "fees",
+        "filled",
+        "fills",
+        "id",
+        "price",
+        "status"
+      ],
+      "line_count": 604
+    },
+    "fetch_btc_daily.py": {
+      "tables": [
+        "btc_daily"
+      ],
+      "functions": [],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 43
+    },
+    "fetch_ohlcv.py": {
+      "tables": [
+        "bots",
+        "exchanges",
+        "ohlcv_hourly"
+      ],
+      "functions": [
+        "fetch_coins_for_exchange",
+        "fetch_ohlcv_for_coin",
+        "get_active_exchanges",
+        "init_public_exchange",
+        "run_fetch"
+      ],
+      "local_imports": [
+        "database",
+        "exchanges"
+      ],
+      "redis_keys": [],
+      "line_count": 126
+    },
+    "generate_dca_report.py": {
+      "tables": [
+        "bots",
+        "positions"
+      ],
+      "functions": [
+        "_generate_dca_csvs",
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 377
+    },
+    "generate_research_report.py": {
+      "tables": [
+        "bots",
+        "positions",
+        "scalper_positions"
+      ],
+      "functions": [
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 562
+    },
+    "generate_scalper_report.py": {
+      "tables": [
+        "bots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "_generate_scalper_csvs",
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 264
+    },
+    "generate_scalper_results.py": {
+      "tables": [
+        "bots",
+        "scalper_daily_snapshots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "generate",
+        "get_daily_pnl",
+        "get_top20_scalper_score"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 169
+    },
+    "generate_scalper_v2_report.py": {
+      "tables": [
+        "bots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "run"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 182
+    },
+    "generate_top25_csv.py": {
+      "tables": [
+        "bots",
+        "positions",
+        "scalper_positions"
+      ],
+      "functions": [
+        "get_dca_trades",
+        "get_scalper_trades",
+        "get_top20_dca_rars",
+        "get_top20_dca_score",
+        "get_top20_scalper_rars",
+        "get_top20_scalper_score",
+        "write_csv"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 272
+    },
+    "indicators.py": {
+      "tables": [],
+      "functions": [
+        "calc_adx",
+        "calc_atr",
+        "calc_bollinger",
+        "calc_ema",
+        "calc_fibonacci_levels",
+        "calc_ichimoku",
+        "calc_keltner",
+        "calc_macd",
+        "calc_obv",
+        "calc_price_drop",
+        "calc_relative_strength_vs_btc",
+        "calc_rsi",
+        "calc_sma",
+        "calc_stoch_rsi",
+        "calc_supertrend",
+        "calc_swing_structure",
+        "calc_volume_ratio",
+        "calc_vpoc",
+        "calc_vwap",
+        "calc_zscore",
+        "detect_engulfing",
+        "detect_fair_value_gap",
+        "detect_hammer",
+        "detect_obv_divergence",
+        "detect_rsi_divergence",
+        "detect_support_level",
+        "enough",
+        "qfl_base_bounce",
+        "to_arrays"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 485
+    },
+    "kucoin_websocket.py": {
+      "tables": [],
+      "functions": [
+        "get_redis"
+      ],
+      "local_imports": [],
+      "redis_keys": [
+        "price:{}:{}/USDT",
+        "ws:{}:last_update",
+        "ws:{}:status",
+        "ws:{}:total_updates"
+      ],
+      "line_count": 201
+    },
+    "launch_research_bots.py": {
+      "tables": [
+        "bots"
+      ],
+      "functions": [
+        "create_bots"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 416
+    },
+    "live_long_dca_engine.py": {
+      "tables": [
+        "bots",
+        "coin_parameters",
+        "exchanges",
+        "positions",
+        "virtual_wallets",
+        "wallet_transactions"
+      ],
+      "functions": [
+        "_coin_in_bot_scope",
+        "_engine_loop",
+        "check_entry_signal",
+        "check_tp",
+        "execute_dca_buy",
+        "execute_tp_sell",
+        "get_live_tp_callback",
+        "get_redis",
+        "get_redis_price",
+        "get_tradeable_coins",
+        "is_engine_alive",
+        "is_st_coin",
+        "load_coin_params_cache",
+        "load_dca_champion",
+        "load_live_long_bots",
+        "load_open_positions",
+        "load_wallet",
+        "make_live_tp_callback",
+        "needs_dca",
+        "open_position",
+        "refresh_asap_bots_cache",
+        "refresh_tp_cache",
+        "run_bot_cycle",
+        "run_user_cycle",
+        "score_position",
+        "start_engine",
+        "stop_engine"
+      ],
+      "local_imports": [
+        "database",
+        "executor"
+      ],
+      "redis_keys": [
+        "btc:regime_data",
+        "engine:long_dca:heartbeat",
+        "st:{}:{}"
+      ],
+      "line_count": 1158
+    },
+    "live_scalper_engine.py": {
+      "tables": [
+        "bots",
+        "champion_history",
+        "live_positions",
+        "users",
+        "virtual_wallets",
+        "wallet_transactions"
+      ],
+      "functions": [
+        "get_live_scalper",
+        "on_price_update"
+      ],
+      "local_imports": [
+        "database",
+        "scalper_signals"
+      ],
+      "redis_keys": [],
+      "line_count": 483
+    },
+    "main.py": {
+      "tables": [
+        "exchanges",
+        "positions",
+        "system_health",
+        "trades"
+      ],
+      "functions": [
+        "bot_loop",
+        "check_assertions",
+        "clear_stale_pending_buyback",
+        "fetch_btc_price_loop",
+        "reconcile_orders",
+        "send_telegram",
+        "wait_for_postgresql",
+        "wait_for_redis"
+      ],
+      "local_imports": [
+        "database",
+        "exchanges",
+        "telegram"
+      ],
+      "redis_keys": [
+        "average",
+        "cost",
+        "filled",
+        "id",
+        "price",
+        "side",
+        "symbol",
+        "timestamp",
+        "type"
+      ],
+      "line_count": 336
+    },
+    "rars_champion_promotion.py": {
+      "tables": [
+        "champion_history",
+        "rars_scores"
+      ],
+      "functions": [
+        "get_active_champion",
+        "get_blended_scores",
+        "promote_champion",
+        "run_all_promotions",
+        "run_promotion",
+        "update_challenger_tracking"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 214
+    },
+    "rars_champion_scoring.py": {
+      "tables": [
+        "bots",
+        "positions",
+        "rars_scores",
+        "rars_weight_config",
+        "scalper_positions"
+      ],
+      "functions": [
+        "calculate_dca_scores",
+        "calculate_scalper_scores",
+        "compute_dca_raw_metrics",
+        "compute_open_position_metrics",
+        "compute_scalper_raw_metrics",
+        "fetch_dca_trades",
+        "fetch_open_dca_positions",
+        "fetch_scalper_trades",
+        "get_weights",
+        "normalize_metric",
+        "run_daily_scoring",
+        "window_start",
+        "write_scores_to_db"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "active_days",
+        "excl_top5_pnl",
+        "robustness_pct"
+      ],
+      "line_count": 431
+    },
+    "rars_scoring.py": {
+      "tables": [
+        "bots",
+        "positions"
+      ],
+      "functions": [
+        "calculate_rars"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 189
+    },
+    "recover_short_buybacks.py": {
+      "tables": [
+        "positions"
+      ],
+      "functions": [
+        "run"
+      ],
+      "local_imports": [
+        "database",
+        "short_dca_engine"
+      ],
+      "redis_keys": [
+        "status"
+      ],
+      "line_count": 79
+    },
+    "refresh_min_orders.py": {
+      "tables": [
+        "coin_parameters",
+        "exchanges"
+      ],
+      "functions": [
+        "run"
+      ],
+      "local_imports": [
+        "database",
+        "exchanges"
+      ],
+      "redis_keys": [],
+      "line_count": 63
+    },
+    "research_engine.py": {
+      "tables": [
+        "bots",
+        "btc_daily",
+        "coin_parameters",
+        "positions",
+        "watchdog_events"
+      ],
+      "functions": [
+        "_refresh_rt_cache",
+        "calculate_score",
+        "check_gate_conditions",
+        "check_st_flag",
+        "check_tp",
+        "execute_buy",
+        "execute_sell",
+        "fetch_and_cache_prices",
+        "get_btc_regime_data",
+        "get_price",
+        "get_redis",
+        "init_exchange",
+        "make_realtime_tp_checker",
+        "run_bot",
+        "run_cycle",
+        "try_open_position"
+      ],
+      "local_imports": [
+        "database",
+        "entry_signals",
+        "indicators",
+        "telegram",
+        "websocket_prices"
+      ],
+      "redis_keys": [
+        "average",
+        "bot:cycle_time",
+        "bot:last_cycle",
+        "bot:status",
+        "btc:dominance",
+        "btc:regime_data",
+        "cost",
+        "fee",
+        "filled",
+        "id",
+        "info",
+        "last",
+        "price",
+        "price:{}:{}",
+        "price:{}:{}/USDT",
+        "st:{}:{}",
+        "ws:mexc:status"
+      ],
+      "line_count": 1229
+    },
+    "save_scalper_snapshot.py": {
+      "tables": [
+        "bots",
+        "scalper_daily_snapshots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "get_top20_scalper_score",
+        "save_snapshot"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 74
+    },
+    "scalper_engine.py": {
+      "tables": [
+        "bots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "get_scalper",
+        "on_price_update"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "btc:regime_data"
+      ],
+      "line_count": 451
+    },
+    "scalper_signals.py": {
+      "tables": [],
+      "functions": [
+        "calc_pnl",
+        "check_entry_signal",
+        "check_stop_loss",
+        "get_btc_regime"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 83
+    },
+    "scalper_v2_engine.py": {
+      "tables": [
+        "bots",
+        "scalper_positions"
+      ],
+      "functions": [
+        "_generate_grid",
+        "get_scalper_v2",
+        "on_price_update"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "btc:regime_data"
+      ],
+      "line_count": 527
+    },
+    "setup/init_db.py": {
+      "tables": [
+        "owner_balance",
+        "users"
+      ],
+      "functions": [
+        "create_research_account",
+        "hash_password",
+        "main"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 155
+    },
+    "setup/launch_research_bots.py": {
+      "tables": [
+        "bots",
+        "exchanges",
+        "users"
+      ],
+      "functions": [
+        "bot_exists",
+        "create_benchmark_bot",
+        "create_method_bot",
+        "get_admin_user",
+        "get_exchange_id",
+        "load_config",
+        "main"
+      ],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 129
+    },
+    "setup_kucoin.py": {
+      "tables": [
+        "exchanges"
+      ],
+      "functions": [],
+      "local_imports": [
+        "database",
+        "exchanges"
+      ],
+      "redis_keys": [],
+      "line_count": 27
+    },
+    "short_dca_engine.py": {
+      "tables": [
+        "bots",
+        "exchanges",
+        "positions",
+        "users",
+        "virtual_wallets"
+      ],
+      "functions": [
+        "_engine_loop",
+        "check_buyback_fills",
+        "check_sell_trigger",
+        "compute_sell_amount",
+        "execute_short_sell",
+        "get_cached_min_order",
+        "get_redis",
+        "get_redis_price",
+        "get_short_params",
+        "handle_buyback_fill",
+        "is_engine_alive",
+        "load_open_short_positions",
+        "load_short_bots",
+        "on_price_update",
+        "open_short_position_record",
+        "refresh_short_cache",
+        "retry_pending_buybacks",
+        "run_cycle",
+        "start_engine"
+      ],
+      "local_imports": [
+        "database",
+        "executor",
+        "live_long_dca_engine"
+      ],
+      "redis_keys": [
+        "engine:short_dca:heartbeat",
+        "price:{}:{}/USDT"
+      ],
+      "line_count": 681
+    },
+    "system_gates.py": {
+      "tables": [],
+      "functions": [
+        "is_dca_continuation_allowed",
+        "is_new_bot_creation_allowed",
+        "is_new_trade_allowed",
+        "is_short_buyback_allowed",
+        "is_tp_trailing_allowed",
+        "is_within_trade_limit"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 104
+    },
+    "telegram.py": {
+      "tables": [
+        "users"
+      ],
+      "functions": [
+        "admin_bot_started",
+        "admin_bot_stopped",
+        "admin_bot_stopped",
+        "admin_cron_complete",
+        "admin_cron_failed",
+        "admin_cron_failed",
+        "admin_cron_finished",
+        "admin_cron_started",
+        "admin_error",
+        "admin_reclassification",
+        "alert_api_key_expiring",
+        "alert_api_key_invalid",
+        "alert_checkpoint",
+        "alert_low_balance",
+        "alert_reserve_empty",
+        "alert_reserve_low",
+        "alert_st_flag",
+        "is_live_notify_enabled",
+        "notify_dca",
+        "notify_trade_closed",
+        "notify_trade_open",
+        "retry_pending_notifications",
+        "send_admin",
+        "send_daily_report",
+        "send_message",
+        "send_monthly_report",
+        "send_verification_code",
+        "send_weekly_report"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 406
+    },
+    "websocket_prices.py": {
+      "tables": [],
+      "functions": [
+        "_init_live_dca",
+        "_init_short_dca",
+        "get_redis"
+      ],
+      "local_imports": [
+        "PushDataV3ApiWrapper_pb2"
+      ],
+      "redis_keys": [
+        "ws:mexc:last_update",
+        "ws:mexc:status",
+        "ws:mexc:total_updates"
+      ],
+      "line_count": 237
+    },
+    "write_dashboard.py": {
+      "tables": [],
+      "functions": [],
+      "local_imports": [],
+      "redis_keys": [],
+      "line_count": 0
+    }
+  },
+  "table_to_files": {
+    "positions": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "attached_assets/api_1779740966898.py",
+      "attached_assets/api_1779741157276.py",
+      "attached_assets/bot_1779664637272.py",
+      "attached_assets/bot_1779664997163.py",
+      "automation/check_paper_timer.py",
+      "automation/daily_aggregation.py",
+      "automation/fetch_ohlcv.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "bot_loop.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "generate_dca_report.py",
+      "generate_research_report.py",
+      "generate_top25_csv.py",
+      "live_long_dca_engine.py",
+      "main.py",
+      "rars_champion_scoring.py",
+      "rars_scoring.py",
+      "recover_short_buybacks.py",
+      "research_engine.py",
+      "short_dca_engine.py"
+    ],
+    "wallet_transactions": [
+      "AverionBot/tools/bot_audit.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py"
+    ],
+    "virtual_wallets": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "executor.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py",
+      "short_dca_engine.py"
+    ],
+    "reserve_wallets": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "auth.py",
+      "automation/generate_excel.py",
+      "database.py"
+    ],
+    "scalper_positions": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "generate_research_report.py",
+      "generate_scalper_report.py",
+      "generate_scalper_results.py",
+      "generate_scalper_v2_report.py",
+      "generate_top25_csv.py",
+      "rars_champion_scoring.py",
+      "save_scalper_snapshot.py",
+      "scalper_engine.py",
+      "scalper_v2_engine.py"
+    ],
+    "bots": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "bot_loop.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "fetch_ohlcv.py",
+      "generate_dca_report.py",
+      "generate_research_report.py",
+      "generate_scalper_report.py",
+      "generate_scalper_results.py",
+      "generate_scalper_v2_report.py",
+      "generate_top25_csv.py",
+      "launch_research_bots.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py",
+      "rars_champion_scoring.py",
+      "rars_scoring.py",
+      "research_engine.py",
+      "save_scalper_snapshot.py",
+      "scalper_engine.py",
+      "scalper_v2_engine.py",
+      "setup/launch_research_bots.py",
+      "short_dca_engine.py"
+    ],
+    "fee_debt": [
+      "AverionBot/tools/bot_audit.py",
+      "api.py",
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "database.py"
+    ],
+    "watchdog_events": [
+      "api.py",
+      "research_engine.py"
+    ],
+    "category_limits": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "exchanges": [
+      "api.py",
+      "automation/fetch_ohlcv.py",
+      "automation/generate_excel.py",
+      "automation/rotate_fernet.py",
+      "database.py",
+      "executor.py",
+      "fetch_ohlcv.py",
+      "live_long_dca_engine.py",
+      "main.py",
+      "refresh_min_orders.py",
+      "setup/launch_research_bots.py",
+      "setup_kucoin.py",
+      "short_dca_engine.py"
+    ],
+    "system_health": [
+      "api.py",
+      "automation/generate_diagnostics.py",
+      "main.py"
+    ],
+    "coin_parameter_history": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "live_dca_positions": [
+      "api.py",
+      "database.py"
+    ],
+    "live_positions": [
+      "api.py",
+      "database.py",
+      "live_scalper_engine.py"
+    ],
+    "champion_history": [
+      "api.py",
+      "live_scalper_engine.py",
+      "rars_champion_promotion.py"
+    ],
+    "coin_parameters": [
+      "api.py",
+      "bot_loop.py",
+      "calculate_coin_params.py",
+      "live_long_dca_engine.py",
+      "refresh_min_orders.py",
+      "research_engine.py"
+    ],
+    "trades": [
+      "api.py",
+      "attached_assets/api_1779740966898.py",
+      "attached_assets/api_1779741157276.py",
+      "attached_assets/bot_1779664637272.py",
+      "attached_assets/bot_1779664997163.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "exchanges.py",
+      "main.py"
+    ],
+    "users": [
+      "api.py",
+      "auth.py",
+      "automation/check_paper_timer.py",
+      "automation/generate_metrics.py",
+      "database.py",
+      "live_scalper_engine.py",
+      "setup/init_db.py",
+      "setup/launch_research_bots.py",
+      "short_dca_engine.py",
+      "telegram.py"
+    ],
+    "rars_scores": [
+      "api.py",
+      "rars_champion_promotion.py",
+      "rars_champion_scoring.py"
+    ],
+    "performance_timing": [
+      "api.py",
+      "automation/generate_diagnostics.py"
+    ],
+    "platform_pricing": [
+      "api.py"
+    ],
+    "referrals": [
+      "auth.py"
+    ],
+    "market_regimes": [
+      "automation/classify_coins.py",
+      "database.py"
+    ],
+    "coin_history": [
+      "automation/classify_coins.py",
+      "automation/fetch_cmc.py",
+      "automation/fetch_coingecko.py",
+      "calculate_coin_params.py",
+      "classify_coins.py",
+      "database.py"
+    ],
+    "owner_balance": [
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "setup/init_db.py"
+    ],
+    "ohlcv_hourly": [
+      "automation/fetch_ohlcv.py",
+      "data_retention_cleanup.py",
+      "database.py",
+      "fetch_ohlcv.py"
+    ],
+    "bot_events": [
+      "automation/generate_diagnostics.py"
+    ],
+    "btc_daily": [
+      "bot_loop.py",
+      "fetch_btc_daily.py",
+      "research_engine.py"
+    ],
+    "coin_first_seen": [
+      "calculate_coin_params.py",
+      "classify_coins.py"
+    ],
+    "attention_log": [
+      "database.py"
+    ],
+    "user_subscriptions": [
+      "database.py"
+    ],
+    "system_settings": [
+      "database.py"
+    ],
+    "exchange_min_orders": [
+      "database.py"
+    ],
+    "security_audit_log": [
+      "database.py"
+    ],
+    "user_telegram": [
+      "database.py"
+    ],
+    "exchange_coin_limits": [
+      "executor.py"
+    ],
+    "short_buyback_orders": [
+      "executor.py"
+    ],
+    "scalper_daily_snapshots": [
+      "generate_scalper_results.py",
+      "save_scalper_snapshot.py"
+    ],
+    "rars_weight_config": [
+      "rars_champion_scoring.py"
+    ]
+  }
+}
