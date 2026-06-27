@@ -20,6 +20,7 @@ import database as db
 sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
 from heartbeat_service import write_heartbeat
+from champion_service import load_champions, get_current_regime
 
 BOT_REFRESH_INTERVAL = 60
 
@@ -49,9 +50,20 @@ class ScalperEngine:
         print(f'✅ ScalperEngine initialized · {len(self.live_bots)} active bots')
 
     def _load_bots(self):
-        """TODO: not yet implemented - next step is tracing the real
-        _load_bots() in live_scalper_engine.py."""
-        raise NotImplementedError("_load_bots not yet built")
+        """Connected to the shared champion_service (June 27 2026) -
+        this system_type='SCALPER' call is what makes Scalper's
+        champions genuinely different from Long's, even though both
+        use the same shared function. Also switched here from the
+        original narrower "fetch only the current regime" approach
+        to the same "fetch all 3 regimes at once" pattern Long
+        always used - confirmed correct since a Smart-mode bot needs
+        to be able to match whichever regime is active at any given
+        moment, not just whatever was active when bots were loaded.
+        TODO: rest of _load_bots (the actual bot-loading SQL query
+        and per-bot dict building) not yet built."""
+        scalper_champions = load_champions('SCALPER')
+        current_regime = get_current_regime(self.r)
+        raise NotImplementedError("rest of _load_bots not yet built")
 
     def _cleanup_stuck_positions(self):
         """TODO: not yet implemented."""

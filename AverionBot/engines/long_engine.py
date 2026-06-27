@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
 from heartbeat_service import write_heartbeat
+from champion_service import load_champions, get_current_regime
 
 _running = False
 _cycle_thread = None
@@ -47,11 +48,16 @@ def start_engine():
 
 
 def _engine_loop():
-    """Main cycle loop. Connected to the shared get_redis() and
-    write_heartbeat() (June 27 2026).
+    """Main cycle loop. Connected to the shared get_redis(),
+    write_heartbeat(), and champion_service (June 27 2026) - this
+    system_type='DCA' call is what makes Long's champions genuinely
+    different from Scalper's, even though both use the same shared
+    function.
     TODO: rest of the loop body not yet built - next piece to trace
-    is load_dca_champion(), then the bots list itself."""
+    is the bots list itself."""
     r = get_redis()
     while _running:
         write_heartbeat(r, 'long_dca')
+        champions = load_champions('DCA')
+        current_regime = get_current_regime(r)
         raise NotImplementedError("rest of loop body not yet built")
