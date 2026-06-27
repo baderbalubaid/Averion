@@ -34,11 +34,11 @@ Legend: ✅ = verified | ⚠️ = partially verified or a confirmed bug |
 | 12 | champion_loader | ✅ rebuilt | — | TO RESEARCH |
 | 13 | long_champion_injection / scalper_champion_injection | ✅ Long-specific logic | — | TO RESEARCH (confirmed different from Long) |
 | **D. Platform-level gates** |
-| 14 | bot_slot_limit | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
-| 15 | trade_limit | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
-| 16 | global_trading_toggles | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
-| 17 | entry_style_toggle | ✅ | TO RESEARCH | TO RESEARCH |
-| 18 | exchange_toggle | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 14 | bot_slot_limit | ✅ shared | ✅ confirmed - all checked inside the one shared is_new_trade_allowed() call Short already makes | TO RESEARCH |
+| 15 | trade_limit | ✅ shared | ✅ confirmed (same as above) | TO RESEARCH |
+| 16 | global_trading_toggles | ✅ shared | ✅ confirmed (same as above) | TO RESEARCH |
+| 17 | entry_style_toggle | ✅ | ✅ confirmed, uses Short's own toggle keys (short_smart_enabled / short_customized_enabled) inside the same shared function | TO RESEARCH |
+| 18 | exchange_toggle | ✅ shared | ✅ confirmed (same as above) | TO RESEARCH |
 | 19 | debt_check | ✅ | ❌ MISSING - confirmed real gap, must be added | TO RESEARCH |
 | 20 | long_floor_pause | ✅ Long-only by design | — (confirmed not applicable) | TO RESEARCH |
 | 21 | long_st_check / short_st_check | ⚠️ exists, has its own detection gap | ❌ MISSING - needs new design (notify user to sell coin before delisting) | TO RESEARCH |
@@ -54,8 +54,8 @@ Legend: ✅ = verified | ⚠️ = partially verified or a confirmed bug |
 | 30 | long_wallet_debit | ✅ | — (no debit at open - nothing spent yet) | TO RESEARCH |
 | **F. DCA / queue logic** |
 | 31 | load_open_positions | ✅ rebuilt | TO RESEARCH | — (confirmed no DCA at all) |
-| 32 | needs_dca / short_sell_trigger | ✅ rebuilt | TO RESEARCH (inverted version confirmed to exist: check_sell_trigger) | — |
-| 33 | dca_amount_calc | ✅ rebuilt | TO RESEARCH | — |
+| 32 | long_needs_dca / short_check_sell_trigger | ✅ rebuilt | ✅ confirmed genuine mirror of Long's logic - same spacing-multiplier compounding math, just inverted (price must RISE, not drop) | — |
+| 33 | long_dca_amount_calc / short_compute_sell_amount | ✅ rebuilt | ✅ confirmed - PLUS a real feature Long does NOT have: partial-fill amounts that don't meet the exchange minimum carry forward as 'standby_amount', added on top of the NEXT level's requirement instead of being lost | — |
 | 34 | dca_priority_scoring | ✅ rebuilt | — (confirmed no scoring/queue system at all) | — |
 | 35 | dca_priority_funding_loop | ⚠️ not yet rebuilt | — | — |
 | **G. Take-profit / trailing / close** |
