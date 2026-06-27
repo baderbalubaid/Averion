@@ -244,23 +244,37 @@ with open(os.path.join(AVERION_DIR, 'system_map', 'architecture', 'database_er.m
         f.write("    " + ftable + " ||--o{ " + table + " : \"" + col + "\"\n")
 print(f"Mermaid DB ER diagram written to system_map/architecture/database_er.mmd ({len(seen_rels)} relationships)")
 
-with open(os.path.join(AVERION_DIR, 'system_map', 'architecture', 'positions.mmd'), 'w') as f:
-    f.write("graph TD\n")
-    pos_tables = ['positions', 'live_dca_positions', 'live_positions', 'scalper_positions']
-    for t in pos_tables:
-        files_for_t = table_to_files.get(t, set())
-        for fn in files_for_t:
-            safe_fn = fn.replace('/', '_').replace('.', '_')
-            f.write("    " + t + "[(\"" + t + "\")] --> " + safe_fn + "[\"" + fn + "\"]\n")
-    for ep in endpoints:
-        if 'position' in ep['path'].lower():
-            safe_fn = ep['file'].replace('/', '_').replace('.', '_')
-            ep_id = ep['path'].replace('/', '_').replace('{', '').replace('}', '')
-            f.write("    " + safe_fn + " --> " + ep_id + "[\"" + ep['method'] + " " + ep['path'] + "\"]\n")
-            for caller in endpoint_to_frontend.get(ep['path'], []):
-                safe_caller = caller.replace('/', '_').replace('.', '_')
-                f.write("    " + ep_id + " --> " + safe_caller + "[\"" + caller + "\"]\n")
-print("Mermaid concept diagram written to system_map/architecture/positions.mmd")
+def write_concept_diagram(concept_name, concept_tables, endpoint_keyword):
+    """Generalized so adding a new concept (Champions, Notifications,
+    etc) later is one function call, not copy-pasted code."""
+    path = os.path.join(AVERION_DIR, 'system_map', 'architecture', f'{concept_name}.mmd')
+    with open(path, 'w') as f:
+        f.write("graph TD\n")
+        for t in concept_tables:
+            files_for_t = table_to_files.get(t, set())
+            for fn in files_for_t:
+                safe_fn = fn.replace('/', '_').replace('.', '_')
+                f.write("    " + t + "[(\"" + t + "\")] --> " + safe_fn + "[\"" + fn + "\"]\n")
+        for ep in endpoints:
+            if endpoint_keyword in ep['path'].lower():
+                safe_fn = ep['file'].replace('/', '_').replace('.', '_')
+                ep_id = ep['path'].replace('/', '_').replace('{', '').replace('}', '')
+                f.write("    " + safe_fn + " --> " + ep_id + "[\"" + ep['method'] + " " + ep['path'] + "\"]\n")
+                for caller in endpoint_to_frontend.get(ep['path'], []):
+                    safe_caller = caller.replace('/', '_').replace('.', '_')
+                    f.write("    " + ep_id + " --> " + safe_caller + "[\"" + caller + "\"]\n")
+    print(f"Mermaid concept diagram written to system_map/architecture/{concept_name}.mmd")
+
+write_concept_diagram(
+    'positions',
+    ['positions', 'live_dca_positions', 'live_positions', 'scalper_positions'],
+    'position'
+)
+write_concept_diagram(
+    'wallet',
+    ['reserve_wallets', 'virtual_wallets', 'wallet_transactions', 'fee_debt'],
+    'wallet'
+)
 
 print(f"Endpoints found: {len(endpoints)}")
 print(f"Endpoints with a matched frontend caller: {sum(1 for e in endpoints if endpoint_to_frontend.get(e['path']))}")

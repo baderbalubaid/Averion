@@ -11,34 +11,34 @@ If a table conceptually overlaps with another table touched by many MORE files, 
 - **referrals**: 1 file(s) - auth.py
 - **bot_events**: 1 file(s) - automation/generate_diagnostics.py
 - **attention_log**: 1 file(s) - database.py
-- **security_audit_log**: 1 file(s) - database.py
-- **user_telegram**: 1 file(s) - database.py
-- **system_settings**: 1 file(s) - database.py
-- **exchange_min_orders**: 1 file(s) - database.py
 - **user_subscriptions**: 1 file(s) - database.py
-- **exchange_coin_limits**: 1 file(s) - executor.py
+- **security_audit_log**: 1 file(s) - database.py
+- **system_settings**: 1 file(s) - database.py
+- **user_telegram**: 1 file(s) - database.py
+- **exchange_min_orders**: 1 file(s) - database.py
 - **short_buyback_orders**: 1 file(s) - executor.py
+- **exchange_coin_limits**: 1 file(s) - executor.py
 - **rars_weight_config**: 1 file(s) - rars_champion_scoring.py
-- **live_dca_positions**: 2 file(s) - api.py, database.py
-- **category_limits**: 2 file(s) - api.py, calculate_coin_params.py
+- **performance_timing**: 2 file(s) - api.py, automation/generate_diagnostics.py
 - **coin_parameter_history**: 2 file(s) - api.py, calculate_coin_params.py
 - **watchdog_events**: 2 file(s) - api.py, research_engine.py
-- **performance_timing**: 2 file(s) - api.py, automation/generate_diagnostics.py
+- **category_limits**: 2 file(s) - api.py, calculate_coin_params.py
+- **live_dca_positions**: 2 file(s) - api.py, database.py
 - **market_regimes**: 2 file(s) - automation/classify_coins.py, database.py
 - **coin_first_seen**: 2 file(s) - calculate_coin_params.py, classify_coins.py
 - **scalper_daily_snapshots**: 2 file(s) - generate_scalper_results.py, save_scalper_snapshot.py
-- **wallet_transactions**: 2 file(s) - live_long_dca_engine.py, live_scalper_engine.py
-- **rars_scores**: 3 file(s) - api.py, rars_champion_promotion.py, rars_champion_scoring.py
-- **champion_history**: 3 file(s) - api.py, live_scalper_engine.py, rars_champion_promotion.py
 - **system_health**: 3 file(s) - api.py, automation/generate_diagnostics.py, main.py
+- **rars_scores**: 3 file(s) - api.py, rars_champion_promotion.py, rars_champion_scoring.py
 - **live_positions**: 3 file(s) - api.py, database.py, live_scalper_engine.py
+- **champion_history**: 3 file(s) - api.py, live_scalper_engine.py, rars_champion_promotion.py
 - **owner_balance**: 3 file(s) - automation/daily_aggregation.py, automation/generate_excel.py, setup/init_db.py
+- **wallet_transactions**: 3 file(s) - bot_audit.py, live_long_dca_engine.py, live_scalper_engine.py
 - **btc_daily**: 3 file(s) - bot_loop.py, fetch_btc_daily.py, research_engine.py
-- **reserve_wallets**: 4 file(s) - api.py, auth.py, automation/generate_excel.py, database.py
 - **ohlcv_hourly**: 4 file(s) - automation/fetch_ohlcv.py, data_retention_cleanup.py, database.py, fetch_ohlcv.py
-- **fee_debt**: 5 file(s) - api.py, automation/daily_aggregation.py, automation/generate_excel.py, automation/generate_metrics.py, database.py
-- **coin_parameters**: 6 file(s) - api.py, bot_loop.py, calculate_coin_params.py, live_long_dca_engine.py, refresh_min_orders.py, research_engine.py
+- **reserve_wallets**: 5 file(s) - api.py, auth.py, automation/generate_excel.py, bot_audit.py, database.py
+- **fee_debt**: 6 file(s) - api.py, automation/daily_aggregation.py, automation/generate_excel.py, automation/generate_metrics.py, bot_audit.py, database.py
 - **virtual_wallets**: 6 file(s) - api.py, bot_audit.py, executor.py, live_long_dca_engine.py, live_scalper_engine.py, short_dca_engine.py
+- **coin_parameters**: 6 file(s) - api.py, bot_loop.py, calculate_coin_params.py, live_long_dca_engine.py, refresh_min_orders.py, research_engine.py
 - **coin_history**: 6 file(s) - automation/classify_coins.py, automation/fetch_cmc.py, automation/fetch_coingecko.py, calculate_coin_params.py, classify_coins.py, database.py
 - **users**: 10 file(s) - api.py, auth.py, automation/check_paper_timer.py, automation/generate_metrics.py, database.py, live_scalper_engine.py, setup/init_db.py, setup/launch_research_bots.py, short_dca_engine.py, telegram.py
 - **trades**: 11 file(s) - api.py, attached_assets/api_1779740966898.py, attached_assets/api_1779741157276.py, attached_assets/bot_1779664637272.py, attached_assets/bot_1779664997163.py, automation/generate_excel.py, automation/generate_metrics.py, data_retention_cleanup.py, database.py, exchanges.py, main.py
@@ -142,11 +142,12 @@ If a table conceptually overlaps with another table touched by many MORE files, 
 - setup_kucoin.py
 - short_dca_engine.py
 
-### `fee_debt` (5 files)
+### `fee_debt` (6 files)
 - api.py
 - automation/daily_aggregation.py
 - automation/generate_excel.py
 - automation/generate_metrics.py
+- bot_audit.py
 - database.py
 
 ### `live_dca_positions` (2 files)
@@ -217,10 +218,11 @@ If a table conceptually overlaps with another table touched by many MORE files, 
 ### `referrals` (1 files)
 - auth.py
 
-### `reserve_wallets` (4 files)
+### `reserve_wallets` (5 files)
 - api.py
 - auth.py
 - automation/generate_excel.py
+- bot_audit.py
 - database.py
 
 ### `scalper_daily_snapshots` (2 files)
@@ -294,7 +296,8 @@ If a table conceptually overlaps with another table touched by many MORE files, 
 - live_scalper_engine.py
 - short_dca_engine.py
 
-### `wallet_transactions` (2 files)
+### `wallet_transactions` (3 files)
+- bot_audit.py
 - live_long_dca_engine.py
 - live_scalper_engine.py
 
@@ -443,10 +446,10 @@ If a table conceptually overlaps with another table touched by many MORE files, 
 ### automation/split_fernet_key.py (46 lines)
 - **Functions defined**: split_fernet_key
 
-### bot_audit.py (235 lines)
-- **Tables touched**: bots, positions, virtual_wallets
+### bot_audit.py (352 lines)
+- **Tables touched**: bots, fee_debt, positions, reserve_wallets, virtual_wallets, wallet_transactions
 - **Imports from**: database
-- **Functions defined**: flag, get_redis_price, main
+- **Functions defined**: flag, get_redis_price, main, verify_historical_price
 
 ### bot_loop.py (1002 lines)
 - **Tables touched**: bots, btc_daily, coin_parameters, positions
