@@ -17,6 +17,8 @@ from redis_connection import get_redis
 from heartbeat_service import write_heartbeat
 from champion_service import load_champions, get_current_regime
 from bot_loader import load_bots
+from position_loader import load_open_positions
+from coin_params_service import load_coin_params_cache
 
 _running = False
 _cycle_thread = None
@@ -49,12 +51,14 @@ def start_engine():
 
 
 def run_bot_cycle(bot, r):
-    """TODO: not yet implemented - next piece to trace is the
-    original run_bot_cycle() in live_long_dca_engine.py, which is
-    where the actual entry/DCA decision logic lives (this is the
-    'finish entry fully' piece we deferred earlier until bots were
-    genuinely loaded)."""
-    raise NotImplementedError("run_bot_cycle not yet built")
+    """Run one bot's DCA cycle. Connected to the shared
+    position_loader and coin_params_service (June 27 2026).
+    TODO: rest of the DCA-queue logic (needs_dca, score_position, the
+    priority-funding loop) not yet built - confirmed Long-specific,
+    Short has no equivalent queue/scoring system at all."""
+    open_positions = load_open_positions(bot['id'], 'long')
+    coin_params_cache = load_coin_params_cache()
+    raise NotImplementedError("rest of run_bot_cycle not yet built")
 
 
 def _engine_loop():
