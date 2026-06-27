@@ -46,3 +46,30 @@ Root cause: an incomplete exclusion check, not a file-organization
 problem - both engines already lived in separate files before this
 was found.
 
+
+## CONFIRMED DESIGN DECISION (June 27 2026) - Wallet fund limits
+
+Paper wallets (testing/simulation): unlimited funds by design. They
+must never run dry, since their whole purpose is to keep running and
+comparing strategies indefinitely as champions change over time.
+This means fairness/priority across multiple bots sharing one paper
+wallet is genuinely a non-issue - there is nothing to compete over
+when funds are unlimited.
+
+Real/live wallets (FUTURE - not yet built, no real-money wallets
+exist today): genuinely limited, based on what the user actually
+owns (USDT/coins). When multiple bots share a real, limited wallet,
+there SHOULD be a priority system based on the DCA queue (similar to
+the existing score_position() prioritization already used elsewhere
+- highest-loss/most-urgent positions get priority for limited
+funds) - NOT first-come-first-served by accident of processing
+order, which is what the old grouping-by-user code looked like it
+was meant to enable but never actually implemented.
+
+This means: the old "group bots by user, run_user_cycle()" structure
+is NOT being carried into the new system as-is - confirmed it never
+actually solved this fairness problem even when wallets are shared at
+scale (found 723 bots sharing one paper wallet during this
+investigation). Real fund-priority logic should be built properly
+when real/live wallets are actually implemented, not faked now while
+paper wallets are unlimited anyway.
