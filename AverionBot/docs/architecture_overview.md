@@ -73,3 +73,23 @@ scale (found 723 bots sharing one paper wallet during this
 investigation). Real fund-priority logic should be built properly
 when real/live wallets are actually implemented, not faked now while
 paper wallets are unlimited anyway.
+
+## CONFIRMED DESIGN DECISION (June 27 2026) - Floor-pause: Scalper
+
+Floor-pause does NOT apply to Scalper in the rebuild, despite
+existing in the old live_scalper_engine.py (added June 20 2026,
+`if bot.get('floor_paused'): return` in _check_entry()).
+
+Reasoning, confirmed directly: a wallet's own allocation already
+does this job naturally - if a user puts $100 toward a bot and that
+$100 is genuinely spent/committed, the bot simply can't afford new
+entries anyway, with no separate flag needed. The only real risk is
+a user deliberately choosing a 100% allocation (aggressive, but the
+user's own informed choice, not something the system should
+second-guess with an extra mechanism).
+
+This is DIFFERENT from Long, where floor-pause has a real, distinct
+purpose: pausing new entries specifically gives a struggling bot time
+to DCA its way back to recovering USDT - a mechanism unrelated to
+wallet depletion itself, since DCA continues spending from the same
+wallet while paused for new entries. Floor-pause stays Long-only.
