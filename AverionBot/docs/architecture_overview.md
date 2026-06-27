@@ -93,3 +93,26 @@ purpose: pausing new entries specifically gives a struggling bot time
 to DCA its way back to recovering USDT - a mechanism unrelated to
 wallet depletion itself, since DCA continues spending from the same
 wallet while paused for new entries. Floor-pause stays Long-only.
+
+## CONFIRMED DESIGN DECISION (June 27 2026) - Scalper exit logic: unify V1+V2
+
+Confirmed real structural difference found: live_scalper_engine.py
+(V1) exits ONLY via a fixed max-hold timer or a stop-loss check - no
+trailing concept at all. scalper_v2_engine.py (V2) genuinely has a
+real trailing-stop mechanism (tracks peak_price, exits on a % drop
+from that peak) alongside its own timer and stop-loss.
+
+DECISION: the rebuild does NOT keep these as 2 separate systems.
+Scalper's new exit logic combines all 3 conditions together,
+whichever fires first:
+  1. Max-hold timer (safety cap - never holds indefinitely)
+  2. Trailing-stop (locks in profit early if price peaks and starts
+     reversing before the timer would have fired)
+  3. Stop-loss (cuts losses early if price drops too far)
+
+Motivating real scenario, explicitly confirmed: without trailing, a
+coin that pumps and reverses within 10 seconds against a 60-second
+hold-time setting would sit and do nothing, closing at a worse price
+than was available moments earlier purely because the timer hadn't
+expired yet. Trailing lets a genuine quick win be captured early
+instead of given back while waiting out the clock.
