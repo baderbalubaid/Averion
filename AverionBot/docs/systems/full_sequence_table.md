@@ -1,70 +1,72 @@
 # Full Lifecycle Sequence — Long / Short / Scalper
 
-Long column fully verified from real code (June 27 2026). Short and
-Scalper columns marked TO RESEARCH - will be filled in with the same
-verification process before this table is considered complete.
+5 columns: # | Naming (standardized name to use when we write the
+new code) | Long | Short | Scalper.
 
-Legend: "—" means this step genuinely does not apply to that system
-(confirmed, not just unchecked). "TO RESEARCH" means not yet checked.
+Naming rule: ONE shared name when the logic is genuinely identical
+across systems that have it. A prefixed name (long_x / short_x /
+scalper_x) when the logic genuinely differs between systems, even if
+conceptually similar.
 
-| # | Step | Long | Short | Scalper |
-|---|------|------|-------|---------|
+Long: fully verified from real code. Short: verified through the
+gates/entry/open steps so far - DCA-queue/close/fee sections still
+TO RESEARCH. Scalper: TO RESEARCH entirely.
+
+Legend: ✅ = verified | ⚠️ = partially verified or a confirmed bug |
+— = confirmed does not apply | TO RESEARCH = not yet checked
+
+| # | Naming | Long | Short | Scalper |
+|---|--------|------|-------|---------|
 | **A. Daily background jobs (cron)** |
-| 1 | Coin Classification (market-cap category) | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 2 | Exchange Minimum Orders refresh | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 3 | Coin Parameter Calculation (spacing/TP/trailing) | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 4 | RARS Scoring | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 5 | Champion Promotion | ✅ | — (confirmed no champion concept) | TO RESEARCH |
-| 6 | Paper Timer check (90-day no-live-trade auto-close) | ✅ user-level, shared | TO RESEARCH | TO RESEARCH |
-| 7 | BTC Daily Fetch | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 8 | Data Retention cleanup | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 9 | Report generation + notifications | ✅ shared | TO RESEARCH | TO RESEARCH |
+| 1 | coin_classification | ✅ | ✅ shared | TO RESEARCH |
+| 2 | exchange_min_orders_refresh | ✅ | ✅ shared | TO RESEARCH |
+| 3 | coin_parameter_calculation | ✅ | ✅ shared | TO RESEARCH |
+| 4 | rars_scoring | ✅ | TO RESEARCH | TO RESEARCH |
+| 5 | champion_promotion | ✅ | — (no champion concept) | TO RESEARCH |
+| 6 | paper_timer_check | ✅ user-level, shared | ✅ shared | TO RESEARCH |
+| 7 | btc_daily_fetch | ✅ | TO RESEARCH | TO RESEARCH |
+| 8 | data_retention_cleanup | ✅ | TO RESEARCH | TO RESEARCH |
+| 9 | daily_reports_notifications | ✅ | TO RESEARCH | TO RESEARCH |
 | **B. Live price feed** |
-| 10 | Websocket tick → Redis + instant push (zero-delay) | ✅ shared | TO RESEARCH | TO RESEARCH |
+| 10 | live_price_feed | ✅ | ✅ shared | TO RESEARCH |
 | **C. Main cycle / bot loading** |
-| 11 | Load active bots | ✅ rebuilt in bot_loader.py | TO RESEARCH | TO RESEARCH |
-| 12 | Load champions per regime + current regime | ✅ rebuilt in champion_service.py | — | TO RESEARCH |
-| 13 | Attach champion to Smart-mode bots | ✅ Long-specific logic | — | TO RESEARCH |
-| **D. Platform-level gates (before any new entry)** |
-| 14 | Bot-slot limit (5 free) | ✅ shared (system_gates.py) | TO RESEARCH | TO RESEARCH |
-| 15 | Trade limit (100 total / 30 paper sub-cap) | ✅ shared (system_gates.py) | TO RESEARCH | TO RESEARCH |
-| 16 | Emergency halt / global trading toggles | ✅ shared (system_gates.py) | TO RESEARCH | TO RESEARCH |
-| 17 | Entry-style toggle (per method) | ✅ | TO RESEARCH | TO RESEARCH |
-| 18 | Exchange toggle (MEXC/KuCoin) | ✅ shared (system_gates.py) | TO RESEARCH | TO RESEARCH |
-| 19 | Reserve-wallet debt check (blocks NEW entries only) | ✅ | TO RESEARCH | TO RESEARCH |
-| 20 | Floor-pause check (blocks NEW entries only) | ✅ | TO RESEARCH | TO RESEARCH |
-| 21 | ST-flag check (coin suspended/delisted) | ✅ (confirmed real detection gap exists) | TO RESEARCH | TO RESEARCH |
-| 22 | trades_per_bot limit (total open positions cap) | ✅ wizard-configured | TO RESEARCH | TO RESEARCH |
-| 23 | trades_per_coin limit (per-coin cap) | ✅ wizard-configured | TO RESEARCH | TO RESEARCH |
+| 11 | bot_loader | ✅ rebuilt | ✅ rebuilt (shared function, direction param) | TO RESEARCH |
+| 12 | champion_loader | ✅ rebuilt | — | TO RESEARCH |
+| 13 | long_champion_injection / scalper_champion_injection | ✅ Long-specific logic | — | TO RESEARCH (confirmed different from Long) |
+| **D. Platform-level gates** |
+| 14 | bot_slot_limit | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 15 | trade_limit | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 16 | global_trading_toggles | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 17 | entry_style_toggle | ✅ | TO RESEARCH | TO RESEARCH |
+| 18 | exchange_toggle | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 19 | debt_check | ✅ | ❌ MISSING - confirmed real gap, must be added | TO RESEARCH |
+| 20 | long_floor_pause | ✅ Long-only by design | — (confirmed not applicable) | TO RESEARCH |
+| 21 | long_st_check / short_st_check | ⚠️ exists, has its own detection gap | ❌ MISSING - needs new design (notify user to sell coin before delisting) | TO RESEARCH |
+| 22 | trades_per_bot_limit | ✅ | TO RESEARCH | TO RESEARCH |
+| 23 | trades_per_coin_limit | ✅ | ✅ confirmed | TO RESEARCH |
 | **E. Entry decision** |
-| 24 | Branch by entry_method (ASAP/Smart/Customized) | ⚠️ not fully traced yet | TO RESEARCH | TO RESEARCH |
-| 25 | Wallet affordability check | ✅ | TO RESEARCH | TO RESEARCH |
-| 26 | Exchange minimum order check | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 27 | Place buy order | ✅ | TO RESEARCH | TO RESEARCH |
-| 28 | Snapshot BTC market context at entry | ✅ | TO RESEARCH | TO RESEARCH |
-| 29 | Insert position row | ✅ rebuild target: position_loader.py / position_service.py | TO RESEARCH | TO RESEARCH |
-| 30 | Log wallet debit (wallet_transactions) | ✅ | TO RESEARCH | TO RESEARCH |
+| 24 | long_entry_branching / short_entry_branching | ⚠️ not fully traced | ⚠️ confirmed 2 SEPARATE dimensions (entry_method=asap/not, PLUS parameter_mode=smart/customized) - genuinely different structure from Long, not just different names | TO RESEARCH |
+| 25 | wallet_affordability_check | ✅ | TO RESEARCH | TO RESEARCH |
+| 26 | exchange_min_order_check | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 27 | long_place_buy_order / short_open_position_record | ✅ Long genuinely trades here | ⚠️ CONFIRMED GENUINELY DIFFERENT - Short's "open" is tracking-only, no trade, no wallet debit at all - the real first sell happens later via the same function used for every later sell | TO RESEARCH |
+| 28 | long_btc_context_snapshot | ✅ | — (confirmed Short's open does NOT snapshot BTC context at all) | TO RESEARCH |
+| 29 | position_insert | ✅ shared table, different columns | ✅ | TO RESEARCH |
+| 30 | long_wallet_debit | ✅ | — (no debit at open - nothing spent yet) | TO RESEARCH |
 | **F. DCA / queue logic** |
-| 31 | Load open positions | ✅ rebuilt in position_loader.py | TO RESEARCH | — (confirmed no DCA at all) |
-| 32 | Check DCA eligibility (price move vs threshold) | ✅ needs_dca() rebuilt | TO RESEARCH | — |
-| 33 | Calculate next DCA amount | ✅ rebuilt | TO RESEARCH | — |
-| 34 | Rank candidates by priority (loss-per-dollar) | ✅ score_position() rebuilt | — (confirmed no scoring/queue system) | — |
-| 35 | Fund every affordable candidate (not just first) | ⚠️ not yet rebuilt (logic confirmed, wiring pending) | — | — |
-| **G. Take-profit / trailing (real-time)** |
-| 36 | Check TP target reached | ✅ check_tp() verified | TO RESEARCH | TO RESEARCH |
-| 37 | Immediate sell OR arm + track peak | ✅ verified | TO RESEARCH | TO RESEARCH |
-| 38 | Sell on trailing drop (never below real cost) | ✅ verified | TO RESEARCH | TO RESEARCH |
-| 39 | Execute sell (incl. partial "keep coin" option) | ⚠️ not fully traced (profit_coin logic) | TO RESEARCH | TO RESEARCH |
+| 31 | load_open_positions | ✅ rebuilt | TO RESEARCH | — (confirmed no DCA at all) |
+| 32 | needs_dca / short_sell_trigger | ✅ rebuilt | TO RESEARCH (inverted version confirmed to exist: check_sell_trigger) | — |
+| 33 | dca_amount_calc | ✅ rebuilt | TO RESEARCH | — |
+| 34 | dca_priority_scoring | ✅ rebuilt | — (confirmed no scoring/queue system at all) | — |
+| 35 | dca_priority_funding_loop | ⚠️ not yet rebuilt | — | — |
+| **G. Take-profit / trailing / close** |
+| 36 | check_tp | ✅ verified | TO RESEARCH | TO RESEARCH |
+| 37 | tp_arm_or_immediate | ✅ verified | TO RESEARCH | TO RESEARCH |
+| 38 | tp_trailing_sell | ✅ verified | TO RESEARCH | TO RESEARCH |
+| 39 | execute_sell | ⚠️ not fully traced (profit_coin logic) | TO RESEARCH | TO RESEARCH |
 | **H. Close — fees & reserve wallet** |
-| 40 | Calculate 20% fee on profit | ✅ shared (deduct_performance_fee) | TO RESEARCH | TO RESEARCH |
-| 41 | Deduct from reserve wallet (can go negative) | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 42 | Log fee audit row | ⚠️ confirmed often missing in real data - real bug | TO RESEARCH | TO RESEARCH |
-| 43 | Pay referral commission (2.5% of fee) | ✅ shared | TO RESEARCH | TO RESEARCH |
-| 44 | Block new entries only while in debt (DCA/TP continue) | ✅ confirmed correct in original code | TO RESEARCH | TO RESEARCH |
-| 45 | Future deposit pays down debt first | ✅ shared (credit_reserve) | TO RESEARCH | TO RESEARCH |
-
-## Legend for status marks
-- ✅ = verified directly from real code this session
-- ⚠️ = verified the trigger/concept exists, but not the full implementation, OR a confirmed real bug
-- — = confirmed this step genuinely does not exist/apply for that system
-- TO RESEARCH = not yet checked - next research pass needed
+| 40 | performance_fee_calc | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 41 | reserve_wallet_deduct | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 42 | fee_audit_log | ⚠️ confirmed often missing in real data - real bug | TO RESEARCH | TO RESEARCH |
+| 43 | referral_commission | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 44 | debt_blocks_new_entries_only | ✅ confirmed correct | ❌ (ties to #19 - the missing debt check) | TO RESEARCH |
+| 45 | reserve_deposit_paydown | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
