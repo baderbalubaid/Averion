@@ -16,6 +16,7 @@ sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
 from heartbeat_service import write_heartbeat
 from champion_service import load_champions, get_current_regime
+from bot_loader import load_bots
 
 _running = False
 _cycle_thread = None
@@ -60,4 +61,5 @@ def _engine_loop():
         write_heartbeat(r, 'long_dca')
         champions = load_champions('DCA')
         current_regime = get_current_regime(r)
+        bots = load_bots('long', require_dca_method_naming=True)
         raise NotImplementedError("rest of loop body not yet built")

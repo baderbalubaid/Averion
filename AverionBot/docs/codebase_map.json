@@ -1,5 +1,37 @@
 {
   "files": {
+    "AverionBot/core/bot_loader.py": {
+      "tables": [
+        "bots",
+        "exchanges",
+        "virtual_wallets"
+      ],
+      "functions": [
+        "load_bots"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [],
+      "line_count": 105
+    },
+    "AverionBot/core/champion_service.py": {
+      "tables": [
+        "bots",
+        "champion_history"
+      ],
+      "functions": [
+        "get_current_regime",
+        "load_champions"
+      ],
+      "local_imports": [
+        "database"
+      ],
+      "redis_keys": [
+        "btc:regime_data"
+      ],
+      "line_count": 68
+    },
     "AverionBot/core/heartbeat_service.py": {
       "tables": [],
       "functions": [
@@ -40,22 +72,25 @@
         "start_engine"
       ],
       "local_imports": [
+        "bot_loader",
+        "champion_service",
         "heartbeat_service",
         "redis_connection"
       ],
       "redis_keys": [],
-      "line_count": 57
+      "line_count": 65
     },
     "AverionBot/engines/scalper_engine.py": {
       "tables": [],
       "functions": [],
       "local_imports": [
+        "champion_service",
         "database",
         "heartbeat_service",
         "redis_connection"
       ],
       "redis_keys": [],
-      "line_count": 72
+      "line_count": 84
     },
     "AverionBot/engines/short_engine.py": {
       "tables": [],
@@ -65,11 +100,12 @@
         "start_engine"
       ],
       "local_imports": [
+        "bot_loader",
         "heartbeat_service",
         "redis_connection"
       ],
       "redis_keys": [],
-      "line_count": 46
+      "line_count": 48
     },
     "AverionBot/tools/bot_audit.py": {
       "tables": [
@@ -1887,15 +1923,34 @@
     }
   },
   "table_to_files": {
-    "fee_debt": [
+    "exchanges": [
+      "AverionBot/core/bot_loader.py",
+      "api.py",
+      "automation/fetch_ohlcv.py",
+      "automation/generate_excel.py",
+      "automation/rotate_fernet.py",
+      "database.py",
+      "executor.py",
+      "fetch_ohlcv.py",
+      "live_long_dca_engine.py",
+      "main.py",
+      "refresh_min_orders.py",
+      "setup/launch_research_bots.py",
+      "setup_kucoin.py",
+      "short_dca_engine.py"
+    ],
+    "virtual_wallets": [
+      "AverionBot/core/bot_loader.py",
       "AverionBot/tools/bot_audit.py",
       "api.py",
-      "automation/daily_aggregation.py",
-      "automation/generate_excel.py",
-      "automation/generate_metrics.py",
-      "database.py"
+      "executor.py",
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py",
+      "short_dca_engine.py"
     ],
     "bots": [
+      "AverionBot/core/bot_loader.py",
+      "AverionBot/core/champion_service.py",
       "AverionBot/tools/bot_audit.py",
       "api.py",
       "automation/daily_aggregation.py",
@@ -1923,18 +1978,19 @@
       "setup/launch_research_bots.py",
       "short_dca_engine.py"
     ],
-    "virtual_wallets": [
+    "champion_history": [
+      "AverionBot/core/champion_service.py",
+      "api.py",
+      "live_scalper_engine.py",
+      "rars_champion_promotion.py"
+    ],
+    "fee_debt": [
       "AverionBot/tools/bot_audit.py",
       "api.py",
-      "executor.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py",
-      "short_dca_engine.py"
-    ],
-    "wallet_transactions": [
-      "AverionBot/tools/bot_audit.py",
-      "live_long_dca_engine.py",
-      "live_scalper_engine.py"
+      "automation/daily_aggregation.py",
+      "automation/generate_excel.py",
+      "automation/generate_metrics.py",
+      "database.py"
     ],
     "positions": [
       "AverionBot/tools/bot_audit.py",
@@ -1962,12 +2018,10 @@
       "research_engine.py",
       "short_dca_engine.py"
     ],
-    "reserve_wallets": [
+    "wallet_transactions": [
       "AverionBot/tools/bot_audit.py",
-      "api.py",
-      "auth.py",
-      "automation/generate_excel.py",
-      "database.py"
+      "live_long_dca_engine.py",
+      "live_scalper_engine.py"
     ],
     "scalper_positions": [
       "AverionBot/tools/bot_audit.py",
@@ -1984,12 +2038,25 @@
       "scalper_engine.py",
       "scalper_v2_engine.py"
     ],
-    "platform_pricing": [
-      "api.py"
-    ],
-    "live_dca_positions": [
+    "reserve_wallets": [
+      "AverionBot/tools/bot_audit.py",
       "api.py",
+      "auth.py",
+      "automation/generate_excel.py",
       "database.py"
+    ],
+    "rars_scores": [
+      "api.py",
+      "rars_champion_promotion.py",
+      "rars_champion_scoring.py"
+    ],
+    "coin_parameters": [
+      "api.py",
+      "bot_loop.py",
+      "calculate_coin_params.py",
+      "live_long_dca_engine.py",
+      "refresh_min_orders.py",
+      "research_engine.py"
     ],
     "trades": [
       "api.py",
@@ -2004,19 +2071,23 @@
       "exchanges.py",
       "main.py"
     ],
+    "category_limits": [
+      "api.py",
+      "calculate_coin_params.py"
+    ],
+    "system_health": [
+      "api.py",
+      "automation/generate_diagnostics.py",
+      "main.py"
+    ],
     "live_positions": [
       "api.py",
       "database.py",
       "live_scalper_engine.py"
     ],
-    "champion_history": [
+    "live_dca_positions": [
       "api.py",
-      "live_scalper_engine.py",
-      "rars_champion_promotion.py"
-    ],
-    "performance_timing": [
-      "api.py",
-      "automation/generate_diagnostics.py"
+      "database.py"
     ],
     "users": [
       "api.py",
@@ -2030,7 +2101,11 @@
       "short_dca_engine.py",
       "telegram.py"
     ],
-    "category_limits": [
+    "performance_timing": [
+      "api.py",
+      "automation/generate_diagnostics.py"
+    ],
+    "coin_parameter_history": [
       "api.py",
       "calculate_coin_params.py"
     ],
@@ -2038,49 +2113,11 @@
       "api.py",
       "research_engine.py"
     ],
-    "system_health": [
-      "api.py",
-      "automation/generate_diagnostics.py",
-      "main.py"
-    ],
-    "coin_parameters": [
-      "api.py",
-      "bot_loop.py",
-      "calculate_coin_params.py",
-      "live_long_dca_engine.py",
-      "refresh_min_orders.py",
-      "research_engine.py"
-    ],
-    "coin_parameter_history": [
-      "api.py",
-      "calculate_coin_params.py"
-    ],
-    "rars_scores": [
-      "api.py",
-      "rars_champion_promotion.py",
-      "rars_champion_scoring.py"
-    ],
-    "exchanges": [
-      "api.py",
-      "automation/fetch_ohlcv.py",
-      "automation/generate_excel.py",
-      "automation/rotate_fernet.py",
-      "database.py",
-      "executor.py",
-      "fetch_ohlcv.py",
-      "live_long_dca_engine.py",
-      "main.py",
-      "refresh_min_orders.py",
-      "setup/launch_research_bots.py",
-      "setup_kucoin.py",
-      "short_dca_engine.py"
+    "platform_pricing": [
+      "api.py"
     ],
     "referrals": [
       "auth.py"
-    ],
-    "market_regimes": [
-      "automation/classify_coins.py",
-      "database.py"
     ],
     "coin_history": [
       "automation/classify_coins.py",
@@ -2088,6 +2125,10 @@
       "automation/fetch_coingecko.py",
       "calculate_coin_params.py",
       "classify_coins.py",
+      "database.py"
+    ],
+    "market_regimes": [
+      "automation/classify_coins.py",
       "database.py"
     ],
     "owner_balance": [
@@ -2113,13 +2154,7 @@
       "calculate_coin_params.py",
       "classify_coins.py"
     ],
-    "user_subscriptions": [
-      "database.py"
-    ],
-    "system_settings": [
-      "database.py"
-    ],
-    "attention_log": [
+    "security_audit_log": [
       "database.py"
     ],
     "user_telegram": [
@@ -2128,7 +2163,13 @@
     "exchange_min_orders": [
       "database.py"
     ],
-    "security_audit_log": [
+    "user_subscriptions": [
+      "database.py"
+    ],
+    "attention_log": [
+      "database.py"
+    ],
+    "system_settings": [
       "database.py"
     ],
     "short_buyback_orders": [

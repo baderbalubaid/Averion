@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, '/home/averion/Averion/AverionBot/core')
 from redis_connection import get_redis
 from heartbeat_service import write_heartbeat
+from bot_loader import load_bots
 
 _running = False
 _cycle_thread = None
@@ -43,4 +44,5 @@ def _engine_loop():
     r = get_redis()
     while _running:
         write_heartbeat(r, 'short_dca')
+        bots = load_bots('short')
         raise NotImplementedError("rest of loop body not yet built")
