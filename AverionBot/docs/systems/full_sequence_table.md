@@ -59,8 +59,8 @@ TO RESEARCH = not yet checked
 | 38 | long_execute_dca_buy / short_execute_short_sell | ✅ | ✅ confirmed - ALSO immediately places a buyback order as part of this same step (see #39) | TO RESEARCH |
 | **G. Short-only: buyback placement and detection (NO Long equivalent at all)** |
 | 39 | short_place_buyback_order | — | ✅ confirmed, happens immediately inside execute_short_sell() | — |
-| 40 | short_buyback_fill_detection | — | ⚠️ confirmed to exist (tick-speed, both paper and live per code comments) but the detection mechanism itself NOT YET fully traced | — |
-| 41 | short_stuck_buyback_retry | — | ⚠️ confirmed referenced in run_cycle()'s safety-net role, NOT YET fully traced | — |
+| 40 | short_buyback_fill_detection | — | ✅ confirmed - on EVERY price tick (for any position with a pending order_id), directly asks the exchange via check_limit_fill() if it has filled yet. Pure polling, not push-based - a deliberate, accepted tradeoff (real exchange rate-limit risk knowingly accepted in exchange for true zero-delay detection, per explicit June 20 2026 instruction) | — |
+| 41 | short_stuck_buyback_retry | — | ✅ confirmed - runs once per 60s safety-net cycle (NOT tick-speed, unlike #40), specifically for positions where the SELL succeeded but the buyback LIMIT ORDER PLACEMENT itself failed (e.g. insufficient USDT because something else used it first) - keeps retrying every cycle per the locked rule that Short buyback funding wins the race for shared-wallet funds until it succeeds | — |
 | **H. Take-profit / trailing / close** |
 | 42 | check_tp | ✅ verified | — confirmed Short has no arm/peak/trailing concept at all - just a single threshold trigger (#34) | TO RESEARCH |
 | 43 | tp_arm_or_immediate | ✅ verified | — | TO RESEARCH |
