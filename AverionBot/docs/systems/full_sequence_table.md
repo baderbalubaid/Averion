@@ -42,12 +42,12 @@ Legend: ✅ = verified | ⚠️ = partially verified or a confirmed bug |
 | 19 | debt_check | ✅ | ❌ MISSING - confirmed real gap, must be added | TO RESEARCH |
 | 20 | long_floor_pause | ✅ Long-only by design | — (confirmed not applicable) | TO RESEARCH |
 | 21 | long_st_check / short_st_check | ⚠️ exists, has its own detection gap | ❌ MISSING - needs new design (notify user to sell coin before delisting) | TO RESEARCH |
-| 22 | trades_per_bot_limit | ✅ | TO RESEARCH | TO RESEARCH |
+| 22 | trades_per_bot_limit | ✅ | — confirmed genuinely not needed: Short trades exactly one pre-assigned coin, so trades_per_coin already covers the same limit naturally | TO RESEARCH |
 | 23 | trades_per_coin_limit | ✅ | ✅ confirmed | TO RESEARCH |
 | **E. Entry decision** |
 | 24 | long_entry_branching / short_entry_branching | ⚠️ not fully traced | ⚠️ confirmed 2 SEPARATE dimensions (entry_method=asap/not, PLUS parameter_mode=smart/customized) - genuinely different structure from Long, not just different names | TO RESEARCH |
-| 25 | wallet_affordability_check | ✅ | TO RESEARCH | TO RESEARCH |
-| 26 | exchange_min_order_check | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 25 | wallet_affordability_check | ✅ | ✅ confirmed (bot['wallet']['current_balance'] > 0 check before opening) | TO RESEARCH |
+| 26 | exchange_min_order_check | ✅ shared | ✅ confirmed (get_min_order(), cached daily via the same cron job) | TO RESEARCH |
 | 27 | long_place_buy_order / short_open_position_record | ✅ Long genuinely trades here | ⚠️ CONFIRMED GENUINELY DIFFERENT - Short's "open" is tracking-only, no trade, no wallet debit at all - the real first sell happens later via the same function used for every later sell | TO RESEARCH |
 | 28 | long_btc_context_snapshot | ✅ | — (confirmed Short's open does NOT snapshot BTC context at all) | TO RESEARCH |
 | 29 | position_insert | ✅ shared table, different columns | ✅ | TO RESEARCH |
