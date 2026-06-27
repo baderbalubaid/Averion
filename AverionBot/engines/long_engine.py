@@ -62,4 +62,19 @@ def _engine_loop():
         champions = load_champions('DCA')
         current_regime = get_current_regime(r)
         bots = load_bots('long', require_dca_method_naming=True)
-        raise NotImplementedError("rest of loop body not yet built")
+
+        # Inject current champion into Smart-mode bots only - kept
+        # Long-specific (NOT shared with Scalper), confirmed they
+        # genuinely behave differently here: Long just attaches the
+        # raw champion object for later use during entry decisions,
+        # while Scalper's original code immediately overwrites its
+        # own specific fields (trigger_pct, window_sec, etc) with the
+        # champion's values right here instead - a real behavioral
+        # difference, not just a naming one.
+        for bot in bots:
+            if bot.get('entry_method') == 'dca_smart':
+                champ = champions.get(current_regime)
+                bot['_champion'] = champ  # None if no champion yet for this regime
+                bot['_regime'] = current_regime
+
+        raise NotImplementedError("rest of loop body not yet built - next is grouping bots by user")
