@@ -1,11 +1,21 @@
 """
-bot_audit.py - Independent verification tool for a single bot's full
-lifecycle and current health. Not a trade-only tool - covers config
-sanity, every open position's internal math, wallet consistency, and
-recent closed positions. Built specifically so fixes can be proven
-with concrete evidence, not just claimed to work.
+bot_audit.py v2 - Independent verification tool for a bot's FULL
+lifecycle: reserve wallet deposits, fee deduction/debt, virtual
+wallet transaction history, every open position's internal math,
+DCA-trigger status, and closed positions' P&L. Optionally verifies
+a position's recorded fill price against the real historical
+exchange price at that exact timestamp.
 
-Usage: python3 bot_audit.py <bot_id>
+Usage:
+    python3 bot_audit.py <bot_id>                  - full audit
+    python3 bot_audit.py <bot_id> --verify-price <position_id>
+                                                     - also checks
+                                                       one position's
+                                                       fill prices
+                                                       against MEXC's
+                                                       real historical
+                                                       data (network
+                                                       call, slower)
 
 This is a READ-ONLY diagnostic tool. It never writes to the database.
 """
@@ -48,11 +58,40 @@ def get_redis_price(coin):
         pass
     return None
 
+def verify_historical_price(coin, target_dt, recorded_price):
+    """Pulls real 1-minute OHLCV from MEXC around target_dt and checks
+    whether recorded_price genuinely falls within that minute's real
+    high/low range. Public data only, no API keys needed."""
+    try:
+        import ccxt
+        exchange = ccxt.mexc({'enableRateLimit': True})
+        symbol = f'{coin}/USDT'
+        since_ms = int(target_dt.timestamp() * 1000) - 5 * 60 * 1000
+        candles = exchange.fetch_ohlcv(symbol, timeframe='1m', since=since_ms, limit=10)
+        if not candles:
+            return None, "No historical candles returned by MEXC for this symbol/time"
+        target_ms = int(target_dt.timestamp() * 1000)
+        closest = min(candles, key=lambda c: abs(c[0] - target_ms))
+        ts, o, h, l, c, v = closest
+        candle_time = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+        in_range = l <= recorded_price <= h
+        return {
+            'candle_time': candle_time, 'open': o, 'high': h,
+            'low': l, 'close': c, 'in_range': in_range,
+        }, None
+    except Exception as e:
+        return None, f"Historical price check failed: {e}"
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 bot_audit.py <bot_id>")
+        print("Usage: python3 bot_audit.py <bot_id> [--verify-price <position_id>]")
         sys.exit(1)
     bot_id = int(sys.argv[1])
+    verify_position_id = None
+    if '--verify-price' in sys.argv:
+        idx = sys.argv.index('--verify-price')
+        if idx + 1 < len(sys.argv):
+            verify_position_id = int(sys.argv[idx + 1])
 
     print(f"\n{'='*70}")
     print(f"BOT AUDIT — bot_id={bot_id}")
@@ -108,7 +147,34 @@ def main():
             else:
                 flag('PASS', f"Expired correctly: trading_on is False past expires_at")
 
-        print("\n── 2. WALLET ──")
+        print("\n── 2. RESERVE WALLET (user-level, covers ALL bots for this user) ──")
+        cur.execute("""
+            SELECT balance_usdt, total_deposited, total_deducted, last_alert_level
+            FROM reserve_wallets WHERE user_id=%s
+        """, (user_id,))
+        rw = cur.fetchone()
+        if not rw:
+            flag('WARN', f"No reserve_wallets row for user_id={user_id} — fee deduction would fail silently if a position closes profitably")
+        else:
+            rw_balance, rw_deposited, rw_deducted, rw_alert = rw
+            print(f"  balance_usdt: ${rw_balance}  total_deposited: ${rw_deposited}  total_deducted: ${rw_deducted}  alert_level: {rw_alert}")
+            if float(rw_balance) < 0:
+                flag('WARN', f"Reserve balance is negative (${rw_balance}) — user is in fee debt. "
+                             f"New positions should be blocked for ALL this user's bots until a deposit covers it "
+                             f"(existing DCA/TP on already-open positions should still continue per locked rule).")
+
+            cur.execute("""
+                SELECT COALESCE(SUM(amount_usdt), 0) FROM fee_debt WHERE user_id=%s
+            """, (user_id,))
+            total_fee_debt_logged = cur.fetchone()[0]
+            diff = abs(float(total_fee_debt_logged) - float(rw_deducted))
+            if diff > 0.50:
+                flag('WARN', f"Sum of fee_debt.amount_usdt (${total_fee_debt_logged}) doesn't match "
+                             f"reserve_wallets.total_deducted (${rw_deducted}) — off by ${diff:.2f}")
+            else:
+                flag('PASS', f"fee_debt log matches total_deducted (within $0.50)")
+
+        print("\n── 3. VIRTUAL WALLET ──")
         if wallet_id:
             cur.execute("""
                 SELECT id, is_paper, current_balance, committed_usdt,
@@ -136,7 +202,28 @@ def main():
                 else:
                     flag('PASS', f"committed_usdt matches sum of open positions' invested capital (within $0.50)")
 
-        print("\n── 3. OPEN POSITIONS ──")
+                cur.execute("""
+                    SELECT type, amount, balance_before, balance_after, created_at
+                    FROM wallet_transactions
+                    WHERE wallet_id=%s
+                    ORDER BY created_at ASC
+                """, (wallet_id,))
+                txns = cur.fetchall()
+                if txns:
+                    print(f"  {len(txns)} transactions on record for this wallet")
+                    first_balance_before = float(txns[0][2] or 0)
+                    last_balance_after = float(txns[-1][3] or 0)
+                    diff2 = abs(last_balance_after - float(w_bal))
+                    if diff2 > 0.50:
+                        flag('WARN', f"Last wallet_transactions row's balance_after (${last_balance_after:.2f}) "
+                                     f"doesn't match current_balance (${w_bal}) — off by ${diff2:.2f}. "
+                                     f"May mean a balance change happened outside the transaction log.")
+                    else:
+                        flag('PASS', f"Transaction log's final balance_after matches current wallet balance")
+                else:
+                    flag('WARN', f"No wallet_transactions rows found for wallet {wallet_id} — no audit trail exists for this wallet's history")
+
+        print("\n── 4. OPEN POSITIONS ──")
         cur.execute("""
             SELECT id, coin, direction, status, avg_cost, quantity,
                    total_invested, dca_count, last_buy_price, last_dca_at,
@@ -148,6 +235,16 @@ def main():
         """, (bot_id,))
         open_positions = cur.fetchall()
         print(f"  Total open positions: {len(open_positions)}\n")
+
+        # Duplicate-coin check (trades_per_coin violation)
+        coin_counts = {}
+        for p in open_positions:
+            coin_counts[p[1]] = coin_counts.get(p[1], 0) + 1
+        limit = int(trades_per_coin or 1)
+        for coin_name, count in coin_counts.items():
+            if count > limit:
+                flag('FAIL', f"{coin_name}: {count} open positions exist, but trades_per_coin={limit} — "
+                             f"this bot has more simultaneous positions on one coin than its own limit allows")
 
         for pos in open_positions:
             (pid, coin, pdir, pstatus, avg_cost, quantity, total_invested,
@@ -189,7 +286,22 @@ def main():
             if queued:
                 flag('WARN', f"  {coin} (id={pid}): queued=True — if this has been True for a long time, a buy attempt may have started and never cleared")
 
-        print("\n── 4. RECENT CLOSED POSITIONS (last 10) ──")
+            if verify_position_id == pid:
+                print(f"\n      ── Historical price verification for this position ──")
+                target_dt = opened_at if opened_at.tzinfo else opened_at.replace(tzinfo=timezone.utc)
+                result, err = verify_historical_price(coin, target_dt, avg_cost_f)
+                if err:
+                    flag('WARN', f"  {coin} (id={pid}) price verification: {err}")
+                else:
+                    status_word = "WITHIN real range" if result['in_range'] else "OUTSIDE real range"
+                    print(f"      MEXC 1m candle near opened_at ({result['candle_time']}): "
+                          f"open={result['open']} high={result['high']} low={result['low']} close={result['close']}")
+                    print(f"      Our recorded avg_cost ${avg_cost_f} is {status_word} of that real candle.")
+                    if not result['in_range']:
+                        flag('WARN', f"  {coin} (id={pid}): recorded fill price ${avg_cost_f} is OUTSIDE the real "
+                                     f"historical low-high range (${result['low']}-${result['high']}) for that minute on MEXC")
+
+        print("\n── 5. RECENT CLOSED POSITIONS (last 10) ──")
         cur.execute("""
             SELECT id, coin, avg_cost, total_invested, total_sold_usdt,
                    realized_pnl_usdt, realized_pnl_pct, close_reason,
@@ -212,6 +324,21 @@ def main():
             if diff > 0.05:
                 flag('WARN', f"  {coin} (id={cid}): total_sold_usdt - total_invested (${implied_pnl:.2f}) doesn't match "
                              f"stored realized_pnl_usdt (${pnl_f:.2f}) — off by ${diff:.2f}")
+
+            if pnl_f > 0:
+                cur.execute("""
+                    SELECT amount_usdt, trade_profit FROM fee_debt WHERE position_id=%s
+                """, (cid,))
+                fee_row = cur.fetchone()
+                if not fee_row:
+                    flag('WARN', f"  {coin} (id={cid}): closed with profit ${pnl_f:.2f} but NO matching fee_debt row exists — performance fee may never have been charged")
+                else:
+                    fee_amount, fee_trade_profit = fee_row
+                    expected_fee = float(fee_trade_profit or 0) * 0.20
+                    fee_diff = abs(float(fee_amount) - expected_fee)
+                    if fee_diff > 0.05:
+                        flag('WARN', f"  {coin} (id={cid}): fee_debt.amount_usdt (${fee_amount}) doesn't match "
+                                     f"20% of its own logged trade_profit (${expected_fee:.4f}) — off by ${fee_diff:.4f}")
 
         if not closed:
             print("  (none yet)")
