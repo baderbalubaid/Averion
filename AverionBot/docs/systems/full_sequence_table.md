@@ -62,11 +62,11 @@ Legend: ✅ = verified | ⚠️ = partially verified or a confirmed bug |
 | 36 | check_tp | ✅ verified | TO RESEARCH | TO RESEARCH |
 | 37 | tp_arm_or_immediate | ✅ verified | TO RESEARCH | TO RESEARCH |
 | 38 | tp_trailing_sell | ✅ verified | TO RESEARCH | TO RESEARCH |
-| 39 | execute_sell | ⚠️ not fully traced (profit_coin logic) | TO RESEARCH | TO RESEARCH |
+| 39 | long_execute_sell / short_handle_buyback_fill | ⚠ not fully traced (profit_coin logic) | ⚠️ CONFIRMED GENUINELY DIFFERENT MECHANISM - Short closes via a limit-order buyback FILL callback, not a direct market sell like Long | TO RESEARCH |
 | **H. Close — fees & reserve wallet** |
-| 40 | performance_fee_calc | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
-| 41 | reserve_wallet_deduct | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
-| 42 | fee_audit_log | ⚠️ confirmed often missing in real data - real bug | TO RESEARCH | TO RESEARCH |
-| 43 | referral_commission | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
+| 40 | performance_fee_calc | ✅ shared | ✅ confirmed same function, same 20% default, same is_research/is_admin/is_zero_fee/fee_override checks | TO RESEARCH |
+| 41 | reserve_wallet_deduct | ✅ shared | ✅ confirmed same db.deduct_performance_fee() call | TO RESEARCH |
+| 42 | fee_audit_log | ⚠️ confirmed often missing in real data - real bug | ⚠️ likely the same bug, since it is the exact same shared function - not yet independently confirmed for Short specifically | TO RESEARCH |
+| 43 | referral_commission | ✅ shared | ✅ likely shared (handled inside the same deduct_performance_fee() call, not visible separately in Short's own code) | TO RESEARCH |
 | 44 | debt_blocks_new_entries_only | ✅ confirmed correct | ❌ (ties to #19 - the missing debt check) | TO RESEARCH |
 | 45 | reserve_deposit_paydown | ✅ shared | TO RESEARCH (likely shared) | TO RESEARCH |
